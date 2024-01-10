@@ -1,0 +1,2 @@
+20231217	20:25:29	addManyCollectionsManyPhrases: err
+20231217	20:51:36	addManyCollectionsManyPhrases: words
