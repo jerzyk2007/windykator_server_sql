@@ -35,18 +35,19 @@ app.use(express.json());
 // middleware for cookies
 app.use(cookieParser());
 
+app.use('/contacts', require('./routes/api/contacts'));
 
-app.use('/login', require('./routes/login'));
-app.use('/refresh', require('./routes/refresh'));
-app.use('/logout', require('./routes/logout'));
-app.use('/phrases', require('./routes/api/phrases'));
-app.use('/collections', require('./routes/api/collections'));
+// app.use('/login', require('./routes/login'));
+// app.use('/refresh', require('./routes/refresh'));
+// app.use('/logout', require('./routes/logout'));
+// app.use('/phrases', require('./routes/api/phrases'));
+// app.use('/collections', require('./routes/api/collections'));
 
 //protected routes
 app.use(verifyJWT);
-app.use('/user', require('./routes/api/users'));
-app.use('/search', require('./routes/api/phrases'));
-app.use('/add-data', require('./routes/api/phrases'));
+// app.use('/user', require('./routes/api/users'));
+// app.use('/search', require('./routes/api/phrases'));
+// app.use('/add-data', require('./routes/api/phrases'));
 
 
 
