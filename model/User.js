@@ -13,6 +13,7 @@ const userSchema = new Schema({
             type: Number,
             default: 100
         },
+        Editor: Number,
         Admin: Number
     },
     password: {

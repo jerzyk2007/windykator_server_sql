@@ -19,7 +19,7 @@ const handleNewUser = async (req, res) => {
             "username": username,
             "password": hashedPwd
         });
-        res.status(201).json(`New user ${username} created.`);
+        res.status(201).json(`Nowy użytkownik ${username} dodany.`);
     }
     catch (err) {
         res.status(500).json({ 'message': err.message });
@@ -50,7 +50,7 @@ const handleChangePassword = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ 'message': 'Wymagane są nazwa użytkownika i hasło.' });
+        return res.status(400).json({ 'message': 'Username and new username are required.' });
     }
     try {
         const findUser = await User.find({ username }).exec();
