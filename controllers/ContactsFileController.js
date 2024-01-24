@@ -34,72 +34,80 @@ const addMailAndPhoneToExistingData = async (data, info) => {
     const newEmailsFromFile = data.emails.length ? data.emails.split(';').map((email) => email.trim()) : [];
     const emailsFromDB = result.emails.map(mail => { return mail.email; });
     const id = result._id;
+    try {
+        if (newEmailsFromFile.length) {
+            const newEmails = addNewEmails(newEmailsFromFile, emailsFromDB);
+            const filteredNewEmails = newEmails.filter(item => !emailsFromDB.includes(item));
+            if (filteredNewEmails.length) {
+                const completeEmails = filteredNewEmails.map(mail => {
+                    return {
+                        email: mail,
+                        verify: data.verify ? true : false
+                    };
+                });
+                await Contact.updateOne(
+                    { _id: id },
+                    { $push: { emails: { $each: completeEmails } } }
+                );
+            }
+        }
+        const newPhonesFromFile = data.phones.length ? data.phones.split(';').map((phone) => phone.trim()) : [];
+        const newPhonesNumber = newPhonesFromFile.map(item => { return Number(item); });
+        const phonesFromDB = result.phones.map(phone => { return phone.phone; });
 
-    if (newEmailsFromFile.length) {
-        const newEmails = addNewEmails(newEmailsFromFile, emailsFromDB);
-        const filteredNewEmails = newEmails.filter(item => !emailsFromDB.includes(item));
-        if (filteredNewEmails.length) {
-            const completeEmails = filteredNewEmails.map(mail => {
-                return {
-                    email: mail,
-                    verify: data.verify ? true : false
-                };
-            });
-            await Contact.updateOne(
-                { _id: id },
-                { $push: { emails: { $each: completeEmails } } }
-            );
+        if (newPhonesFromFile.length) {
+            const newPhones = addNewPhones(newPhonesNumber, phonesFromDB);
+            const filteredNewPhones = newPhones.filter(item => !phonesFromDB.includes(item));
+            if (filteredNewPhones.length) {
+                const completePhones = filteredNewPhones.map(phone => {
+                    return {
+                        phone: phone,
+                        verify: data.verify ? true : false
+                    };
+                });
+                await Contact.updateOne(
+                    { _id: id },
+                    { $push: { phones: { $each: completePhones } } }
+                );
+            }
         }
     }
-    const newPhonesFromFile = data.phones.length ? data.phones.split(';').map((phone) => phone.trim()) : [];
-    const newPhonesNumber = newPhonesFromFile.map(item => { return Number(item); });
-    const phonesFromDB = result.phones.map(phone => { return phone.phone; });
-
-    if (newPhonesFromFile.length) {
-        const newPhones = addNewPhones(newPhonesNumber, phonesFromDB);
-        const filteredNewPhones = newPhones.filter(item => !phonesFromDB.includes(item));
-        if (filteredNewPhones.length) {
-            const completePhones = filteredNewPhones.map(phone => {
-                return {
-                    phone: phone,
-                    verify: data.verify ? true : false
-                };
-            });
-            await Contact.updateOne(
-                { _id: id },
-                { $push: { phones: { $each: completePhones } } }
-            );
-        }
+    catch (err) {
+        console.log(err);
     }
 };
 
 // funkcja dodaje nowy kontakt do bazy po wcześniejszym sprawdzeniu czy nie dubluje się NIP, a jezli kontakt nie ma NIP to czy nie dubluje się nazwa 
 const addNewDataToDataBase = async (data) => {
-    if (data.emails.length) {
-        const emails = data.emails.split(';').map((email) => email.trim());
-        data.emails = emails.map(email => {
-            return {
-                email,
-                verify: data.verify ? true : false
-            };
-        });
-    } else {
-        data.emails = [];
-    }
-    if (data.phones.length) {
-        const phones = data.phones.split(';').map((phone) => phone.trim());
-        data.phones = phones.map(phone => {
-            return {
-                phone: Number(phone),
-                verify: data.verify ? true : false
-            };
-        });
-    } else {
-        data.phones = [];
-    }
+    try {
+        if (data.emails.length) {
+            const emails = data.emails.split(';').map((email) => email.trim());
+            data.emails = emails.map(email => {
+                return {
+                    email,
+                    verify: data.verify ? true : false
+                };
+            });
+        } else {
+            data.emails = [];
+        }
+        if (data.phones.length) {
+            const phones = data.phones.split(';').map((phone) => phone.trim());
+            data.phones = phones.map(phone => {
+                return {
+                    phone: Number(phone),
+                    verify: data.verify ? true : false
+                };
+            });
+        } else {
+            data.phones = [];
+        }
 
-    delete data.verify;
-    await Contact.create(data);
+        delete data.verify;
+        await Contact.create(data);
+    } catch (err) {
+        console.log(err);
+    }
 };
 
 const addManyContactsFromExcel = async (req, res) => {
@@ -161,7 +169,6 @@ const addManyContactsFromExcel = async (req, res) => {
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
-
 };
 
 module.exports = {

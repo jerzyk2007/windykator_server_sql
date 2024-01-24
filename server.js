@@ -36,6 +36,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/contacts', require('./routes/api/contacts'));
+app.use('/getAllDocuments', require('./routes/api/documents'));
+app.use('/settings', require('./routes/api/settings'));
 
 // app.use('/login', require('./routes/login'));
 // app.use('/refresh', require('./routes/refresh'));
