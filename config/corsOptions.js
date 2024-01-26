@@ -17,3 +17,17 @@ const corsOptions = {
 };
 module.exports = corsOptions;
 
+// const { logEvents } = require('../middleware/logEvents');
+
+// const corsOptions = {
+//     origin: (origin, callback) => {
+//         logEvents(`cors-origin before: ${origin}`, 'reqLogCors.txt');
+
+//         // Allow requests from any origin
+//         callback(null, true);
+//     },
+//     credentials: true,
+//     optionsSuccessStatus: 200
+// };
+
+// module.exports = corsOptions;
