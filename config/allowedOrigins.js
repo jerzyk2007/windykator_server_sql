@@ -1,7 +1,8 @@
 const allowedOrigins =
     [
-        "http://localhost:3000",
-        "https://www.raportbl.eu/"
+        "https://raportbl.eu",
+        "https://www.raportbl.eu",
+        "http://localhost:3000"
     ];
 
 // ["https://www.memorek-online.pl",
