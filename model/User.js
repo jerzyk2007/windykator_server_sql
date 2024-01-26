@@ -20,7 +20,12 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    refreshToken: String
+    refreshToken: String,
+    tableSettings: {
+        type: Map,
+        of: Schema.Types.Mixed,
+        default: {}
+    }
 });
 
 module.exports = mongoose.model("Users", userSchema);

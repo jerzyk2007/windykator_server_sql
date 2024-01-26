@@ -67,12 +67,57 @@ const handleChangePassword = async (req, res) => {
         res.status(201).json({ 'message': 'Password is changed' });
     }
     catch (err) {
+        console.error(err);
         res.status(500).json({ 'message': err.message });
+    }
+};
+
+const handleSaveTableSettings = async (req, res) => {
+    const { tableSettings, username } = req.body;
+    if (!username) {
+        return res.status(400).json({ 'message': 'Username is required.' });
+    }
+
+    try {
+        const findUser = await User.find({ username }).exec();
+        if (findUser) {
+            const result = await User.updateOne(
+                { username: username },
+                { $set: { tableSettings } }
+            );
+        }
+        res.end();
+    }
+    catch (err) {
+        console.error(error);
+
+        res.status(500).json({ 'message': err.message });
+    }
+};
+
+const handleGetTableSettings = async (req, res) => {
+    const { username } = req.query;
+    if (!username) {
+        return res.status(400).json({ 'message': 'Username is required.' });
+    }
+    try {
+        const findUser = await User.find({ username }).exec();
+        if (findUser) {
+            res.json(findUser[0].tableSettings);
+        } else {
+            return res.status(404).json({ 'message': 'User not found.' });
+        }
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
     }
 };
 
 module.exports = {
     handleNewUser,
     handleChangeName,
-    handleChangePassword
+    handleChangePassword,
+    handleSaveTableSettings,
+    handleGetTableSettings
 };

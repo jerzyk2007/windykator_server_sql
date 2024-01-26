@@ -12,6 +12,13 @@ router
     .route("/change-pass")
     .patch(verifyRoles(ROLES_LIST.User), usersController.handleChangePassword);
 
+router
+    .route("/save-table-settings")
+    .patch(verifyRoles(ROLES_LIST.User), usersController.handleSaveTableSettings);
+
+router
+    .route("/get-table-settings")
+    .get(verifyRoles(ROLES_LIST.User), usersController.handleGetTableSettings);
 
 router
     .route("/register")

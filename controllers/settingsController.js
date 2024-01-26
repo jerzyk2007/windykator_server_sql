@@ -1,4 +1,5 @@
 const Setting = require('../model/Setting');
+const TableSetting = require('../model/TableSettings');
 
 const saveSettings = async (req, res) => {
     const { columnSettings } = req.body;
@@ -32,7 +33,21 @@ const getSettings = async (req, res) => {
     }
 };
 
+const saveTableSettings = async (req, res) => {
+    const { tableSettings } = req.body;
+    console.log(tableSettings.size);
+
+    // Konwersja obiektu do mapy
+
+    // const result = await TableSetting.findOneAndUpdate({}, { "tableSettings.size": sizeMap }, { new: true, upsert: true });
+    const result = await TableSetting.findOneAndUpdate({}, { tableSettings }, { new: true, upsert: true });
+    console.log(result);
+
+    res.end();
+};
+
 module.exports = {
     saveSettings,
-    getSettings
+    getSettings,
+    saveTableSettings
 };
