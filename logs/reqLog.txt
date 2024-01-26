@@ -11010,3 +11010,12 @@
 20240126	20:50:49	PATCH	http://localhost:3000	/user/change-pass
 20240126	20:50:49	GET	http://localhost:3000	/refresh
 20240126	20:50:49	PATCH	http://localhost:3000	/user/change-pass
+20240126	20:53:06	OPTIONS	http://localhost:3000	/user/change-pass
+20240126	20:53:06	PATCH	http://localhost:3000	/user/change-pass
+20240126	20:53:06	GET	http://localhost:3000	/refresh
+20240126	20:53:06	PATCH	http://localhost:3000	/user/change-pass
+20240126	20:53:07	GET	http://localhost:3000	/logout
+20240126	20:53:08	OPTIONS	http://localhost:3000	/login
+20240126	20:53:08	POST	http://localhost:3000	/login
+20240126	20:53:09	GET	http://localhost:3000	/refresh
+20240126	20:53:09	GET	http://localhost:3000	/refresh

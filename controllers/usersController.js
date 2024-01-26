@@ -58,22 +58,18 @@ const handleChangePassword = async (req, res) => {
         return res.status(400).json({ 'message': 'Username and new username are required.' });
     }
     try {
-        const findUser = await User.findOne({ username }).exec();
+        const findUser = await User.find({ username }).exec();
         const hashedPwd = await bcryptjs.hash(password, 10);
         if (findUser) {
-            if (findUser?.roles && findUser.roles.Root) {
-                return res.status(404).json({ 'message': 'User not found.' });
-            } else {
-                const result = await User.updateOne(
-                    { username: username },
-                    { $set: { password: hashedPwd } }
-                );
-                res.status(201).json({ 'message': 'Password is changed' });
-            }
-        }
-        else {
+            const result = await User.updateOne(
+                { username: username },
+                { $set: { password: hashedPwd } }
+            );
+        } else {
             return res.status(404).json({ 'message': 'User not found.' });
         }
+
+        res.status(201).json({ 'message': 'Password is changed' });
     }
     catch (err) {
         console.error(err);
