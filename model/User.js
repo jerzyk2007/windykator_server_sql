@@ -6,7 +6,7 @@ const userSchema = new Schema({
         type: String,
         required: true,
         unique: true,
-        maxlength: 30
+        // maxlength: 30
     },
     roles: {
         User: {
@@ -14,7 +14,8 @@ const userSchema = new Schema({
             default: 100
         },
         Editor: Number,
-        Admin: Number
+        Admin: Number,
+        Root: Number
     },
     password: {
         type: String,
@@ -25,6 +26,17 @@ const userSchema = new Schema({
         type: Map,
         of: Schema.Types.Mixed,
         default: {}
+    },
+    permissions:
+    {
+        Basic: {
+            type: Boolean,
+            default: true
+        },
+        Standard: {
+            type: Boolean,
+            default: false
+        }
     }
 });
 
