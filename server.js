@@ -50,7 +50,7 @@ app.use('/logout', require('./routes/logout'));
 app.use(verifyJWT);
 app.use('/contacts', require('./routes/api/contacts'));
 app.use('/getAllDocuments', require('./routes/api/documents'));
-// app.use('/settings', require('./routes/api/settings'));
+app.use('/settings', require('./routes/api/settings'));
 app.use('/user', require('./routes/api/users'));
 // app.use('/user', require('./routes/api/users'));
 // app.use('/search', require('./routes/api/phrases'));

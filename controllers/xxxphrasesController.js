@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Phrase = require('../model/Phrase');
+const Phrase = require('../model/xxxPhrase');
 
 const maxCollectionLength = 50;
 

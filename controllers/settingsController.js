@@ -1,31 +1,28 @@
 const Setting = require('../model/Setting');
-const TableSetting = require('../model/TableSettings');
+const User = require('../model/User');
+const ROLES_LIST = require("../config/roles_list");
 
-const saveSettings = async (req, res) => {
-    const { columnSettings } = req.body;
+const changeRoles = async (req, res) => {
+    const { _id } = req.params;
+    const { roles } = req.body;
+    const newRoles = { ...ROLES_LIST };
+    const filteredRoles = Object.fromEntries(
+        Object.entries(newRoles).filter(([key]) => roles.includes(key))
+    );
     try {
-        // Sprawdzamy, czy obiekt `column` zawiera dane
-        if (columnSettings && Object.keys(columnSettings).length > 0) {
-            // Aktualizujemy ustawienia w bazie danych
-            const result = await Setting.findOneAndUpdate({}, { columnSettings }, { new: true, upsert: true });
+        const findUser = await User.findOne({ _id }).exec();
 
-            // Zwracamy zaktualizowane ustawienia
-            res.end();
-
-            // res.json('result');
+        if (findUser) {
+            const result = await User.updateOne(
+                { _id },
+                { $set: { roles: filteredRoles } }
+            );
+            res.status(201).json({ 'message': 'Roles are saved.' });
         } else {
-            res.status(400).json({ error: 'Invalid data provided' });
+            res.status(400).json({ 'message': 'Roles are not saved.' });
         }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
-    }
-};
-
-const getSettings = async (req, res) => {
-    try {
-        const result = await Setting.findOne().exec();
-        res.json(result);
+        // console.log(roles);
+        // console.log(newRoles);
     }
     catch (error) {
         console.error(error);
@@ -33,21 +30,28 @@ const getSettings = async (req, res) => {
     }
 };
 
-const saveTableSettings = async (req, res) => {
-    const { tableSettings } = req.body;
-    console.log(tableSettings.size);
+const getSettings = async (req, res) => {
+    try {
+        const result = await Setting.find().exec();
+        const rolesJSON = JSON.stringify(result[0].roles);
+        const rolesObject = JSON.parse(rolesJSON);
+        const roles = Object.entries(rolesObject).map(([role]) => role);
+        const indexToRemove = roles.indexOf("Root");
+        if (indexToRemove !== -1) {
+            roles.splice(indexToRemove, 1);
+        }
+        const departments = [...result[0].departments];
 
-    // Konwersja obiektu do mapy
-
-    // const result = await TableSetting.findOneAndUpdate({}, { "tableSettings.size": sizeMap }, { new: true, upsert: true });
-    const result = await TableSetting.findOneAndUpdate({}, { tableSettings }, { new: true, upsert: true });
-    console.log(result);
-
-    res.end();
+        res.json([{ roles }, { departments }]);
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
 };
 
+
 module.exports = {
-    saveSettings,
-    getSettings,
-    saveTableSettings
+    changeRoles,
+    getSettings
 };

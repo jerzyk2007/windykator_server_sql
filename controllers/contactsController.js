@@ -13,22 +13,33 @@ const getAllContacts = async (req, res) => {
 const getSearchContacts = async (req, res) => {
     const { search } = req.params;
     try {
-        const allContacts = await Contact.find({});
-        // const filteredContacts = allContacts.filter(contact =>
-        //     ((contact.name).toLowerCase().includes(search.toLowerCase()))
-        //     || (contact.NIP && contact.NIP.toString().includes(search))
-        // );
-        const filteredContacts = allContacts.filter(item =>
-            // (item.name.some(substring => substring.toLowerCase().includes(search.toLowerCase())))
+        const result = await Contact.find({});
+        const filteredContacts = result.filter(item =>
             ((item.name).toLowerCase().includes(search.toLowerCase()))
             || (item.NIP && item.NIP.toString().includes(search))
 
         );
-        // console.log(filteredContacts);
-        // console.log(filteredContacts);
-        // res.json('ok');
         res.status(200).json(filteredContacts);
     } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+const getUpdateContacts = async (req, res) => {
+    const { _id } = req.params;
+    const { contactItem } = req.body;
+    try {
+        const findUser = await Contact.findOne({ _id }).exec();
+        if (findUser) {
+            const result = await Contact.findOneAndUpdate({ _id }, contactItem, { new: true, upsert: true });
+            console.log(result);
+            res.status(201).json({ 'message': 'Contact is updated' });
+        } else {
+            res.status(400).json({ 'message': 'Contact is not updated.' });
+        }
+    }
+    catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -37,4 +48,5 @@ const getSearchContacts = async (req, res) => {
 module.exports = {
     getAllContacts,
     getSearchContacts,
+    getUpdateContacts
 };

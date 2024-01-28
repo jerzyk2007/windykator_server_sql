@@ -8,8 +8,4 @@ const tableSettingsSchema = new Schema({
     }
 });
 
-// const tableSettingsSchema = new Schema({
-//     tableSettings: [Schema.Types.Mixed]
-// });
-
 module.exports = mongoose.model("TableSettings", tableSettingsSchema);

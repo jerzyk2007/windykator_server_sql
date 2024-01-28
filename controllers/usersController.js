@@ -1,7 +1,7 @@
 const User = require('../model/User');
 const bcryptjs = require('bcryptjs');
 
-const handleNewUser = async (req, res) => {
+const createNewUser = async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).json({ 'message': 'Username and password are required.' });
@@ -51,14 +51,15 @@ const handleChangeName = async (req, res) => {
     }
 
 };
-const handleChangePassword = async (req, res) => {
+const changePassword = async (req, res) => {
     const { username, password } = req.body;
-
+    const refreshToken = req.cookies.jwt;
     if (!username || !password) {
         return res.status(400).json({ 'message': 'Username and new username are required.' });
     }
     try {
-        const findUser = await User.find({ username }).exec();
+        // const findUser = await User.find({ username }).exec();
+        const findUser = await User.find({ refreshToken, username }).exec();
         const hashedPwd = await bcryptjs.hash(password, 10);
         if (findUser) {
             const result = await User.updateOne(
@@ -77,7 +78,7 @@ const handleChangePassword = async (req, res) => {
     }
 };
 
-const handleChangePasswordAnotherUser = async (req, res) => {
+const changePasswordAnotherUser = async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).json({ 'message': 'Username and new username are required.' });
@@ -106,12 +107,12 @@ const handleChangePasswordAnotherUser = async (req, res) => {
     }
 };
 
-const handleChangePermissions = async (req, res) => {
+const changeUserPermissions = async (req, res) => {
     const { username, permissions } = req.body;
     const transformedData = {
         permissions: {
-            Basic: permissions.basic || false,
-            Standard: permissions.standard || false
+            Basic: permissions.Basic || false,
+            Standard: permissions.Standard || false
         }
     };
     try {
@@ -138,21 +139,48 @@ const handleChangePermissions = async (req, res) => {
     }
 };
 
-const handleSaveTableSettings = async (req, res) => {
+const deleteUser = async (req, res) => {
+    const { _id } = req.params;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Id is required.' });
+    }
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            if (findUser?.roles && findUser.roles.Root) {
+                return res.status(404).json({ 'message': 'User not found.' });
+            } else {
+                const result = await User.deleteOne(
+                    { _id },
+                );
+                res.status(201).json({ 'message': 'User is deleted.' });
+            }
+        } else {
+            return res.status(404).json({ 'message': 'User not found.' });
+        }
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ 'message': err.message });
+    }
+};
+
+const saveTableSettings = async (req, res) => {
     const { tableSettings, username } = req.body;
     if (!username) {
         return res.status(400).json({ 'message': 'Username is required.' });
     }
-
     try {
-        const findUser = await User.find({ username }).exec();
+        const findUser = await User.findOne({ username }).exec();
         if (findUser) {
             const result = await User.updateOne(
                 { username: username },
                 { $set: { tableSettings } }
             );
+            res.status(201).json({ 'message': 'Table settings are changed' });
+        } else {
+            res.status(400).json({ 'message': 'Table settings are not changed' });
         }
-        res.end();
     }
     catch (err) {
         console.error(error);
@@ -161,15 +189,15 @@ const handleSaveTableSettings = async (req, res) => {
     }
 };
 
-const handleGetTableSettings = async (req, res) => {
+const getTableSettings = async (req, res) => {
     const { username } = req.query;
     if (!username) {
         return res.status(400).json({ 'message': 'Username is required.' });
     }
     try {
-        const findUser = await User.find({ username }).exec();
+        const findUser = await User.findOne({ username }).exec();
         if (findUser) {
-            res.json(findUser[0].tableSettings);
+            res.json(findUser.tableSettings);
         } else {
             return res.status(404).json({ 'message': 'User not found.' });
         }
@@ -180,21 +208,25 @@ const handleGetTableSettings = async (req, res) => {
     }
 };
 
-const handleGetUserName = async (req, res) => {
+const getUsersData = async (req, res) => {
     const { search } = req.query;
     try {
         const findUsers = await User.find({ username: { $regex: search, $options: 'i' } }).exec();
         if (findUsers.length > 0) {
-            const keysToRemove = ['password', '_id', 'refreshToken'];
+            const keysToRemove = ['password', 'refreshToken'];
 
             // sprawdzenie ilu użytkowników pasuje do search, jesli użytkownik ma uprawnienia Root to nie jest dodany
             const filteredUsers = findUsers
                 .map(user => {
                     const filteredUser = { ...user._doc };
                     keysToRemove.forEach(key => delete filteredUser[key]);
+                    if (filteredUser.roles) {
+                        filteredUser.roles = Object.keys(filteredUser.roles).map(role => role);
+                    }
                     return filteredUser;
                 })
-                .filter(user => !user.roles || (user.roles && user.roles.Root !== 500));
+                // .filter(user => !user.roles || (user.roles && user.roles.Root !== 500));
+                .filter(user => !user.roles.includes('Root'));
 
             res.json(filteredUsers);
         } else {
@@ -209,12 +241,13 @@ const handleGetUserName = async (req, res) => {
 };
 
 module.exports = {
-    handleNewUser,
+    createNewUser,
     handleChangeName,
-    handleChangePassword,
-    handleSaveTableSettings,
-    handleGetTableSettings,
-    handleGetUserName,
-    handleChangePermissions,
-    handleChangePasswordAnotherUser
+    changePassword,
+    saveTableSettings,
+    getTableSettings,
+    getUsersData,
+    changeUserPermissions,
+    changePasswordAnotherUser,
+    deleteUser
 };

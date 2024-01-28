@@ -5,8 +5,17 @@ const userSchema = new Schema({
     username: {
         type: String,
         required: true,
-        unique: true,
         // maxlength: 30
+    },
+    usersurname: {
+        type: String,
+        required: true,
+        // maxlength: 30
+    },
+    userlogin: {
+        type: String,
+        required: true,
+        unique: true,
     },
     roles: {
         User: {

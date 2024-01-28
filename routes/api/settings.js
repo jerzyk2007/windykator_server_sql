@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const Settings = require('../../controllers/settingsController');
+const settings = require('../../controllers/settingsController');
+const ROLES_LIST = require("../../config/roles_list");
+const verifyRoles = require("../../middleware/verifyRoles");
 
-router.route('/saveSettings')
-    .post(Settings.saveSettings);
+router.route('/change-roles/:_id')
+    .patch(verifyRoles(ROLES_LIST.Admin), settings.changeRoles);
 
-router.route('/getSettings')
-    .get(Settings.getSettings);
-
-router.route('/table')
-    .post(Settings.saveTableSettings);
+router.route('/get-settings')
+    .get(verifyRoles(ROLES_LIST.Admin), settings.getSettings);
 
 module.exports = router;
