@@ -2,13 +2,14 @@ const User = require('../model/User');
 const bcryptjs = require('bcryptjs');
 
 const createNewUser = async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ 'message': 'Username and password are required.' });
+    const { userlogin, password, username, usersurname } = req.body;
+
+    if (!userlogin || !password || !username || !usersurname) {
+        return res.status(400).json({ 'message': 'Userlogin and password are required.' });
     }
-    // check for duplicate usernames in db
-    const duplicate = await User.findOne({ username }).exec();
-    if (duplicate) return res.status(409).json({ message: `User ${username} is existing in databse` }); // conflict - Unauthorized
+    // check for duplicate userlogin in db
+    const duplicate = await User.findOne({ userlogin }).exec();
+    if (duplicate) return res.status(409).json({ message: `User ${userlogin} is existing in databse` }); // conflict - Unauthorized
     // if (duplicate) return res.sendStatus(409); // conflict - Unauthorized
 
     try {
@@ -17,33 +18,35 @@ const createNewUser = async (req, res) => {
         // create and store the new user
         const result = await User.create({
             "username": username,
+            "usersurname": usersurname,
+            "userlogin": userlogin,
             "password": hashedPwd
         });
-        res.status(201).json(`Nowy użytkownik ${username} dodany.`);
+        res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
     }
     catch (err) {
         res.status(500).json({ 'message': err.message });
     }
 };
 
-const handleChangeName = async (req, res) => {
-    const { username, newUsername } = req.body;
-    if (!username || !newUsername) {
-        return res.status(400).json({ 'message': 'Username and new username are required.' });
+const handleChangeLogin = async (req, res) => {
+    const { userlogin, newUserlogin } = req.body;
+    if (!userlogin || !newUserlogin) {
+        return res.status(400).json({ 'message': 'Userlogin and new userlogin are required.' });
     }
-    const duplicate = await User.findOne({ username: newUsername }).exec();
-    if (duplicate) return res.status(409).json({ message: newUsername }); // conflict - Unauthorized
+    const duplicate = await User.findOne({ userlogin: newUserlogin }).exec();
+    if (duplicate) return res.status(409).json({ message: newUserlogin }); // conflict - Unauthorized
 
     try {
-        const findUser = await User.findOne({ username }).exec();
+        const findUser = await User.findOne({ userlogin }).exec();
         if (findUser?.roles && findUser.roles.Root) {
             return res.status(404).json({ 'message': 'User not found.' });
         } else {
             const result = await User.updateOne(
-                { username },
-                { $set: { username: newUsername } }
+                { userlogin },
+                { $set: { userlogin: newUserlogin } }
             );
-            res.status(201).json({ message: newUsername });
+            res.status(201).json({ message: newUserlogin });
         }
     }
     catch (err) {
@@ -51,19 +54,43 @@ const handleChangeName = async (req, res) => {
     }
 
 };
+
+const handleChangeName = async (req, res) => {
+    const { userlogin, name, surname } = req.body;
+    if (!userlogin || !name || !surname) {
+        return res.status(400).json({ 'message': 'Userlogin, name and surname are required.' });
+    }
+    try {
+        const findUser = await User.findOne({ userlogin }).exec();
+        if (findUser?.roles && findUser.roles.Root) {
+            return res.status(404).json({ 'message': 'User not found.' });
+        } else {
+            const result = await User.updateOne(
+                { userlogin },
+                { $set: { username: name, usersurname: surname } }
+            );
+            res.status(201).json({ message: 'The name and surname have been changed.' });
+        }
+    }
+    catch (err) {
+        res.status(500).json({ 'message': err.message });
+    }
+};
+
+
 const changePassword = async (req, res) => {
-    const { username, password } = req.body;
+    const { userlogin, password } = req.body;
     const refreshToken = req.cookies.jwt;
-    if (!username || !password) {
-        return res.status(400).json({ 'message': 'Username and new username are required.' });
+    if (!userlogin || !password) {
+        return res.status(400).json({ 'message': 'Userlogin and new userlogin are required.' });
     }
     try {
         // const findUser = await User.find({ username }).exec();
-        const findUser = await User.find({ refreshToken, username }).exec();
+        const findUser = await User.find({ refreshToken, userlogin }).exec();
         const hashedPwd = await bcryptjs.hash(password, 10);
         if (findUser) {
             const result = await User.updateOne(
-                { username: username },
+                { userlogin },
                 { $set: { password: hashedPwd } }
             );
         } else {
@@ -79,19 +106,19 @@ const changePassword = async (req, res) => {
 };
 
 const changePasswordAnotherUser = async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ 'message': 'Username and new username are required.' });
+    const { userlogin, password } = req.body;
+    if (!userlogin || !password) {
+        return res.status(400).json({ 'message': 'Userlogin and new userlogin are required.' });
     }
     try {
-        const findUser = await User.findOne({ username }).exec();
+        const findUser = await User.findOne({ userlogin }).exec();
         const hashedPwd = await bcryptjs.hash(password, 10);
         if (findUser) {
             if (findUser?.roles && findUser.roles.Root) {
                 return res.status(404).json({ 'message': 'User not found.' });
             } else {
                 const result = await User.updateOne(
-                    { username: username },
+                    { userlogin },
                     { $set: { password: hashedPwd } }
                 );
                 res.status(201).json({ 'message': 'Password is changed' });
@@ -108,7 +135,7 @@ const changePasswordAnotherUser = async (req, res) => {
 };
 
 const changeUserPermissions = async (req, res) => {
-    const { username, permissions } = req.body;
+    const { userlogin, permissions } = req.body;
     const transformedData = {
         permissions: {
             Basic: permissions.Basic || false,
@@ -116,13 +143,13 @@ const changeUserPermissions = async (req, res) => {
         }
     };
     try {
-        const findUser = await User.findOne({ username }).exec();
+        const findUser = await User.findOne({ userlogin }).exec();
         if (findUser) {
             if (findUser?.roles && findUser.roles.Root) {
                 return res.status(404).json({ 'message': 'User not found.' });
             } else {
                 const result = await User.updateOne(
-                    { username: username },
+                    { userlogin },
                     { $set: { permissions: transformedData.permissions } }
                 );
             }
@@ -166,15 +193,15 @@ const deleteUser = async (req, res) => {
 };
 
 const saveTableSettings = async (req, res) => {
-    const { tableSettings, username } = req.body;
-    if (!username) {
-        return res.status(400).json({ 'message': 'Username is required.' });
+    const { tableSettings, userlogin } = req.body;
+    if (!userlogin) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
     }
     try {
-        const findUser = await User.findOne({ username }).exec();
+        const findUser = await User.findOne({ userlogin }).exec();
         if (findUser) {
             const result = await User.updateOne(
-                { username: username },
+                { userlogin },
                 { $set: { tableSettings } }
             );
             res.status(201).json({ 'message': 'Table settings are changed' });
@@ -190,12 +217,12 @@ const saveTableSettings = async (req, res) => {
 };
 
 const getTableSettings = async (req, res) => {
-    const { username } = req.query;
-    if (!username) {
-        return res.status(400).json({ 'message': 'Username is required.' });
+    const { userlogin } = req.query;
+    if (!userlogin) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
     }
     try {
-        const findUser = await User.findOne({ username }).exec();
+        const findUser = await User.findOne({ userlogin }).exec();
         if (findUser) {
             res.json(findUser.tableSettings);
         } else {
@@ -211,7 +238,7 @@ const getTableSettings = async (req, res) => {
 const getUsersData = async (req, res) => {
     const { search } = req.query;
     try {
-        const findUsers = await User.find({ username: { $regex: search, $options: 'i' } }).exec();
+        const findUsers = await User.find({ userlogin: { $regex: search, $options: 'i' } }).exec();
         if (findUsers.length > 0) {
             const keysToRemove = ['password', 'refreshToken'];
 
@@ -242,12 +269,13 @@ const getUsersData = async (req, res) => {
 
 module.exports = {
     createNewUser,
-    handleChangeName,
+    handleChangeLogin,
     changePassword,
     saveTableSettings,
     getTableSettings,
     getUsersData,
     changeUserPermissions,
     changePasswordAnotherUser,
-    deleteUser
+    deleteUser,
+    handleChangeName
 };

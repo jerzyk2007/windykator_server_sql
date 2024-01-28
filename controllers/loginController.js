@@ -3,21 +3,21 @@ const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const handleLogin = async (req, res) => {
-    const { username, password } = req.body;
+    const { userlogin, password } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ 'message': 'Username and password are required' });
+    if (!userlogin || !password) {
+        return res.status(400).json({ 'message': 'Userlogin and password are required' });
     }
-    const foundUser = await Users.findOne({ username }).exec();
-    if (!foundUser) {
+    const findUser = await Users.findOne({ userlogin }).exec();
+    if (!findUser) {
         return res.sendStatus(401);
     }
-    const match = await bcryptjs.compare(password, foundUser.password);
+    const match = await bcryptjs.compare(password, findUser.password);
     if (match) {
-        const roles = Object.values(foundUser.roles).filter(Boolean);
+        const roles = Object.values(findUser.roles).filter(Boolean);
         const accessToken = jwt.sign({
             "UserInfo": {
-                "username": foundUser.username,
+                "userlogin": findUser.userlogin,
                 "roles": roles
             }
         },
@@ -25,17 +25,22 @@ const handleLogin = async (req, res) => {
             { expiresIn: '10s' });
 
         const refreshToken = jwt.sign({
-            "username": foundUser.username
+            "userlogin": findUser.userlogin
         },
             process.env.REFRESH_TOKEN_SECRET,
             { expiresIn: '1d' });
 
-        foundUser.refreshToken = refreshToken;
-        const result = await foundUser.save();
+        findUser.refreshToken = refreshToken;
+        // const result = await findUser.save();
 
         res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
         // res.json({ roles, accessToken });
-        res.json({ roles });
+        res.json({
+            userlogin: findUser.userlogin,
+            username: findUser.username,
+            usersurname: findUser.usersurname,
+            roles,
+        });
     } else {
         res.sendStatus(401);
     }

@@ -13,6 +13,10 @@ router
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.changePasswordAnotherUser);
 
 router
+    .route("/change-login")
+    .patch(verifyRoles(ROLES_LIST.Admin), usersController.handleChangeLogin);
+
+router
     .route("/change-name")
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.handleChangeName);
 

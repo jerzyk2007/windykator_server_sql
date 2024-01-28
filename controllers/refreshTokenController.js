@@ -18,20 +18,22 @@ const handleRefreshToken = async (req, res) => {
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET,
         (err, decoded) => {
-            if (err || foundUser.username !== decoded.username) return res.sendStatus(403);
+            if (err || foundUser.userlogin !== decoded.userlogin) return res.sendStatus(403);
             const roles = Object.values(foundUser.roles);
             const accessToken = jwt.sign(
                 {
                     "UserInfo":
                     {
+                        "userlogin": decoded.userlogin,
                         "username": decoded.username,
+                        "usersurname": decoded.usersurname,
                         "roles": roles
                     }
                 },
                 process.env.ACCESS_TOKEN_SECRET,
                 { expiresIn: '10s' }
             );
-            res.json({ accessToken, roles, username: foundUser.username });
+            res.json({ accessToken, roles, userlogin: decoded.userlogin, username: foundUser.username, usersurname: decoded.usersurname, });
         }
     );
 };
