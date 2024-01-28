@@ -30,7 +30,6 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    refreshToken: String,
     tableSettings: {
         type: Map,
         of: Schema.Types.Mixed,
@@ -46,7 +45,13 @@ const userSchema = new Schema({
             type: Boolean,
             default: false
         }
-    }
+    },
+    refreshToken: String,
+    departments: {
+        type: Map,
+        of: Schema.Types.Mixed,
+        default: {}
+    },
 });
 
 module.exports = mongoose.model("Users", userSchema);

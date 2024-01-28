@@ -31,10 +31,9 @@ const handleLogin = async (req, res) => {
             { expiresIn: '1d' });
 
         findUser.refreshToken = refreshToken;
-        // const result = await findUser.save();
-
+        const result = await findUser.save();
         res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
-        // res.json({ roles, accessToken });
+
         res.json({
             userlogin: findUser.userlogin,
             username: findUser.username,

@@ -25,6 +25,10 @@ router
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeUserPermissions);
 
 router
+    .route("/change-departments")
+    .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeUserDepartments);
+
+router
     .route("/register")
     .post(verifyRoles(ROLES_LIST.Admin), usersController.createNewUser);
 

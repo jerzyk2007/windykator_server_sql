@@ -152,13 +152,37 @@ const changeUserPermissions = async (req, res) => {
                     { userlogin },
                     { $set: { permissions: transformedData.permissions } }
                 );
+                res.status(201).json({ 'message': 'Permissions are changed' });
             }
         }
         else {
             return res.status(404).json({ 'message': 'User not found.' });
         }
-        res.status(201).json({ 'message': 'Permissions are changed' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ 'message': err.message });
+    }
+};
 
+const changeUserDepartments = async (req, res) => {
+    const { userlogin, departments } = req.body;
+    try {
+        const findUser = await User.findOne({ userlogin }).exec();
+        if (findUser) {
+            if (findUser?.roles && findUser.roles.Root) {
+                return res.status(404).json({ 'message': 'User not found.' });
+            } else {
+                const result = await User.updateOne(
+                    { userlogin },
+                    { $set: { departments } }
+                );
+                res.status(201).json({ 'message': 'Departments are changed' });
+            }
+        }
+        else {
+            return res.status(404).json({ 'message': 'User not found.' });
+        }
     }
     catch (err) {
         console.error(err);
@@ -277,5 +301,6 @@ module.exports = {
     changeUserPermissions,
     changePasswordAnotherUser,
     deleteUser,
-    handleChangeName
+    handleChangeName,
+    changeUserDepartments
 };
