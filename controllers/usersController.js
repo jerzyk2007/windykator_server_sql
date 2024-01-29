@@ -224,6 +224,7 @@ const saveTableSettings = async (req, res) => {
     if (!userlogin) {
         return res.status(400).json({ 'message': 'Userlogin is required.' });
     }
+
     try {
         const findUser = await User.findOne({ userlogin }).exec();
         if (findUser) {
