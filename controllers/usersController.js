@@ -17,14 +17,17 @@ const createNewUser = async (req, res) => {
         const hashedPwd = await bcryptjs.hash(password, 10);
         // create and store the new user
         const result = await User.create({
-            "username": username,
-            "usersurname": usersurname,
-            "userlogin": userlogin,
-            "password": hashedPwd
+            username,
+            usersurname,
+            userlogin,
+            password: hashedPwd
         });
+        console.log(result);
+
         res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
     }
     catch (err) {
+        console.log(err);
         res.status(500).json({ 'message': err.message });
     }
 };
