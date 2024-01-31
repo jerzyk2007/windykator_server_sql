@@ -1,4 +1,6 @@
-const Document = require('../model/Documents');
+const Document = require('../model/Document');
+const { read, utils } = require('xlsx');
+
 
 const getAllDocuments = async (req, res) => {
     const { info } = req.params;
@@ -19,4 +21,71 @@ const getAllDocuments = async (req, res) => {
     }
 };
 
-module.exports = { getAllDocuments };
+const isExcelFile = (data) => {
+    const excelSignature = [0x50, 0x4B, 0x03, 0x04];
+    for (let i = 0; i < excelSignature.length; i++) {
+        if (data[i] !== excelSignature[i]) {
+            return false;
+        }
+    }
+    return true;
+};
+
+
+const documentsFromFile = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Nie dostarczono pliku' });
+        }
+        const buffer = req.file.buffer;
+        const data = new Uint8Array(buffer);
+
+        if (!isExcelFile(data)) {
+            return res.status(500).json({ error: "Nieprawidłowy plik" });
+        }
+        const workbook = read(buffer, { type: 'buffer' });
+        const workSheetName = workbook.SheetNames[0];
+        const workSheet = workbook.Sheets[workSheetName];
+        const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
+
+        // Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
+        const excelDateToISODate = (excelDate) => {
+            const date = new Date((excelDate - (25567 + 1)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
+            return date.toISOString().split('T')[0]; // Pobranie daty w formacie "yyyy-mm-dd"
+        };
+
+        const mappedRows = rows.map(row => {
+            return {
+                ...row,
+                'DATAFV': row['DATAFV'] ? excelDateToISODate(row['DATAFV']).toString() : null,
+                'TERMIN': row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
+                'DATAKOMENTARZABECARED': row['DATAKOMENTARZABECARED'] ? excelDateToISODate(row['DATAKOMENTARZABECARED']).toString() : null,
+            };
+        });
+
+
+        await Promise.all(mappedRows.map(async (row) => {
+            try {
+                const result = await Document.findOneAndUpdate(
+                    { NUMER: row.NUMER },
+                    row,
+                    { new: true, upsert: true }
+                );
+            } catch (error) {
+                console.err(err);
+            }
+        }));
+
+        res.status(201).json({ 'message': 'Documents are saved' });
+
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+module.exports = {
+    getAllDocuments,
+    documentsFromFile
+};

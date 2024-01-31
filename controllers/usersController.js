@@ -1,5 +1,6 @@
 const User = require('../model/User');
 const bcryptjs = require('bcryptjs');
+const ROLES_LIST = require("../config/roles_list");
 
 const createNewUser = async (req, res) => {
     const { userlogin, password, username, usersurname } = req.body;
@@ -295,6 +296,32 @@ const getUsersData = async (req, res) => {
     }
 };
 
+const changeRoles = async (req, res) => {
+    const { _id } = req.params;
+    const { roles } = req.body;
+    const newRoles = { ...ROLES_LIST };
+    const filteredRoles = Object.fromEntries(
+        Object.entries(newRoles).filter(([key]) => roles.includes(key))
+    );
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+
+        if (findUser) {
+            const result = await User.updateOne(
+                { _id },
+                { $set: { roles: filteredRoles } }
+            );
+            res.status(201).json({ 'message': 'Roles are saved.' });
+        } else {
+            res.status(400).json({ 'message': 'Roles are not saved.' });
+        }
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 module.exports = {
     createNewUser,
     handleChangeLogin,
@@ -306,5 +333,6 @@ module.exports = {
     changePasswordAnotherUser,
     deleteUser,
     handleChangeName,
-    changeUserDepartments
+    changeUserDepartments,
+    changeRoles
 };

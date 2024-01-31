@@ -33,7 +33,6 @@ const getUpdateContacts = async (req, res) => {
         const findUser = await Contact.findOne({ _id }).exec();
         if (findUser) {
             const result = await Contact.findOneAndUpdate({ _id }, contactItem, { new: true, upsert: true });
-            console.log(result);
             res.status(201).json({ 'message': 'Contact is updated' });
         } else {
             res.status(400).json({ 'message': 'Contact is not updated.' });

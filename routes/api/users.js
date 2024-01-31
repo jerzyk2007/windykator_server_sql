@@ -21,6 +21,10 @@ router
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.handleChangeName);
 
 router
+    .route("/change-roles/:_id")
+    .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeRoles);
+
+router
     .route("/change-permissions")
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeUserPermissions);
 
