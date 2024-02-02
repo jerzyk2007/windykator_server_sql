@@ -8,7 +8,7 @@ const verifyRoles = require("../../middleware/verifyRoles");
 const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
 const upload = multer({ storage: storage });
 
-router.route('/get-all/:info')
+router.route('/get-all/:_id/:info')
     .get(verifyRoles(ROLES_LIST.User), Documents.getAllDocuments);
 
 router.route('/get-columns')

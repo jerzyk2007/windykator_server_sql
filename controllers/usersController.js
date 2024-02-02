@@ -2,6 +2,8 @@ const User = require('../model/User');
 const bcryptjs = require('bcryptjs');
 const ROLES_LIST = require("../config/roles_list");
 
+
+// rejestracja nowego użytkownika
 const createNewUser = async (req, res) => {
     const { userlogin, password, username, usersurname } = req.body;
 
@@ -11,12 +13,9 @@ const createNewUser = async (req, res) => {
     // check for duplicate userlogin in db
     const duplicate = await User.findOne({ userlogin }).exec();
     if (duplicate) return res.status(409).json({ message: `User ${userlogin} is existing in databse` }); // conflict - Unauthorized
-    // if (duplicate) return res.sendStatus(409); // conflict - Unauthorized
-
     try {
         // encrypt the password
         const hashedPwd = await bcryptjs.hash(password, 10);
-        // create and store the new user
         const result = await User.create({
             username,
             usersurname,
@@ -32,7 +31,7 @@ const createNewUser = async (req, res) => {
     }
 };
 
-// ok
+// zmiana loginu użytkownika
 const handleChangeLogin = async (req, res) => {
     const { _id } = req.params;
     const { newUserlogin } = req.body;
@@ -58,10 +57,9 @@ const handleChangeLogin = async (req, res) => {
     catch (err) {
         res.status(500).json({ 'message': err.message });
     }
-
 };
 
-// ok
+// zmiana imienia i nazwiska użytkownika
 const handleChangeName = async (req, res) => {
     const { _id } = req.params;
     const { name, surname } = req.body;
@@ -86,7 +84,7 @@ const handleChangeName = async (req, res) => {
     }
 };
 
-//ok
+// zmiana hasła użytkownika
 const changePassword = async (req, res) => {
     const { _id } = req.params;
     const { password } = req.body;
@@ -95,7 +93,6 @@ const changePassword = async (req, res) => {
         return res.status(400).json({ 'message': 'Userlogin and new userlogin are required.' });
     }
     try {
-        // const findUser = await User.find({ username }).exec();
         const findUser = await User.find({ refreshToken, _id }).exec();
         const hashedPwd = await bcryptjs.hash(password, 10);
         if (findUser) {
@@ -115,7 +112,7 @@ const changePassword = async (req, res) => {
     }
 };
 
-//ok 
+// zmiana hasła innemu użytkownikowi
 const changePasswordAnotherUser = async (req, res) => {
     const { _id } = req.params;
     const { password } = req.body;
@@ -147,15 +144,10 @@ const changePasswordAnotherUser = async (req, res) => {
     }
 };
 
+// zmiana uprawnień użytkownika Doradca/Asystentka
 const changeUserPermissions = async (req, res) => {
     const { _id } = req.params;
     const { permissions } = req.body;
-    // const transformedData = {
-    //     permissions: {
-    //         Basic: permissions.Basic || false,
-    //         Standard: permissions.Standard || false
-    //     }
-    // };
     try {
         const findUser = await User.findOne({ _id }).exec();
         if (findUser) {
@@ -181,7 +173,7 @@ const changeUserPermissions = async (req, res) => {
     }
 };
 
-//ok
+// zmiana dostępu do działów
 const changeUserDepartments = async (req, res) => {
     const { _id } = req.params;
     const { departments } = req.body;
@@ -210,7 +202,7 @@ const changeUserDepartments = async (req, res) => {
     }
 };
 
-// ok
+// usunięcie uzytkownika
 const deleteUser = async (req, res) => {
     const { _id } = req.params;
     if (!_id) {
@@ -237,18 +229,21 @@ const deleteUser = async (req, res) => {
     }
 };
 
+// zapisanie ustawień tabeli dla użytkownika
 const saveTableSettings = async (req, res) => {
-    const { tableSettings, userlogin } = req.body;
-    if (!userlogin) {
+    const { _id } = req.params;
+    const { tableSettings } = req.body;
+    if (!_id) {
         return res.status(400).json({ 'message': 'Userlogin is required.' });
     }
 
     try {
-        const findUser = await User.findOne({ userlogin }).exec();
+        const findUser = await User.findOne({ _id }).exec();
         if (findUser) {
             const result = await User.updateOne(
-                { userlogin },
-                { $set: { tableSettings } }
+                { _id },
+                { $set: { tableSettings } },
+                { upsert: true }
             );
             res.status(201).json({ 'message': 'Table settings are changed' });
         } else {
@@ -262,13 +257,14 @@ const saveTableSettings = async (req, res) => {
     }
 };
 
+// pobieranie ustawień tabeli
 const getTableSettings = async (req, res) => {
-    const { userlogin } = req.query;
-    if (!userlogin) {
+    const { _id } = req.params;
+    if (!_id) {
         return res.status(400).json({ 'message': 'Userlogin is required.' });
     }
     try {
-        const findUser = await User.findOne({ userlogin }).exec();
+        const findUser = await User.findOne({ _id }).exec();
         if (findUser) {
             res.json(findUser.tableSettings);
         } else {
@@ -281,6 +277,27 @@ const getTableSettings = async (req, res) => {
     }
 };
 
+// pobieranie column które może widziec użytkownik
+const getUserColumns = async (req, res) => {
+    const { _id } = req.params;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
+    }
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            res.json(findUser.columns);
+        } else {
+            return res.status(404).json({ 'message': 'User not found.' });
+        }
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// wyszukanie uzytkownika żeby zmienić jego ustawienia
 const getUsersData = async (req, res) => {
     const { search } = req.query;
     try {
@@ -298,13 +315,11 @@ const getUsersData = async (req, res) => {
                     }
                     return filteredUser;
                 })
-                // .filter(user => !user.roles || (user.roles && user.roles.Root !== 500));
                 .filter(user => !user.roles.includes('Root'));
 
             res.json(filteredUsers);
         } else {
             res.json([]);
-
         }
     }
     catch (err) {
@@ -313,7 +328,7 @@ const getUsersData = async (req, res) => {
     }
 };
 
-//ok
+// zmiana roli użytkownika User, Editor, Admin
 const changeRoles = async (req, res) => {
     const { _id } = req.params;
     const { roles } = req.body;
@@ -340,7 +355,6 @@ const changeRoles = async (req, res) => {
     }
 };
 
-
 const changeColumns = async (req, res) => {
     const { _id } = req.params;
     const { columns } = req.body;
@@ -362,15 +376,16 @@ const changeColumns = async (req, res) => {
 module.exports = {
     createNewUser,
     handleChangeLogin,
+    handleChangeName,
     changePassword,
+    changePasswordAnotherUser,
+    changeUserPermissions,
+    changeUserDepartments,
+    deleteUser,
     saveTableSettings,
     getTableSettings,
+    getUserColumns,
     getUsersData,
-    changeUserPermissions,
-    changePasswordAnotherUser,
-    deleteUser,
-    handleChangeName,
-    changeUserDepartments,
     changeRoles,
-    changeColumns
+    changeColumns,
 };

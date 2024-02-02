@@ -1,11 +1,19 @@
 const Document = require('../model/Document');
+const User = require('../model/User');
 const { read, utils } = require('xlsx');
 
-
+// pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getAllDocuments = async (req, res) => {
-    const { info } = req.params;
+    const { info, _id } = req.params;
     let filteredData = [];
     try {
+        const findUser = await User.find({ _id });
+        const { roles, permissions, username, usersurname, departments } = findUser[0];
+        const truePermissions = Object.keys(permissions).filter(permission => permissions[permission]);
+        const trueDepartments = Array.from(departments.entries())
+            .filter(([department, value]) => value)
+            .map(([department]) => department);
+        const ZATWIERDZIL = `${usersurname} ${username}`;
         const result = await Document.find({});
         if (info === "actual") {
             filteredData = result.filter(item => item.DOROZLICZ_ !== 0);
@@ -14,7 +22,24 @@ const getAllDocuments = async (req, res) => {
         } else if (info === "all") {
             filteredData = result;
         }
-        res.json(filteredData);
+
+        filteredData.forEach(item => {
+            const date = new Date();
+            const lastDate = new Date(item.TERMIN);
+            const timeDifference = date - lastDate;
+            const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+            item.ILEDNIPOTERMINIE = daysDifference;
+        });
+
+        if (truePermissions[0] === "Basic") {
+            const basicFiltered = filteredData.filter(item => item.ZATWIERDZIL === ZATWIERDZIL);
+            return res.json(basicFiltered);
+        } else {
+            const standardFiltered = filteredData.filter(item => trueDepartments.includes(item.DZIAL));
+            console.log(standardFiltered.length);
+            return res.json(standardFiltered);
+        }
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Server error' });
@@ -57,6 +82,7 @@ const documentsFromFile = async (req, res) => {
         const mappedRows = rows.map(row => {
             return {
                 ...row,
+                // KWOTAWINDYKOWANA: row.KWOTAWINDYKOWANA ? row.KWOTAWINDYKOWANA : 0,
                 'DATAFV': row['DATAFV'] ? excelDateToISODate(row['DATAFV']).toString() : null,
                 'TERMIN': row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
                 'DATAKOMENTARZABECARED': row['DATAKOMENTARZABECARED'] ? excelDateToISODate(row['DATAKOMENTARZABECARED']).toString() : null,
@@ -75,6 +101,7 @@ const documentsFromFile = async (req, res) => {
                 console.err(err);
             }
         }));
+
 
         res.status(201).json({ 'message': 'Documents are saved' });
 

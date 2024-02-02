@@ -49,13 +49,16 @@ router
     .get(verifyRoles(ROLES_LIST.Admin), usersController.getUsersData);
 
 router
-    .route("/save-table-settings")
+    .route("/save-table-settings/:_id")
     .patch(verifyRoles(ROLES_LIST.User), usersController.saveTableSettings);
 
 router
-    .route("/get-table-settings")
+    .route("/get-table-settings/:_id")
     .get(verifyRoles(ROLES_LIST.User), usersController.getTableSettings);
 
+router
+    .route("/get-columns/:_id")
+    .get(verifyRoles(ROLES_LIST.User), usersController.getUserColumns);
 
 // router
 //     .route("/register")

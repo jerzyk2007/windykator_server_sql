@@ -45,7 +45,8 @@ const documentsSchema = new Schema({
         type: String
     },
     KWOTAWINDYKOWANA: {
-        type: Number
+        type: Number,
+        default: 0
     },
     NETTO: {
         type: Number
