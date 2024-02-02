@@ -35,13 +35,13 @@ const isExcelFile = (data) => {
 const documentsFromFile = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: 'Nie dostarczono pliku' });
+            return res.status(400).json({ error: 'Not delivered file' });
         }
         const buffer = req.file.buffer;
         const data = new Uint8Array(buffer);
 
         if (!isExcelFile(data)) {
-            return res.status(500).json({ error: "Nieprawidłowy plik" });
+            return res.status(500).json({ error: "Invalid file" });
         }
         const workbook = read(buffer, { type: 'buffer' });
         const workSheetName = workbook.SheetNames[0];
@@ -85,7 +85,29 @@ const documentsFromFile = async (req, res) => {
     }
 };
 
+const getColumns = async (req, res) => {
+    try {
+        const firstDocument = await Document.findOne();
+        if (firstDocument) {
+            // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
+            const keysArray = Object.keys(firstDocument.toObject());
+            keysArray.shift();
+            keysArray.pop();
+            res.json(keysArray);
+        }
+        else {
+            return res.status(400).json({ error: 'Empty collection.' });
+        }
+    }
+
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 module.exports = {
     getAllDocuments,
-    documentsFromFile
+    documentsFromFile,
+    getColumns
 };

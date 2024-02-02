@@ -11,6 +11,9 @@ const upload = multer({ storage: storage });
 router.route('/get-all/:info')
     .get(verifyRoles(ROLES_LIST.User), Documents.getAllDocuments);
 
+router.route('/get-columns')
+    .get(verifyRoles(ROLES_LIST.Admin), Documents.getColumns);
+
 router.route('/send-documents')
     .post(verifyRoles(ROLES_LIST.Admin), upload.single('excelFile'), Documents.documentsFromFile);
 module.exports = router;

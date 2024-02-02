@@ -52,6 +52,10 @@ const userSchema = new Schema({
         of: Schema.Types.Mixed,
         default: {}
     },
+    columns: {
+        type: Schema.Types.Mixed,
+        default: []
+    },
 });
 
 module.exports = mongoose.model("Users", userSchema);

@@ -11,8 +11,9 @@ const getSettings = async (req, res) => {
             roles.splice(indexToRemove, 1);
         }
         const departments = [...result[0].departments];
+        const columns = [...result[0].columns];
 
-        res.json([{ roles }, { departments }]);
+        res.json([{ roles }, { departments }, { columns }]);
     }
     catch (error) {
         console.error(error);

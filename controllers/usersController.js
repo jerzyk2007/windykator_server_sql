@@ -23,7 +23,6 @@ const createNewUser = async (req, res) => {
             userlogin,
             password: hashedPwd
         });
-        console.log(result);
 
         res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
     }
@@ -33,22 +32,25 @@ const createNewUser = async (req, res) => {
     }
 };
 
+// ok
 const handleChangeLogin = async (req, res) => {
-    const { userlogin, newUserlogin } = req.body;
-    if (!userlogin || !newUserlogin) {
+    const { _id } = req.params;
+    const { newUserlogin } = req.body;
+    if (!newUserlogin) {
         return res.status(400).json({ 'message': 'Userlogin and new userlogin are required.' });
     }
     const duplicate = await User.findOne({ userlogin: newUserlogin }).exec();
     if (duplicate) return res.status(409).json({ message: newUserlogin }); // conflict - Unauthorized
 
     try {
-        const findUser = await User.findOne({ userlogin }).exec();
+        const findUser = await User.findOne({ _id }).exec();
         if (findUser?.roles && findUser.roles.Root) {
             return res.status(404).json({ 'message': 'User not found.' });
         } else {
             const result = await User.updateOne(
-                { userlogin },
-                { $set: { userlogin: newUserlogin } }
+                { _id },
+                { $set: { userlogin: newUserlogin } },
+                { upsert: true }
             );
             res.status(201).json({ message: newUserlogin });
         }
@@ -59,19 +61,22 @@ const handleChangeLogin = async (req, res) => {
 
 };
 
+// ok
 const handleChangeName = async (req, res) => {
-    const { userlogin, name, surname } = req.body;
-    if (!userlogin || !name || !surname) {
+    const { _id } = req.params;
+    const { name, surname } = req.body;
+    if (!name || !surname) {
         return res.status(400).json({ 'message': 'Userlogin, name and surname are required.' });
     }
     try {
-        const findUser = await User.findOne({ userlogin }).exec();
+        const findUser = await User.findOne({ _id }).exec();
         if (findUser?.roles && findUser.roles.Root) {
             return res.status(404).json({ 'message': 'User not found.' });
         } else {
             const result = await User.updateOne(
-                { userlogin },
-                { $set: { username: name, usersurname: surname } }
+                { _id },
+                { $set: { username: name, usersurname: surname } },
+                { upsert: true }
             );
             res.status(201).json({ message: 'The name and surname have been changed.' });
         }
@@ -81,20 +86,21 @@ const handleChangeName = async (req, res) => {
     }
 };
 
-
+//ok
 const changePassword = async (req, res) => {
-    const { userlogin, password } = req.body;
+    const { _id } = req.params;
+    const { password } = req.body;
     const refreshToken = req.cookies.jwt;
-    if (!userlogin || !password) {
+    if (!password) {
         return res.status(400).json({ 'message': 'Userlogin and new userlogin are required.' });
     }
     try {
         // const findUser = await User.find({ username }).exec();
-        const findUser = await User.find({ refreshToken, userlogin }).exec();
+        const findUser = await User.find({ refreshToken, _id }).exec();
         const hashedPwd = await bcryptjs.hash(password, 10);
         if (findUser) {
             const result = await User.updateOne(
-                { userlogin },
+                { _id },
                 { $set: { password: hashedPwd } }
             );
         } else {
@@ -109,21 +115,24 @@ const changePassword = async (req, res) => {
     }
 };
 
+//ok 
 const changePasswordAnotherUser = async (req, res) => {
-    const { userlogin, password } = req.body;
-    if (!userlogin || !password) {
+    const { _id } = req.params;
+    const { password } = req.body;
+    if (!password) {
         return res.status(400).json({ 'message': 'Userlogin and new userlogin are required.' });
     }
     try {
-        const findUser = await User.findOne({ userlogin }).exec();
+        const findUser = await User.findOne({ _id }).exec();
         const hashedPwd = await bcryptjs.hash(password, 10);
         if (findUser) {
             if (findUser?.roles && findUser.roles.Root) {
                 return res.status(404).json({ 'message': 'User not found.' });
             } else {
                 const result = await User.updateOne(
-                    { userlogin },
-                    { $set: { password: hashedPwd } }
+                    { _id },
+                    { $set: { password: hashedPwd } },
+                    { upsert: true }
                 );
                 res.status(201).json({ 'message': 'Password is changed' });
             }
@@ -139,22 +148,25 @@ const changePasswordAnotherUser = async (req, res) => {
 };
 
 const changeUserPermissions = async (req, res) => {
-    const { userlogin, permissions } = req.body;
-    const transformedData = {
-        permissions: {
-            Basic: permissions.Basic || false,
-            Standard: permissions.Standard || false
-        }
-    };
+    const { _id } = req.params;
+    const { permissions } = req.body;
+    // const transformedData = {
+    //     permissions: {
+    //         Basic: permissions.Basic || false,
+    //         Standard: permissions.Standard || false
+    //     }
+    // };
     try {
-        const findUser = await User.findOne({ userlogin }).exec();
+        const findUser = await User.findOne({ _id }).exec();
         if (findUser) {
             if (findUser?.roles && findUser.roles.Root) {
                 return res.status(404).json({ 'message': 'User not found.' });
             } else {
                 const result = await User.updateOne(
-                    { userlogin },
-                    { $set: { permissions: transformedData.permissions } }
+                    { _id },
+                    { $set: { permissions } },
+                    { upsert: true }
+
                 );
                 res.status(201).json({ 'message': 'Permissions are changed' });
             }
@@ -169,17 +181,21 @@ const changeUserPermissions = async (req, res) => {
     }
 };
 
+//ok
 const changeUserDepartments = async (req, res) => {
-    const { userlogin, departments } = req.body;
+    const { _id } = req.params;
+    const { departments } = req.body;
+
     try {
-        const findUser = await User.findOne({ userlogin }).exec();
+        const findUser = await User.findOne({ _id }).exec();
         if (findUser) {
             if (findUser?.roles && findUser.roles.Root) {
                 return res.status(404).json({ 'message': 'User not found.' });
             } else {
                 const result = await User.updateOne(
-                    { userlogin },
-                    { $set: { departments } }
+                    { _id },
+                    { $set: { departments } },
+                    { upsert: true }
                 );
                 res.status(201).json({ 'message': 'Departments are changed' });
             }
@@ -194,6 +210,7 @@ const changeUserDepartments = async (req, res) => {
     }
 };
 
+// ok
 const deleteUser = async (req, res) => {
     const { _id } = req.params;
     if (!_id) {
@@ -296,6 +313,7 @@ const getUsersData = async (req, res) => {
     }
 };
 
+//ok
 const changeRoles = async (req, res) => {
     const { _id } = req.params;
     const { roles } = req.body;
@@ -322,6 +340,25 @@ const changeRoles = async (req, res) => {
     }
 };
 
+
+const changeColumns = async (req, res) => {
+    const { _id } = req.params;
+    const { columns } = req.body;
+    try {
+        const result = await User.updateOne(
+            { _id },
+            { $set: { columns } },
+            { upsert: true }
+        );
+
+        res.status(201).json({ 'message': 'Columns are saved.' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 module.exports = {
     createNewUser,
     handleChangeLogin,
@@ -334,5 +371,6 @@ module.exports = {
     deleteUser,
     handleChangeName,
     changeUserDepartments,
-    changeRoles
+    changeRoles,
+    changeColumns
 };

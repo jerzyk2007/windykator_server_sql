@@ -40,6 +40,7 @@ const handleRefreshToken = async (req, res) => {
                 userlogin: decoded.userlogin,
                 username: foundUser.username,
                 usersurname: foundUser.usersurname,
+                _id: foundUser._id
             });
         }
     );

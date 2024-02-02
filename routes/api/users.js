@@ -5,19 +5,19 @@ const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
 router
-    .route("/change-pass")
+    .route("/change-pass/:_id")
     .patch(verifyRoles(ROLES_LIST.User), usersController.changePassword);
 
 router
-    .route("/another-user-change-pass")
+    .route("/another-user-change-pass/:_id")
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.changePasswordAnotherUser);
 
 router
-    .route("/change-login")
+    .route("/change-login/:_id")
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.handleChangeLogin);
 
 router
-    .route("/change-name")
+    .route("/change-name/:_id")
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.handleChangeName);
 
 router
@@ -25,11 +25,15 @@ router
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeRoles);
 
 router
-    .route("/change-permissions")
+    .route("/change-columns/:_id")
+    .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeColumns);
+
+router
+    .route("/change-permissions/:_id")
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeUserPermissions);
 
 router
-    .route("/change-departments")
+    .route("/change-departments/:_id")
     .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeUserDepartments);
 
 router

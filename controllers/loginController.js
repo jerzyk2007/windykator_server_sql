@@ -37,6 +37,7 @@ const handleLogin = async (req, res) => {
             userlogin: findUser.userlogin,
             username: findUser.username,
             usersurname: findUser.usersurname,
+            _id: findUser._id,
             roles,
         });
     } else {
