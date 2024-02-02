@@ -36,7 +36,6 @@ const getAllDocuments = async (req, res) => {
             return res.json(basicFiltered);
         } else {
             const standardFiltered = filteredData.filter(item => trueDepartments.includes(item.DZIAL));
-            console.log(standardFiltered.length);
             return res.json(standardFiltered);
         }
 
