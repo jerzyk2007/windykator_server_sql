@@ -15,6 +15,10 @@ const settingsSchema = new Schema({
         type: Schema.Types.Mixed,
         default: {}
     },
+    permissions: {
+        type: [String], // Zmiana typu na tablicę stringów
+        default: []
+    },
 });
 
 module.exports = mongoose.model("Settings", settingsSchema); 

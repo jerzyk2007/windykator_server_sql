@@ -33,7 +33,8 @@ const documentsSchema = new Schema({
         type: String
     },
     ILEDNIPOTERMINIE: {
-        type: Number
+        type: Number,
+        default: 0
     },
     JAKAKANCELARIA: {
         type: String
@@ -63,8 +64,9 @@ const documentsSchema = new Schema({
     NUMERSPRAWY: {
         type: String
     },
-    PRZETERMINOWANENIEPRZETERMINOWANE: {
-        type: String
+    CZYPRZETERM: {
+        type: String,
+        default: ''
     },
     STATUSSPRAWYKANCELARIA: {
         type: String

@@ -1,5 +1,58 @@
 const Setting = require('../model/Setting');
+const User = require('../model/User');
 
+
+// funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny 
+const changeColumns = async (req, res) => {
+    const { columns } = req.body;
+
+    try {
+        const result = await Setting.findOneAndUpdate({}, { $set: { columns } }, { new: true, upsert: true });
+        const allUsers = await User.find({});
+
+        for (const user of allUsers) {
+
+            for (const columnToUpdate of columns) {
+                const existingColumnIndex = user.columns.findIndex(existingColumn => existingColumn.accessorKey === columnToUpdate.accessorKey);
+
+                if (existingColumnIndex !== -1) {
+                    user.columns[existingColumnIndex] = columnToUpdate;
+                }
+
+            }
+            const result = await user.updateOne(
+                { $set: { columns: user.columns } },
+                { upsert: true }
+            );
+
+        }
+        res.end();
+
+    }
+
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// const changeColumns = async (req, res) => {
+//     const { columns } = req.body;
+//     try {
+//         // console.log(columns);
+//         const getUserColumns = User.find({});
+//         console.log(getUserColumns);
+//         // const result = await Setting.findOneAndUpdate({}, { $set: { columns } }, { new: true, upsert: true });
+//         res.end();
+//     }
+//     catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// };
+
+
+// pobieranie głównych ustawień
 const getSettings = async (req, res) => {
     try {
         const result = await Setting.find().exec();
@@ -12,21 +65,9 @@ const getSettings = async (req, res) => {
         }
         const departments = [...result[0].departments];
         const columns = [...result[0].columns];
+        const permissions = [...result[0].permissions];
 
-        res.json([{ roles }, { departments }, { columns }]);
-    }
-    catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
-    }
-};
-
-const changeColumns = async (req, res) => {
-    const { columns } = req.body;
-    try {
-        const result = await Setting.findOneAndUpdate({}, { $set: { columns } }, { new: true, upsert: true });
-        // res.json(result);
-        res.end();
+        res.json([{ roles }, { departments }, { columns }, { permissions }]);
     }
     catch (error) {
         console.error(error);

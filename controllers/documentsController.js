@@ -29,6 +29,12 @@ const getAllDocuments = async (req, res) => {
             const timeDifference = date - lastDate;
             const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
             item.ILEDNIPOTERMINIE = daysDifference;
+            if (daysDifference > 0) {
+                item.CZYPRZETERM = "P";
+            } else {
+                item.CZYPRZETERM = "N";
+
+            }
         });
 
         if (truePermissions[0] === "Basic") {
