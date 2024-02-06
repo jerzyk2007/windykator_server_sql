@@ -16,13 +16,12 @@ const getAllDocuments = async (req, res) => {
         const ZATWIERDZIL = `${usersurname} ${username}`;
         const result = await Document.find({});
         if (info === "actual") {
-            filteredData = result.filter(item => item.DOROZLICZ_ !== 0);
+            filteredData = result.filter(item => item.DOROZLICZ !== 0);
         } else if (info === "archive") {
-            filteredData = result.filter(item => item.DOROZLICZ_ === 0);
+            filteredData = result.filter(item => item.DOROZLICZ === 0);
         } else if (info === "all") {
             filteredData = result;
         }
-
         filteredData.forEach(item => {
             const date = new Date();
             const lastDate = new Date(item.TERMIN);
