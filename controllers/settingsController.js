@@ -53,6 +53,30 @@ const changeColumns = async (req, res) => {
 
 
 // pobieranie głównych ustawień
+// const getSettings = async (req, res) => {
+//     try {
+//         const result = await Setting.find().exec();
+//         const rolesJSON = JSON.stringify(result[0].roles);
+//         const rolesObject = JSON.parse(rolesJSON);
+//         const roles = Object.entries(rolesObject).map(([role]) => role);
+//         const indexToRemove = roles.indexOf("Root");
+//         if (indexToRemove !== -1) {
+//             roles.splice(indexToRemove, 1);
+//         }
+//         const departments = [...result[0].departments];
+//         const columns = [...result[0].columns];
+//         const permissions = [...result[0].permissions];
+
+//         console.log(departments);
+
+//         res.json([{ roles }, { departments }, { columns }, { permissions }]);
+//     }
+//     catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// };
+
 const getSettings = async (req, res) => {
     try {
         const result = await Setting.find().exec();
@@ -66,6 +90,8 @@ const getSettings = async (req, res) => {
         const departments = [...result[0].departments];
         const columns = [...result[0].columns];
         const permissions = [...result[0].permissions];
+
+        console.log(departments);
 
         res.json([{ roles }, { departments }, { columns }, { permissions }]);
     }

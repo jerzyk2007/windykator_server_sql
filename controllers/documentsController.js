@@ -9,11 +9,14 @@ const getAllDocuments = async (req, res) => {
     try {
         const findUser = await User.find({ _id });
         const { roles, permissions, username, usersurname, departments } = findUser[0];
+
         const truePermissions = Object.keys(permissions).filter(permission => permissions[permission]);
         const trueDepartments = Array.from(departments.entries())
             .filter(([department, value]) => value)
             .map(([department]) => department);
+
         const ZATWIERDZIL = `${usersurname} ${username}`;
+
         const result = await Document.find({});
         if (info === "actual") {
             filteredData = result.filter(item => item.DOROZLICZ !== 0);
@@ -22,6 +25,7 @@ const getAllDocuments = async (req, res) => {
         } else if (info === "all") {
             filteredData = result;
         }
+
         filteredData.forEach(item => {
             const date = new Date();
             const lastDate = new Date(item.TERMIN);
@@ -35,6 +39,8 @@ const getAllDocuments = async (req, res) => {
 
             }
         });
+
+
 
         if (truePermissions[0] === "Basic") {
             const basicFiltered = filteredData.filter(item => item.ZATWIERDZIL === ZATWIERDZIL);
@@ -86,10 +92,11 @@ const documentsFromFile = async (req, res) => {
         const mappedRows = rows.map(row => {
             return {
                 ...row,
-                // KWOTAWINDYKOWANA: row.KWOTAWINDYKOWANA ? row.KWOTAWINDYKOWANA : 0,
+                'DZIAL': row.DZIAL === "D8" ? row.DZIAL = "D08" : row.DZIAL,
                 'DATAFV': row['DATAFV'] ? excelDateToISODate(row['DATAFV']).toString() : null,
                 'TERMIN': row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
                 'DATAKOMENTARZABECARED': row['DATAKOMENTARZABECARED'] ? excelDateToISODate(row['DATAKOMENTARZABECARED']).toString() : null,
+
             };
         });
 
@@ -107,8 +114,8 @@ const documentsFromFile = async (req, res) => {
             }
         }));
 
-
-        res.status(201).json({ 'message': 'Documents are saved' });
+        res.json(mappedRows);
+        // res.status(201).json({ 'message': 'Documents are saved' });
 
     }
     catch (error) {
