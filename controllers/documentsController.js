@@ -114,8 +114,7 @@ const documentsFromFile = async (req, res) => {
             }
         }));
 
-        res.json(mappedRows);
-        // res.status(201).json({ 'message': 'Documents are saved' });
+        res.status(201).json({ 'message': 'Documents are saved' });
 
     }
     catch (error) {
