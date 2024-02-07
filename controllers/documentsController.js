@@ -95,14 +95,15 @@ const documentsFromFile = async (req, res) => {
 
 
         await Promise.all(mappedRows.map(async (row) => {
+
             try {
                 const result = await Document.findOneAndUpdate(
                     { NUMER: row.NUMER },
                     row,
                     { new: true, upsert: true }
                 );
-            } catch (error) {
-                console.err(err);
+            } catch (err) {
+                console.error(err);
             }
         }));
 

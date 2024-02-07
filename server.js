@@ -52,6 +52,7 @@ app.use('/contacts', require('./routes/api/contacts'));
 app.use('/documents', require('./routes/api/documents'));
 app.use('/settings', require('./routes/api/settings'));
 app.use('/user', require('./routes/api/users'));
+app.use('/raport', require('./routes/api/raports'));
 // app.use('/user', require('./routes/api/users'));
 // app.use('/search', require('./routes/api/phrases'));
 // app.use('/add-data', require('./routes/api/phrases'));
