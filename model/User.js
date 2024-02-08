@@ -36,9 +36,16 @@ const userSchema = new Schema({
         default: {}
     },
     raportSettings: {
-        type: Map,
-        of: Schema.Types.Mixed,
-        default: {}
+        raportDepartments: {
+            type: Map,
+            of: Schema.Types.Mixed,
+            default: {}
+        },
+        raportAdvisers: {
+            type: Map,
+            of: Schema.Types.Mixed,
+            default: {}
+        }
     },
     permissions:
     {

@@ -376,10 +376,10 @@ const changeColumns = async (req, res) => {
 };
 
 
-// zapisanie ustawień raportu-tabeli dla użytkownika
-const saveRaportSettings = async (req, res) => {
+// zapisanie ustawień raportu-działów-tabeli dla użytkownika
+const saveRaporDepartmentSettings = async (req, res) => {
     const { _id } = req.params;
-    const { raportSettings } = req.body;
+    const { raportDepartments } = req.body;
     if (!_id) {
         return res.status(400).json({ 'message': 'Userlogin is required.' });
     }
@@ -389,7 +389,7 @@ const saveRaportSettings = async (req, res) => {
         if (findUser) {
             const result = await User.updateOne(
                 { _id },
-                { $set: { raportSettings } },
+                { $set: { 'raportSettings.raportDepartments': raportDepartments } },
                 { upsert: true }
             );
             res.status(201).json({ 'message': 'Table settings are changed' });
@@ -398,14 +398,14 @@ const saveRaportSettings = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(error);
+        console.log(err);
 
         res.status(500).json({ 'message': err.message });
     }
 };
 
-// pobieranie ustawień raportutabeli
-const getRaportSettings = async (req, res) => {
+// pobieranie ustawień raportu tabeli-działów
+const getRaportDepartmentSettings = async (req, res) => {
     const { _id } = req.params;
     if (!_id) {
         return res.status(400).json({ 'message': 'Userlogin is required.' });
@@ -413,7 +413,55 @@ const getRaportSettings = async (req, res) => {
     try {
         const findUser = await User.findOne({ _id }).exec();
         if (findUser) {
-            res.json(findUser.raportSettings);
+            res.json(findUser.raportSettings.raportDepartments);
+        } else {
+            return res.status(404).json({ 'message': 'User not found.' });
+        }
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// zapisanie ustawień raportu-doradców-tabeli dla użytkownika
+const saveRaporAdviserSettings = async (req, res) => {
+    const { _id } = req.params;
+    const { raportAdvisers } = req.body;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
+    }
+
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            const result = await User.updateOne(
+                { _id },
+                { $set: { 'raportSettings.raportAdvisers': raportAdvisers } },
+                { upsert: true }
+            );
+            res.status(201).json({ 'message': 'Table settings are changed' });
+        } else {
+            res.status(400).json({ 'message': 'Table settings are not changed' });
+        }
+    }
+    catch (err) {
+        console.log(err);
+
+        res.status(500).json({ 'message': err.message });
+    }
+};
+
+// pobieranie ustawień raportu tabeli-działów
+const getRaportAdviserSettings = async (req, res) => {
+    const { _id } = req.params;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
+    }
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            res.json(findUser.raportSettings.raportAdvisers);
         } else {
             return res.status(404).json({ 'message': 'User not found.' });
         }
@@ -439,6 +487,8 @@ module.exports = {
     getUsersData,
     changeRoles,
     changeColumns,
-    saveRaportSettings,
-    getRaportSettings
+    saveRaporDepartmentSettings,
+    getRaportDepartmentSettings,
+    saveRaporAdviserSettings,
+    getRaportAdviserSettings
 };
