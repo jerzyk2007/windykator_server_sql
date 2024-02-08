@@ -60,6 +60,13 @@ router
     .route("/get-columns/:_id")
     .get(verifyRoles(ROLES_LIST.User), usersController.getUserColumns);
 
+router
+    .route("/save-raport-settings/:_id")
+    .patch(verifyRoles(ROLES_LIST.User), usersController.saveRaportSettings);
+
+router
+    .route("/get-raport-settings/:_id")
+    .get(verifyRoles(ROLES_LIST.User), usersController.getRaportSettings);
 // router
 //     .route("/register")
 //     .post(usersController.handleNewUser);
