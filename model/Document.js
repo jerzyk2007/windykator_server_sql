@@ -80,9 +80,10 @@ const documentsSchema = new Schema({
     DZIAL: {
         type: String
     },
-    UWAGI: {
-        type: String
-    },
+    UWAGI: [{
+        type: String,
+        default: []
+    }],
     ZATWIERDZIL: {
         type: String
     }

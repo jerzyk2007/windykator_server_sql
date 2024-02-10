@@ -144,8 +144,29 @@ const getColumns = async (req, res) => {
     }
 };
 
+const changeSingleDocument = async (req, res) => {
+    const { _id, documentItem } = req.body;
+    try {
+        const fieldToUpdate = Object.keys(documentItem)[0]; // Pobierz nazwę pola do aktualizacji
+        const updatedFieldValue = documentItem[fieldToUpdate];
+
+        const result = await Document.updateOne(
+            { _id },
+            documentItem
+        );
+        console.log(result);
+        res.end();
+    }
+
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 module.exports = {
     getAllDocuments,
     documentsFromFile,
-    getColumns
+    getColumns,
+    changeSingleDocument
 };
