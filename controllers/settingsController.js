@@ -81,7 +81,7 @@ const getSettings = async (req, res) => {
         const permissions = [...result[0].permissions];
 
         const mappedDepartments = await getFilteredDepartments();
-        const uniqueDepartmentsValues = Array.from(new Set(mappedDepartments.map(filtr => filtr['DZIAL'])));
+        const uniqueDepartmentsValues = Array.from(new Set(mappedDepartments.map(filtr => filtr['DZIAL']))).filter(Boolean);
 
         res.json([{ roles }, { departments: uniqueDepartmentsValues }, { columns }, { permissions }]);
     }
