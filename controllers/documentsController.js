@@ -19,9 +19,9 @@ const getAllDocuments = async (req, res) => {
 
         const result = await Document.find({});
         if (info === "actual") {
-            filteredData = result.filter(item => item.DOROZLICZ !== 0);
+            filteredData = result.filter(item => item.DO_ROZLICZENIA !== 0);
         } else if (info === "archive") {
-            filteredData = result.filter(item => item.DOROZLICZ === 0);
+            filteredData = result.filter(item => item.DO_ROZLICZENIA === 0);
         } else if (info === "all") {
             filteredData = result;
         }
@@ -31,19 +31,17 @@ const getAllDocuments = async (req, res) => {
             const lastDate = new Date(item.TERMIN);
             const timeDifference = date - lastDate;
             const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-            item.ILEDNIPOTERMINIE = daysDifference;
+            item.ILE_DNI_PO_TERMINIE = daysDifference;
             if (daysDifference > 0) {
-                item.CZYPRZETERM = "P";
+                item.CZY_PRZETERMINOWANE = "P";
             } else {
-                item.CZYPRZETERM = "N";
+                item.CZY_PRZETERMINOWANE = "N";
 
             }
         });
 
-
-
         if (truePermissions[0] === "Basic") {
-            const basicFiltered = filteredData.filter(item => item.ZATWIERDZIL === ZATWIERDZIL);
+            const basicFiltered = filteredData.filter(item => item.DORADCA === DORADCA);
             return res.json(basicFiltered);
         } else {
             const standardFiltered = filteredData.filter(item => trueDepartments.includes(item.DZIAL));
@@ -56,6 +54,7 @@ const getAllDocuments = async (req, res) => {
     }
 };
 
+// weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
 const isExcelFile = (data) => {
     const excelSignature = [0x50, 0x4B, 0x03, 0x04];
     for (let i = 0; i < excelSignature.length; i++) {
@@ -66,7 +65,7 @@ const isExcelFile = (data) => {
     return true;
 };
 
-
+// dodawnie danych do DB z pliku excel
 const documentsFromFile = async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Not delivered file' });
@@ -94,19 +93,18 @@ const documentsFromFile = async (req, res) => {
             return {
                 ...row,
                 'DZIAL': row.DZIAL === "D8" ? row.DZIAL = "D08" : row.DZIAL,
-                'DATAFV': row['DATAFV'] ? excelDateToISODate(row['DATAFV']).toString() : null,
+                'DATA_FV': row['DATA_FV'] ? excelDateToISODate(row['DATA_FV']).toString() : null,
                 'TERMIN': row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
-                'DATAKOMENTARZABECARED': row['DATAKOMENTARZABECARED'] ? excelDateToISODate(row['DATAKOMENTARZABECARED']).toString() : null,
+                'DATA_KOMENTARZA_BECARED': row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : null,
 
             };
         });
-
 
         await Promise.all(mappedRows.map(async (row) => {
 
             try {
                 const result = await Document.findOneAndUpdate(
-                    { NUMER: row.NUMER },
+                    { NUMER_FV: row.NUMER_FV },
                     row,
                     { new: true, upsert: true }
                 );
@@ -155,7 +153,6 @@ const changeSingleDocument = async (req, res) => {
             { _id },
             documentItem
         );
-        console.log(result);
         res.end();
     }
 
