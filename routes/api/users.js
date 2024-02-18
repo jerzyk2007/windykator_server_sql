@@ -60,12 +60,20 @@ router
     .route("/get-columns/:_id")
     .get(verifyRoles(ROLES_LIST.User), usersController.getUserColumns);
 
-// router
-//     .route("/register")
-//     .post(usersController.handleNewUser);
+router
+    .route("/save-raport-departments-settings/:_id")
+    .patch(verifyRoles(ROLES_LIST.User), usersController.saveRaporDepartmentSettings);
 
-// router
-// .route("/register")
-// .post(verifyRoles(ROLES_LIST.Admin), usersController.handleNewUser);
+router
+    .route("/get-raport-departments-settings/:_id")
+    .get(verifyRoles(ROLES_LIST.User), usersController.getRaportDepartmentSettings);
+
+router
+    .route("/save-raport-advisers-settings/:_id")
+    .patch(verifyRoles(ROLES_LIST.User), usersController.saveRaporAdviserSettings);
+
+router
+    .route("/get-raport-advisers-settings/:_id")
+    .get(verifyRoles(ROLES_LIST.User), usersController.getRaportAdviserSettings);
 
 module.exports = router;

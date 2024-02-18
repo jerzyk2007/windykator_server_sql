@@ -8,9 +8,9 @@ const handleRefreshToken = async (req, res) => {
     }
     const refreshToken = cookies.jwt;
 
-    const foundUser = await User.findOne({ refreshToken }).exec();
+    const findUser = await User.findOne({ refreshToken }).exec();
 
-    if (!foundUser) {
+    if (!findUser) {
         return res.sendStatus(403); // forbidden
     }
 
@@ -19,8 +19,8 @@ const handleRefreshToken = async (req, res) => {
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET,
         (err, decoded) => {
-            if (err || foundUser.userlogin !== decoded.userlogin) return res.sendStatus(403);
-            const roles = Object.values(foundUser.roles).filter(Boolean);
+            if (err || findUser.userlogin !== decoded.userlogin) return res.sendStatus(403);
+            const roles = Object.values(findUser.roles).filter(Boolean);
             const accessToken = jwt.sign(
                 {
                     "UserInfo":
@@ -38,9 +38,10 @@ const handleRefreshToken = async (req, res) => {
                 accessToken,
                 roles,
                 userlogin: decoded.userlogin,
-                username: foundUser.username,
-                usersurname: foundUser.usersurname,
-                _id: foundUser._id
+                username: findUser.username,
+                usersurname: findUser.usersurname,
+                permissions: findUser.permissions,
+                _id: findUser._id
             });
         }
     );

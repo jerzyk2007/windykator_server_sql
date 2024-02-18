@@ -9,6 +9,7 @@ const handleLogin = async (req, res) => {
         return res.status(400).json({ 'message': 'Userlogin and password are required' });
     }
     const findUser = await Users.findOne({ userlogin }).exec();
+
     if (!findUser) {
         return res.sendStatus(401);
     }
@@ -39,6 +40,7 @@ const handleLogin = async (req, res) => {
             usersurname: findUser.usersurname,
             _id: findUser._id,
             roles,
+            permissions: findUser.permissions
         });
     } else {
         res.sendStatus(401);

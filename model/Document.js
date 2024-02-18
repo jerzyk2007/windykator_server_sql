@@ -3,89 +3,168 @@ const { Schema } = mongoose;
 
 const documentsSchema = new Schema({
 
-    "50VAT": {
+    NUMER_FV: {
+        type: String
+        // stara nazwa NUMER .
+    },
+
+    DATA_FV: {
+        type: String
+        // stara nazwa DATAFV
+    },
+
+    TERMIN: {
+        type: String
+    },
+
+    DZIAL: {
+        type: String
+    },
+
+    CZY_PRZETERMINOWANE: {
+        type: String,
+        // stara nazwa CZYPRZETERM
+    },
+
+    ILE_DNI_PO_TERMINIE: {
+        type: Number,
+        default: 0
+        // stara nazwa ILEDNIPOTERMINIE
+    },
+
+    BRUTTO: {
         type: Number,
     },
-    "100VAT": {
+
+    NETTO: {
+        type: Number
+    },
+
+    DO_ROZLICZENIA: {
+        type: Number
+        // stara nazwa DOROZLICZ
+    },
+
+    "100_VAT": {
         type: Number,
+        // stara nazwa 100VAT
+    },
+
+    "50_VAT": {
+        type: Number,
+        // stara nazwa 50VAT
+    },
+
+    KONTRAHENT: {
+        type: String
     },
 
     ASYSTENTKA: {
         type: String,
     },
-    BRUTTO: {
-        type: Number,
-        // unique: true,
-    },
-    DATAFV: {
+
+    DORADCA: {
         type: String
+        // stara nazwa ZATWIERDZIL
     },
-    DATAKOMENTARZABECARED: {
+
+    NR_REJESTRACYJNY: {
         type: String
+        // stara nazwa NRREJESTRACYJNY
     },
-    DOROZLICZ: {
-        type: Number
-    },
-    DZIAL: {
+
+    NR_SZKODY: {
         type: String
+        // stara nazwa NRSZKODY
     },
-    DZIALANIA: {
-        type: String
-    },
-    ILEDNIPOTERMINIE: {
-        type: Number,
-        default: 0
-    },
-    JAKAKANCELARIA: {
-        type: String
-    },
-    KOMENTARZKANCELARIA: {
-        type: String
-    },
-    KONTRAHENT: {
-        type: String
-    },
-    KWOTAWINDYKOWANA: {
-        type: Number,
-        default: 0
-    },
-    NETTO: {
-        type: Number
-    },
-    NRREJESTRACYJNY: {
-        type: String
-    },
-    NRSZKODY: {
-        type: String
-    },
-    NUMER: {
-        type: String
-    },
-    NUMERSPRAWY: {
-        type: String
-    },
-    CZYPRZETERM: {
+
+    UWAGI_Z_FAKTURY: [{
         type: String,
-        default: ''
-    },
-    STATUSSPRAWYKANCELARIA: {
+        default: []
+    }],
+
+    UWAGI_ASYSTENT: [{
+        type: String,
+        default: []
+        // stara nazwa UWAGIASYSTENT
+    }],
+
+    STATUS_SPRAWY_WINDYKACJA: {
         type: String
+        // stara nazwa STATUSSPRAWYWINDYKACJA
     },
-    STATUSSPRAWYWINDYKACJA: {
-        type: String
+
+    DZIALANIA: {
+        type: String,
     },
-    TERMIN: {
+
+    JAKA_KANCELARIA: {
         type: String
+        // stara nazwa JAKAKANCELARIA
     },
-    DZIAL: {
-        type: String
+
+    BLAD_DORADCY: {
+        type: Boolean,
     },
-    UWAGI: {
-        type: String
+
+    BLAD_W_DOKUMENTACJI: {
+        type: Boolean,
+        // stara nazwa BLADWDOKUMENTACJ
     },
-    ZATWIERDZIL: {
+
+    POBRANO_VAT: {
+        type: String,
+        // stara nazwa POBRANOVAT
+    },
+
+    STATUS_SPRAWY_KANCELARIA: {
         type: String
-    }
+        // stara nazwa STATUSSPRAWYKANCELARIA
+    },
+
+    KOMENTARZ_KANCELARIA_BECARED: {
+        type: String
+        // stara nazwa KOMENTARZKANCELARIA
+    },
+
+    DATA_KOMENTARZA_BECARED: {
+        type: String
+        // stara nazwa DATAKOMENTARZABECARED
+    },
+
+    NUMER_SPRAWY_BECARED: {
+        type: String
+        // stara nazwa NUMERSPRAWY
+    },
+
+    KWOTA_WINDYKOWANA_BECARED: {
+        type: Number,
+        default: 0
+        // stara nazwa KWOTAWINDYKOWANA
+    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 });
 
 module.exports = mongoose.model("Documents", documentsSchema);

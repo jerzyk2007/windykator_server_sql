@@ -56,6 +56,7 @@ const handleChangeLogin = async (req, res) => {
     }
     catch (err) {
         res.status(500).json({ 'message': err.message });
+        console.log(err);
     }
 };
 
@@ -81,6 +82,7 @@ const handleChangeName = async (req, res) => {
     }
     catch (err) {
         res.status(500).json({ 'message': err.message });
+        console.log(err);
     }
 };
 
@@ -107,7 +109,7 @@ const changePassword = async (req, res) => {
         res.status(201).json({ 'message': 'Password is changed' });
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ 'message': err.message });
     }
 };
@@ -139,7 +141,7 @@ const changePasswordAnotherUser = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ 'message': err.message });
     }
 };
@@ -168,7 +170,7 @@ const changeUserPermissions = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ 'message': err.message });
     }
 };
@@ -197,7 +199,7 @@ const changeUserDepartments = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ 'message': err.message });
     }
 };
@@ -224,7 +226,7 @@ const deleteUser = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ 'message': err.message });
     }
 };
@@ -251,7 +253,7 @@ const saveTableSettings = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(error);
+        console.log(error);
 
         res.status(500).json({ 'message': err.message });
     }
@@ -272,7 +274,7 @@ const getTableSettings = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -292,7 +294,7 @@ const getUserColumns = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -323,7 +325,7 @@ const getUsersData = async (req, res) => {
         }
     }
     catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -350,7 +352,7 @@ const changeRoles = async (req, res) => {
         }
     }
     catch (error) {
-        console.error(error);
+        console.log(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -368,7 +370,104 @@ const changeColumns = async (req, res) => {
         res.status(201).json({ 'message': 'Columns are saved.' });
     }
     catch (error) {
-        console.error(error);
+        console.log(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+
+// zapisanie ustawień raportu-działów-tabeli dla użytkownika
+const saveRaporDepartmentSettings = async (req, res) => {
+    const { _id } = req.params;
+    const { raportDepartments } = req.body;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
+    }
+
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            const result = await User.updateOne(
+                { _id },
+                { $set: { 'raportSettings.raportDepartments': raportDepartments } },
+                { upsert: true }
+            );
+            res.status(201).json({ 'message': 'Table settings are changed' });
+        } else {
+            res.status(400).json({ 'message': 'Table settings are not changed' });
+        }
+    }
+    catch (err) {
+        console.log(err);
+
+        res.status(500).json({ 'message': err.message });
+    }
+};
+
+// pobieranie ustawień raportu tabeli-działów
+const getRaportDepartmentSettings = async (req, res) => {
+    const { _id } = req.params;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
+    }
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            res.json(findUser.raportSettings.raportDepartments);
+        } else {
+            return res.status(404).json({ 'message': 'User not found.' });
+        }
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// zapisanie ustawień raportu-doradców-tabeli dla użytkownika
+const saveRaporAdviserSettings = async (req, res) => {
+    const { _id } = req.params;
+    const { raportAdvisers } = req.body;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
+    }
+
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            const result = await User.updateOne(
+                { _id },
+                { $set: { 'raportSettings.raportAdvisers': raportAdvisers } },
+                { upsert: true }
+            );
+            res.status(201).json({ 'message': 'Table settings are changed' });
+        } else {
+            res.status(400).json({ 'message': 'Table settings are not changed' });
+        }
+    }
+    catch (err) {
+        console.log(err);
+
+        res.status(500).json({ 'message': err.message });
+    }
+};
+
+// pobieranie ustawień raportu tabeli-działów
+const getRaportAdviserSettings = async (req, res) => {
+    const { _id } = req.params;
+    if (!_id) {
+        return res.status(400).json({ 'message': 'Userlogin is required.' });
+    }
+    try {
+        const findUser = await User.findOne({ _id }).exec();
+        if (findUser) {
+            res.json(findUser.raportSettings.raportAdvisers);
+        } else {
+            return res.status(404).json({ 'message': 'User not found.' });
+        }
+    }
+    catch (err) {
+        console.log(err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -388,4 +487,8 @@ module.exports = {
     getUsersData,
     changeRoles,
     changeColumns,
+    saveRaporDepartmentSettings,
+    getRaportDepartmentSettings,
+    saveRaporAdviserSettings,
+    getRaportAdviserSettings
 };

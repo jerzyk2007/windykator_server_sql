@@ -11,6 +11,9 @@ const upload = multer({ storage: storage });
 router.route('/get-all/:_id/:info')
     .get(verifyRoles(ROLES_LIST.User), Documents.getAllDocuments);
 
+router.route('/change-single-document/:_id')
+    .patch(verifyRoles(ROLES_LIST.User), Documents.changeSingleDocument);
+
 router.route('/get-columns')
     .get(verifyRoles(ROLES_LIST.Admin), Documents.getColumns);
 
