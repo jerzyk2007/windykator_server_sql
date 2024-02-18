@@ -17,10 +17,10 @@ const getDataRaport = async (req, res) => {
         const result = await Document.find({});
 
         //usuń rozliczone dokumenty
-        filteredData = result.filter(item => item.DOROZLICZ !== 0);
+        filteredData = result.filter(item => item.DO_ROZLICZENIA !== 0);
 
         if (truePermissions[0] === "Basic") {
-            const basicFiltered = filteredData.filter(item => item.ZATWIERDZIL === ZATWIERDZIL);
+            const basicFiltered = filteredData.filter(item => item.DORADCA === ZATWIERDZIL);
             return res.json({ data: basicFiltered, permission: "Basic" });
         } else {
             const standardFiltered = filteredData.filter(item => trueDepartments.includes(item.DZIAL));

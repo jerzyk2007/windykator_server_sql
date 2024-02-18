@@ -17,6 +17,6 @@ router.route('/change-single-document/:_id')
 router.route('/get-columns')
     .get(verifyRoles(ROLES_LIST.Admin), Documents.getColumns);
 
-router.route('/send-documents')
+router.route('/send-documents/:type')
     .post(verifyRoles(ROLES_LIST.Admin), upload.single('excelFile'), Documents.documentsFromFile);
 module.exports = router;

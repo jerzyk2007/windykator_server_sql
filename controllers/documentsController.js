@@ -54,6 +54,15 @@ const getAllDocuments = async (req, res) => {
     }
 };
 
+
+
+
+// Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
+const excelDateToISODate = (excelDate) => {
+    const date = new Date((excelDate - (25567 + 1)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
+    return date.toISOString().split('T')[0]; // Pobranie daty w formacie "yyyy-mm-dd"
+};
+
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
 const isExcelFile = (data) => {
     const excelSignature = [0x50, 0x4B, 0x03, 0x04];
@@ -65,41 +74,19 @@ const isExcelFile = (data) => {
     return true;
 };
 
-// dodawnie danych do DB z pliku excel
-const documentsFromFile = async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'Not delivered file' });
-    }
-    try {
+// funkcja która dodaje dane z sharepointa
+const sharepointFile = async (rows, res) => {
+    const mappedRows = rows.map(row => {
+        return {
+            ...row,
+            'DZIAL': row.DZIAL === "D8" ? row.DZIAL = "D08" : row.DZIAL,
+            'DATA_FV': row['DATA_FV'] ? excelDateToISODate(row['DATA_FV']).toString() : null,
+            'TERMIN': row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
+            'DATA_KOMENTARZA_BECARED': row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : null,
 
-        const buffer = req.file.buffer;
-        const data = new Uint8Array(buffer);
-
-        if (!isExcelFile(data)) {
-            return res.status(500).json({ error: "Invalid file" });
-        }
-        const workbook = read(buffer, { type: 'buffer' });
-        const workSheetName = workbook.SheetNames[0];
-        const workSheet = workbook.Sheets[workSheetName];
-        const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
-
-        // Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
-        const excelDateToISODate = (excelDate) => {
-            const date = new Date((excelDate - (25567 + 1)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
-            return date.toISOString().split('T')[0]; // Pobranie daty w formacie "yyyy-mm-dd"
         };
-
-        const mappedRows = rows.map(row => {
-            return {
-                ...row,
-                'DZIAL': row.DZIAL === "D8" ? row.DZIAL = "D08" : row.DZIAL,
-                'DATA_FV': row['DATA_FV'] ? excelDateToISODate(row['DATA_FV']).toString() : null,
-                'TERMIN': row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
-                'DATA_KOMENTARZA_BECARED': row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : null,
-
-            };
-        });
-
+    });
+    try {
         await Promise.all(mappedRows.map(async (row) => {
 
             try {
@@ -112,8 +99,111 @@ const documentsFromFile = async (req, res) => {
                 console.error(err);
             }
         }));
-
         res.status(201).json({ 'message': 'Documents are updated' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// funkcja która dodaje dane z sharepointa
+const powerBiFile = async (rows, res) => {
+
+    const cleanDocument = rows.map(clean => {
+        const cleanDoc = clean['Faktura nr'].split(' ')[0];
+        return { ...clean, 'Faktura nr': cleanDoc };
+    });
+
+    const preparedRows = cleanDocument.map(row => {
+        if (row['Faktura nr']) {
+
+            return {
+                NUMER_FV: row['Faktura nr'],
+                NR_SZKODY: row['Numer szkody'] ? row['Numer szkody'] : "",
+                DATA_FV: row['Data faktury'],
+                TERMIN: row['Termin płatności'],
+                BRUTTO: row['Wartość początkowa'],
+                NETTO: row['Wartość początkowa'] / 1.23,
+                DO_ROZLICZENIA: row['Wartość do zapłaty'],
+                "100_VAT": (row['Wartość początkowa'] - row['Wartość początkowa'] / 1.23),
+                "50_VAT": (row['Wartość początkowa'] - row['Wartość początkowa'] / 1.23) / 2,
+                NR_REJESTRACYJNY: row['Nr. rej.'] ? row['Nr. rej.'] : '',
+                KONTRAHENT: row['Kontrahent Nazwa'],
+                DORADCA: row['Przygotował'],
+                UWAGI_ASYSTENT: row['Działania'] ? row['Działania'] : '',
+                DZIAL: row['Id Dział'],
+                ASYSTENTKA: row['Asystentka'],
+            };
+        }
+    }).filter(Boolean);
+
+    try {
+        for (const row of preparedRows) {
+            const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec();
+            if (findDocument) {
+                const update = await Document.updateOne(
+                    { _id: findDocument._id },
+                    { $set: { DO_ROZLICZENIA: row.DO_ROZLICZENIA } },
+                    { upsert: true }
+                );
+
+            } else {
+                let prepareItem = {};
+                if (row.DZIAL === "D8") {
+                    prepareItem = { ...row, DZIAL: "D08" };
+                    const createdDocument = await Document.create(prepareItem);
+                }
+
+
+            }
+        };
+
+
+        // await Promise.all(mappedRows.map(async (row) => {
+
+        //     try {
+        //         const result = await Document.findOneAndUpdate(
+        //             { NUMER_FV: row.NUMER_FV },
+        //             row,
+        //             { new: true, upsert: true }
+        //         );
+        //     } catch (err) {
+        //         console.error(err);
+        //     }
+        // }));
+        res.status(201).json({ 'message': 'Documents are updated' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// dodawnie danych do DB z pliku excel
+const documentsFromFile = async (req, res) => {
+    const { type } = req.params;
+    if (!req.file) {
+        return res.status(400).json({ error: 'Not delivered file' });
+    }
+    try {
+        const buffer = req.file.buffer;
+        const data = new Uint8Array(buffer);
+
+        if (!isExcelFile(data)) {
+            return res.status(500).json({ error: "Invalid file" });
+        }
+        const workbook = read(buffer, { type: 'buffer' });
+        const workSheetName = workbook.SheetNames[0];
+        const workSheet = workbook.Sheets[workSheetName];
+        const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
+
+        if (type === "sharepoint") {
+            return sharepointFile(rows, res);
+        }
+        else if (type === "powerbi") {
+            return powerBiFile(rows, res);
+        }
 
     }
     catch (error) {
