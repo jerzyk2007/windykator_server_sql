@@ -23,7 +23,6 @@ const documentsSchema = new Schema({
 
     CZY_PRZETERMINOWANE: {
         type: String,
-        default: ''
         // stara nazwa CZYPRZETERM
     },
 
@@ -106,18 +105,15 @@ const documentsSchema = new Schema({
 
     BLAD_DORADCY: {
         type: Boolean,
-        default: false
     },
 
     BLAD_W_DOKUMENTACJI: {
         type: Boolean,
-        default: false
         // stara nazwa BLADWDOKUMENTACJ
     },
 
     POBRANO_VAT: {
         type: String,
-        default: ''
         // stara nazwa POBRANOVAT
     },
 
