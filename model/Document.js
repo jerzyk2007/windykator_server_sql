@@ -12,10 +12,10 @@ const documentsSchema = new Schema({
 
     ASYSTENTKA: {
         type: String,
+
     },
     BRUTTO: {
         type: Number,
-        // unique: true,
     },
     DATAFV: {
         type: String
@@ -30,7 +30,16 @@ const documentsSchema = new Schema({
         type: String
     },
     DZIALANIA: {
-        type: String
+        type: String,
+    },
+    ADVISERMISTAKE: {
+        type: Boolean,
+    },
+    DOCUMENTSERROR: {
+        type: Boolean,
+    },
+    GETTAX: {
+        type: String,
     },
     ILEDNIPOTERMINIE: {
         type: Number,
@@ -84,6 +93,7 @@ const documentsSchema = new Schema({
         type: String,
         default: []
     }],
+
     ZATWIERDZIL: {
         type: String
     }

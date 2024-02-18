@@ -68,10 +68,11 @@ const isExcelFile = (data) => {
 
 
 const documentsFromFile = async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'Not delivered file' });
+    }
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'Not delivered file' });
-        }
+
         const buffer = req.file.buffer;
         const data = new Uint8Array(buffer);
 
@@ -114,7 +115,7 @@ const documentsFromFile = async (req, res) => {
             }
         }));
 
-        res.status(201).json({ 'message': 'Documents are saved' });
+        res.status(201).json({ 'message': 'Documents are updated' });
 
     }
     catch (error) {
