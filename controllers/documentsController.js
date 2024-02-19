@@ -76,6 +76,7 @@ const isExcelFile = (data) => {
 
 // funkcja która dodaje dane z sharepointa
 const sharepointFile = async (rows, res) => {
+
     const mappedRows = rows.map(row => {
         return {
             ...row,
@@ -86,6 +87,7 @@ const sharepointFile = async (rows, res) => {
 
         };
     });
+    console.log(mappedRows);
     try {
         await Promise.all(mappedRows.map(async (row) => {
 
@@ -107,8 +109,8 @@ const sharepointFile = async (rows, res) => {
     }
 };
 
-// funkcja która dodaje dane z sharepointa
-const powerBiFile = async (rows, res) => {
+// funkcja która dodaje dane z rubicon
+const rubiconFile = async (rows, res) => {
 
     const cleanDocument = rows.map(clean => {
         const cleanDoc = clean['Faktura nr'].split(' ')[0];
@@ -149,29 +151,52 @@ const powerBiFile = async (rows, res) => {
                 );
 
             } else {
-                let prepareItem = {};
-                if (row.DZIAL === "D8") {
-                    prepareItem = { ...row, DZIAL: "D08" };
-                    const createdDocument = await Document.create(prepareItem);
-                }
+                // let prepareItem = {};
+                // if (row.DZIAL === "D8") {
+                //     prepareItem = { ...row, DZIAL: "D08" };
+                //     const createdDocument = await Document.create(prepareItem);
+                // }
 
 
             }
         };
 
+        res.status(201).json({ 'message': 'Documents are updated' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
-        // await Promise.all(mappedRows.map(async (row) => {
+// funkcja która dodaje dane z PowerBI
+const powerBiFile = async (rows, res) => {
 
-        //     try {
-        //         const result = await Document.findOneAndUpdate(
-        //             { NUMER_FV: row.NUMER_FV },
-        //             row,
-        //             { new: true, upsert: true }
-        //         );
-        //     } catch (err) {
-        //         console.error(err);
-        //     }
-        // }));
+    const preparedRows = rows.map(row => {
+        if (row['FakturaNumer']) {
+
+            return {
+                NUMER_FV: row['FakturaNumer'],
+                DO_ROZLICZENIA: row['_wartoscObecna'],
+            };
+        }
+    }).filter(Boolean);
+
+    //    1 068 673,01
+
+    try {
+        for (const row of preparedRows) {
+            const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec();
+            if (findDocument) {
+                const update = await Document.updateOne(
+                    { _id: findDocument._id },
+                    { $set: { DO_ROZLICZENIA: row.DO_ROZLICZENIA } },
+                    { upsert: true }
+                );
+
+            }
+        };
+
         res.status(201).json({ 'message': 'Documents are updated' });
     }
     catch (error) {
@@ -200,6 +225,9 @@ const documentsFromFile = async (req, res) => {
 
         if (type === "sharepoint") {
             return sharepointFile(rows, res);
+        }
+        else if (type === "rubicon") {
+            return rubiconFile(rows, res);
         }
         else if (type === "powerbi") {
             return powerBiFile(rows, res);
