@@ -142,6 +142,10 @@ const documentsSchema = new Schema({
         default: 0
         // stara nazwa KWOTAWINDYKOWANA
     },
+    ZAZNACZ_KONTRAHENTA: {
+        type: Boolean,
+        default: false
+    }
 
 
 

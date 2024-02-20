@@ -87,7 +87,6 @@ const sharepointFile = async (rows, res) => {
 
         };
     });
-    console.log(mappedRows);
     try {
         await Promise.all(mappedRows.map(async (row) => {
 
@@ -264,9 +263,9 @@ const getColumns = async (req, res) => {
 const changeSingleDocument = async (req, res) => {
     const { _id, documentItem } = req.body;
     try {
-        const fieldToUpdate = Object.keys(documentItem)[0]; // Pobierz nazwę pola do aktualizacji
-        const updatedFieldValue = documentItem[fieldToUpdate];
-
+        // const fieldToUpdate = Object.keys(documentItem)[0]; // Pobierz nazwę pola do aktualizacji
+        // const updatedFieldValue = documentItem[fieldToUpdate];
+        // console.log(documentItem);
         const result = await Document.updateOne(
             { _id },
             documentItem
