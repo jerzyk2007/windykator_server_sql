@@ -39,7 +39,7 @@ const getAllDocuments = async (req, res) => {
 
             }
         });
-
+        console.log(filteredData);
         if (truePermissions[0] === "Basic") {
             const basicFiltered = filteredData.filter(item => item.DORADCA === DORADCA);
             return res.json(basicFiltered);
