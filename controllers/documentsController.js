@@ -83,34 +83,67 @@ const sharepointFile = async (rows, res) => {
         return {
             NUMER_FV: row['NUMER FV'],
             DZIAL: row['DZIAŁ'] === "D8" ? row['DZIAŁ'] = "D08" : row['DZIAŁ'],
-            DATA_FV: row['DATA FV'] ? excelDateToISODate(row['DATA FV']).toString() : null,
-            TERMIN: row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
+            DATA_FV: row['DATA FV'] ? excelDateToISODate(row['DATA FV']).toString() : '',
+            TERMIN: row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : '',
             BRUTTO: row['W. BRUTTO'],
             NETTO: row['W. NETTO'],
             DO_ROZLICZENIA: row['DO ROZLICZ.\nAutostacja'],
             "100_VAT": row['100%\nVAT'],
             "50_VAT": row['50%\nVAT'],
-            NR_REJESTRACYJNY: row['NR REJESTRACYJNY'],
-            KONTRAHENT: row['KONTRAHENT'],
-            ASYSTENTKA: row['ASYSTENTKA'],
-            DORADCA: row['ZATWIERDZIŁ'],
-            NR_SZKODY: row['NR SZKODY'],
-            UWAGI_ASYSTENT: row['UWAGI '],
-            UWAGI_Z_FAKTURY: null,
-            STATUS_SPRAWY_WINDYKACJA: row['Status sprawy Windykcja\n'],
-            DZIALANIA: row['DZIAŁANIA'],
-            JAKA_KANCELARIA: row['Jaka Kancelaria'],
-            STATUS_SPRAWY_KANCELARIA: row['STATUS SPRAWY KANCELARIA'],
-            KOMENTARZ_KANCELARIA_BECARED: row['KOMENTARZ KANCELARIA'],
-            DATA_KOMENTARZA_BECARED: row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : null,
-            NUMER_SPRAWY_BECARED: row['NUMER SPRAWY'],
-            KWOTA_WINDYKOWANA_BECARED: row['KWOTA WINDYKOWANA \n'],
+            NR_REJESTRACYJNY: row['NR REJESTRACYJNY'] ? row['NR REJESTRACYJNY'] : '',
+            KONTRAHENT: row['KONTRAHENT'] ? row['KONTRAHENT'] : '',
+            ASYSTENTKA: row['ASYSTENTKA'] ? row['ASYSTENTKA'] : '',
+            DORADCA: row['ZATWIERDZIŁ'] ? row['ZATWIERDZIŁ'] : '',
+            NR_SZKODY: row['NR SZKODY'] ? row['NR SZKODY'] : '',
+            UWAGI_ASYSTENT: row['UWAGI '] ? row['UWAGI '] : '',
+            UWAGI_Z_FAKTURY: '',
+            STATUS_SPRAWY_WINDYKACJA: row['Status sprawy Windykcja\n'] ? row['Status sprawy Windykcja\n'] : '',
+            DZIALANIA: row['DZIAŁANIA'] ? row['DZIAŁANIA'] : '',
+            JAKA_KANCELARIA: row['Jaka Kancelaria'] ? row['Jaka Kancelaria'] : '',
+            STATUS_SPRAWY_KANCELARIA: row['STATUS SPRAWY KANCELARIA'] ? row['STATUS SPRAWY KANCELARIA'] : '',
+            KOMENTARZ_KANCELARIA_BECARED: row['KOMENTARZ KANCELARIA'] ? row['KOMENTARZ KANCELARIA'] : '',
+            DATA_KOMENTARZA_BECARED: row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : '',
+            NUMER_SPRAWY_BECARED: row['NUMER SPRAWY'] ? row['NUMER SPRAWY'] : '',
+            KWOTA_WINDYKOWANA_BECARED: row['KWOTA WINDYKOWANA \n'] ? row['KWOTA WINDYKOWANA \n'] : '',
             BLAD_DORADCY: "NIE",
             BLAD_W_DOKUMENTACJI: "NIE",
             POBRANO_VAT: "Nie dotyczy",
             ZAZNACZ_KONTRAHENTA: "Nie"
         };
     });
+
+    // const mappedRows = rows.map(row => {
+    //     return {
+    //         NUMER_FV: row['NUMER FV'],
+    //         DZIAL: row['DZIAŁ'] === "D8" ? row['DZIAŁ'] = "D08" : row['DZIAŁ'],
+    //         DATA_FV: row['DATA FV'] ? excelDateToISODate(row['DATA FV']).toString() : null,
+    //         TERMIN: row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
+    //         BRUTTO: row['W. BRUTTO'],
+    //         NETTO: row['W. NETTO'],
+    //         DO_ROZLICZENIA: row['DO ROZLICZ.\nAutostacja'],
+    //         "100_VAT": row['100%\nVAT'],
+    //         "50_VAT": row['50%\nVAT'],
+    //         NR_REJESTRACYJNY: row['NR REJESTRACYJNY'],
+    //         KONTRAHENT: row['KONTRAHENT'],
+    //         ASYSTENTKA: row['ASYSTENTKA'],
+    //         DORADCA: row['ZATWIERDZIŁ'],
+    //         NR_SZKODY: row['NR SZKODY'],
+    //         UWAGI_ASYSTENT: row['UWAGI '],
+    //         UWAGI_Z_FAKTURY: null,
+    //         STATUS_SPRAWY_WINDYKACJA: row['Status sprawy Windykcja\n'],
+    //         DZIALANIA: row['DZIAŁANIA'],
+    //         JAKA_KANCELARIA: row['Jaka Kancelaria'],
+    //         STATUS_SPRAWY_KANCELARIA: row['STATUS SPRAWY KANCELARIA'],
+    //         KOMENTARZ_KANCELARIA_BECARED: row['KOMENTARZ KANCELARIA'],
+    //         DATA_KOMENTARZA_BECARED: row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : null,
+    //         NUMER_SPRAWY_BECARED: row['NUMER SPRAWY'],
+    //         KWOTA_WINDYKOWANA_BECARED: row['KWOTA WINDYKOWANA \n'],
+    //         BLAD_DORADCY: "NIE",
+    //         BLAD_W_DOKUMENTACJI: "NIE",
+    //         POBRANO_VAT: "Nie dotyczy",
+    //         ZAZNACZ_KONTRAHENTA: "Nie"
+    //     };
+    // });
 
     try {
         await Promise.all(mappedRows.map(async (row) => {
@@ -133,10 +166,21 @@ const sharepointFile = async (rows, res) => {
     }
 };
 
-// funkcja która dodaje dane z rubicon
+// funkcja która dodaje dane z z pliku dokuemty autostacja
 const ASFile = async (rows, res) => {
 
     console.log(rows);
+
+    for (const row of rows) {
+        const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec();
+        if (!findDocument) {
+            console.log(row);
+        }
+    }
+
+    // const checkExistDocument = rows.map(row=>{
+    //     const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec(); 
+    // })
 
     // const cleanDocument = rows.map(clean => {
     //     const cleanDoc = clean['Faktura nr'].split(' ')[0];
@@ -195,6 +239,70 @@ const ASFile = async (rows, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+
+// funkcja która dodaje dane z wstępnie dla rozrachunkow
+// const ASFile = async (rows, res) => {
+
+//     console.log(rows);
+
+//     const cleanDocument = rows.map(clean => {
+//         const cleanDoc = clean['Faktura nr'].split(' ')[0];
+//         return { ...clean, 'Faktura nr': cleanDoc };
+//     });
+
+//     const preparedRows = cleanDocument.map(row => {
+//         if (row['Faktura nr']) {
+
+//             return {
+//                 NUMER_FV: row['Faktura nr'],
+//                 NR_SZKODY: row['Numer szkody'] ? row['Numer szkody'] : "",
+//                 DATA_FV: row['Data faktury'],
+//                 TERMIN: row['Termin płatności'],
+//                 BRUTTO: row['Wartość początkowa'],
+//                 NETTO: row['Wartość początkowa'] / 1.23,
+//                 DO_ROZLICZENIA: row['Wartość do zapłaty'],
+//                 "100_VAT": (row['Wartość początkowa'] - row['Wartość początkowa'] / 1.23),
+//                 "50_VAT": (row['Wartość początkowa'] - row['Wartość początkowa'] / 1.23) / 2,
+//                 NR_REJESTRACYJNY: row['Nr. rej.'] ? row['Nr. rej.'] : '',
+//                 KONTRAHENT: row['Kontrahent Nazwa'],
+//                 DORADCA: row['Przygotował'],
+//                 UWAGI_ASYSTENT: row['Działania'] ? row['Działania'] : '',
+//                 DZIAL: row['Id Dział'],
+//                 ASYSTENTKA: row['Asystentka'],
+//             };
+//         }
+//     }).filter(Boolean);
+
+//     try {
+//         for (const row of preparedRows) {
+//         const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec();
+//         if (findDocument) {
+//             const update = await Document.updateOne(
+//                 { _id: findDocument._id },
+//                 { $set: { DO_ROZLICZENIA: row.DO_ROZLICZENIA } },
+//                 { upsert: true }
+//             );
+
+//         }
+//         else {
+//         let prepareItem = {};
+//         if (row.DZIAL === "D8") {
+//             prepareItem = { ...row, DZIAL: "D08" };
+//             const createdDocument = await Document.create(prepareItem);
+//         }
+
+
+//         }
+//         };
+
+//         res.status(201).json({ 'message': 'Documents are updated' });
+//     }
+//     catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// };
 
 // funkcja która dodaje dane z PowerBI
 const powerBiFile = async (rows, res) => {
