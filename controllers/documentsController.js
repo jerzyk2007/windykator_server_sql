@@ -15,7 +15,7 @@ const getAllDocuments = async (req, res) => {
             .filter(([department, value]) => value)
             .map(([department]) => department);
 
-        const ZATWIERDZIL = `${usersurname} ${username}`;
+        const DORADCA = `${usersurname} ${username}`;
 
         const result = await Document.find({});
         if (info === "actual") {
@@ -39,7 +39,6 @@ const getAllDocuments = async (req, res) => {
 
             }
         });
-        console.log(filteredData);
         if (truePermissions[0] === "Basic") {
             const basicFiltered = filteredData.filter(item => item.DORADCA === DORADCA);
             return res.json(basicFiltered);
@@ -265,7 +264,6 @@ const changeSingleDocument = async (req, res) => {
     try {
         // const fieldToUpdate = Object.keys(documentItem)[0]; // Pobierz nazwę pola do aktualizacji
         // const updatedFieldValue = documentItem[fieldToUpdate];
-        // console.log(documentItem);
         const result = await Document.updateOne(
             { _id },
             documentItem

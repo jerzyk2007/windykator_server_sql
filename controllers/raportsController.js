@@ -1,6 +1,6 @@
 const Document = require('../model/Document');
 const User = require('../model/User');
-const { read, utils } = require('xlsx');
+// const { read, utils } = require('xlsx');
 
 // pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -13,14 +13,14 @@ const getDataRaport = async (req, res) => {
         const trueDepartments = Array.from(departments.entries())
             .filter(([department, value]) => value)
             .map(([department]) => department);
-        const ZATWIERDZIL = `${usersurname} ${username}`;
+        const DORADCA = `${usersurname} ${username}`;
         const result = await Document.find({});
 
         //usuń rozliczone dokumenty
         filteredData = result.filter(item => item.DO_ROZLICZENIA !== 0);
 
         if (truePermissions[0] === "Basic") {
-            const basicFiltered = filteredData.filter(item => item.DORADCA === ZATWIERDZIL);
+            const basicFiltered = filteredData.filter(item => item.DORADCA === DORADCA);
             return res.json({ data: basicFiltered, permission: "Basic" });
         } else {
             const standardFiltered = filteredData.filter(item => trueDepartments.includes(item.DZIAL));

@@ -104,11 +104,11 @@ const documentsSchema = new Schema({
     },
 
     BLAD_DORADCY: {
-        type: Boolean,
+        type: String,
     },
 
     BLAD_W_DOKUMENTACJI: {
-        type: Boolean,
+        type: String,
         // stara nazwa BLADWDOKUMENTACJ
     },
 
@@ -143,8 +143,8 @@ const documentsSchema = new Schema({
         // stara nazwa KWOTAWINDYKOWANA
     },
     ZAZNACZ_KONTRAHENTA: {
-        type: Boolean,
-        default: false
+        type: String,
+        default: "NIE"
     }
 
 
