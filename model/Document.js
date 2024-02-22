@@ -8,6 +8,11 @@ const documentsSchema = new Schema({
         // stara nazwa NUMER .
     },
 
+    KOREKTA: {
+        type: String
+        // stara nazwa NUMER .
+    },
+
     DATA_FV: {
         type: String
         // stara nazwa DATAFV
@@ -54,8 +59,15 @@ const documentsSchema = new Schema({
         type: Number,
         // stara nazwa 50VAT
     },
+    PLATNOSC: {
+        type: String
+    },
 
     KONTRAHENT: {
+        type: String
+    },
+
+    NIP: {
         type: String
     },
 
@@ -73,14 +85,23 @@ const documentsSchema = new Schema({
         // stara nazwa NRREJESTRACYJNY
     },
 
+    NR_VIN: {
+        type: String
+    },
+
     NR_SZKODY: {
         type: String
         // stara nazwa NRSZKODY
     },
 
+    NR_AUTORYZACJI: {
+        type: String
+        // stara nazwa NRSZKODY
+    },
+
     UWAGI_Z_FAKTURY: [{
-        type: String,
-        default: []
+        type: String
+
     }],
 
     UWAGI_ASYSTENT: [{
@@ -144,7 +165,7 @@ const documentsSchema = new Schema({
     },
     ZAZNACZ_KONTRAHENTA: {
         type: String,
-        default: "NIE"
+        default: "Nie"
     }
 
 
