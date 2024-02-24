@@ -4,9 +4,6 @@ const UpdateDB = require('../model/UpdateDB');
 const { read, utils } = require('xlsx');
 
 // pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
-
-// FV/UBL/782/23/V/D8 w tabelce 1109,13, w rozrachunkach 596,52
-
 const getAllDocuments = async (req, res) => {
     const { info, _id } = req.params;
     let filteredData = [];
@@ -29,8 +26,6 @@ const getAllDocuments = async (req, res) => {
         } else if (info === "all") {
             filteredData = result;
         }
-
-
 
         filteredData.forEach(item => {
             const date = new Date();
@@ -59,9 +54,6 @@ const getAllDocuments = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
-
-
-
 
 // Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
 const excelDateToISODate = (excelDate) => {
@@ -127,39 +119,6 @@ const sharepointFile = async (rows, res) => {
         };
     });
 
-    // const mappedRows = rows.map(row => {
-    //     return {
-    //         NUMER_FV: row['NUMER FV'],
-    //         DZIAL: row['DZIAŁ'] === "D8" ? row['DZIAŁ'] = "D08" : row['DZIAŁ'],
-    //         DATA_FV: row['DATA FV'] ? excelDateToISODate(row['DATA FV']).toString() : null,
-    //         TERMIN: row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : null,
-    //         BRUTTO: row['W. BRUTTO'],
-    //         NETTO: row['W. NETTO'],
-    //         DO_ROZLICZENIA: row['DO ROZLICZ.\nAutostacja'],
-    //         "100_VAT": row['100%\nVAT'],
-    //         "50_VAT": row['50%\nVAT'],
-    //         NR_REJESTRACYJNY: row['NR REJESTRACYJNY'],
-    //         KONTRAHENT: row['KONTRAHENT'],
-    //         ASYSTENTKA: row['ASYSTENTKA'],
-    //         DORADCA: row['ZATWIERDZIŁ'],
-    //         NR_SZKODY: row['NR SZKODY'],
-    //         UWAGI_ASYSTENT: row['UWAGI '],
-    //         UWAGI_Z_FAKTURY: null,
-    //         STATUS_SPRAWY_WINDYKACJA: row['Status sprawy Windykcja\n'],
-    //         DZIALANIA: row['DZIAŁANIA'],
-    //         JAKA_KANCELARIA: row['Jaka Kancelaria'],
-    //         STATUS_SPRAWY_KANCELARIA: row['STATUS SPRAWY KANCELARIA'],
-    //         KOMENTARZ_KANCELARIA_BECARED: row['KOMENTARZ KANCELARIA'],
-    //         DATA_KOMENTARZA_BECARED: row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : null,
-    //         NUMER_SPRAWY_BECARED: row['NUMER SPRAWY'],
-    //         KWOTA_WINDYKOWANA_BECARED: row['KWOTA WINDYKOWANA \n'],
-    //         BLAD_DORADCY: "NIE",
-    //         BLAD_W_DOKUMENTACJI: "NIE",
-    //         POBRANO_VAT: "Nie dotyczy",
-    //         ZAZNACZ_KONTRAHENTA: "Nie"
-    //     };
-    // });
-
     try {
         await Promise.all(mappedRows.map(async (row) => {
 
@@ -182,70 +141,113 @@ const sharepointFile = async (rows, res) => {
 };
 
 // funkcja która dodaje dane z z pliku dokuemty autostacja
-const ASFile = async (rows, res) => {
+const ASFile = async (documents, res) => {
 
-    console.log(rows);
-
-    for (const row of rows) {
-        const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec();
-        if (!findDocument) {
-            console.log(row);
-        }
+    if (
+        !documents[0]['NUMER'] &&
+        !documents[0]['WYSTAWIONO'] &&
+        !documents[0]['W. BRUTTO'] &&
+        !documents[0]['W. NETTO'] &&
+        !documents[0]['NR REJESTRACYJNY'] &&
+        !documents[0]['KONTRAHENT'] &&
+        !documents[0]['PRZYGOTOWAŁ'] &&
+        !documents[0]['NR SZKODY'] &&
+        !documents[0]['UWAGI']
+    ) {
+        return res.status(500).json({ error: "Invalid file" });
     }
 
-    // const checkExistDocument = rows.map(row=>{
-    //     const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec(); 
-    // })
-
-    // const cleanDocument = rows.map(clean => {
-    //     const cleanDoc = clean['Faktura nr'].split(' ')[0];
-    //     return { ...clean, 'Faktura nr': cleanDoc };
-    // });
-
-    // const preparedRows = cleanDocument.map(row => {
-    //     if (row['Faktura nr']) {
-
-    //         return {
-    //             NUMER_FV: row['Faktura nr'],
-    //             NR_SZKODY: row['Numer szkody'] ? row['Numer szkody'] : "",
-    //             DATA_FV: row['Data faktury'],
-    //             TERMIN: row['Termin płatności'],
-    //             BRUTTO: row['Wartość początkowa'],
-    //             NETTO: row['Wartość początkowa'] / 1.23,
-    //             DO_ROZLICZENIA: row['Wartość do zapłaty'],
-    //             "100_VAT": (row['Wartość początkowa'] - row['Wartość początkowa'] / 1.23),
-    //             "50_VAT": (row['Wartość początkowa'] - row['Wartość początkowa'] / 1.23) / 2,
-    //             NR_REJESTRACYJNY: row['Nr. rej.'] ? row['Nr. rej.'] : '',
-    //             KONTRAHENT: row['Kontrahent Nazwa'],
-    //             DORADCA: row['Przygotował'],
-    //             UWAGI_ASYSTENT: row['Działania'] ? row['Działania'] : '',
-    //             DZIAL: row['Id Dział'],
-    //             ASYSTENTKA: row['Asystentka'],
-    //         };
-    //     }
-    // }).filter(Boolean);
-
     try {
-        // for (const row of preparedRows) {
-        // const findDocument = await Document.findOne({ NUMER_FV: row.NUMER_FV }).exec();
-        // if (findDocument) {
-        //     const update = await Document.updateOne(
-        //         { _id: findDocument._id },
-        //         { $set: { DO_ROZLICZENIA: row.DO_ROZLICZENIA } },
-        //         { upsert: true }
-        //     );
+        const allDocuments = await Document.find({});
+        const allSettlements = await UpdateDB.find({}, { settlements: 1 });
+        const settlements = allSettlements[0].settlements;
 
-        // }
-        // else {
-        // let prepareItem = {};
-        // if (row.DZIAL === "D8") {
-        //     prepareItem = { ...row, DZIAL: "D08" };
-        //     const createdDocument = await Document.create(prepareItem);
-        // }
+        let DZIAL = '';
+        let ASYSTENTKA = '';
+        // szukam brakujących faktur w bazie danych
+        const filteredDocuments = [];
+        for (const document of documents) {
 
+            const found = allDocuments.find(doc => doc.NUMER_FV === document.NUMER);
 
-        // }
-        // };
+            if (!found) {
+                const indexD = document.NUMER.lastIndexOf('D');
+                const DZIAL_NR = document.NUMER.substring(indexD);
+                if (DZIAL_NR === "D8") {
+                    ASYSTENTKA = 'Ela / Jurek';
+                    DZIAL = "D08";
+                }
+                if (DZIAL_NR === "D38") {
+                    ASYSTENTKA = 'Jola / Ania';
+                    DZIAL = "D38";
+                }
+                if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
+                    ASYSTENTKA = 'Jola / Ania';
+                    DZIAL = "D48/D58";
+                }
+                if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
+                    ASYSTENTKA = 'Jola / Ania';
+                    DZIAL = "D68/D78";
+                }
+                if (DZIAL_NR === "D88" || DZIAL_NR === "D98") {
+                    ASYSTENTKA = 'Dawid Antosik';
+                    DZIAL = "D88";
+                }
+                if (DZIAL_NR === "D118" || DZIAL_NR === "D148" || DZIAL_NR === "D168") {
+                    ASYSTENTKA = 'Marta Bednarek';
+                    DZIAL = "D118/D148";
+                }
+                if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
+                    ASYSTENTKA = 'Dawid Antosik';
+                    DZIAL = "D308/D318";
+                }
+                filteredDocuments.push(document);
+            }
+        }
+
+        // ta funkcja usuwa faktury których nie ma w bazie danych bo sa rozliczone, zmienić po otrzymaniu docelowego pliku, obecnie będzie trudno ze względu na brak informacji o terminie płatności 
+        const newDocumentsToDB = [];
+        for (const document of filteredDocuments) {
+            const found = settlements.find(settlement => settlement.NUMER_FV === document.NUMER);
+            if (found) {
+
+                const newDocument = {
+                    NUMER_FV: document['NUMER'],
+                    DZIAL,
+                    DATA_FV: document['WYSTAWIONO'] ? excelDateToISODate(document['WYSTAWIONO']).toString() : '',
+                    TERMIN: found['TERMIN'] ? found['TERMIN'] : '',
+                    BRUTTO: document['W. BRUTTO'],
+                    NETTO: document['W. NETTO'],
+                    DO_ROZLICZENIA: found['DO_ROZLICZENIA'],
+                    "100_VAT": document['W. BRUTTO'] / 1.23,
+                    "50_VAT": (document['W. BRUTTO'] / 1.23) / 2,
+                    NR_REJESTRACYJNY: document['NR REJESTRACYJNY'] ? document['NR REJESTRACYJNY'] : '',
+                    KONTRAHENT: document['KONTRAHENT'] ? document['KONTRAHENT'] : '',
+                    ASYSTENTKA,
+                    DORADCA: document['PRZYGOTOWAŁ'] ? document['PRZYGOTOWAŁ'] : '',
+                    NR_SZKODY: document['NR SZKODY'] ? document['NR SZKODY'] : '',
+                    UWAGI_ASYSTENT: '',
+                    UWAGI_Z_FAKTURY: document['UWAGI'] ? document['UWAGI'] : '',
+                    STATUS_SPRAWY_WINDYKACJA: '',
+                    DZIALANIA: '',
+                    JAKA_KANCELARIA: '',
+                    STATUS_SPRAWY_KANCELARIA: '',
+                    KOMENTARZ_KANCELARIA_BECARED: '',
+                    DATA_KOMENTARZA_BECARED: '',
+                    NUMER_SPRAWY_BECARED: '',
+                    KWOTA_WINDYKOWANA_BECARED: '',
+                    BLAD_DORADCY: "NIE",
+                    BLAD_W_DOKUMENTACJI: "NIE",
+                    POBRANO_VAT: "Nie dotyczy",
+                    ZAZNACZ_KONTRAHENTA: "Nie"
+                };
+                newDocumentsToDB.push(newDocument);
+            }
+        }
+        const update = await Document.insertMany(newDocumentsToDB);
+
+        // console.log(newDocumentsToDB);
+        // console.log(DZIAL);
 
         res.status(201).json({ 'message': 'Documents are updated' });
     }
@@ -261,16 +263,6 @@ const settlementsFile = async (rows, res) => {
     if (!rows[0]['TYTUŁ'] && !rows[0]['TERMIN'] && !rows[0]['NALEŻNOŚĆ']) {
         return res.status(500).json({ error: "Invalid file" });
     }
-
-    // rozrachunki często mają oprócz nr faktury zbędne dane, ta funckja je usuwa
-    // const cleanDocument = rows.map(row => {
-    //     const cleanDoc = row['TYTUŁ'].split(' ')[0];
-    //     return {
-    //         NUMER_FV: cleanDoc,
-    //         TERMIN: row['TERMIN'] ? excelDateToISODate(row['TERMIN']).toString() : '',
-    //         DO_ROZLICZENIA: row['NALEŻNOŚĆ'] ? row['NALEŻNOŚĆ'] : 0
-    //     };
-    // });
 
     const cleanDocument = rows.map(row => {
         const cleanDoc = row['TYTUŁ'].split(' ')[0];
@@ -299,35 +291,32 @@ const settlementsFile = async (rows, res) => {
         const allDocuments = await Document.find({});
 
         // sprawdzenie czy w rozrachunkach znajduje się faktura z DB
-        // const updatedDocuments = [];
         for (const doc of allDocuments) {
             const found = cleanDocument.find(cleanDoc => cleanDoc.NUMER_FV === doc.NUMER_FV);
             if (found) {
-
                 try {
                     const result = await Document.updateOne(
                         { NUMER_FV: doc.NUMER_FV },
                         { $set: { DO_ROZLICZENIA: found.DO_ROZLICZENIA } }
                     );
-                    // updatedDocuments.push(result);
                 } catch (error) {
                     console.error("Error while updating the document", error);
                 }
 
             } else {
                 try {
-                    const result = await Document.updateOne(
-                        { NUMER_FV: doc.NUMER_FV },
-                        { $set: { DO_ROZLICZENIA: 0 } }
-                    );
-                    // updatedDocuments.push(result);
+                    if (doc.DO_ROZLICZENIA !== 0) {
+                        const result = await Document.updateOne(
+                            { NUMER_FV: doc.NUMER_FV },
+                            { $set: { DO_ROZLICZENIA: 0 } }
+                        );
+                    }
+
                 } catch (error) {
                     console.error("Error while updating the document", error);
                 }
             }
         }
-
-
         res.status(201).json({ 'message': 'Documents are updated' });
     }
     catch (error) {
@@ -336,7 +325,7 @@ const settlementsFile = async (rows, res) => {
     }
 };
 
-// dodawnie danych do DB z pliku excel
+// dodawnie danych do bazy z pliku excel
 const documentsFromFile = async (req, res) => {
     const { type } = req.params;
     if (!req.file) {

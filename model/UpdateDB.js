@@ -5,7 +5,7 @@ const updatesSchema = new Schema({
     date: {
         type: String,
     },
-    settlements: {
+    settlements: [{
         NUMER_FV: {
             type: String
         },
@@ -15,7 +15,7 @@ const updatesSchema = new Schema({
         DO_ROZLICZENIA: {
             type: Number
         }
-    },
+    }],
 
 });
 
