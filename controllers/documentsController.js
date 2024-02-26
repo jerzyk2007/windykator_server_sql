@@ -57,7 +57,8 @@ const getAllDocuments = async (req, res) => {
 
 // Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
 const excelDateToISODate = (excelDate) => {
-    const date = new Date((excelDate - (25567 + 1)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
+    // const date = new Date((excelDate - (25567 + 1)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
+    const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
     return date.toISOString().split('T')[0]; // Pobranie daty w formacie "yyyy-mm-dd"
 };
 
@@ -102,14 +103,14 @@ const sharepointFile = async (rows, res) => {
             ASYSTENTKA: row['ASYSTENTKA'] ? row['ASYSTENTKA'] : '',
             DORADCA: row['ZATWIERDZIŁ'] ? row['ZATWIERDZIŁ'] : '',
             NR_SZKODY: row['NR SZKODY'] ? row['NR SZKODY'] : '',
-            UWAGI_ASYSTENT: row['UWAGI '] ? row['UWAGI '] : '',
+            UWAGI_ASYSTENT: row['UWAGI '] ? row['UWAGI '] : [],
             UWAGI_Z_FAKTURY: '',
             STATUS_SPRAWY_WINDYKACJA: row['Status sprawy Windykcja\n'] ? row['Status sprawy Windykcja\n'] : '',
-            DZIALANIA: row['DZIAŁANIA'] ? row['DZIAŁANIA'] : '',
-            JAKA_KANCELARIA: row['Jaka Kancelaria'] ? row['Jaka Kancelaria'] : '',
+            DZIALANIA: row['DZIAŁANIA'] ? row['DZIAŁANIA'] : 'BRAK',
+            JAKA_KANCELARIA: row['Jaka Kancelaria'] ? row['Jaka Kancelaria'] : 'BRAK',
             STATUS_SPRAWY_KANCELARIA: row['STATUS SPRAWY KANCELARIA'] ? row['STATUS SPRAWY KANCELARIA'] : '',
             KOMENTARZ_KANCELARIA_BECARED: row['KOMENTARZ KANCELARIA'] ? row['KOMENTARZ KANCELARIA'] : '',
-            DATA_KOMENTARZA_BECARED: row['DATA_KOMENTARZA_BECARED'] ? excelDateToISODate(row['DATA_KOMENTARZA_BECARED']).toString() : '',
+            DATA_KOMENTARZA_BECARED: row['DATA KOMENTARZA BECARED'] ? excelDateToISODate(row['DATA KOMENTARZA BECARED']).toString() : '',
             NUMER_SPRAWY_BECARED: row['NUMER SPRAWY'] ? row['NUMER SPRAWY'] : '',
             KWOTA_WINDYKOWANA_BECARED: row['KWOTA WINDYKOWANA \n'] ? row['KWOTA WINDYKOWANA \n'] : '',
             BLAD_DORADCY: "NIE",
@@ -140,7 +141,7 @@ const sharepointFile = async (rows, res) => {
     }
 };
 
-// funkcja która dodaje dane z z pliku dokuemty autostacja
+// funkcja która dodaje dane z z pliku dokumenty autostacja
 const ASFile = async (documents, res) => {
 
     if (
@@ -226,11 +227,11 @@ const ASFile = async (documents, res) => {
                     ASYSTENTKA,
                     DORADCA: document['PRZYGOTOWAŁ'] ? document['PRZYGOTOWAŁ'] : '',
                     NR_SZKODY: document['NR SZKODY'] ? document['NR SZKODY'] : '',
-                    UWAGI_ASYSTENT: '',
-                    UWAGI_Z_FAKTURY: document['UWAGI'] ? document['UWAGI'] : '',
+                    UWAGI_ASYSTENT: [],
+                    UWAGI_Z_FAKTURY: document['UWAGI'] ? document['UWAGI'] : "",
                     STATUS_SPRAWY_WINDYKACJA: '',
-                    DZIALANIA: '',
-                    JAKA_KANCELARIA: '',
+                    DZIALANIA: 'BRAK',
+                    JAKA_KANCELARIA: 'BRAK',
                     STATUS_SPRAWY_KANCELARIA: '',
                     KOMENTARZ_KANCELARIA_BECARED: '',
                     DATA_KOMENTARZA_BECARED: '',
@@ -239,15 +240,15 @@ const ASFile = async (documents, res) => {
                     BLAD_DORADCY: "NIE",
                     BLAD_W_DOKUMENTACJI: "NIE",
                     POBRANO_VAT: "Nie dotyczy",
-                    ZAZNACZ_KONTRAHENTA: "Nie"
+                    ZAZNACZ_KONTRAHENTA: "Nie",
+                    CZY_PRZETERMINOWANE: ''
+
                 };
                 newDocumentsToDB.push(newDocument);
             }
         }
         const update = await Document.insertMany(newDocumentsToDB);
 
-        // console.log(newDocumentsToDB);
-        // console.log(DZIAL);
 
         res.status(201).json({ 'message': 'Documents are updated' });
     }
@@ -325,6 +326,69 @@ const settlementsFile = async (rows, res) => {
     }
 };
 
+//chwilowa funckja do naprawienia danych w DB
+const repairFile = async (rows, res) => {
+    const allDocuments = await Document.find({});
+
+    const filteredArray = allDocuments.map(doc => {
+        if (doc.UWAGI_ASYSTENT) {
+            const filteredUwagi = doc.UWAGI_ASYSTENT.filter(uwaga => uwaga.length > 0);
+            return {
+                NUMER_FV: doc.NUMER_FV,
+                UWAGI_ASYSTENT: filteredUwagi
+            };
+        }
+    });
+
+    // console.log(filteredArray);
+
+    // const testDate = rows.map(row => {
+    //     let fv_date = new Date(row['DATA_FV']);
+    //     fv_date.setDate(fv_date.getDate() - 1);
+    //     let new_date_str = fv_date.toISOString().split('T')[0];
+
+    //     let termin_date = new Date(row['TERMIN']);
+    //     termin_date.setDate(termin_date.getDate() - 1);
+
+    //     let new_termin_str = termin_date.toISOString().split('T')[0];
+
+    //     if (row['DZIALANIA'].length < 2) {
+
+    //         return {
+    //             NUMER_FV: row['NUMER_FV'],
+    //             // DATA_FV: new_date_str,
+    //             // TERMIN: new_termin_str,
+    //             CZY_PRZETERMINOWANE: "",
+    //             // JAKA_KANCELARIA: row['JAKA_KANCELARIA'] ? row['JAKA_KANCELARIA'] : "BRAK"
+    //         };
+
+    //     }
+
+    // }).filter(Boolean);
+
+
+
+    for (const doc of allDocuments) {
+        const found = filteredArray.find(test => test.NUMER_FV === doc.NUMER_FV);
+        if (found) {
+            try {
+                // const result = await Document.updateOne(
+                //     { NUMER_FV: doc.NUMER_FV },
+                //     {
+                //         $set: {
+                //             UWAGI_ASYSTENT: found.UWAGI_ASYSTENT,
+                //         }
+                //     }
+                // );
+            } catch (error) {
+                console.error("Error while updating the document", error);
+            }
+        }
+    }
+
+    res.end();
+};
+
 // dodawnie danych do bazy z pliku excel
 const documentsFromFile = async (req, res) => {
     const { type } = req.params;
@@ -351,6 +415,10 @@ const documentsFromFile = async (req, res) => {
         }
         else if (type === "settlements") {
             return settlementsFile(rows, res);
+        }
+
+        else if (type === "test") {
+            return repairFile(rows, res);
         }
 
     }

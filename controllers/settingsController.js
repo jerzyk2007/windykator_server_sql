@@ -78,6 +78,7 @@ const getSettings = async (req, res) => {
         }
         // const departments = [...result[0].departments];
         const columns = [...result[0].columns];
+
         const permissions = [...result[0].permissions];
 
         const mappedDepartments = await getFilteredDepartments();
