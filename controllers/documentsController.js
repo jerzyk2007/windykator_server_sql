@@ -190,9 +190,13 @@ const ASFile = async (documents, res) => {
                     ASYSTENTKA = 'Jola / Ania';
                     DZIAL = "D68/D78";
                 }
-                if (DZIAL_NR === "D88" || DZIAL_NR === "D98") {
+                if (DZIAL_NR === "D88") {
                     ASYSTENTKA = 'Dawid Antosik';
                     DZIAL = "D88";
+                }
+                if (DZIAL_NR === "D98") {
+                    ASYSTENTKA = 'Dawid Antosik';
+                    DZIAL = "D98";
                 }
                 if (DZIAL_NR === "D118" || DZIAL_NR === "D148" || DZIAL_NR === "D168") {
                     ASYSTENTKA = 'Marta Bednarek';
