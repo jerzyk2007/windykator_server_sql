@@ -334,15 +334,15 @@ const settlementsFile = async (rows, res) => {
 const repairFile = async (rows, res) => {
     const allDocuments = await Document.find({});
 
-    const filteredArray = allDocuments.map(doc => {
-        if (doc.UWAGI_ASYSTENT) {
-            const filteredUwagi = doc.UWAGI_ASYSTENT.filter(uwaga => uwaga.length > 0);
-            return {
-                NUMER_FV: doc.NUMER_FV,
-                UWAGI_ASYSTENT: filteredUwagi
-            };
-        }
-    });
+    // const filteredArray = allDocuments.map(doc => {
+    //     if (doc.UWAGI_ASYSTENT) {
+    //         const filteredUwagi = doc.UWAGI_ASYSTENT.filter(uwaga => uwaga.length > 0);
+    //         return {
+    //             NUMER_FV: doc.NUMER_FV,
+    //             UWAGI_ASYSTENT: filteredUwagi
+    //         };
+    //     }
+    // });
 
     // console.log(filteredArray);
 
@@ -370,17 +370,31 @@ const repairFile = async (rows, res) => {
 
     // }).filter(Boolean);
 
+    const filteredD98 = allDocuments.map(document => {
+        const indexD = document.NUMER_FV.lastIndexOf('D');
+        const DZIAL_NR = document.NUMER_FV.substring(indexD);
+        if (DZIAL_NR === "D98") {
+            return {
+                NUMER_FV: document.NUMER_FV,
+                // DZIAL: DZIAL_NR
+                DZIAL: 'D98'
+            };
+        }
+    }).filter(Boolean);
+
+    console.log(filteredD98);
 
 
-    for (const doc of allDocuments) {
-        const found = filteredArray.find(test => test.NUMER_FV === doc.NUMER_FV);
-        if (found) {
+    for (const doc of filteredD98) {
+
+
+        if (true) {
             try {
                 // const result = await Document.updateOne(
                 //     { NUMER_FV: doc.NUMER_FV },
                 //     {
                 //         $set: {
-                //             UWAGI_ASYSTENT: found.UWAGI_ASYSTENT,
+                //             DZIAL: doc.DZIAL,
                 //         }
                 //     }
                 // );
