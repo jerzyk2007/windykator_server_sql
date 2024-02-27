@@ -116,7 +116,7 @@ const sharepointFile = async (rows, res) => {
             BLAD_DORADCY: "NIE",
             BLAD_W_DOKUMENTACJI: "NIE",
             POBRANO_VAT: "Nie dotyczy",
-            ZAZNACZ_KONTRAHENTA: "Nie"
+            ZAZNACZ_KONTRAHENTA: "NIE"
         };
     });
 
@@ -334,55 +334,19 @@ const settlementsFile = async (rows, res) => {
 const repairFile = async (rows, res) => {
     const allDocuments = await Document.find({});
 
-    // const filteredArray = allDocuments.map(doc => {
-    //     if (doc.UWAGI_ASYSTENT) {
-    //         const filteredUwagi = doc.UWAGI_ASYSTENT.filter(uwaga => uwaga.length > 0);
-    //         return {
-    //             NUMER_FV: doc.NUMER_FV,
-    //             UWAGI_ASYSTENT: filteredUwagi
-    //         };
-    //     }
-    // });
-
-    // console.log(filteredArray);
-
-    // const testDate = rows.map(row => {
-    //     let fv_date = new Date(row['DATA_FV']);
-    //     fv_date.setDate(fv_date.getDate() - 1);
-    //     let new_date_str = fv_date.toISOString().split('T')[0];
-
-    //     let termin_date = new Date(row['TERMIN']);
-    //     termin_date.setDate(termin_date.getDate() - 1);
-
-    //     let new_termin_str = termin_date.toISOString().split('T')[0];
-
-    //     if (row['DZIALANIA'].length < 2) {
-
-    //         return {
-    //             NUMER_FV: row['NUMER_FV'],
-    //             // DATA_FV: new_date_str,
-    //             // TERMIN: new_termin_str,
-    //             CZY_PRZETERMINOWANE: "",
-    //             // JAKA_KANCELARIA: row['JAKA_KANCELARIA'] ? row['JAKA_KANCELARIA'] : "BRAK"
-    //         };
-
-    //     }
-
-    // }).filter(Boolean);
 
     const filteredD98 = allDocuments.map(document => {
-        const indexD = document.NUMER_FV.lastIndexOf('D');
-        const DZIAL_NR = document.NUMER_FV.substring(indexD);
-        if (DZIAL_NR === "D98") {
+
+        if (document.ZAZNACZ_KONTRAHENTA === "Tak") {
+
             return {
                 NUMER_FV: document.NUMER_FV,
                 // DZIAL: DZIAL_NR
-                DZIAL: 'D98'
+                ZAZNACZ_KONTRAHENTA: document.ZAZNACZ_KONTRAHENTA === "Tak" ? "TAK" : "NIE"
             };
         }
     }).filter(Boolean);
 
-    console.log(filteredD98);
 
 
     for (const doc of filteredD98) {
