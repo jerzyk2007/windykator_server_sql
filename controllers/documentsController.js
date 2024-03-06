@@ -337,17 +337,17 @@ const repairFile = async (rows, res) => {
 
     const filteredD98 = allDocuments.map(document => {
 
-        if (document.ZAZNACZ_KONTRAHENTA === "Tak") {
+        if (document.JAKA_KANCELARIA === "MLEGAL") {
 
             return {
                 NUMER_FV: document.NUMER_FV,
                 // DZIAL: DZIAL_NR
-                ZAZNACZ_KONTRAHENTA: document.ZAZNACZ_KONTRAHENTA === "Tak" ? "TAK" : "NIE"
+                JAKA_KANCELARIA: "M_LEGAL"
             };
         }
     }).filter(Boolean);
 
-
+    // console.log(filteredD98);
 
     for (const doc of filteredD98) {
 
@@ -358,7 +358,7 @@ const repairFile = async (rows, res) => {
                 //     { NUMER_FV: doc.NUMER_FV },
                 //     {
                 //         $set: {
-                //             DZIAL: doc.DZIAL,
+                //             JAKA_KANCELARIA: doc.JAKA_KANCELARIA,
                 //         }
                 //     }
                 // );
