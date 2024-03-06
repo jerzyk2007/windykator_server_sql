@@ -286,10 +286,23 @@ const settlementsFile = async (rows, res) => {
 
     const actualDate = new Date();
 
+    let noDoubleDocuments = [];
+
+    cleanDocument.forEach(doc => {
+        let existingDocIndex = noDoubleDocuments.findIndex(tempDoc => tempDoc.NUMER_FV === doc.NUMER_FV);
+        if (existingDocIndex === -1) {
+            // Jeśli nie istnieje, dodaj nowy obiekt
+            noDoubleDocuments.push({ ...doc });
+        } else {
+            // Jeśli istnieje, zaktualizuj wartość DO_ROZLICZENIA
+            noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
+        }
+    });
+
     try {
         const update = await UpdateDB.updateOne(
             {},
-            { $set: { date: actualDate, settlements: cleanDocument } },
+            { $set: { date: actualDate, settlements: noDoubleDocuments } },
             { upsert: true }
         );
 
@@ -297,7 +310,7 @@ const settlementsFile = async (rows, res) => {
 
         // sprawdzenie czy w rozrachunkach znajduje się faktura z DB
         for (const doc of allDocuments) {
-            const found = cleanDocument.find(cleanDoc => cleanDoc.NUMER_FV === doc.NUMER_FV);
+            const found = noDoubleDocuments.find(double => double.NUMER_FV === doc.NUMER_FV);
             if (found) {
                 try {
                     const result = await Document.updateOne(
@@ -322,6 +335,7 @@ const settlementsFile = async (rows, res) => {
                 }
             }
         }
+
         res.status(201).json({ 'message': 'Documents are updated' });
     }
     catch (error) {
@@ -329,6 +343,75 @@ const settlementsFile = async (rows, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+
+// // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
+// const settlementsFile = async (rows, res) => {
+
+//     if (!rows[0]['TYTUŁ'] && !rows[0]['TERMIN'] && !rows[0]['NALEŻNOŚĆ']) {
+//         return res.status(500).json({ error: "Invalid file" });
+//     }
+
+//     const cleanDocument = rows.map(row => {
+//         const cleanDoc = row['TYTUŁ'].split(' ')[0];
+//         let termin;
+//         if (row['TERMIN'] && isExcelDate(row['TERMIN'])) {
+//             termin = excelDateToISODate(row['TERMIN']).toString();
+//         } else {
+//             termin = row['TERMIN'] ? row['TERMIN'] : '';
+//         }
+//         return {
+//             NUMER_FV: cleanDoc,
+//             TERMIN: termin,
+//             DO_ROZLICZENIA: row['NALEŻNOŚĆ'] ? row['NALEŻNOŚĆ'] : 0
+//         };
+//     });
+
+//     const actualDate = new Date();
+
+//     try {
+//         const update = await UpdateDB.updateOne(
+//             {},
+//             { $set: { date: actualDate, settlements: cleanDocument } },
+//             { upsert: true }
+//         );
+
+//         const allDocuments = await Document.find({});
+
+//         // sprawdzenie czy w rozrachunkach znajduje się faktura z DB
+//         for (const doc of allDocuments) {
+//             const found = cleanDocument.find(cleanDoc => cleanDoc.NUMER_FV === doc.NUMER_FV);
+//             if (found) {
+//                 try {
+//                     const result = await Document.updateOne(
+//                         { NUMER_FV: doc.NUMER_FV },
+//                         { $set: { DO_ROZLICZENIA: found.DO_ROZLICZENIA } }
+//                     );
+//                 } catch (error) {
+//                     console.error("Error while updating the document", error);
+//                 }
+
+//             } else {
+//                 try {
+//                     if (doc.DO_ROZLICZENIA !== 0) {
+//                         const result = await Document.updateOne(
+//                             { NUMER_FV: doc.NUMER_FV },
+//                             { $set: { DO_ROZLICZENIA: 0 } }
+//                         );
+//                     }
+
+//                 } catch (error) {
+//                     console.error("Error while updating the document", error);
+//                 }
+//             }
+//         }
+//         res.status(201).json({ 'message': 'Documents are updated' });
+//     }
+//     catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// };
 
 //chwilowa funckja do naprawienia danych w DB
 const repairFile = async (rows, res) => {
