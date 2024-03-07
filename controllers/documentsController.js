@@ -420,17 +420,17 @@ const repairFile = async (rows, res) => {
 
     const filteredD98 = allDocuments.map(document => {
 
-        if (document.JAKA_KANCELARIA === "MLEGAL") {
+        if (document.NUMER_FV === "FV/UBL/68/24/V/D8") {
 
             return {
                 NUMER_FV: document.NUMER_FV,
                 // DZIAL: DZIAL_NR
-                JAKA_KANCELARIA: "M_LEGAL"
+                TERMIN: "2024-03-16"
             };
         }
     }).filter(Boolean);
 
-    // console.log(filteredD98);
+    console.log(filteredD98);
 
     for (const doc of filteredD98) {
 
@@ -441,7 +441,7 @@ const repairFile = async (rows, res) => {
                 //     { NUMER_FV: doc.NUMER_FV },
                 //     {
                 //         $set: {
-                //             JAKA_KANCELARIA: doc.JAKA_KANCELARIA,
+                //             TERMIN: doc.TERMIN,
                 //         }
                 //     }
                 // );
