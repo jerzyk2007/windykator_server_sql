@@ -1,10 +1,12 @@
 const Contact = require('../model/Contact');
+const { logEvents } = require('../middleware/logEvents');
 
 const getAllContacts = async (req, res) => {
     try {
         const result = await Contact.find({});
         res.json(result);
     } catch (error) {
+        logEvents(`contactsController, getAllContacts: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -21,6 +23,7 @@ const getSearchContacts = async (req, res) => {
         );
         res.status(200).json(filteredContacts);
     } catch (error) {
+        logEvents(`contactsController, getSearchContacts: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -39,6 +42,7 @@ const getUpdateContacts = async (req, res) => {
         }
     }
     catch (error) {
+        logEvents(`contactsController, getUpdateContacts: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }

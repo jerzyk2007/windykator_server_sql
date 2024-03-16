@@ -1,5 +1,6 @@
 const Contact = require('../model/Contact');
 const { read, utils } = require('xlsx');
+const { logEvents } = require('../middleware/logEvents');
 
 // isExcelFile sprawdza czy plik jest naprawdę w frmacie excel (zabezpiecza przed podmianą rozszerzenia na xlsx)
 const isExcelFile = (data) => {
@@ -72,8 +73,9 @@ const addMailAndPhoneToExistingData = async (data, info) => {
             }
         }
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        logEvents(`contactsFileController, addMailAndPhoneToExistingData: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
     }
 };
 
@@ -105,8 +107,9 @@ const addNewDataToDataBase = async (data) => {
 
         delete data.verify;
         await Contact.create(data);
-    } catch (err) {
-        console.log(err);
+    } catch (error) {
+        logEvents(`contactsFileController, addNewDataToDataBase: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
     }
 };
 
@@ -166,6 +169,7 @@ const addManyContactsFromExcel = async (req, res) => {
         res.status(200).json({ message: `Kontakty zostały zaktualizowane.` });
 
     } catch (error) {
+        logEvents(`contactsFileController, addManyContactsFromExcel: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }

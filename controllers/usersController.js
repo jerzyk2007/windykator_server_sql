@@ -1,7 +1,7 @@
 const User = require('../model/User');
 const bcryptjs = require('bcryptjs');
 const ROLES_LIST = require("../config/roles_list");
-
+const { logEvents } = require('../middleware/logEvents');
 
 // rejestracja nowego użytkownika
 const createNewUser = async (req, res) => {
@@ -25,9 +25,10 @@ const createNewUser = async (req, res) => {
 
         res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
     }
-    catch (err) {
-        console.log(err);
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, createNewUser: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -54,9 +55,10 @@ const handleChangeLogin = async (req, res) => {
             res.status(201).json({ message: newUserlogin });
         }
     }
-    catch (err) {
-        res.status(500).json({ 'message': err.message });
-        console.log(err);
+    catch (error) {
+        logEvents(`usersController, handleChangeLogin: ${error}`, 'reqServerErrors.txt');
+        console.log(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -80,9 +82,10 @@ const handleChangeName = async (req, res) => {
             res.status(201).json({ message: 'The name and surname have been changed.' });
         }
     }
-    catch (err) {
-        res.status(500).json({ 'message': err.message });
-        console.log(err);
+    catch (error) {
+        logEvents(`usersController, handleChangeName: ${error}`, 'reqServerErrors.txt');
+        console.log(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -108,9 +111,10 @@ const changePassword = async (req, res) => {
 
         res.status(201).json({ 'message': 'Password is changed' });
     }
-    catch (err) {
-        console.log(err);
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, changePassword: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -140,9 +144,10 @@ const changePasswordAnotherUser = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, changePasswordAnotherUser: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -169,9 +174,10 @@ const changeUserPermissions = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, changeUserPermissions: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -198,9 +204,10 @@ const changeUserDepartments = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, changePasswordAnotherUser: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -225,9 +232,10 @@ const deleteUser = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, deleteUser: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -252,10 +260,10 @@ const saveTableSettings = async (req, res) => {
             res.status(400).json({ 'message': 'Table settings are not changed' });
         }
     }
-    catch (err) {
+    catch (error) {
+        logEvents(`usersController, saveTableSettings: ${error}`, 'reqServerErrors.txt');
         console.log(error);
-
-        res.status(500).json({ 'message': err.message });
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -273,8 +281,9 @@ const getTableSettings = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        logEvents(`usersController, getTableSettings: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -293,8 +302,9 @@ const getUserColumns = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        logEvents(`usersController, getUserColumns: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -324,8 +334,9 @@ const getUsersData = async (req, res) => {
             res.json([]);
         }
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        logEvents(`usersController, getUsersData: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -354,7 +365,8 @@ const changeRoles = async (req, res) => {
         }
     }
     catch (error) {
-        console.log(error);
+        logEvents(`usersController, changeRoles: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -372,7 +384,8 @@ const changeColumns = async (req, res) => {
         res.status(201).json({ 'message': 'Columns are saved.' });
     }
     catch (error) {
-        console.log(error);
+        logEvents(`usersController, changeColumns: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -399,10 +412,10 @@ const saveRaporDepartmentSettings = async (req, res) => {
             res.status(400).json({ 'message': 'Table settings are not changed' });
         }
     }
-    catch (err) {
-        console.log(err);
-
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, saveRaporDepartmentSettings: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -420,8 +433,9 @@ const getRaportDepartmentSettings = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        logEvents(`usersController, getRaportDepartmentSettings: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -447,10 +461,10 @@ const saveRaporAdviserSettings = async (req, res) => {
             res.status(400).json({ 'message': 'Table settings are not changed' });
         }
     }
-    catch (err) {
-        console.log(err);
-
-        res.status(500).json({ 'message': err.message });
+    catch (error) {
+        logEvents(`usersController, saveRaporAdviserSettings: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
+        res.status(500).json({ 'message': error.message });
     }
 };
 
@@ -468,8 +482,9 @@ const getRaportAdviserSettings = async (req, res) => {
             return res.status(404).json({ 'message': 'User not found.' });
         }
     }
-    catch (err) {
-        console.log(err);
+    catch (error) {
+        logEvents(`usersController, getRaportAdviserSettings: ${error}`, 'reqServerErrors.txt');
+        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };

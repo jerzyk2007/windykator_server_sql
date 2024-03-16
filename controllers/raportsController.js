@@ -1,6 +1,6 @@
 const Document = require('../model/Document');
 const User = require('../model/User');
-// const { read, utils } = require('xlsx');
+const { logEvents } = require('../middleware/logEvents');
 
 // pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -27,6 +27,7 @@ const getDataRaport = async (req, res) => {
             return res.json({ data: standardFiltered, permission: "Standard" });
         }
     } catch (error) {
+        logEvents(`raportsController, getDataRaport: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }

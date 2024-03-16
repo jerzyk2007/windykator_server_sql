@@ -71,6 +71,6 @@ connectDB();
 mongoose.connection.once('open', () => {
     console.log('Connected to mongoDB');
     app.listen(process.env.PORT || 3500, () => {
-        console.log(`Server is listenig on port 3500`);
+        console.log(`Server is listenig on port ${process.env.PORT ? process.env.PORT : 3500}`);
     });
 });

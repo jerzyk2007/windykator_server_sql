@@ -1,6 +1,6 @@
 const FKRaport = require('../model/FKRaport');
 const { read, utils } = require('xlsx');
-
+const { logEvents } = require('../middleware/logEvents');
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
 const isExcelFile = (data) => {
@@ -40,6 +40,7 @@ const documentsFromFile = async (req, res) => {
 
     }
     catch (error) {
+        logEvents(`fkRaportController, documentsFromFile: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -54,6 +55,7 @@ const getData = async (req, res) => {
         res.json(FKObject);
     }
     catch (error) {
+        logEvents(`fkRaportController, getData: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }

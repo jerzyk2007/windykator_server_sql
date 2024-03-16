@@ -2,6 +2,7 @@ const Document = require('../model/Document');
 const User = require('../model/User');
 const UpdateDB = require('../model/UpdateDB');
 const { read, utils } = require('xlsx');
+const { logEvents } = require('../middleware/logEvents');
 
 // pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getAllDocuments = async (req, res) => {
@@ -50,6 +51,7 @@ const getAllDocuments = async (req, res) => {
         }
 
     } catch (error) {
+        logEvents(`documentsController, getAllDocuments: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -136,6 +138,7 @@ const sharepointFile = async (rows, res) => {
         res.status(201).json({ 'message': 'Documents are updated' });
     }
     catch (error) {
+        logEvents(`documentsController, sharepointFile: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -263,6 +266,7 @@ const ASFile = async (documents, res) => {
         res.status(201).json({ 'message': 'Documents are updated' });
     }
     catch (error) {
+        logEvents(`documentsController, ASFile: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -345,11 +349,11 @@ const settlementsFile = async (rows, res) => {
         res.status(201).json({ 'message': 'Documents are updated' });
     }
     catch (error) {
+        logEvents(`documentsController, settlementsFile: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
-
 
 
 //chwilowa funckja do naprawienia danych w DB
@@ -391,6 +395,7 @@ const repairFile = async (rows, res) => {
                 //     }
                 // );
             } catch (error) {
+                logEvents(`documentsController, repairFile: ${error}`, 'reqServerErrors.txt');
                 console.error("Error while updating the document", error);
             }
         }
@@ -433,6 +438,7 @@ const documentsFromFile = async (req, res) => {
 
     }
     catch (error) {
+        logEvents(`documentsController, documentsFromFile: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -454,6 +460,7 @@ const getColumns = async (req, res) => {
     }
 
     catch (error) {
+        logEvents(`documentsController, getColumns: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -472,6 +479,7 @@ const changeSingleDocument = async (req, res) => {
     }
 
     catch (error) {
+        logEvents(`documentsController, changeSingleDocument: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }

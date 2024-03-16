@@ -1,6 +1,7 @@
 const Setting = require('../model/Setting');
 const User = require('../model/User');
 const Document = require('../model/Document');
+const { logEvents } = require('../middleware/logEvents');
 
 
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny 
@@ -28,10 +29,9 @@ const changeColumns = async (req, res) => {
 
         }
         res.end();
-
     }
-
     catch (error) {
+        logEvents(`settingsController, changeColumns: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -60,6 +60,7 @@ const getFilteredDepartments = async () => {
         return result;
     }
     catch (error) {
+        logEvents(`settingsController, getFilteredDepartments: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -83,7 +84,6 @@ const getSettings = async (req, res) => {
         }
 
         const columns = [...result[0].columns];
-
         const permissions = [...result[0].permissions];
 
         const mappedDepartments = await getFilteredDepartments();
@@ -92,6 +92,7 @@ const getSettings = async (req, res) => {
         res.json([{ roles }, { departments: uniqueDepartmentsValues }, { columns }, { permissions }]);
     }
     catch (error) {
+        logEvents(`settingsController, getSettings: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -104,6 +105,7 @@ const getColumns = async (req, res) => {
         res.json(columns);
     }
     catch (error) {
+        logEvents(`settingsController, getColumns: ${error}`, 'reqServerErrors.txt');
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
