@@ -54,6 +54,7 @@ app.use('/settings', require('./routes/api/settings'));
 app.use('/user', require('./routes/api/users'));
 app.use('/raport', require('./routes/api/raports'));
 app.use('/update', require('./routes/api/update'));
+app.use('/fk', require('./routes/api/fkRaport'));
 // app.use('/user', require('./routes/api/users'));
 // app.use('/search', require('./routes/api/phrases'));
 // app.use('/add-data', require('./routes/api/phrases'));

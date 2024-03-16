@@ -23,6 +23,7 @@ const userSchema = new Schema({
             default: 100
         },
         Editor: Number,
+        FK: Number,
         Admin: Number,
         Root: Number
     },

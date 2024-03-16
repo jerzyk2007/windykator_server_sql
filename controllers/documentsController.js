@@ -174,6 +174,7 @@ const ASFile = async (documents, res) => {
             if (!found) {
                 const indexD = document.NUMER.lastIndexOf('D');
                 const DZIAL_NR = document.NUMER.substring(indexD);
+
                 if (DZIAL_NR === "D8") {
                     ASYSTENTKA = 'Ela / Jurek';
                     DZIAL = "D08";
@@ -205,7 +206,11 @@ const ASFile = async (documents, res) => {
                 if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
                     ASYSTENTKA = 'Dawid Antosik';
                     DZIAL = "D308/D318";
+                } else {
+                    ASYSTENTKA = document['PRZYGOTOWAŁ'];
+                    DZIAL = DZIAL_NR;
                 }
+
                 filteredDocuments.push(document);
             }
         }
@@ -251,6 +256,7 @@ const ASFile = async (documents, res) => {
                 newDocumentsToDB.push(newDocument);
             }
         }
+        // console.log(newDocumentsToDB);
         const update = await Document.insertMany(newDocumentsToDB);
 
 
@@ -345,73 +351,6 @@ const settlementsFile = async (rows, res) => {
 };
 
 
-// // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
-// const settlementsFile = async (rows, res) => {
-
-//     if (!rows[0]['TYTUŁ'] && !rows[0]['TERMIN'] && !rows[0]['NALEŻNOŚĆ']) {
-//         return res.status(500).json({ error: "Invalid file" });
-//     }
-
-//     const cleanDocument = rows.map(row => {
-//         const cleanDoc = row['TYTUŁ'].split(' ')[0];
-//         let termin;
-//         if (row['TERMIN'] && isExcelDate(row['TERMIN'])) {
-//             termin = excelDateToISODate(row['TERMIN']).toString();
-//         } else {
-//             termin = row['TERMIN'] ? row['TERMIN'] : '';
-//         }
-//         return {
-//             NUMER_FV: cleanDoc,
-//             TERMIN: termin,
-//             DO_ROZLICZENIA: row['NALEŻNOŚĆ'] ? row['NALEŻNOŚĆ'] : 0
-//         };
-//     });
-
-//     const actualDate = new Date();
-
-//     try {
-//         const update = await UpdateDB.updateOne(
-//             {},
-//             { $set: { date: actualDate, settlements: cleanDocument } },
-//             { upsert: true }
-//         );
-
-//         const allDocuments = await Document.find({});
-
-//         // sprawdzenie czy w rozrachunkach znajduje się faktura z DB
-//         for (const doc of allDocuments) {
-//             const found = cleanDocument.find(cleanDoc => cleanDoc.NUMER_FV === doc.NUMER_FV);
-//             if (found) {
-//                 try {
-//                     const result = await Document.updateOne(
-//                         { NUMER_FV: doc.NUMER_FV },
-//                         { $set: { DO_ROZLICZENIA: found.DO_ROZLICZENIA } }
-//                     );
-//                 } catch (error) {
-//                     console.error("Error while updating the document", error);
-//                 }
-
-//             } else {
-//                 try {
-//                     if (doc.DO_ROZLICZENIA !== 0) {
-//                         const result = await Document.updateOne(
-//                             { NUMER_FV: doc.NUMER_FV },
-//                             { $set: { DO_ROZLICZENIA: 0 } }
-//                         );
-//                     }
-
-//                 } catch (error) {
-//                     console.error("Error while updating the document", error);
-//                 }
-//             }
-//         }
-//         res.status(201).json({ 'message': 'Documents are updated' });
-//     }
-//     catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: 'Server error' });
-//     }
-// };
 
 //chwilowa funckja do naprawienia danych w DB
 const repairFile = async (rows, res) => {
@@ -420,28 +359,34 @@ const repairFile = async (rows, res) => {
 
     const filteredD98 = allDocuments.map(document => {
 
-        if (document.NUMER_FV === "FV/UBL/68/24/V/D8") {
+        if (document.DZIAL === "D8") {
 
             return {
                 NUMER_FV: document.NUMER_FV,
                 // DZIAL: DZIAL_NR
-                TERMIN: "2024-03-16"
+                DZIAL: "D08"
             };
         }
     }).filter(Boolean);
 
-    console.log(filteredD98);
+    // console.log(filteredD98);
 
     for (const doc of filteredD98) {
 
 
         if (true) {
             try {
+
+                // const result = await Document.deleteOne(
+                //     { NUMER_FV: doc.NUMER_FV },
+
+                // );
+
                 // const result = await Document.updateOne(
                 //     { NUMER_FV: doc.NUMER_FV },
                 //     {
                 //         $set: {
-                //             TERMIN: doc.TERMIN,
+                //             DZIAL: doc.DZIAL,
                 //         }
                 //     }
                 // );
@@ -493,15 +438,15 @@ const documentsFromFile = async (req, res) => {
     }
 };
 
+// pobiera wszystkie klucze z pierwszego documentu żeby zrobic takie kolumny
 const getColumns = async (req, res) => {
     try {
         const firstDocument = await Document.findOne();
         if (firstDocument) {
             // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
             const keysArray = Object.keys(firstDocument.toObject());
-            keysArray.shift();
-            keysArray.pop();
-            res.json(keysArray);
+            const newArray = keysArray.filter(item => item !== "_id" && item !== "__v");
+            res.json(newArray);
         }
         else {
             return res.status(400).json({ error: 'Empty collection.' });

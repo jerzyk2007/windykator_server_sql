@@ -70,13 +70,18 @@ const getSettings = async (req, res) => {
     try {
         const result = await Setting.find().exec();
         const rolesJSON = JSON.stringify(result[0].roles);
-        const rolesObject = JSON.parse(rolesJSON);
+        const rolesObjectNoSort = JSON.parse(rolesJSON);
+
+        // sortowanie roles wg wartości liczbowej
+        const sortedEntries = Object.entries(rolesObjectNoSort).sort((a, b) => a[1] - b[1]);
+        const rolesObject = Object.fromEntries(sortedEntries);
+
         const roles = Object.entries(rolesObject).map(([role]) => role);
         const indexToRemove = roles.indexOf("Root");
         if (indexToRemove !== -1) {
             roles.splice(indexToRemove, 1);
         }
-        // const departments = [...result[0].departments];
+
         const columns = [...result[0].columns];
 
         const permissions = [...result[0].permissions];
