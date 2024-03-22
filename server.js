@@ -65,12 +65,16 @@ app.all('*', (req, res) => {
     res.status(404);
 });
 
-// connect to mongoDB
-connectDB();
 
-mongoose.connection.once('open', () => {
-    console.log('Connected to mongoDB');
-    app.listen(process.env.PORT || 3500, () => {
-        console.log(`Server is listenig on port ${process.env.PORT ? process.env.PORT : 3500}`);
-    });
+app.listen(process.env.PORT || 3500, () => {
+    console.log(`Server is listenig on port ${process.env.PORT ? process.env.PORT : 3500}`);
 });
+// connect to mongoDB
+// connectDB();
+
+// mongoose.connection.once('open', () => {
+//     console.log('Connected to mongoDB');
+//     app.listen(process.env.PORT || 3500, () => {
+//         console.log(`Server is listenig on port ${process.env.PORT ? process.env.PORT : 3500}`);
+//     });
+// });
