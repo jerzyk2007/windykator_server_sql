@@ -7,6 +7,7 @@ const verifyRoles = require("../../middleware/verifyRoles");
 
 
 router.route('/get-time')
-    .get(verifyRoles(ROLES_LIST.User), update.getTime);
+    // .get(verifyRoles(ROLES_LIST.User), update.getTime);
+    .get(update.getTime);
 
 module.exports = router;

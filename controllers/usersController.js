@@ -346,6 +346,7 @@ const changeRoles = async (req, res) => {
     const { _id } = req.params;
     const { roles } = req.body;
 
+
     const newRoles = { ...ROLES_LIST };
     const filteredRoles = Object.fromEntries(
         Object.entries(newRoles).filter(([key]) => roles.includes(key))
@@ -359,6 +360,7 @@ const changeRoles = async (req, res) => {
                 { _id },
                 { $set: { roles: filteredRoles } }
             );
+
             res.status(201).json({ 'message': 'Roles are saved.' });
         } else {
             res.status(400).json({ 'message': 'Roles are not saved.' });

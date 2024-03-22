@@ -209,10 +209,11 @@ const ASFile = async (documents, res) => {
                 if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
                     ASYSTENTKA = 'Dawid Antosik';
                     DZIAL = "D308/D318";
-                } else {
-                    ASYSTENTKA = document['PRZYGOTOWAŁ'];
-                    DZIAL = DZIAL_NR;
                 }
+                // else {
+                //     ASYSTENTKA = document['PRZYGOTOWAŁ'];
+                //     DZIAL = DZIAL_NR;
+                // }
 
                 filteredDocuments.push(document);
             }
@@ -363,17 +364,18 @@ const repairFile = async (rows, res) => {
 
     const filteredD98 = allDocuments.map(document => {
 
-        if (document.DZIAL === "D8") {
+        if (document.DZIAL === "D148") {
 
             return {
                 NUMER_FV: document.NUMER_FV,
                 // DZIAL: DZIAL_NR
-                DZIAL: "D08"
+                DZIAL: "D118/D148",
+                ASYSTENTKA: 'Marta Bednarek'
             };
         }
     }).filter(Boolean);
 
-    // console.log(filteredD98);
+    console.log(filteredD98);
 
     for (const doc of filteredD98) {
 
@@ -391,6 +393,7 @@ const repairFile = async (rows, res) => {
                 //     {
                 //         $set: {
                 //             DZIAL: doc.DZIAL,
+                //             ASYSTENTKA: doc.ASYSTENTKA
                 //         }
                 //     }
                 // );
