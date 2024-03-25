@@ -67,7 +67,7 @@ app.all('*', (req, res) => {
 
 
 app.listen(process.env.PORT || 3500, () => {
-    console.log(`Server is listenig on port ${process.env.PORT ? process.env.PORT : 3500}`);
+    console.log(`Server is listenig on port ${process.env.PORT ? process.env.PORT : 3000}`);
 });
 // connect to mongoDB
 // connectDB();
