@@ -84,3 +84,9 @@
 20240325	14:38:43	cors-origin after: 3
 20240325	14:38:43	cors-origin before: http://localhost:3000
 20240325	14:38:43	cors-origin after: 3
+20240326	12:11:47	cors-origin before: undefined
+20240326	12:11:47	cors-origin after: -1
+20240326	12:45:10	cors-origin after: -1
+20240326	12:45:10	cors-origin before: undefined
+20240326	12:45:10	cors-origin before: undefined
+20240326	12:45:10	cors-origin after: -1
