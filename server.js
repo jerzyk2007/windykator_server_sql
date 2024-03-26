@@ -70,21 +70,9 @@ const sslServer = https.createServer({
 // connect to mongoDB
 // connectDB();
 
-
-sslServer.listen(process.env.PORT, () => {
-    console.log(
-        `Server is listenig on port ${process.env.PORT}`
-    );
+mongoose.connection.once('open', () => {
+    console.log('Connected to mongoDB');
+    app.listen(process.env.PORT || 3000, () => {
+        console.log(`Server is listenig on port ${process.env.PORT ? process.env.PORT : 3000}`);
+    });
 });
-
-
-
-// mongoose.connection.once("open", () => {
-//     console.log("Connected to mongoDB");
-//     //   app.listen(process.env.PORT || 3000, "0.0.0.0", () => {
-//     sslServer.listen(process.env.PORT || 3000, () => {
-//         console.log(
-//             `Server is listenig on port ${process.env.PORT ? process.env.PORT : 3000}`
-//         );
-//     });
-// });

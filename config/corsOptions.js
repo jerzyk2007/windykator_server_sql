@@ -3,10 +3,9 @@ const { logEvents } = require('../middleware/logEvents');
 
 const corsOptions = {
     origin: (origin, callback) => {
-        logEvents(`cors-origin before: ${origin}`, 'reqLogCors.txt');
-        logEvents(`cors-origin after: ${allowedOrigins.indexOf(origin)}`, 'reqLogCors.txt');
-        // if (allowedOrigins.indexOf(origin) !== -1) {
-        if (true) {
+        // logEvents(`cors-origin before: ${origin}`, 'reqLogCors.txt');
+        // logEvents(`cors-origin after: ${allowedOrigins.indexOf(origin)}`, 'reqLogCors.txt');
+        if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
