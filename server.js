@@ -52,24 +52,31 @@ app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
 
 app.all("*", (req, res) => {
-    res.status(404);
+  res.status(404);
 });
 
 const options = {
-    key: fs.readFileSync(path.join(__dirname, "cert", "krotoski.key")),
-    cert: fs.readFileSync(path.join(__dirname, "cert", "krotoski.com.crt")),
+  key: fs.readFileSync(path.join(__dirname, "cert", "krotoski.key")),
+  cert: fs.readFileSync(path.join(__dirname, "cert", "krotoski.com.crt")),
 };
 
 // // connect to mongoDB
 connectDB();
 
+// mongoose.connection.once("open", () => {
+//     const server = https
+//         .createServer(options, app)
+//         .listen(process.env.PORT, "0.0.0.0", function () {
+//             console.log(
+//                 "Express server listening on port " +
+//                 `${process.env.PORT ? process.env.PORT : 3000}`
+//             );
+//         });
+// });
+
 mongoose.connection.once("open", () => {
-    const server = https
-        .createServer(options, app)
-        .listen(process.env.PORT, "0.0.0.0", function () {
-            console.log(
-                "Express server listening on port " +
-                `${process.env.PORT ? process.env.PORT : 3000}`
-            );
-        });
+  console.log("Connected to mongoDB");
+  app.listen(3500, () => {
+    console.log(`Server is listenig on port 3500`);
+  });
 });
