@@ -63,20 +63,20 @@ const options = {
 // // connect to mongoDB
 connectDB();
 
-// mongoose.connection.once("open", () => {
-//     const server = https
-//         .createServer(options, app)
-//         .listen(process.env.PORT, "0.0.0.0", function () {
-//             console.log(
-//                 "Express server listening on port " +
-//                 `${process.env.PORT ? process.env.PORT : 3000}`
-//             );
-//         });
-// });
-
 mongoose.connection.once("open", () => {
-  console.log("Connected to mongoDB");
-  app.listen(3500, () => {
-    console.log(`Server is listenig on port 3500`);
-  });
+  const server = https
+    .createServer(options, app)
+    .listen(process.env.PORT, "0.0.0.0", function () {
+      console.log(
+        "Express server listening on port " +
+          `${process.env.PORT ? process.env.PORT : 3000}`
+      );
+    });
 });
+
+// mongoose.connection.once("open", () => {
+//   console.log("Connected to mongoDB");
+//   app.listen(3500, () => {
+//     console.log(`Server is listenig on port 3500`);
+//   });
+// });

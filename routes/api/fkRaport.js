@@ -16,6 +16,6 @@ router
     FKRaport.documentsFromFile
   );
 
-router.route("/get-data").get(verifyRoles(ROLES_LIST.FK), FKRaport.getData);
+router.route("/get-data").post(verifyRoles(ROLES_LIST.FK), FKRaport.getData);
 
 module.exports = router;

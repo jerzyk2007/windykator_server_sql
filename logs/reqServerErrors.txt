@@ -46,3 +46,6 @@
 20240325	10:24:55	refreshTokenController, handleRefreshToken: MongooseError: Operation `users.findOne()` buffering timed out after 10000ms
 20240325	10:24:55	logoutController, handleLogout: MongooseError: Operation `users.findOne()` buffering timed out after 10000ms
 20240325	10:25:05	logoutController, handleLogout: MongooseError: Operation `users.findOne()` buffering timed out after 10000ms
+20240402	18:44:07	fkRaportController, getData: TypeError: Assignment to constant variable.
+20240402	18:44:33	fkRaportController, getData: TypeError: Assignment to constant variable.
+20240402	18:46:04	fkRaportController, getData: TypeError: Assignment to constant variable.

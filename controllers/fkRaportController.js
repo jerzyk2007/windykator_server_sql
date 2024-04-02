@@ -47,12 +47,41 @@ const documentsFromFile = async (req, res) => {
 };
 
 const getData = async (req, res) => {
-  console.log(req.query);
+  const { filter } = req.body;
+  // console.log(filter);
+
   try {
     const result = await FKRaport.find({});
 
     const FKJSON = JSON.stringify(result[0].FKData);
-    const FKObject = JSON.parse(FKJSON);
+    let FKObject = JSON.parse(FKJSON);
+
+    if (filter.raport === "accountRaport" && filter.business !== "201203") {
+      FKObject = FKObject.filter(
+        (item) => item["RODZAJ KONTA"] === Number(filter.business)
+      );
+    }
+
+    if (filter.raport === "lawyerRaport") {
+      FKObject = FKObject.filter(
+        (item) => item["CZY KANCELARIA\r\nTAK/ NIE"] === "TAK"
+      );
+    }
+
+    if (filter.payment !== "Wszystko") {
+      if (filter.payment === "Przeterminowane") {
+        FKObject = FKObject.filter(
+          (item) =>
+            item["PRZETERMINOWANE/NIEPRZETERMINOWANE"] === "PRZETERMINOWANE"
+        );
+      } else if (filter.payment === "Nieprzeterminowane") {
+        FKObject = FKObject.filter(
+          (item) =>
+            item["PRZETERMINOWANE/NIEPRZETERMINOWANE"] === "NIEPRZETERMINOWANE"
+        );
+      }
+    }
+
     res.json(FKObject);
 
     // const transformedData = result[0].FKData.map((item) => {
