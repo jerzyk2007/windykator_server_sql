@@ -49,3 +49,9 @@
 20240402	18:44:07	fkRaportController, getData: TypeError: Assignment to constant variable.
 20240402	18:44:33	fkRaportController, getData: TypeError: Assignment to constant variable.
 20240402	18:46:04	fkRaportController, getData: TypeError: Assignment to constant variable.
+20240403	15:29:22	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240403	15:29:38	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240404	15:28:34	documentsController, getAllDocuments: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240404	15:28:34	usersController, getTableSettings: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240404	15:28:34	usersController, getUserColumns: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240404	17:12:24	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
