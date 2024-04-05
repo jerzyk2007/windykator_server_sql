@@ -48,7 +48,6 @@ const documentsFromFile = async (req, res) => {
 
 const getData = async (req, res) => {
   const { filter } = req.body;
-  // console.log(filter);
 
   try {
     const result = await FKRaport.find({});
@@ -82,6 +81,19 @@ const getData = async (req, res) => {
       }
     }
 
+    if (filter.actions !== "All") {
+      if (filter.actions === "Tak") {
+        FKObject = FKObject.filter(
+          (item) => item["CZY KANCELARIA\r\nTAK/ NIE"] === "TAK"
+        );
+      }
+
+      if (filter.actions === "Nie") {
+        FKObject = FKObject.filter(
+          (item) => item["CZY KANCELARIA\r\nTAK/ NIE"] === "NIE"
+        );
+      }
+    }
     res.json(FKObject);
 
     // const transformedData = result[0].FKData.map((item) => {
