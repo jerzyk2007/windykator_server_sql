@@ -55,3 +55,21 @@
 20240404	15:28:34	usersController, getTableSettings: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240404	15:28:34	usersController, getUserColumns: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240404	17:12:24	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240405	19:36:30	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240406	11:36:21	fkRaportController, documentsFromFile: TypeError: rows[0].map is not a function
+20240406	13:17:44	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:19:03	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:20:49	fkRaportController, documentsFromFile: ReferenceError: excelDate is not defined
+20240406	13:21:21	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:21:55	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:24:02	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:24:34	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:25:32	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:26:09	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:27:18	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:28:15	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240406	13:28:49	fkRaportController, documentsFromFile: RangeError: Invalid time value
+20240407	08:10:59	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240407	09:31:05	fkRaportController, documentsFromFile: ReferenceError: FKARaport is not defined
+20240407	10:17:54	documentsController, getColumns: ReferenceError: newArray is not defined
+20240407	10:18:05	documentsController, getColumns: ReferenceError: newArray is not defined
