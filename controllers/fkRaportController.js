@@ -243,10 +243,6 @@ const changeColumns = async (req, res) => {
 //funkcja która pobiera kolumny które już zostały zapisane i zmodyfikowane
 const getColumns = async (req, res) => {
   try {
-    // const result = await FKRaport.find({}).exec();
-    // const { columns } = result[0];
-    // res.json(columns);
-
     const result = await FKRaport.aggregate([
       {
         $project: {
