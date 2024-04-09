@@ -108,7 +108,9 @@ const documentsFromFile = async (req, res) => {
 
     const update = await FKRaport.updateOne(
       {},
-      { $set: { FKData: updateRows } },
+      {
+        $set: { "data.FKData": updateRows }, // Ustaw nowe dane dla pola data.FKData, nadpisując stare dane
+      },
       { upsert: true }
     );
 
@@ -128,7 +130,15 @@ const getData = async (req, res) => {
   const { filter } = req.body;
 
   try {
-    const result = await FKRaport.find({});
+    // const result = await FKRaport.find({});
+    const result = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          FKData: "$data.FKData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
 
     const FKJSON = JSON.stringify(result[0].FKData);
     let FKObject = JSON.parse(FKJSON);
@@ -138,10 +148,6 @@ const getData = async (req, res) => {
         (item) => item.RODZAJ_KONTA === Number(filter.business)
       );
     }
-
-    // if (filter.raport === "lawyerRaport" && filter.actions === "All") {
-    //   FKObject = FKObject.filter((item) => item.CZY_W_KANCELARI === "TAK");
-    // }
 
     if (filter.payment !== "Wszystko") {
       if (filter.payment === "Przeterminowane") {
@@ -178,14 +184,26 @@ const getData = async (req, res) => {
 // pobiera wszystkie klucze z pierwszego documentu żeby mozna było nazwy, filtry i ustawienia kolumn edytować, głównie chodzi o nowo dodane kolumny
 const getNewColumns = async (req, res) => {
   try {
-    const data = await FKRaport.findOne();
-    const firstDocument = data.FKData[0];
+    // const result = await FKRaport.findOne();
+    const result = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          FKData: "$data.FKData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+
+    const firstDocument = result[0].FKData[0];
+
     if (firstDocument) {
       // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
-      const keysArray = Object.keys(firstDocument.toObject());
+      const keysArray = Object.keys(firstDocument);
+
       const newArray = keysArray.filter(
         (item) => item !== "_id" && item !== "__v"
       );
+
       res.json(newArray);
     } else {
       return res.status(400).json({ error: "Empty collection." });
@@ -203,11 +221,11 @@ const getNewColumns = async (req, res) => {
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny
 const changeColumns = async (req, res) => {
   const { columns } = req.body;
-
+  const updateColumns = { tableSettings: { columns } };
   try {
-    const result = await FKRaport.findOneAndUpdate(
+    const result = await FKRaport.updateOne(
       {},
-      { $set: { columns } },
+      { $set: updateColumns },
       { new: true, upsert: true }
     );
 
@@ -225,9 +243,19 @@ const changeColumns = async (req, res) => {
 //funkcja która pobiera kolumny które już zostały zapisane i zmodyfikowane
 const getColumns = async (req, res) => {
   try {
-    const result = await FKRaport.find({}).exec();
-    const { columns } = result[0];
-    res.json(columns);
+    // const result = await FKRaport.find({}).exec();
+    // const { columns } = result[0];
+    // res.json(columns);
+
+    const result = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          columns: "$tableSettings.columns", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    res.json(result[0].columns);
   } catch (error) {
     logEvents(
       `fkRaportController, getColumns: ${error}`,
