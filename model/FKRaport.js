@@ -82,6 +82,28 @@ const FKAllDataSchema = new Schema({
         },
       },
     ],
+    FKAccountancy: [
+      {
+        NR_DOKUMENTU: {
+          type: String,
+        },
+        DZIAL: {
+          type: String,
+        },
+        KONTRAHENT: {
+          type: String,
+        },
+        DO_ROZLICZENIA_FK: {
+          type: Number,
+        },
+        TERMIN_PLATNOSCI: {
+          type: String,
+        },
+        KONTO: {
+          type: Number,
+        },
+      },
+    ],
   },
   tableSettings: {
     columns: {
