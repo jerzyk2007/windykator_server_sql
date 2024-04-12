@@ -26,13 +26,20 @@ const accountancyData = async (rows, res) => {
     const update = rows.map((row) => {
       const indexD = row["Nr. dokumentu"].lastIndexOf("D");
       let DZIAL_NR = "";
-      if (indexD === -1) {
+      // if (indexD === -1) {
+      if (
+        indexD === -1 ||
+        indexD === row["Nr. dokumentu"].length - 1 ||
+        isNaN(parseInt(row["Nr. dokumentu"][indexD + 1]))
+      ) {
         DZIAL_NR = "KSIĘGOWOŚĆ";
       } else {
         DZIAL_NR = row["Nr. dokumentu"].substring(indexD);
         if (DZIAL_NR.includes("/")) {
+          // console.log(row);
+
           // Jeśli tak, to usuwamy znak '/' i wszystko co po nim
-          DZIAL_NR.split("/")[0];
+          DZIAL_NR = DZIAL_NR.split("/")[0];
         }
       }
       return {
@@ -44,12 +51,47 @@ const accountancyData = async (rows, res) => {
         KONTO: row["Synt."],
       };
     });
-    const result = await FKRaport.updateOne(
-      {},
+
+    update.forEach((obiekt) => {
+      if (
+        obiekt.DZIAL &&
+        obiekt.DZIAL.startsWith("D") &&
+        obiekt.DZIAL.length < 4
+      ) {
+        let number = obiekt.DZIAL.substring(1); // Pobieramy cyfry po literze 'D'
+        let newNumber;
+
+        // Sprawdzamy długość numeru i wstawiamy odpowiednią liczbę zer
+        if (number.length === 1) {
+          newNumber = "00" + number;
+          // console.log(newNumber);
+        } else if (number.length === 2) {
+          newNumber = "0" + number;
+        }
+
+        // Zmieniamy wartość klucza 'DZIAL' na nową wartość z dodanymi zerami
+        if (newNumber) {
+          obiekt.DZIAL = "D" + newNumber;
+        }
+      }
+    });
+    // update.forEach((item) => {
+    //   if (item.DZIAL === "D68/S") {
+    //     console.log(item.NR_DOKUMENTU);
+    //   }
+    // });
+
+    const result = await FKRaport.findOneAndUpdate(
+      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
       {
-        $set: { "data.FKAccountancy": update }, // Ustaw nowe dane dla pola data.FKData, nadpisując stare dane
-      },
-      { upsert: true }
+        $set: {
+          "data.FKAccountancy": update,
+        },
+      }, // Nowe dane, które mają zostać ustawione
+      {
+        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+        returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+      }
     );
   } catch (error) {
     logEvents(
@@ -77,6 +119,16 @@ const addDataFromFile = async (req, res) => {
     const workSheetName = workbook.SheetNames[0];
     const workSheet = workbook.Sheets[workSheetName];
     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
+
+    if (
+      !rows[0]["Nr. dokumentu"] &&
+      !rows[0]["Kontrahent"] &&
+      !rows[0]["Płatność"] &&
+      !rows[0]["Data płatn."] &&
+      !rows[0][["Synt."]]
+    ) {
+      return res.status(500).json({ error: "Invalid file" });
+    }
 
     if (type === "accountancy") {
       accountancyData(rows, res);

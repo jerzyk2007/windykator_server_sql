@@ -111,6 +111,16 @@ const FKAllDataSchema = new Schema({
       default: {},
     },
   },
+  items: {
+    departments: {
+      type: [String],
+      default: [],
+    },
+    localization: {
+      type: [String],
+      default: [],
+    },
+  },
 });
 
 module.exports = mongoose.model("FKRaports", FKAllDataSchema);

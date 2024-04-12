@@ -10,6 +10,7 @@ const verifyRoles = require("../../middleware/verifyRoles");
 const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
 const upload = multer({ storage: storage });
 
+//dodaje dane już z gotowego raportu - wersja do testu
 router
   .route("/send-data-fk")
   .post(
@@ -49,7 +50,14 @@ router
   .route("/get-items-data")
   .get(
     verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
-    fkItemsData.getItemsData
+    fkItemsData.getDataItems
+  );
+
+router
+  .route("/save-items-data/:type")
+  .patch(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fkItemsData.saveItemsData
   );
 
 module.exports = router;
