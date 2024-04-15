@@ -120,6 +120,26 @@ const FKAllDataSchema = new Schema({
       type: [String],
       default: [],
     },
+    areas: {
+      type: [String],
+      default: [],
+    },
+    owners: {
+      type: [String],
+      default: [],
+    },
+    guardians: {
+      type: [String],
+      default: [],
+    },
+    aging: {
+      type: [Schema.Types.Mixed],
+      default: [],
+    },
+  },
+  preparedItemsData: {
+    type: [Schema.Types.Mixed],
+    default: [],
   },
 });
 

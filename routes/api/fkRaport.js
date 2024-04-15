@@ -54,10 +54,38 @@ router
   );
 
 router
+  .route("/get-fksettings-data")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fkItemsData.getFKSettingsItems
+  );
+
+router
   .route("/save-items-data/:type")
   .patch(
     verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
     fkItemsData.saveItemsData
+  );
+
+router
+  .route("/save-prepared-items")
+  .patch(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fkItemsData.savePreparedItems
+  );
+
+router
+  .route("/get-prepared-items")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fkItemsData.getPreparedItems
+  );
+
+router
+  .route("/get-uniques-dep")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fkItemsData.getDepfromAccountancy
   );
 
 module.exports = router;
