@@ -333,12 +333,6 @@ const settlementsFile = async (rows, res) => {
   });
 
   try {
-    const update = await UpdateDB.updateOne(
-      {},
-      { $set: { date: actualDate, settlements: noDoubleDocuments } },
-      { upsert: true }
-    );
-
     const allDocuments = await Document.find({});
 
     // sprawdzenie czy w rozrachunkach znajduje się faktura z DB
@@ -368,6 +362,11 @@ const settlementsFile = async (rows, res) => {
         }
       }
     }
+    const update = await UpdateDB.updateOne(
+      {},
+      { $set: { date: actualDate, settlements: noDoubleDocuments } },
+      { upsert: true }
+    );
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {

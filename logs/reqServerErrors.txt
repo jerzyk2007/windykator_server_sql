@@ -9,3 +9,12 @@
 20240415	18:24:09	fkItemsData, savePrepareItems: MongooseError: Aggregate has empty pipeline
 20240415	18:24:39	fkItemsData, savePrepareItems: MongooseError: Aggregate has empty pipeline
 20240415	18:24:41	fkItemsData, savePrepareItems: MongooseError: Aggregate has empty pipeline
+20240416	18:16:20	generateFKRaportController, generateRaport: ReferenceError: depItem is not defined
+20240416	18:25:51	generateFKRaportController, generateRaport: ReferenceError: fkItem is not defined
+20240416	18:26:08	generateFKRaportController, generateRaport: ReferenceError: fkItem is not defined
+20240416	18:27:46	generateFKRaportController, generateRaport: TypeError: resultItems[0].fkAccountancy is not iterable
+20240416	18:29:38	generateFKRaportController, generateRaport: ReferenceError: findDep is not defined
+20240416	18:32:26	generateFKRaportController, generateRaport: ReferenceError: ppreparedData is not defined
+20240416	19:16:37	generateFKRaportController, generateRaport: TypeError: matchingDepItem.area.join is not a function
+20240416	19:18:00	generateFKRaportController, generateRaport: TypeError: matchingDepItem.area.join is not a function
+20240416	19:22:10	generateFKRaportController, generateRaport: TypeError: Cannot read properties of undefined (reading 'join')

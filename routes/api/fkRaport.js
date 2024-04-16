@@ -4,6 +4,7 @@ const multer = require("multer");
 const fKRaport = require("../../controllers/fkRaportController");
 const fkDataFromFile = require("../../controllers/fkDataFromFile");
 const fkItemsData = require("../../controllers/fkItemsData");
+const fkGenerateRaport = require("../../controllers/fkGenerateRaportController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
@@ -88,4 +89,16 @@ router
     fkItemsData.getDepfromAccountancy
   );
 
+router
+  .route("/get-date-counter")
+  .get(verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK), fKRaport.getDateCounter);
+
+router
+  .route("/generate-raport")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fkGenerateRaport.generateRaport
+  );
+
+fkGenerateRaport;
 module.exports = router;

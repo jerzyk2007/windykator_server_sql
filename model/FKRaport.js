@@ -74,7 +74,7 @@ const FKAllDataSchema = new Schema({
         OWNER: {
           type: String,
         },
-        OPIENKUN_OBSZARU_CENTRALI: {
+        OPIEKUN_OBSZARU_CENTRALI: {
           type: String,
         },
         KONTRAHENT_CZARNA_LISTA: {
@@ -93,17 +93,30 @@ const FKAllDataSchema = new Schema({
         KONTRAHENT: {
           type: String,
         },
-        DO_ROZLICZENIA_FK: {
+        KWOTA_DO_ROZLICZENIA_FK: {
           type: Number,
         },
-        TERMIN_PLATNOSCI: {
+        TERMIN_PLATNOSCI_FV: {
           type: String,
         },
-        KONTO: {
+        RODZAJ_KONTA: {
           type: Number,
+        },
+        TYP_DOKUMENTU: {
+          type: String,
         },
       },
     ],
+    updateDate: {
+      accountancy: {
+        date: {
+          type: String,
+        },
+        counter: {
+          type: Number,
+        },
+      },
+    },
   },
   tableSettings: {
     columns: {

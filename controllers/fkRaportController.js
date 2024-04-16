@@ -32,6 +32,7 @@ const isExcelFile = (data) => {
   return true;
 };
 
+// funkcja która przesyła na server już gotowe dane z przygotowanego raportu
 const documentsFromFile = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "Not delivered file" });
@@ -262,10 +263,31 @@ const getColumns = async (req, res) => {
   }
 };
 
+const getDateCounter = async (req, res) => {
+  try {
+    const result = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          updateDate: "$data.updateDate", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    res.json(result[0]);
+  } catch (error) {
+    logEvents(
+      `fkRaportController, getDateCounter: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 module.exports = {
   documentsFromFile,
   getData,
   getNewColumns,
   changeColumns,
   getColumns,
+  getDateCounter,
 };

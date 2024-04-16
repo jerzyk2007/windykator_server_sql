@@ -46,12 +46,14 @@ const accountancyData = async (rows, res) => {
         NR_DOKUMENTU: row["Nr. dokumentu"],
         DZIAL: DZIAL_NR,
         KONTRAHENT: row["Kontrahent"],
-        DO_ROZLICZENIA_FK: row["Płatność"],
-        TERMIN_PLATNOSCI: excelDateToISODate(row["Data płatn."]),
-        KONTO: row["Synt."],
+        KWOTA_DO_ROZLICZENIA_FK: row["Płatność"],
+        TERMIN_PLATNOSCI_FV: excelDateToISODate(row["Data płatn."]),
+        RODZAJ_KONTA: row["Synt."],
+        TYP_DOKUMENTU: "",
       };
     });
 
+    // nadaje nazwę działu na podstawie końcowej nazwy faktury, w przypdaku nietypowych nazw nadaje nazwę KSIĘGOWOŚĆ
     update.forEach((obiekt) => {
       if (
         obiekt.DZIAL &&
@@ -75,17 +77,65 @@ const accountancyData = async (rows, res) => {
         }
       }
     });
-    // update.forEach((item) => {
-    //   if (item.DZIAL === "D68/S") {
-    //     console.log(item.NR_DOKUMENTU);
-    //   }
-    // });
+
+    // przypisuje typ dokumentu na podstawie nazwy dokumentu
+    update.forEach((item) => {
+      if (item.NR_DOKUMENTU.includes("KF/ZAL")) {
+        item.TYP_DOKUMENTU = "Korekta zaliczki";
+      } else if (item.NR_DOKUMENTU.includes("ZAL")) {
+        item.TYP_DOKUMENTU = "Korekta";
+      } else if (item.NR_DOKUMENTU.includes("KP")) {
+        item.TYP_DOKUMENTU = "KP";
+      } else if (item.NR_DOKUMENTU.includes("NO")) {
+        item.TYP_DOKUMENTU = "Nota";
+      } else if (item.NR_DOKUMENTU.includes("PP")) {
+        item.TYP_DOKUMENTU = "Paragon";
+      } else if (item.NR_DOKUMENTU.includes("PK")) {
+        item.TYP_DOKUMENTU = "PK";
+      } else if (item.NR_DOKUMENTU.includes("IP")) {
+        item.TYP_DOKUMENTU = "Karta Płatnicza";
+      } else if (item.NR_DOKUMENTU.includes("FV/ZAL")) {
+        item.TYP_DOKUMENTU = "Faktura zaliczkowa";
+      } else if (item.NR_DOKUMENTU.includes("FV")) {
+        item.TYP_DOKUMENTU = "Faktura";
+      } else {
+        item.TYP_DOKUMENTU = "Inne";
+      }
+    });
 
     const result = await FKRaport.findOneAndUpdate(
       {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
       {
         $set: {
           "data.FKAccountancy": update,
+        },
+      }, // Nowe dane, które mają zostać ustawione
+      {
+        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+        returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+      }
+    );
+
+    const dateObj = new Date();
+    // Pobieramy poszczególne elementy daty i czasu
+    const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
+    const year = dateObj.getFullYear(); // Rok
+
+    // Formatujemy datę i czas według wymagań
+    const actualDate = `${day}-${month}-${year}`;
+    const updateCounter = update.length;
+
+    const updateDate = {
+      date: actualDate,
+      counter: updateCounter,
+    };
+
+    await FKRaport.findOneAndUpdate(
+      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+      {
+        $set: {
+          "data.updateDate.accountancy": updateDate,
         },
       }, // Nowe dane, które mają zostać ustawione
       {
