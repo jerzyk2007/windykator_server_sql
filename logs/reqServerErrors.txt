@@ -18,3 +18,6 @@
 20240416	19:16:37	generateFKRaportController, generateRaport: TypeError: matchingDepItem.area.join is not a function
 20240416	19:18:00	generateFKRaportController, generateRaport: TypeError: matchingDepItem.area.join is not a function
 20240416	19:22:10	generateFKRaportController, generateRaport: TypeError: Cannot read properties of undefined (reading 'join')
+20240417	13:49:56	fkDataFromFile, accountancyData: TypeError: Cannot read properties of null (reading 'lastIndexOf')
+20240417	14:51:40	generateFKRaportController, generateRaport: TypeError: Cannot read properties of undefined (reading '0')
+20240417	15:25:50	generateFKRaportController, generateRaport: TypeError: Assignment to constant variable.

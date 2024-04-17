@@ -93,71 +93,53 @@ const isExcelFile = (data) => {
   return true;
 };
 
-// funkcja która dodaje dane z sharepointa
-const sharepointFile = async (rows, res) => {
-  const mappedRows = rows.map((row) => {
-    return {
-      NUMER_FV: row["NUMER FV"],
-      DZIAL: row["DZIAŁ"] === "D8" ? (row["DZIAŁ"] = "D08") : row["DZIAŁ"],
-      DATA_FV: row["DATA FV"]
-        ? excelDateToISODate(row["DATA FV"]).toString()
-        : "",
-      TERMIN: row["TERMIN"] ? excelDateToISODate(row["TERMIN"]).toString() : "",
-      BRUTTO: row["W. BRUTTO"],
-      NETTO: row["W. NETTO"],
-      DO_ROZLICZENIA: row["DO ROZLICZ.\nAutostacja"],
-      "100_VAT": row["100%\nVAT"],
-      "50_VAT": row["50%\nVAT"],
-      NR_REJESTRACYJNY: row["NR REJESTRACYJNY"] ? row["NR REJESTRACYJNY"] : "",
-      KONTRAHENT: row["KONTRAHENT"] ? row["KONTRAHENT"] : "",
-      ASYSTENTKA: row["ASYSTENTKA"] ? row["ASYSTENTKA"] : "",
-      DORADCA: row["ZATWIERDZIŁ"] ? row["ZATWIERDZIŁ"] : "",
-      NR_SZKODY: row["NR SZKODY"] ? row["NR SZKODY"] : "",
-      UWAGI_ASYSTENT: row["UWAGI "] ? row["UWAGI "] : [],
-      UWAGI_Z_FAKTURY: "",
-      STATUS_SPRAWY_WINDYKACJA: row["Status sprawy Windykcja\n"]
-        ? row["Status sprawy Windykcja\n"]
-        : "",
-      DZIALANIA: row["DZIAŁANIA"] ? row["DZIAŁANIA"] : "BRAK",
-      JAKA_KANCELARIA: row["Jaka Kancelaria"] ? row["Jaka Kancelaria"] : "BRAK",
-      STATUS_SPRAWY_KANCELARIA: row["STATUS SPRAWY KANCELARIA"]
-        ? row["STATUS SPRAWY KANCELARIA"]
-        : "",
-      KOMENTARZ_KANCELARIA_BECARED: row["KOMENTARZ KANCELARIA"]
-        ? row["KOMENTARZ KANCELARIA"]
-        : "",
-      DATA_KOMENTARZA_BECARED: row["DATA KOMENTARZA BECARED"]
-        ? excelDateToISODate(row["DATA KOMENTARZA BECARED"]).toString()
-        : "",
-      NUMER_SPRAWY_BECARED: row["NUMER SPRAWY"] ? row["NUMER SPRAWY"] : "",
-      KWOTA_WINDYKOWANA_BECARED: row["KWOTA WINDYKOWANA \n"]
-        ? row["KWOTA WINDYKOWANA \n"]
-        : "",
-      BLAD_DORADCY: "NIE",
-      BLAD_W_DOKUMENTACJI: "NIE",
-      POBRANO_VAT: "Nie dotyczy",
-      ZAZNACZ_KONTRAHENTA: "NIE",
-    };
-  });
+// funkcja która dodaje dane z becared
+const becaredFile = async (rows, res) => {
+  if (
+    !rows[0]["Numery Faktur"] &&
+    !rows[0]["Etap Sprawy"] &&
+    !rows[0]["Ostatni komentarz"] &&
+    !rows[0]["Data ostatniego komentarza"] &&
+    !rows[0]["Numer sprawy"] &&
+    !rows[0]["Suma roszczeń"]
+  ) {
+    return res.status(500).json({ error: "Invalid file" });
+  }
 
   try {
-    await Promise.all(
-      mappedRows.map(async (row) => {
+    const allDocuments = await Document.find({});
+
+    for (const doc of allDocuments) {
+      const found = rows.find((row) => row["Numery Faktur"] === doc.NUMER_FV);
+      if (found) {
+        const checkDate = isExcelDate(found["Data ostatniego komentarza"]);
         try {
-          const result = await Document.findOneAndUpdate(
-            { NUMER_FV: row.NUMER_FV },
-            row,
-            { new: true, upsert: true }
+          const result = await Document.updateOne(
+            { NUMER_FV: doc.NUMER_FV },
+            {
+              $set: {
+                STATUS_SPRAWY_KANCELARIA: found["Etap Sprawy"],
+                KOMENTARZ_KANCELARIA_BECARED: found["Ostatni komentarz"],
+                DATA_KOMENTARZA_BECARED: checkDate
+                  ? excelDateToISODate(
+                      found["Data ostatniego komentarza"]
+                    ).toString()
+                  : "",
+                NUMER_SPRAWY_BECARED: found["Numer sprawy"],
+                KWOTA_WINDYKOWANA_BECARED: found["Suma roszczeń"],
+              },
+            }
           );
-        } catch (err) {
-          console.error(err);
+        } catch (error) {
+          console.error("Error while updating the document", error);
         }
-      })
-    );
+      }
+    }
+
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
     logEvents(
-      `documentsController, sharepointFile: ${error}`,
+      `documentsController, becaredFile: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
@@ -296,26 +278,57 @@ const ASFile = async (documents, res) => {
 
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
-  if (!rows[0]["TYTUŁ"] && !rows[0]["TERMIN"] && !rows[0]["NALEŻNOŚĆ"]) {
+  if (
+    !rows[0]["TYTUŁ"] &&
+    !rows[0]["TERMIN"] &&
+    !rows[0]["NALEŻNOŚĆ"] &&
+    !rows[0]["WPROWADZONO"]
+  ) {
     return res.status(500).json({ error: "Invalid file" });
   }
 
   const cleanDocument = rows.map((row) => {
     const cleanDoc = row["TYTUŁ"].split(" ")[0];
-    let termin;
-    if (row["TERMIN"] && isExcelDate(row["TERMIN"])) {
-      termin = excelDateToISODate(row["TERMIN"]).toString();
+    let termin_fv = "";
+    let data_fv = "";
+    if (
+      row["TERMIN"] &&
+      isExcelDate(row["TERMIN"]) &&
+      row["WPROWADZONO"] &&
+      isExcelDate(row["WPROWADZONO"])
+    ) {
+      termin_fv = excelDateToISODate(row["TERMIN"]).toString();
+      data_fv = excelDateToISODate(row["WPROWADZONO"]).toString();
     } else {
-      termin = row["TERMIN"] ? row["TERMIN"] : "";
+      termin_fv = row["TERMIN"] ? row["TERMIN"] : "";
+      data_fv = row["WPROWADZONO"] ? row["WPROWADZONO"] : "";
     }
     return {
       NUMER_FV: cleanDoc,
-      TERMIN: termin,
+      TERMIN: termin_fv,
       DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"] : 0,
+      DATA_WYSTAWIENIA_FV: data_fv,
     };
   });
 
   const actualDate = new Date();
+
+  // let noDoubleDocuments = [];
+
+  // cleanDocument.forEach((doc) => {
+  //   let existingDocIndex = noDoubleDocuments.findIndex(
+  //     (tempDoc) => tempDoc.NUMER_FV === doc.NUMER_FV
+  //   );
+  //   if (existingDocIndex === -1) {
+  //     // Jeśli nie istnieje, dodaj nowy obiekt
+  //     noDoubleDocuments.push({ ...doc });
+  //   } else {
+  //     if (noDoubleDocuments[existingDocIndex].NUMER_FV === "FV/UBL/740/23/V/D8")
+  //       console.log(noDoubleDocuments[existingDocIndex]);
+  //     // Jeśli istnieje, zaktualizuj wartość DO_ROZLICZENIA
+  //     noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
+  //   }
+  // });
 
   let noDoubleDocuments = [];
 
@@ -327,7 +340,18 @@ const settlementsFile = async (rows, res) => {
       // Jeśli nie istnieje, dodaj nowy obiekt
       noDoubleDocuments.push({ ...doc });
     } else {
-      // Jeśli istnieje, zaktualizuj wartość DO_ROZLICZENIA
+      // Jeśli istnieje, sprawdź, czy data DATA_WYSTAWIENIA_FV nowego dokumentu jest mniejsza
+      const existingDocDate = new Date(
+        noDoubleDocuments[existingDocIndex].DATA_WYSTAWIENIA_FV
+      );
+      const newDocDate = new Date(doc.DATA_WYSTAWIENIA_FV);
+
+      if (newDocDate < existingDocDate) {
+        noDoubleDocuments[existingDocIndex].DATA_WYSTAWIENIA_FV =
+          doc.DATA_WYSTAWIENIA_FV;
+      }
+
+      // Zaktualizuj wartość DO_ROZLICZENIA
       noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
     }
   });
@@ -342,7 +366,7 @@ const settlementsFile = async (rows, res) => {
       );
       if (found) {
         try {
-          const result = await Document.updateOne(
+          await Document.updateOne(
             { NUMER_FV: doc.NUMER_FV },
             { $set: { DO_ROZLICZENIA: found.DO_ROZLICZENIA } }
           );
@@ -352,7 +376,7 @@ const settlementsFile = async (rows, res) => {
       } else {
         try {
           if (doc.DO_ROZLICZENIA !== 0) {
-            const result = await Document.updateOne(
+            await Document.updateOne(
               { NUMER_FV: doc.NUMER_FV },
               { $set: { DO_ROZLICZENIA: 0 } }
             );
@@ -362,7 +386,7 @@ const settlementsFile = async (rows, res) => {
         }
       }
     }
-    const update = await UpdateDB.updateOne(
+    await UpdateDB.updateOne(
       {},
       { $set: { date: actualDate, settlements: noDoubleDocuments } },
       { upsert: true }
@@ -444,8 +468,8 @@ const documentsFromFile = async (req, res) => {
     const workSheet = workbook.Sheets[workSheetName];
     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
 
-    if (type === "sharepoint") {
-      return sharepointFile(rows, res);
+    if (type === "becared") {
+      return becaredFile(rows, res);
     } else if (type === "AS") {
       return ASFile(rows, res);
     } else if (type === "settlements") {

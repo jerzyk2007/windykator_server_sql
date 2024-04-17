@@ -50,6 +50,7 @@ const accountancyData = async (rows, res) => {
         TERMIN_PLATNOSCI_FV: excelDateToISODate(row["Data płatn."]),
         RODZAJ_KONTA: row["Synt."],
         TYP_DOKUMENTU: "",
+        NR_KLIENTA: row["Nr klienta"],
       };
     });
 
@@ -171,11 +172,12 @@ const addDataFromFile = async (req, res) => {
     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
 
     if (
-      !rows[0]["Nr. dokumentu"] &&
-      !rows[0]["Kontrahent"] &&
-      !rows[0]["Płatność"] &&
-      !rows[0]["Data płatn."] &&
-      !rows[0][["Synt."]]
+      (!rows[0]["Nr. dokumentu"] &&
+        !rows[0]["Kontrahent"] &&
+        !rows[0]["Płatność"] &&
+        !rows[0]["Data płatn."] &&
+        !rows[0][["Synt."]],
+      !rows[0][["Nr klienta"]])
     ) {
       return res.status(500).json({ error: "Invalid file" });
     }

@@ -105,6 +105,9 @@ const FKAllDataSchema = new Schema({
         TYP_DOKUMENTU: {
           type: String,
         },
+        NR_KLIENTA: {
+          type: String,
+        },
       },
     ],
     updateDate: {
