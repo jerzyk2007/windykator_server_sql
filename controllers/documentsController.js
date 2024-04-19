@@ -393,10 +393,10 @@ const repairFile = async (rows, res) => {
 
   const filteredData = allDocuments
     .map((document) => {
-      if (!document.NUMER_SPRAWY_BECARED) {
+      if (document.NUMER_SPRAWY_BECARED === " ") {
         return {
           NUMER_FV: document.NUMER_FV,
-          NUMER_SPRAWY_BECARED: " ",
+          NUMER_SPRAWY_BECARED: "",
           //   DZIAL: "D118/D148",
           //   ASYSTENTKA: "Marta Bednarek",
         };

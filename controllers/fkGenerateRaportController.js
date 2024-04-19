@@ -25,22 +25,22 @@ const generateRaport = async (req, res) => {
       },
     ]);
 
-    // pobieram dane już przygotowanego raportu
-    // const resultFKAData = await FKRaport.aggregate([
-    //   {
-    //     $project: {
-    //       _id: 0, // Wyłączamy pole _id z wyniku
-    //       FKData: "$data.FKData", // Wybieramy tylko pole FKData z pola data
-    //     },
-    //   },
-    // ]);
-
     // pobieram przygotowane dane wiekowania
     const resultAging = await FKRaport.aggregate([
       {
         $project: {
           _id: 0, // Wyłączamy pole _id z wyniku
           aging: "$items.aging", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+
+    // pobieram dane już przygotowanego raportu
+    const carReleased = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          carReleased: "$data.carReleased", // Wybieramy tylko pole FKData z pola data
         },
       },
     ]);
@@ -62,6 +62,7 @@ const generateRaport = async (req, res) => {
     // const itemsFKData = [...resultFKAData[0].FKData];
     const settlementItems = [...allSettlements[0].settlements];
     const preparedAging = [...resultAging[0].aging];
+    const prepareCars = [...carReleased[0].carReleased];
 
     // do danych z pliku księgowego przypisuję wcześniej przygotowane dane działów
     const preparedDataDep = fkAccountancyItems.map((item) => {
@@ -196,7 +197,45 @@ const generateRaport = async (req, res) => {
       };
     });
 
-    // console.log(preparedAging);
+    // do preparedDataSettlements daty wydania samochodów dla SAMOCHODY_NOWE i _UŻYWANE
+    const preparedDataReleasedCars = preparedDataAging.map((item) => {
+      const matchingItems = prepareCars.find(
+        (preparedItem) => preparedItem.NR_DOKUMENTU === item.NR_DOKUMENTU
+      );
+      if (
+        matchingItems &&
+        (item.OBSZAR === "SAMOCHODY NOWE" ||
+          item.OBSZAR === "SAMOCHODY UŻYWANE")
+      ) {
+        console.log(matchingItems);
+        return {
+          ...item,
+          DATA_WYDANIA_AUTA: matchingItems.DATA_WYDANIA_AUTA
+            ? matchingItems.DATA_WYDANIA_AUTA
+            : "",
+          CZY_SAMOCHOD_WYDANY_AS: matchingItems.DATA_WYDANIA_AUTA
+            ? "TAK"
+            : "NIE",
+        };
+      } else if (
+        !matchingItems &&
+        (item.OBSZAR === "SAMOCHODY NOWE" ||
+          item.OBSZAR === "SAMOCHODY UŻYWANE")
+      ) {
+        console.log(matchingItems);
+        return {
+          ...item,
+          DATA_WYDANIA_AUTA: "",
+          CZY_SAMOCHOD_WYDANY_AS: "NIE",
+        };
+      } else {
+        return {
+          ...item,
+          DATA_WYDANIA_AUTA: "",
+          CZY_SAMOCHOD_WYDANY_AS: "",
+        };
+      }
+    });
 
     res.json({
       errorDepartments,
@@ -206,6 +245,7 @@ const generateRaport = async (req, res) => {
       preparedDataDep,
       preparedDataAging,
       settlementItems,
+      preparedDataReleasedCars,
     });
   } catch (error) {
     logEvents(

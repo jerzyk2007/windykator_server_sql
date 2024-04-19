@@ -20,8 +20,29 @@ const excelDateToISODate = (excelDate) => {
   return date.toISOString().split("T")[0]; // Pobranie daty w formacie "yyyy-mm-dd"
 };
 
+// funkcja wykonuje sprawdzenie czy data jest sformatowana w excelu czy zwykły string
+const isExcelDate = (value) => {
+  // Sprawdź, czy wartość jest liczbą i jest większa od zera (Excelowa data to liczba większa od zera)
+  if (typeof value === "number" && value > 0) {
+    // Sprawdź, czy wartość mieści się w zakresie typowych wartości dat w Excelu
+    return value >= 0 && value <= 2958465; // Zakres dat w Excelu: od 0 (1900-01-01) do 2958465 (9999-12-31)
+  }
+
+  return false;
+};
+
 // tutaj będzie zapis danych z pliku z księgowości
 const accountancyData = async (rows, res) => {
+  if (
+    (!rows[0]["Nr. dokumentu"] &&
+      !rows[0]["Kontrahent"] &&
+      !rows[0]["Płatność"] &&
+      !rows[0]["Data płatn."] &&
+      !rows[0][["Synt."]],
+    !rows[0][["Nr klienta"]])
+  ) {
+    return res.status(500).json({ error: "Invalid file" });
+  }
   try {
     const update = rows.map((row) => {
       const indexD = row["Nr. dokumentu"].lastIndexOf("D");
@@ -103,7 +124,7 @@ const accountancyData = async (rows, res) => {
         item.TYP_DOKUMENTU = "Inne";
       }
     }
-    const result = await FKRaport.findOneAndUpdate(
+    await FKRaport.findOneAndUpdate(
       {},
       {
         $set: {
@@ -153,6 +174,68 @@ const accountancyData = async (rows, res) => {
   }
 };
 
+// tutaj będzie zapis danych z pliku zauta wydane
+const carsReleased = async (rows, res) => {
+  if (!rows[0]["NR FAKTURY"] && !rows[0]["WYDANO"]) {
+    return res.status(500).json({ error: "Invalid file" });
+  }
+  try {
+    const update = rows.map((row) => {
+      const checkDate = isExcelDate(row["WYDANO"]);
+      return {
+        NR_DOKUMENTU: row["NR FAKTURY"],
+        DATA_WYDANIA_AUTA: checkDate
+          ? excelDateToISODate(row["WYDANO"]).toString()
+          : "",
+      };
+    });
+
+    await FKRaport.findOneAndUpdate(
+      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+      {
+        $set: {
+          "data.carReleased": update,
+        },
+      }, // Nowe dane, które mają zostać ustawione
+      {
+        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+        returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+      }
+    );
+
+    const dateObj = new Date();
+    // Pobieramy poszczególne elementy daty i czasu
+    const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
+    const year = dateObj.getFullYear(); // Rok
+
+    // Formatujemy datę i czas według wymagań
+    const actualDate = `${day}-${month}-${year}`;
+    const updateCounter = update.length;
+
+    const updateDate = {
+      date: actualDate,
+      counter: updateCounter,
+    };
+    await FKRaport.findOneAndUpdate(
+      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+      {
+        $set: {
+          "data.updateDate.carReleased": updateDate,
+        },
+      }, // Nowe dane, które mają zostać ustawione
+      {
+        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+        returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+      }
+    );
+  } catch (error) {
+    logEvents(`fkDataFromFile, carsReleased: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 const addDataFromFile = async (req, res) => {
   const { type } = req.params;
   if (!req.file) {
@@ -170,19 +253,12 @@ const addDataFromFile = async (req, res) => {
     const workSheet = workbook.Sheets[workSheetName];
     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
 
-    if (
-      (!rows[0]["Nr. dokumentu"] &&
-        !rows[0]["Kontrahent"] &&
-        !rows[0]["Płatność"] &&
-        !rows[0]["Data płatn."] &&
-        !rows[0][["Synt."]],
-      !rows[0][["Nr klienta"]])
-    ) {
-      return res.status(500).json({ error: "Invalid file" });
-    }
-
     if (type === "accountancy") {
       accountancyData(rows, res);
+    }
+
+    if (type === "car") {
+      carsReleased(rows, res);
     }
 
     res.end();

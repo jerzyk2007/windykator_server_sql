@@ -22,3 +22,11 @@
 20240417	14:51:40	generateFKRaportController, generateRaport: TypeError: Cannot read properties of undefined (reading '0')
 20240417	15:25:50	generateFKRaportController, generateRaport: TypeError: Assignment to constant variable.
 20240418	18:45:45	generateFKRaportController, generateRaport: TypeError: Cannot read properties of undefined (reading 'DOKUMENTU')
+20240419	14:56:48	fkDataFromFile, addDataFromFile: ReferenceError: cosnole is not defined
+20240419	15:12:36	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240419	15:12:56	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240419	15:13:06	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240419	15:13:36	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240419	15:14:37	loginController, handleLogin: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240419	15:14:42	loginController, handleLogin: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240419	16:00:44	generateFKRaportController, generateRaport: ReferenceError: preparedDataReleasedCarss is not defined

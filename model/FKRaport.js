@@ -68,6 +68,9 @@ const FKAllDataSchema = new Schema({
         OBSZAR: {
           type: String,
         },
+        DATA_WYDANIA_AUTA: {
+          type: String,
+        },
         CZY_SAMOCHOD_WYDANY_AS: {
           type: String,
         },
@@ -110,8 +113,26 @@ const FKAllDataSchema = new Schema({
         },
       },
     ],
+    carReleased: [
+      {
+        NR_DOKUMENTU: {
+          type: String,
+        },
+        DATA_WYDANIA_AUTA: {
+          type: String,
+        },
+      },
+    ],
     updateDate: {
       accountancy: {
+        date: {
+          type: String,
+        },
+        counter: {
+          type: Number,
+        },
+      },
+      carReleased: {
         date: {
           type: String,
         },
