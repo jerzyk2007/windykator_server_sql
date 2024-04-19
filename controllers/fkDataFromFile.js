@@ -80,40 +80,39 @@ const accountancyData = async (rows, res) => {
     });
 
     // przypisuje typ dokumentu na podstawie nazwy dokumentu
-    update.forEach((item) => {
+    for (const item of update) {
       if (item.NR_DOKUMENTU.includes("KF/ZAL")) {
         item.TYP_DOKUMENTU = "Korekta zaliczki";
-      } else if (item.NR_DOKUMENTU.includes("ZAL")) {
+      } else if (item.NR_DOKUMENTU.includes("KF/")) {
         item.TYP_DOKUMENTU = "Korekta";
-      } else if (item.NR_DOKUMENTU.includes("KP")) {
+      } else if (item.NR_DOKUMENTU.includes("KP/")) {
         item.TYP_DOKUMENTU = "KP";
-      } else if (item.NR_DOKUMENTU.includes("NO")) {
+      } else if (item.NR_DOKUMENTU.includes("NO/")) {
         item.TYP_DOKUMENTU = "Nota";
-      } else if (item.NR_DOKUMENTU.includes("PP")) {
+      } else if (item.NR_DOKUMENTU.includes("PP/")) {
         item.TYP_DOKUMENTU = "Paragon";
       } else if (item.NR_DOKUMENTU.includes("PK")) {
         item.TYP_DOKUMENTU = "PK";
-      } else if (item.NR_DOKUMENTU.includes("IP")) {
+      } else if (item.NR_DOKUMENTU.includes("IP/")) {
         item.TYP_DOKUMENTU = "Karta Płatnicza";
       } else if (item.NR_DOKUMENTU.includes("FV/ZAL")) {
         item.TYP_DOKUMENTU = "Faktura zaliczkowa";
-      } else if (item.NR_DOKUMENTU.includes("FV")) {
+      } else if (item.NR_DOKUMENTU.includes("FV/")) {
         item.TYP_DOKUMENTU = "Faktura";
       } else {
         item.TYP_DOKUMENTU = "Inne";
       }
-    });
-
+    }
     const result = await FKRaport.findOneAndUpdate(
-      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+      {},
       {
         $set: {
           "data.FKAccountancy": update,
         },
-      }, // Nowe dane, które mają zostać ustawione
+      },
       {
-        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
-        returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+        returnOriginal: false,
+        upsert: true,
       }
     );
 

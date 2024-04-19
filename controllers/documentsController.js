@@ -1,4 +1,5 @@
 const Document = require("../model/Document");
+const RepairDocument = require("../model/ReapirDocument");
 const User = require("../model/User");
 const UpdateDB = require("../model/UpdateDB");
 const { read, utils } = require("xlsx");
@@ -276,6 +277,62 @@ const ASFile = async (documents, res) => {
   }
 };
 
+// do naprawy pliku documents, nie wyszukuje w archiwum po filtrze contains
+
+const repairDocuments = async (documents, res) => {
+  try {
+    const update = documents.map((doc) => {
+      return {
+        NUMER_FV: doc["NUMER_FV"],
+        DATA_FV: doc["DATA_FV"],
+        TERMIN: doc["TERMIN"],
+        DZIAL: doc["DZIAL"],
+        CZY_PRZETERMINOWANE: doc["CZY_PRZETERMINOWANE"],
+        ILE_DNI_PO_TERMINIE: Number(doc["ILE_DNI_PO_TERMINIE"]),
+        BRUTTO: Number(doc["BRUTTO"]),
+        NETTO: Number(doc["NETTO"]),
+        DO_ROZLICZENIA: Number(doc["DO_ROZLICZENIA"]),
+        "100_VAT": Number(doc["100_VAT"]),
+        "50_VAT": Number(doc["50_VAT"]),
+        KONTRAHENT: doc["KONTRAHENT"],
+        ASYSTENTKA: doc["ASYSTENTKA"],
+        DORADCA: doc["DORADCA"],
+        NR_REJESTRACYJNY: doc["NR_REJESTRACYJNY"],
+        NR_SZKODY: doc["NR_SZKODY"],
+        UWAGI_Z_FAKTURY: doc["UWAGI_Z_FAKTURY"],
+        UWAGI_ASYSTENT: doc["UWAGI_ASYSTENT"],
+        STATUS_SPRAWY_WINDYKACJA: doc["STATUS_SPRAWY_WINDYKACJA"],
+        DZIALANIA: doc["DZIALANIA"],
+        JAKA_KANCELARIA: doc["JAKA_KANCELARIA"],
+        BLAD_DORADCY: doc["BLAD_DORADCY"],
+        BLAD_W_DOKUMENTACJI: doc["BLAD_W_DOKUMENTACJI"],
+        POBRANO_VAT: doc["POBRANO_VAT"],
+        STATUS_SPRAWY_KANCELARIA: doc["STATUS_SPRAWY_KANCELARIA"],
+        KOMENTARZ_KANCELARIA_BECARED: doc["KOMENTARZ_KANCELARIA_BECARED"],
+        DATA_KOMENTARZA_BECARED: doc["DATA_KOMENTARZA_BECARED"],
+        NUMER_SPRAWY_BECARED: doc["NUMER_SPRAWY_BECARED"],
+        KWOTA_WINDYKOWANA_BECARED: doc["KWOTA_WINDYKOWANA_BECARED"],
+        ZAZNACZ_KONTRAHENTA: doc["ZAZNACZ_KONTRAHENTA"],
+      };
+    });
+
+    await RepairDocument.deleteMany({});
+
+    // Wstawienie nowych dokumentów
+    const result = await RepairDocument.insertMany(documents);
+    console.log(`${result.length} dokumentów zostało dodanych.`);
+
+    res.end();
+  } catch (error) {
+    logEvents(
+      `documentsController, repairDocuments: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
   if (
@@ -306,29 +363,13 @@ const settlementsFile = async (rows, res) => {
     return {
       NUMER_FV: cleanDoc,
       TERMIN: termin_fv,
-      DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"] : 0,
       DATA_WYSTAWIENIA_FV: data_fv,
+      DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"] : 0,
+      ZOBOWIAZANIA: row["ZOBOWIĄZANIE"] ? row["ZOBOWIĄZANIE"] : 0,
     };
   });
 
   const actualDate = new Date();
-
-  // let noDoubleDocuments = [];
-
-  // cleanDocument.forEach((doc) => {
-  //   let existingDocIndex = noDoubleDocuments.findIndex(
-  //     (tempDoc) => tempDoc.NUMER_FV === doc.NUMER_FV
-  //   );
-  //   if (existingDocIndex === -1) {
-  //     // Jeśli nie istnieje, dodaj nowy obiekt
-  //     noDoubleDocuments.push({ ...doc });
-  //   } else {
-  //     if (noDoubleDocuments[existingDocIndex].NUMER_FV === "FV/UBL/740/23/V/D8")
-  //       console.log(noDoubleDocuments[existingDocIndex]);
-  //     // Jeśli istnieje, zaktualizuj wartość DO_ROZLICZENIA
-  //     noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
-  //   }
-  // });
 
   let noDoubleDocuments = [];
 
@@ -407,35 +448,39 @@ const settlementsFile = async (rows, res) => {
 const repairFile = async (rows, res) => {
   const allDocuments = await Document.find({});
 
-  const filteredD98 = allDocuments
+  const filteredData = allDocuments
     .map((document) => {
-      if (document.DZIAL === "D148") {
+      if (!document.NUMER_FV) {
+        // console.log(document);
+
         return {
           NUMER_FV: document.NUMER_FV,
-          // DZIAL: DZIAL_NR
-          DZIAL: "D118/D148",
-          ASYSTENTKA: "Marta Bednarek",
+          KOREKTA: "",
+          //   DZIAL: "D118/D148",
+          //   ASYSTENTKA: "Marta Bednarek",
         };
       }
     })
     .filter(Boolean);
 
-  console.log(filteredD98);
+  console.log(filteredData);
 
-  for (const doc of filteredD98) {
+  for (const doc of filteredData) {
     if (true) {
       try {
+        // const result = await Document.updateOne(
+        //   { NUMER_FV: doc.NUMER_FV },
+        //   {
+        //     $set: {
+        //       KOREKTA: doc.KOREKTA,
+        //     },
+        //   }
+        // );
+        //
+        //
+        //
         // const result = await Document.deleteOne(
         //     { NUMER_FV: doc.NUMER_FV },
-        // );
-        // const result = await Document.updateOne(
-        //     { NUMER_FV: doc.NUMER_FV },
-        //     {
-        //         $set: {
-        //             DZIAL: doc.DZIAL,
-        //             ASYSTENTKA: doc.ASYSTENTKA
-        //         }
-        //     }
         // );
       } catch (error) {
         logEvents(
@@ -476,6 +521,8 @@ const documentsFromFile = async (req, res) => {
       return settlementsFile(rows, res);
     } else if (type === "test") {
       return repairFile(rows, res);
+    } else if (type === "repair") {
+      return repairDocuments(rows, res);
     }
   } catch (error) {
     logEvents(

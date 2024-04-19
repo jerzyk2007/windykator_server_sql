@@ -21,3 +21,4 @@
 20240417	13:49:56	fkDataFromFile, accountancyData: TypeError: Cannot read properties of null (reading 'lastIndexOf')
 20240417	14:51:40	generateFKRaportController, generateRaport: TypeError: Cannot read properties of undefined (reading '0')
 20240417	15:25:50	generateFKRaportController, generateRaport: TypeError: Assignment to constant variable.
+20240418	18:45:45	generateFKRaportController, generateRaport: TypeError: Cannot read properties of undefined (reading 'DOKUMENTU')

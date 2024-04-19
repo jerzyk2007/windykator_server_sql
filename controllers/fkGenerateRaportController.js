@@ -95,36 +95,44 @@ const generateRaport = async (req, res) => {
     });
 
     // dodaję datę wystawienia (jeśli jest w rozrachunkach) sfaktury do dokumentów, bez zmiany rozliczenia wg najnowszych danych
-    preparedDataDep.forEach((item, index) => {
-      const matchingSettlement = settlementItems.find(
-        (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
-      );
+    // preparedDataDep.forEach((item, index) => {
+    //   const matchingSettlement = settlementItems.find(
+    //     (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
+    //   );
 
-      if (matchingSettlement) {
-        preparedDataDep[index].DATA_WYSTAWIENIA_FV =
-          matchingSettlement.DATA_WYSTAWIENIA_FV;
-      } else {
-        preparedDataDep[index].DATA_WYSTAWIENIA_FV = "";
-      }
-    });
+    //   if (matchingSettlement) {
+    //     preparedDataDep[index].DATA_WYSTAWIENIA_FV =
+    //       matchingSettlement.DATA_WYSTAWIENIA_FV;
+    //   } else {
+    //     preparedDataDep[index].DATA_WYSTAWIENIA_FV = "";
+    //   }
+    // });
 
     // do preparedDataDep przypisuję dane z rozrachunków, datę fv i do rozliczenia
-    const preparedDataSettlements = preparedDataDep
-      .map((item) => {
-        const matchingSettlemnt = settlementItems.find(
-          (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
-        );
-        if (matchingSettlemnt) {
-          return {
-            ...item,
-            DATA_WYSTAWIENIA_FV: matchingSettlemnt.DATA_WYSTAWIENIA_FV,
-            DO_ROZLICZENIA_AS: matchingSettlemnt.DO_ROZLICZENIA,
-          };
-        } else {
-          errorSettlements.push(item.NR_DOKUMENTU);
-        }
-      })
-      .filter(Boolean);
+    const preparedDataSettlements = preparedDataDep.map((item) => {
+      const matchingSettlemnt = settlementItems.find(
+        (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
+      );
+      if (matchingSettlemnt) {
+        return {
+          ...item,
+          DATA_WYSTAWIENIA_FV: matchingSettlemnt.DATA_WYSTAWIENIA_FV,
+          DO_ROZLICZENIA_AS:
+            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
+            item.TYP_DOKUMENTU === "Korekta"
+              ? matchingSettlemnt.ZOBOWIAZANIA
+              : matchingSettlemnt.KWOTA_DO_ROZLICZENIA_FK,
+        };
+      } else {
+        errorSettlements.push(item.NR_DOKUMENTU);
+        return {
+          ...item,
+          DATA_WYSTAWIENIA_FV: "1900-01-01",
+          DO_ROZLICZENIA_AS:
+            item.DZIAL !== "KSIĘGOWOŚĆ" ? 0 : item.KWOTA_DO_ROZLICZENIA_FK,
+        };
+      }
+    });
 
     // dodaję wiekowanie wg wcześniej przygotowanych opcji
     const preparedDataAging = preparedDataSettlements.map((item) => {
@@ -149,27 +157,6 @@ const generateRaport = async (req, res) => {
         (1000 * 60 * 60 * 24)
       ).toFixed();
       let title = "";
-      // const checkAging = preparedAging.map((age) => {
-      //   if (
-      //     age.type === "first" &&
-      //     Number(age.firstValue) >= differenceInDays
-      //   ) {
-      //     title = age.title;
-      //   } else if (
-      //     age.type === "last" &&
-      //     Number(age.secondValue) <= differenceInDays
-      //   ) {
-      //     title = age.title;
-      //   } else if (
-      //     age.type === "some" &&
-      //     Number(age.firstValue) <= differenceInDays &&
-      //     Number(age.secondValue) >= differenceInDays
-      //   ) {
-      //     title = age.title;
-      //   } else {
-      //     errorAging.push(item.NR_DOKUMENTU);
-      //   }
-      // });
 
       for (const age of preparedAging) {
         if (
@@ -218,6 +205,7 @@ const generateRaport = async (req, res) => {
       preparedDataSettlements,
       preparedDataDep,
       preparedDataAging,
+      settlementItems,
     });
   } catch (error) {
     logEvents(

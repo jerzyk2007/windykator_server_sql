@@ -149,9 +149,7 @@ const documentsSchema = new Schema({
   },
 });
 
-module.exports = mongoose.model("Documents", documentsSchema);
-// const mongoose = require('mongoose');
-// const { Schema } = mongoose;
+module.exports = mongoose.model("ReapairDocuments", documentsSchema);
 
 // const documentsSchema = new Schema({
 

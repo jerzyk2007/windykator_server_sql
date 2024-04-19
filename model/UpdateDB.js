@@ -19,6 +19,9 @@ const updatesSchema = new Schema({
       DO_ROZLICZENIA: {
         type: Number,
       },
+      ZOBOWIAZANIA: {
+        type: Number,
+      },
     },
   ],
 });
