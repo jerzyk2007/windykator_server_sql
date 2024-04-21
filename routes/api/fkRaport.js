@@ -100,5 +100,18 @@ router
     fkGenerateRaport.generateRaport
   );
 
-fkGenerateRaport;
+router
+  .route("/delete-data-raport")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fKRaport.deleteDataRaport
+  );
+
+router
+  .route("/check-error-raport")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fkGenerateRaport.checkRaportErrors
+  );
+
 module.exports = router;

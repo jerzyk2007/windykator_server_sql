@@ -30,3 +30,116 @@
 20240419	15:14:37	loginController, handleLogin: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240419	15:14:42	loginController, handleLogin: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240419	16:00:44	generateFKRaportController, generateRaport: ReferenceError: preparedDataReleasedCarss is not defined
+20240419	17:32:16	fkDataFromFile, settlementNames: MongoServerError: Plan executor error during findAndModify :: caused by :: BSONObj size: 17420175 (0x109CF8F) is invalid. Size must be between 0 and 16793600(16MB) First element: _id: ObjectId('6615653b2931c5d0d68e26ac')
+20240419	18:03:51	fkDataFromFile, settlementNames: RangeError [ERR_OUT_OF_RANGE]: The value of "offset" is out of range. It must be >= 0 && <= 17825792. Received 17825794
+20240419	18:12:40	fkDataFromFile, settlementNames: ReferenceError: chunk is not defined
+20240419	18:56:35	fkDataFromFile, settlementNames: ReferenceError: totalChunks is not defined
+20240419	21:08:24	fkDataFromFile, settlementNames: RangeError [ERR_OUT_OF_RANGE]: The value of "offset" is out of range. It must be >= 0 && <= 17825792. Received 17825795
+20240420	14:03:26	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240420	14:03:26	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240420	14:03:30	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240420	14:03:30	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240420	14:03:34	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240420	14:03:34	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240420	14:51:44	fkDataFromFile, accountancyData: ReferenceError: UpdateDB is not defined
+20240420	14:52:56	fkDataFromFile, accountancyData: ReferenceError: errorSettlements is not defined
+20240420	15:37:57	fkDataFromFile, carsReleased: ReferenceError: update is not defined
+20240420	15:38:37	fkDataFromFile, carsReleased: TypeError: resultItems[0].raportData is not iterable
+20240420	15:41:38	fkDataFromFile, carsReleased: TypeError: resultItems[0].raportData is not iterable
+20240420	15:41:55	fkDataFromFile, carsReleased: TypeError: resultItems[0].raportData is not iterable
+20240420	15:43:13	fkDataFromFile, carsReleased: TypeError: resultItems[0].raportData is not iterable
+20240420	18:34:55	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'includes')
+20240420	18:35:53	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'includes')
+20240420	18:39:53	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'Status aktualny')
+20240420	18:41:17	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'Status aktualny')
+20240420	18:43:05	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'Status aktualny')
+20240420	18:44:14	fkDataFromFile, settlementNames: ReferenceError: preparedCaseStatus is not defined
+20240420	19:06:13	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'Status aktualny')
+20240420	19:07:36	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'Status aktualny')
+20240420	19:08:38	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'Faktura nr')
+20240420	19:16:17	fkDataFromFile, settlementNames: TypeError: resultDocuments[0] is not iterable
+20240421	13:15:49	fkDataFromFile, settlementNames: TypeError: Assignment to constant variable.
+20240421	13:16:20	fkDataFromFile, settlementNames: TypeError: Assignment to constant variable.
+20240421	13:27:45	fkDataFromFile, settlementNames: TypeError: Cannot read properties of undefined (reading 'push')
+20240421	13:33:07	fkDataFromFile, settlementNames: ReferenceError: OPIS_ROZRACHUNKU is not defined
+20240421	18:41:40	generateFKRaportController, generateRaport: ReferenceError: Numer is not defined
+20240421	18:43:55	generateFKRaportController, generateRaport: CastError: Cast to embedded failed for value "{
+  CZY_SAMOCHOD_WYDANY_AS: '',
+  CZY_W_KANCELARI: 'NIE',
+  DATA_WYDANIA_AUTA: '',
+  DATA_WYSTAWIENIA_FV: '2024-02-28',
+  DZIAL: 'D058',
+  ETAP_SPRAWY: '',
+  ILE_DNI_NA_PLATNOSC_FV: 30,
+  JAKA_KANCELARIA: '',
+  KONTRAHENT: '"ATHLON CAR LEASE POLSKA" SPÓŁKA Z OGRANICZONĄ ODP',
+  KWOTA_DO_ROZLICZENIA_FK: -21635.14,
+  KWOTA_WPS: 'NaN',
+  LOKALIZACJA: 'Wolica',
+  NR_DOKUMENTU: 'KF/I/1/24/D/D58',
+  NR_KLIENTA: 26234,
+  OBSZAR: 'BLACHARNIA',
+  OPIEKUN_OBSZARU_CENTRALI: 'Antosik Dawid',
+  OPIS_ROZRACHUNKU: [],
+  OWNER: 'Janasz Mateusz/Adamiak Artur',
+  PRZEDZIAL_WIEKOWANIE: '16-30',
+  PRZETER_NIEPRZETER: 'Przeterminowane',
+  RODZAJ_KONTA: 201,
+  TERMIN_PLATNOSCI_FV: '2024-03-29',
+  TYP_DOKUMENTU: 'Korekta',
+  DO_ROZLICZENIA_AS: undefined,
+  ROZNICA: undefined
+}" (type Object) at path "FKDataRaports" because of "CastError"
+20240421	18:46:32	generateFKRaportController, generateRaport: CastError: Cast to embedded failed for value "{
+  CZY_SAMOCHOD_WYDANY_AS: '',
+  CZY_W_KANCELARI: 'NIE',
+  DATA_WYDANIA_AUTA: '',
+  DATA_WYSTAWIENIA_FV: '2024-02-28',
+  DZIAL: 'D058',
+  ETAP_SPRAWY: '',
+  ILE_DNI_NA_PLATNOSC_FV: 30,
+  JAKA_KANCELARIA: '',
+  KONTRAHENT: '"ATHLON CAR LEASE POLSKA" SPÓŁKA Z OGRANICZONĄ ODP',
+  KWOTA_DO_ROZLICZENIA_FK: -21635.14,
+  KWOTA_WPS: 'NaN',
+  LOKALIZACJA: 'Wolica',
+  NR_DOKUMENTU: 'KF/I/1/24/D/D58',
+  NR_KLIENTA: 26234,
+  OBSZAR: 'BLACHARNIA',
+  OPIEKUN_OBSZARU_CENTRALI: 'Antosik Dawid',
+  OPIS_ROZRACHUNKU: [],
+  OWNER: 'Janasz Mateusz/Adamiak Artur',
+  PRZEDZIAL_WIEKOWANIE: '16-30',
+  PRZETER_NIEPRZETER: 'Przeterminowane',
+  RODZAJ_KONTA: 201,
+  TERMIN_PLATNOSCI_FV: '2024-03-29',
+  TYP_DOKUMENTU: 'Korekta',
+  DO_ROZLICZENIA_AS: undefined,
+  ROZNICA: undefined
+}" (type Object) at path "FKDataRaports" because of "CastError"
+20240421	18:54:23	fkDataFromFile, caseStatus: CastError: Cast to embedded failed for value "{
+  CZY_SAMOCHOD_WYDANY_AS: '',
+  DATA_WYDANIA_AUTA: '',
+  DATA_WYSTAWIENIA_FV: '2024-03-28',
+  DZIAL: 'D057',
+  ILE_DNI_NA_PLATNOSC_FV: 45,
+  KONTRAHENT: 'INTER CARS SPÓŁKA AKCYJNA',
+  KWOTA_DO_ROZLICZENIA_FK: -1946.92,
+  KWOTA_WPS: NaN,
+  LOKALIZACJA: 'Wolica',
+  NR_DOKUMENTU: 'KF/M/33/24/V/D57',
+  NR_KLIENTA: 13971,
+  OBSZAR: 'CZĘŚCI',
+  OPIEKUN_OBSZARU_CENTRALI: 'Derecka Katarzyna',
+  OPIS_ROZRACHUNKU: [],
+  OWNER: 'Chrzanowski Przemysław/Królak Arkadiusz/Seroczyński Marcin',
+  PRZEDZIAL_WIEKOWANIE: '<0',
+  PRZETER_NIEPRZETER: 'Nieprzeterminowane',
+  RODZAJ_KONTA: 201,
+  TERMIN_PLATNOSCI_FV: '2024-05-12',
+  TYP_DOKUMENTU: 'Korekta',
+  _id: new ObjectId('6625445be2a7c0ef5fafbd38'),
+  ETAP_SPRAWY: '',
+  JAKA_KANCELARIA: 'M Legal Solutions',
+  CZY_W_KANCELARI: 'TAK'
+}" (type Object) at path "preparedRaportData" because of "CastError"

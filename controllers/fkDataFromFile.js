@@ -1,4 +1,9 @@
 const FKRaport = require("../model/FKRaport");
+const UpdateDB = require("../model/UpdateDB");
+const Document = require("../model/Document");
+
+// const FKSettlementsTitle = require("../model/FKSettlementsTitle");
+
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 
@@ -34,12 +39,12 @@ const isExcelDate = (value) => {
 // tutaj będzie zapis danych z pliku z księgowości
 const accountancyData = async (rows, res) => {
   if (
-    (!rows[0]["Nr. dokumentu"] &&
-      !rows[0]["Kontrahent"] &&
-      !rows[0]["Płatność"] &&
-      !rows[0]["Data płatn."] &&
-      !rows[0][["Synt."]],
-    !rows[0][["Nr klienta"]])
+    !rows[0]["Nr. dokumentu"] &&
+    !rows[0]["Kontrahent"] &&
+    !rows[0]["Płatność"] &&
+    !rows[0]["Data płatn."] &&
+    !rows[0]["Nr klienta"] &&
+    !rows[0]["Synt."]
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }
@@ -47,7 +52,6 @@ const accountancyData = async (rows, res) => {
     const update = rows.map((row) => {
       const indexD = row["Nr. dokumentu"].lastIndexOf("D");
       let DZIAL_NR = "";
-      // if (indexD === -1) {
       if (
         indexD === -1 ||
         indexD === row["Nr. dokumentu"].length - 1 ||
@@ -57,8 +61,6 @@ const accountancyData = async (rows, res) => {
       } else {
         DZIAL_NR = row["Nr. dokumentu"].substring(indexD);
         if (DZIAL_NR.includes("/")) {
-          // console.log(row);
-
           // Jeśli tak, to usuwamy znak '/' i wszystko co po nim
           DZIAL_NR = DZIAL_NR.split("/")[0];
         }
@@ -67,11 +69,12 @@ const accountancyData = async (rows, res) => {
         NR_DOKUMENTU: row["Nr. dokumentu"],
         DZIAL: DZIAL_NR,
         KONTRAHENT: row["Kontrahent"],
-        KWOTA_DO_ROZLICZENIA_FK: row["Płatność"],
+        KWOTA_DO_ROZLICZENIA_FK: Number(row["Płatność"]),
         TERMIN_PLATNOSCI_FV: excelDateToISODate(row["Data płatn."]),
-        RODZAJ_KONTA: row["Synt."],
+        RODZAJ_KONTA: Number(row["Synt."]),
         TYP_DOKUMENTU: "",
-        NR_KLIENTA: row["Nr klienta"],
+        NR_KLIENTA: Number(row["Nr klienta"]),
+        OPIS_ROZRACHUNKU: [],
       };
     });
 
@@ -88,7 +91,6 @@ const accountancyData = async (rows, res) => {
         // Sprawdzamy długość numeru i wstawiamy odpowiednią liczbę zer
         if (number.length === 1) {
           newNumber = "00" + number;
-          // console.log(newNumber);
         } else if (number.length === 2) {
           newNumber = "0" + number;
         }
@@ -124,11 +126,159 @@ const accountancyData = async (rows, res) => {
         item.TYP_DOKUMENTU = "Inne";
       }
     }
+    // pobieram przygotowane działy, przypisanych ownerów, obszary, localizacje i poiekunów
+    const resultItems = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedItems: "$preparedItemsData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedItems = [...resultItems[0].preparedItems];
+
+    // do danych z pliku księgowego przypisuję wcześniej przygotowane dane działów
+    const preparedDataDep = update.map((item) => {
+      const matchingDepItem = preparedItems.find(
+        (preparedItem) => preparedItem.department === item.DZIAL
+      );
+
+      if (matchingDepItem) {
+        const { _id, ...rest } = item;
+        return {
+          ...rest,
+          OWNER:
+            matchingDepItem.owner.length === 1
+              ? matchingDepItem.owner[0]
+              : Array.isArray(matchingDepItem.owner) // Sprawdzamy, czy matchingDepItem.area jest tablicą
+              ? matchingDepItem.owner.join("/") // Jeśli jest tablicą, używamy join
+              : matchingDepItem.owner,
+          LOKALIZACJA: matchingDepItem.localization,
+          OBSZAR: matchingDepItem.area,
+          OPIEKUN_OBSZARU_CENTRALI:
+            matchingDepItem.guardian.length === 1
+              ? matchingDepItem.guardian[0]
+              : Array.isArray(matchingDepItem.guardian)
+              ? matchingDepItem.guardian.join(" / ")
+              : matchingDepItem.guardian,
+        };
+      } else {
+        return item;
+      }
+    });
+
+    // pobieram dane z rozrachunków
+    const allSettlements = await UpdateDB.find({}, { settlements: 1 });
+
+    const settlementItems = [...allSettlements[0].settlements];
+
+    const preparedDataSettlements = preparedDataDep.map((item) => {
+      const matchingSettlemnt = settlementItems.find(
+        (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
+      );
+      if (matchingSettlemnt) {
+        return {
+          ...item,
+          DATA_WYSTAWIENIA_FV: matchingSettlemnt.DATA_WYSTAWIENIA_FV,
+          DO_ROZLICZENIA_AS:
+            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
+            item.TYP_DOKUMENTU === "Korekta"
+              ? matchingSettlemnt.ZOBOWIAZANIA
+              : matchingSettlemnt.DO_ROZLICZENIA,
+          ROZNICA:
+            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
+            item.TYP_DOKUMENTU === "Korekta"
+              ? matchingSettlemnt.ZOBOWIAZANIA
+              : matchingSettlemnt.DO_ROZLICZENIA - item.KWOTA_DO_ROZLICZENIA_FK,
+        };
+      } else {
+        return {
+          ...item,
+          DATA_WYSTAWIENIA_FV: "1900-01-01",
+          DO_ROZLICZENIA_AS: 0,
+          ROZNICA: item.KWOTA_DO_ROZLICZENIA_FK,
+          // item.DZIAL !== "KSIĘGOWOŚĆ" ? 0 : item.KWOTA_DO_ROZLICZENIA_FK,
+        };
+      }
+    });
+
+    const resultAging = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          aging: "$items.aging", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+
+    const preparedAging = [...resultAging[0].aging];
+
+    // dodaję wiekowanie wg wcześniej przygotowanych opcji
+    const preparedDataAging = preparedDataSettlements.map((item) => {
+      const todayDate = new Date();
+      const documentDate = new Date(item.DATA_WYSTAWIENIA_FV);
+      const documentDatePayment = new Date(item.TERMIN_PLATNOSCI_FV);
+      // Różnica w milisekundach
+      const differenceInMilliseconds =
+        todayDate.getTime() - documentDatePayment.getTime();
+
+      // Konwersja różnicy na dni
+      const differenceInDays = (
+        differenceInMilliseconds /
+        (1000 * 60 * 60 * 24)
+      ).toFixed();
+
+      const differenceInMillisecondsDocument =
+        documentDatePayment.getTime() - documentDate.getTime();
+
+      const differenceInDaysDocument = Math.floor(
+        differenceInMillisecondsDocument / (1000 * 60 * 60 * 24)
+      );
+
+      let title = "";
+
+      for (const age of preparedAging) {
+        if (
+          age.type === "first" &&
+          Number(age.firstValue) >= differenceInDays
+        ) {
+          title = age.title;
+          foundMatchingAging = true;
+          break;
+        } else if (
+          age.type === "last" &&
+          Number(age.secondValue) <= differenceInDays
+        ) {
+          title = age.title;
+          foundMatchingAging = true;
+          break;
+        } else if (
+          age.type === "some" &&
+          Number(age.firstValue) <= differenceInDays &&
+          Number(age.secondValue) >= differenceInDays
+        ) {
+          title = age.title;
+          foundMatchingAging = true;
+          break;
+        }
+      }
+
+      if (!foundMatchingAging) {
+      }
+      return {
+        ...item,
+        PRZEDZIAL_WIEKOWANIE: title,
+        PRZETER_NIEPRZETER:
+          differenceInDays > 0 ? "Przeterminowane" : "Nieprzeterminowane",
+        ILE_DNI_NA_PLATNOSC_FV: Number(differenceInDaysDocument),
+      };
+    });
+
     await FKRaport.findOneAndUpdate(
       {},
       {
         $set: {
-          "data.FKAccountancy": update,
+          preparedRaportData: preparedDataAging,
         },
       },
       {
@@ -156,7 +306,7 @@ const accountancyData = async (rows, res) => {
       {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
       {
         $set: {
-          "data.updateDate.accountancy": updateDate,
+          "updateDate.accountancy": updateDate,
         },
       }, // Nowe dane, które mają zostać ustawione
       {
@@ -164,42 +314,249 @@ const accountancyData = async (rows, res) => {
         returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
       }
     );
+    return res.json(preparedDataAging);
   } catch (error) {
     logEvents(
       `fkDataFromFile, accountancyData: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
-    res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error" });
   }
 };
 
-// tutaj będzie zapis danych z pliku zauta wydane
+// tutaj będzie zapis danych z pliku z auta wydane
 const carsReleased = async (rows, res) => {
   if (!rows[0]["NR FAKTURY"] && !rows[0]["WYDANO"]) {
     return res.status(500).json({ error: "Invalid file" });
   }
   try {
-    const update = rows.map((row) => {
-      const checkDate = isExcelDate(row["WYDANO"]);
-      return {
-        NR_DOKUMENTU: row["NR FAKTURY"],
-        DATA_WYDANIA_AUTA: checkDate
-          ? excelDateToISODate(row["WYDANO"]).toString()
-          : "",
-      };
+    // pobieram wcześniej przygotowane dane z raportData
+    const resultItems = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedRaportData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedData = [...resultItems[0].preparedRaportData];
+
+    //liczba znalezionych rekordów
+    let counter = 0;
+    const preparedDataReleasedCars = preparedData.map((item) => {
+      const matchingItems = rows.find(
+        (preparedItem) => preparedItem["NR FAKTURY"] === item.NR_DOKUMENTU
+      );
+      if (
+        matchingItems &&
+        (item.OBSZAR === "SAMOCHODY NOWE" ||
+          item.OBSZAR === "SAMOCHODY UŻYWANE")
+      ) {
+        const checkDate = isExcelDate(matchingItems["WYDANO"]);
+        counter++;
+        return {
+          ...item,
+          DATA_WYDANIA_AUTA: checkDate
+            ? excelDateToISODate(matchingItems["WYDANO"]).toString()
+            : "",
+          CZY_SAMOCHOD_WYDANY_AS: matchingItems["WYDANO"] ? "TAK" : "NIE",
+        };
+      } else if (
+        !matchingItems &&
+        (item.OBSZAR === "SAMOCHODY NOWE" ||
+          item.OBSZAR === "SAMOCHODY UŻYWANE")
+      ) {
+        return {
+          ...item,
+          DATA_WYDANIA_AUTA: "",
+          CZY_SAMOCHOD_WYDANY_AS: "NIE",
+        };
+      } else {
+        return {
+          ...item,
+          DATA_WYDANIA_AUTA: "",
+          CZY_SAMOCHOD_WYDANY_AS: "",
+        };
+      }
     });
 
+    // zapis do DB po zmianach
+    await FKRaport.findOneAndUpdate(
+      {},
+      {
+        $set: {
+          preparedRaportData: preparedDataReleasedCars,
+        },
+      },
+      {
+        returnOriginal: false,
+        upsert: true,
+      }
+    );
+
+    // await FKRaport.updateMany(
+    //   {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+    //   {
+    //     $unset: {
+    //       raportData: 1,
+    //     },
+    //   }, // Nowe dane, które mają zostać usunięte
+    //   {
+    //     upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+    //   }
+    // );
+
+    const dateObj = new Date();
+    // // Pobieramy poszczególne elementy daty i czasu
+    const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
+    const year = dateObj.getFullYear(); // Rok
+
+    // Formatujemy datę i czas według wymagań
+    const actualDate = `${day}-${month}-${year}`;
+
+    const updateDate = {
+      date: actualDate,
+      counter,
+    };
     await FKRaport.findOneAndUpdate(
       {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
       {
         $set: {
-          "data.carReleased": update,
+          "updateDate.carReleased": updateDate,
         },
       }, // Nowe dane, które mają zostać ustawione
       {
         upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
         returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+      }
+    );
+    return res.json(preparedDataReleasedCars);
+  } catch (error) {
+    logEvents(`fkDataFromFile, carsReleased: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// tutaj będzie zapis danych z pliku rubicon i z bazy raportu BLEU :)
+const caseStatus = async (rows, res) => {
+  if (
+    !rows[0]["Faktura nr"] &&
+    !rows[0]["Status aktualny"] &&
+    !rows[0]["Firma zewnętrzna"] &&
+    !rows[0]["Data faktury"]
+  ) {
+    return res.status(500).json({ error: "Invalid file" });
+  }
+  try {
+    // pobieram wcześniej przygotowane dane z raportData
+    const resultItems = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedRaportData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedData = [...resultItems[0].preparedRaportData];
+
+    //licznik ile spraw zostało przypisanych do raportu
+    let counter = 0;
+    const preparedCaseStatus = preparedData.map((item) => {
+      const matchingSettlemnt = rows.find(
+        (preparedItem) => preparedItem["Faktura nr"] === item.NR_DOKUMENTU
+      );
+
+      if (matchingSettlemnt && item.OBSZAR !== "BLACHARNIA") {
+        counter++;
+
+        const status =
+          matchingSettlemnt["Status aktualny"] !== "Brak działań" &&
+          matchingSettlemnt["Status aktualny"] !== "Rozliczona" &&
+          matchingSettlemnt["Status aktualny"] !== "sms/mail +3" &&
+          matchingSettlemnt["Status aktualny"] !== "sms/mail -2" &&
+          matchingSettlemnt["Status aktualny"] !== "Zablokowana" &&
+          matchingSettlemnt["Status aktualny"] !== "Zablokowana BL" &&
+          matchingSettlemnt["Status aktualny"] !== "Zablokowana KF" &&
+          matchingSettlemnt["Status aktualny"] !== "Zablokowana KF BL"
+            ? matchingSettlemnt["Status aktualny"]
+            : "";
+        return {
+          ...item,
+          ETAP_SPRAWY: status,
+          KWOTA_WPS: item.DO_ROZLICZENIA_AS,
+          JAKA_KANCELARIA: matchingSettlemnt["Firma zewnętrzna"],
+          CZY_W_KANCELARI: matchingSettlemnt["Firma zewnętrzna"]
+            ? "TAK"
+            : "NIE",
+          DATA_WYSTAWIENIA_FV:
+            item.DATA_WYSTAWIENIA_FV === "1900-01-01"
+              ? matchingSettlemnt["Data faktury"]
+              : item.DATA_WYSTAWIENIA_FV,
+        };
+      } else if (matchingSettlemnt && item.OBSZAR === "BLACHARNIA") {
+        return {
+          ...item,
+          ETAP_SPRAWY: "",
+          KWOTA_WPS: item.DO_ROZLICZENIA_AS,
+          JAKA_KANCELARIA: "",
+          CZY_W_KANCELARI: "NIE",
+          DATA_WYSTAWIENIA_FV:
+            item.DATA_WYSTAWIENIA_FV === "1900-01-01"
+              ? matchingSettlemnt["Data faktury"]
+              : item.DATA_WYSTAWIENIA_FV,
+        };
+      } else {
+        return {
+          ...item,
+          ETAP_SPRAWY: "",
+          KWOTA_WPS: "",
+          JAKA_KANCELARIA: "",
+          CZY_W_KANCELARI: "NIE",
+        };
+      }
+    });
+
+    // pobieran dane z BLEU żeby sprawdzić kancelarie, WPS itp dla działów blacharni
+    const resultDocuments = await Document.find({});
+
+    const preparedCaseStatusBL = preparedCaseStatus.map((item) => {
+      const matchingSettlemnt = resultDocuments.find(
+        (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
+      );
+      if (matchingSettlemnt && item.OBSZAR === "BLACHARNIA") {
+        counter++;
+        return {
+          ...item,
+          ETAP_SPRAWY: matchingSettlemnt.STATUS_SPRAWY_KANCELARIA,
+          JAKA_KANCELARIA:
+            matchingSettlemnt.JAKA_KANCELARIA !== "BRAK"
+              ? matchingSettlemnt.JAKA_KANCELARIA
+              : "",
+          CZY_W_KANCELARI:
+            matchingSettlemnt.JAKA_KANCELARIA !== "BRAK" ? "TAK" : "NIE",
+          KWOTA_WPS: matchingSettlemnt.KWOTA_WINDYKOWANA_BECARED
+            ? matchingSettlemnt.KWOTA_WINDYKOWANA_BECARED
+            : 0,
+        };
+      } else {
+        return item;
+      }
+    });
+
+    // zapis do DB po zmianach
+    await FKRaport.findOneAndUpdate(
+      {},
+      {
+        $set: {
+          preparedRaportData: preparedCaseStatusBL,
+        },
+      },
+      {
+        returnOriginal: false,
+        upsert: true,
       }
     );
 
@@ -211,17 +568,16 @@ const carsReleased = async (rows, res) => {
 
     // Formatujemy datę i czas według wymagań
     const actualDate = `${day}-${month}-${year}`;
-    const updateCounter = update.length;
 
     const updateDate = {
       date: actualDate,
-      counter: updateCounter,
+      counter,
     };
     await FKRaport.findOneAndUpdate(
       {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
       {
         $set: {
-          "data.updateDate.carReleased": updateDate,
+          "updateDate.caseStatus": updateDate,
         },
       }, // Nowe dane, które mają zostać ustawione
       {
@@ -229,10 +585,111 @@ const carsReleased = async (rows, res) => {
         returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
       }
     );
+
+    res.json(preparedCaseStatusBL);
   } catch (error) {
-    logEvents(`fkDataFromFile, carsReleased: ${error}`, "reqServerErrors.txt");
+    logEvents(`fkDataFromFile, caseStatus: ${error}`, "reqServerErrors.txt");
     console.error(error);
-    res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+const settlementNames = async (rows, res) => {
+  try {
+    // pobieram wcześniej przygotowane dane z raportData
+    const resultItems = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedRaportData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedData = [...resultItems[0].preparedRaportData];
+
+    let counter = 0;
+
+    const preparedSettlementName = preparedData.map((item) => {
+      let dateAndName = [];
+      rows.forEach((preparedItem) => {
+        if (
+          preparedItem.NUMER === item.NR_DOKUMENTU &&
+          preparedItem.DataRozlAutostacja !== "NULL" &&
+          preparedItem.OPIS !== "NULL"
+        ) {
+          const checkDate = isExcelDate(preparedItem.DataRozlAutostacja);
+          const date =
+            preparedItem.DataRozlAutostacja === "NULL"
+              ? "BRAK"
+              : checkDate
+              ? excelDateToISODate(preparedItem.DataRozlAutostacja)
+              : "BRAK";
+          const name =
+            preparedItem.OPIS === "NULL" ? "BRAK" : preparedItem.OPIS;
+
+          dateAndName.push(`${date} - ${name}`); // Dodajemy do tablicy dateAndName
+        }
+      });
+
+      if (dateAndName.length > 0) {
+        counter++;
+        // Jeśli tablica nie jest pusta, przypisujemy ją do OPIS_ROZRACHUNKU
+        return {
+          ...item,
+          OPIS_ROZRACHUNKU: dateAndName,
+        };
+      } else {
+        // Jeśli tablica jest pusta, przypisujemy pustą tablicę do OPIS_ROZRACHUNKU
+        return item;
+      }
+    });
+
+    await FKRaport.findOneAndUpdate(
+      {},
+      {
+        $set: {
+          preparedRaportData: preparedSettlementName,
+        },
+      },
+      {
+        returnOriginal: false,
+        upsert: true,
+      }
+    );
+
+    const dateObj = new Date();
+    // // Pobieramy poszczególne elementy daty i czasu
+    const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
+    const year = dateObj.getFullYear(); // Rok
+
+    // Formatujemy datę i czas według wymagań
+    const actualDate = `${day}-${month}-${year}`;
+
+    const updateDate = {
+      date: actualDate,
+      counter,
+    };
+    await FKRaport.findOneAndUpdate(
+      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+      {
+        $set: {
+          "updateDate.settlementNames": updateDate,
+        },
+      }, // Nowe dane, które mają zostać ustawione
+      {
+        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+        returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+      }
+    );
+    res.json(preparedSettlementName);
+  } catch (error) {
+    logEvents(
+      `fkDataFromFile, settlementNames: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    return res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -254,21 +711,27 @@ const addDataFromFile = async (req, res) => {
     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
 
     if (type === "accountancy") {
-      accountancyData(rows, res);
+      await accountancyData(rows, res);
     }
 
     if (type === "car") {
-      carsReleased(rows, res);
+      await carsReleased(rows, res);
     }
 
-    res.end();
+    if (type === "rubicon") {
+      await caseStatus(rows, res);
+    }
+
+    if (type === "settlement") {
+      await settlementNames(rows, res);
+    }
   } catch (error) {
     logEvents(
       `fkDataFromFile, addDataFromFile: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
-    res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ error: "Server error" });
   }
 };
 

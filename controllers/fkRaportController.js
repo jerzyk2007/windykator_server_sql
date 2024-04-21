@@ -269,7 +269,7 @@ const getDateCounter = async (req, res) => {
       {
         $project: {
           _id: 0, // Wyłączamy pole _id z wyniku
-          updateDate: "$data.updateDate", // Wybieramy tylko pole FKData z pola data
+          updateDate: "$updateDate", // Wybieramy tylko pole FKData z pola data
         },
       },
     ]);
@@ -283,6 +283,33 @@ const getDateCounter = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+//funckja kasuje przygotwane dane do raportu, czas dodania pliki i ilość danych
+const deleteDataRaport = async (req, res) => {
+  try {
+    await FKRaport.updateMany(
+      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+      {
+        $unset: {
+          raportData: 1,
+          updateDate: 1,
+        },
+      }, // Nowe dane, które mają zostać usunięte
+      {
+        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+      }
+    );
+    res.json({ result: "delete" });
+  } catch (error) {
+    logEvents(
+      `fkRaportController, deleteDataRaport: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   documentsFromFile,
   getData,
@@ -290,4 +317,5 @@ module.exports = {
   changeColumns,
   getColumns,
   getDateCounter,
+  deleteDataRaport,
 };

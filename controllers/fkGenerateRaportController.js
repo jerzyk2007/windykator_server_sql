@@ -1,31 +1,69 @@
 const FKRaport = require("../model/FKRaport");
+const FKDataRaport = require("../model/FKRaportData");
 const UpdateDB = require("../model/UpdateDB");
 
 const { logEvents } = require("../middleware/logEvents");
 
 const generateRaport = async (req, res) => {
   try {
-    // pobieram przygotowane działy, przypisanych ownerów, obszary, localizacje i poiekunów
+    // pobieram wcześniej przygotowane dane z raportData
     const resultItems = await FKRaport.aggregate([
       {
         $project: {
           _id: 0, // Wyłączamy pole _id z wyniku
-          preparedItems: "$preparedItemsData", // Wybieramy tylko pole FKData z pola data
+          preparedRaportData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
         },
       },
     ]);
+    const preparedData = [...resultItems[0].preparedRaportData];
+    const preparedDataWithoutId = preparedData.map(({ _id, ...rest }) => rest);
 
-    // pobieram dane z pliku księgowego
-    const resultFKAccountancy = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          fkAccountancy: "$data.FKAccountancy", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
+    const allSettlements = await UpdateDB.find({}, { settlements: 1 });
 
-    // pobieram przygotowane dane wiekowania
+    const settlementItems = [...allSettlements[0].settlements];
+
+    const preparedDataSettlements = preparedDataWithoutId.map((item) => {
+      const matchingSettlemnt = settlementItems.find(
+        (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
+      );
+      if (matchingSettlemnt && item.OBSZAR !== "BLACHARNIA") {
+        return {
+          ...item,
+          DO_ROZLICZENIA_AS:
+            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
+            item.TYP_DOKUMENTU === "Korekta"
+              ? matchingSettlemnt.ZOBOWIAZANIA
+              : matchingSettlemnt.DO_ROZLICZENIA,
+          ROZNICA:
+            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
+            item.TYP_DOKUMENTU === "Korekta"
+              ? matchingSettlemnt.ZOBOWIAZANIA
+              : matchingSettlemnt.DO_ROZLICZENIA - item.KWOTA_DO_ROZLICZENIA_FK,
+          KWOTA_WPS: matchingSettlemnt.DO_ROZLICZENIA,
+        };
+      } else if (matchingSettlemnt && item.OBSZAR === "BLACHARNIA") {
+        return {
+          ...item,
+          DO_ROZLICZENIA_AS:
+            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
+            item.TYP_DOKUMENTU === "Korekta"
+              ? matchingSettlemnt.ZOBOWIAZANIA
+              : matchingSettlemnt.DO_ROZLICZENIA,
+          ROZNICA:
+            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
+            item.TYP_DOKUMENTU === "Korekta"
+              ? matchingSettlemnt.ZOBOWIAZANIA
+              : matchingSettlemnt.DO_ROZLICZENIA - item.KWOTA_DO_ROZLICZENIA_FK,
+        };
+      } else {
+        return {
+          ...item,
+          DO_ROZLICZENIA_AS: 0,
+          ROZNICA: item.KWOTA_DO_ROZLICZENIA_FK,
+        };
+      }
+    });
+
     const resultAging = await FKRaport.aggregate([
       {
         $project: {
@@ -35,105 +73,7 @@ const generateRaport = async (req, res) => {
       },
     ]);
 
-    // pobieram dane już przygotowanego raportu
-    const carReleased = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          carReleased: "$data.carReleased", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
-
-    // pobieram dane z rozrachunków
-    const allSettlements = await UpdateDB.find({}, { settlements: 1 });
-
-    // przypisuję działy które nie sa przygotowane do raportu
-    let errorDepartments = [];
-
-    // przypisuję rozrachunki które dane nie znalazły sie w rozrachunkach
-    let errorSettlements = [];
-
-    // przypisuję wiekowanie które  nie znalazły sie w w raporcie z owodu jakiegoś błędu
-    let errorAging = [];
-
-    const fkAccountancyItems = [...resultFKAccountancy[0].fkAccountancy];
-    const preparedItems = [...resultItems[0].preparedItems];
-    // const itemsFKData = [...resultFKAData[0].FKData];
-    const settlementItems = [...allSettlements[0].settlements];
     const preparedAging = [...resultAging[0].aging];
-    const prepareCars = [...carReleased[0].carReleased];
-
-    // do danych z pliku księgowego przypisuję wcześniej przygotowane dane działów
-    const preparedDataDep = fkAccountancyItems.map((item) => {
-      const matchingDepItem = preparedItems.find(
-        (preparedItem) => preparedItem.department === item.DZIAL
-      );
-
-      if (matchingDepItem) {
-        const { _id, ...rest } = item;
-        return {
-          ...rest,
-          OWNER:
-            matchingDepItem.owner.length === 1
-              ? matchingDepItem.owner[0]
-              : Array.isArray(matchingDepItem.owner) // Sprawdzamy, czy matchingDepItem.area jest tablicą
-              ? matchingDepItem.owner.join("/") // Jeśli jest tablicą, używamy join
-              : matchingDepItem.owner,
-          LOKALIZACJA: matchingDepItem.localization,
-          OBSZAR: matchingDepItem.area,
-          OPIEKUN_OBSZARU_CENTRALI:
-            matchingDepItem.guardian.length === 1
-              ? matchingDepItem.guardian[0]
-              : Array.isArray(matchingDepItem.guardian)
-              ? matchingDepItem.guardian.join(" / ")
-              : matchingDepItem.guardian,
-        };
-      } else {
-        errorDepartments.push(item.DZIAL);
-        return item;
-      }
-    });
-
-    // dodaję datę wystawienia (jeśli jest w rozrachunkach) sfaktury do dokumentów, bez zmiany rozliczenia wg najnowszych danych
-    // preparedDataDep.forEach((item, index) => {
-    //   const matchingSettlement = settlementItems.find(
-    //     (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
-    //   );
-
-    //   if (matchingSettlement) {
-    //     preparedDataDep[index].DATA_WYSTAWIENIA_FV =
-    //       matchingSettlement.DATA_WYSTAWIENIA_FV;
-    //   } else {
-    //     preparedDataDep[index].DATA_WYSTAWIENIA_FV = "";
-    //   }
-    // });
-
-    // do preparedDataDep przypisuję dane z rozrachunków, datę fv i do rozliczenia
-    const preparedDataSettlements = preparedDataDep.map((item) => {
-      const matchingSettlemnt = settlementItems.find(
-        (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
-      );
-      if (matchingSettlemnt) {
-        return {
-          ...item,
-          DATA_WYSTAWIENIA_FV: matchingSettlemnt.DATA_WYSTAWIENIA_FV,
-          DO_ROZLICZENIA_AS:
-            item.TYP_DOKUMENTU === "Korekta zaliczki" ||
-            item.TYP_DOKUMENTU === "Korekta"
-              ? matchingSettlemnt.ZOBOWIAZANIA
-              : matchingSettlemnt.KWOTA_DO_ROZLICZENIA_FK,
-        };
-      } else {
-        errorSettlements.push(item.NR_DOKUMENTU);
-        return {
-          ...item,
-          DATA_WYSTAWIENIA_FV: "1900-01-01",
-          DO_ROZLICZENIA_AS:
-            item.DZIAL !== "KSIĘGOWOŚĆ" ? 0 : item.KWOTA_DO_ROZLICZENIA_FK,
-        };
-      }
-    });
 
     // dodaję wiekowanie wg wcześniej przygotowanych opcji
     const preparedDataAging = preparedDataSettlements.map((item) => {
@@ -145,18 +85,17 @@ const generateRaport = async (req, res) => {
         todayDate.getTime() - documentDatePayment.getTime();
 
       // Konwersja różnicy na dni
-      const differenceInDays = (
-        differenceInMilliseconds /
-        (1000 * 60 * 60 * 24)
-      ).toFixed();
+      const differenceInDays = Math.floor(
+        differenceInMilliseconds / (1000 * 60 * 60 * 24)
+      );
 
       const differenceInMillisecondsDocument =
         documentDatePayment.getTime() - documentDate.getTime();
 
-      const differenceInDaysDocument = (
-        differenceInMillisecondsDocument /
-        (1000 * 60 * 60 * 24)
-      ).toFixed();
+      const differenceInDaysDocument = Math.floor(
+        differenceInMillisecondsDocument / (1000 * 60 * 60 * 24)
+      );
+
       let title = "";
 
       for (const age of preparedAging) {
@@ -186,7 +125,6 @@ const generateRaport = async (req, res) => {
       }
 
       if (!foundMatchingAging) {
-        errorAging.push(item.NR_DOKUMENTU);
       }
       return {
         ...item,
@@ -197,56 +135,21 @@ const generateRaport = async (req, res) => {
       };
     });
 
-    // do preparedDataSettlements daty wydania samochodów dla SAMOCHODY_NOWE i _UŻYWANE
-    const preparedDataReleasedCars = preparedDataAging.map((item) => {
-      const matchingItems = prepareCars.find(
-        (preparedItem) => preparedItem.NR_DOKUMENTU === item.NR_DOKUMENTU
-      );
-      if (
-        matchingItems &&
-        (item.OBSZAR === "SAMOCHODY NOWE" ||
-          item.OBSZAR === "SAMOCHODY UŻYWANE")
-      ) {
-        console.log(matchingItems);
-        return {
-          ...item,
-          DATA_WYDANIA_AUTA: matchingItems.DATA_WYDANIA_AUTA
-            ? matchingItems.DATA_WYDANIA_AUTA
-            : "",
-          CZY_SAMOCHOD_WYDANY_AS: matchingItems.DATA_WYDANIA_AUTA
-            ? "TAK"
-            : "NIE",
-        };
-      } else if (
-        !matchingItems &&
-        (item.OBSZAR === "SAMOCHODY NOWE" ||
-          item.OBSZAR === "SAMOCHODY UŻYWANE")
-      ) {
-        console.log(matchingItems);
-        return {
-          ...item,
-          DATA_WYDANIA_AUTA: "",
-          CZY_SAMOCHOD_WYDANY_AS: "NIE",
-        };
-      } else {
-        return {
-          ...item,
-          DATA_WYDANIA_AUTA: "",
-          CZY_SAMOCHOD_WYDANY_AS: "",
-        };
+    // zapis do DB po zmianach
+    await FKDataRaport.findOneAndUpdate(
+      {},
+      {
+        $set: {
+          FKDataRaports: preparedDataAging,
+        },
+      },
+      {
+        returnOriginal: false,
+        upsert: true,
       }
-    });
+    );
 
-    res.json({
-      errorDepartments,
-      errorSettlements,
-      errorAging,
-      preparedDataSettlements,
-      preparedDataDep,
-      preparedDataAging,
-      settlementItems,
-      preparedDataReleasedCars,
-    });
+    res.json(preparedDataAging);
   } catch (error) {
     logEvents(
       `generateFKRaportController, generateRaport: ${error}`,
@@ -257,6 +160,69 @@ const generateRaport = async (req, res) => {
   }
 };
 
+const checkRaportErrors = async (req, res) => {
+  try {
+    // pobieram wcześniej przygotowane dane z raportData
+    const resultItems = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedRaportData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedData = [...resultItems[0].preparedRaportData];
+
+    const dataErrors = {
+      areas: [],
+      departments: [],
+      localizations: [],
+      owners: [],
+      aging: [],
+    };
+
+    preparedData.forEach((item) => {
+      if (!item.OBSZAR) {
+        dataErrors.areas = [...dataErrors.areas, item.NR_DOKUMENTU];
+      }
+      if (!item.LOKALIZACJA) {
+        dataErrors.localizations = [
+          ...dataErrors.localizations,
+          item.NR_DOKUMENTU,
+        ];
+      }
+      if (!item.DZIAL) {
+        dataErrors.departments = [...dataErrors.departments, item.NR_DOKUMENTU];
+      }
+      if (!item.OWNER) {
+        dataErrors.owners = [...dataErrors.owners, item.NR_DOKUMENTU];
+      }
+      if (!item.PRZEDZIAL_WIEKOWANIE) {
+        dataErrors.aging = [...dataErrors.aging, item.NR_DOKUMENTU];
+      }
+    });
+
+    // sprawdzam czy do obiektu dataErrors zapisały się jakieś dane
+    const checkError =
+      Object.values(dataErrors).filter((errorArray) => errorArray.length > 0)
+        .length > 0;
+
+    if (checkError) {
+      res.json({ check: dataErrors });
+    } else {
+      res.json({ check: "OK" });
+    }
+  } catch (error) {
+    logEvents(
+      `generateFKRaportController, checkRaportErrors: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   generateRaport,
+  checkRaportErrors,
 };
