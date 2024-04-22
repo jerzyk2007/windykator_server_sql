@@ -482,7 +482,7 @@ const caseStatus = async (rows, res) => {
           matchingSettlemnt["Status aktualny"] !== "Zablokowana KF" &&
           matchingSettlemnt["Status aktualny"] !== "Zablokowana KF BL"
             ? matchingSettlemnt["Status aktualny"]
-            : "";
+            : "BRAK";
         return {
           ...item,
           ETAP_SPRAWY: status,
@@ -530,7 +530,9 @@ const caseStatus = async (rows, res) => {
         counter++;
         return {
           ...item,
-          ETAP_SPRAWY: matchingSettlemnt.STATUS_SPRAWY_KANCELARIA,
+          ETAP_SPRAWY: matchingSettlemnt.STATUS_SPRAWY_KANCELARIA
+            ? matchingSettlemnt.STATUS_SPRAWY_KANCELARIA
+            : "BRAK",
           JAKA_KANCELARIA:
             matchingSettlemnt.JAKA_KANCELARIA !== "BRAK"
               ? matchingSettlemnt.JAKA_KANCELARIA

@@ -1,5 +1,6 @@
 // const FKRaport = require("../model/FKRaport");
 const FKRaport = require("../model/FKRaport");
+const FKDataRaport = require("../model/FKRaportData");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 
@@ -132,49 +133,57 @@ const getData = async (req, res) => {
 
   try {
     // const result = await FKRaport.find({});
-    const result = await FKRaport.aggregate([
+
+    const result = await FKDataRaport.aggregate([
       {
         $project: {
           _id: 0, // Wyłączamy pole _id z wyniku
-          FKData: "$data.FKData", // Wybieramy tylko pole FKData z pola data
+          data: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
         },
       },
     ]);
 
-    const FKJSON = JSON.stringify(result[0].FKData);
-    let FKObject = JSON.parse(FKJSON);
+    const preparedDataWithoutId = result[0].data.map(
+      ({ _id, ...rest }) => rest
+    );
+
+    let dataRaport = [...preparedDataWithoutId];
 
     if (filter.business !== "201203") {
-      FKObject = FKObject.filter(
+      dataRaport = dataRaport.filter(
         (item) => item.RODZAJ_KONTA === Number(filter.business)
       );
     }
 
     if (filter.payment !== "Wszystko") {
       if (filter.payment === "Przeterminowane") {
-        FKObject = FKObject.filter(
-          (item) => item.PRZETER_NIEPRZETER === "PRZETERMINOWANE"
+        dataRaport = dataRaport.filter(
+          (item) => item.PRZETER_NIEPRZETER === "Przeterminowane"
         );
       } else if (filter.payment === "Nieprzeterminowane") {
-        FKObject = FKObject.filter(
-          (item) => item.PRZETER_NIEPRZETER === "NIEPRZETERMINOWANE"
+        dataRaport = dataRaport.filter(
+          (item) => item.PRZETER_NIEPRZETER === "Nieprzeterminowane"
         );
       }
     }
 
     if (filter.actions !== "All") {
       if (filter.actions === "Tak") {
-        FKObject = FKObject.filter((item) => item.CZY_W_KANCELARI === "TAK");
+        dataRaport = dataRaport.filter(
+          (item) => item.CZY_W_KANCELARI === "TAK"
+        );
       }
 
       if (filter.actions === "Nie") {
-        FKObject = FKObject.filter((item) => item.CZY_W_KANCELARI === "NIE");
+        dataRaport = dataRaport.filter(
+          (item) => item.CZY_W_KANCELARI === "NIE"
+        );
       }
     } else if (filter.actions === "All") {
-      FKObject = FKObject.filter((item) => item.CZY_W_KANCELARI === "TAK");
+      dataRaport = dataRaport.filter((item) => item.CZY_W_KANCELARI === "TAK");
     }
 
-    res.json(FKObject);
+    res.json(dataRaport);
   } catch (error) {
     logEvents(`fkRaportController, getData: ${error}`, "reqServerErrors.txt");
     console.error(error);

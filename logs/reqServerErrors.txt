@@ -143,3 +143,15 @@
   JAKA_KANCELARIA: 'M Legal Solutions',
   CZY_W_KANCELARI: 'TAK'
 }" (type Object) at path "preparedRaportData" because of "CastError"
+20240422	13:13:40	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240422	13:13:40	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240422	13:13:47	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240422	13:13:47	fkRaportController, getData: SyntaxError: "undefined" is not valid JSON
+20240422	13:19:32	fkRaportController, getData: ReferenceError: FKDataRaports is not defined
+20240422	13:19:32	fkRaportController, getData: ReferenceError: FKDataRaports is not defined
+20240422	13:22:41	fkRaportController, getData: TypeError: result[0] is not iterable
+20240422	13:22:41	fkRaportController, getData: TypeError: result[0] is not iterable
+20240422	13:23:09	fkRaportController, getData: TypeError: result.FKDataRaports is not iterable
+20240422	13:23:09	fkRaportController, getData: TypeError: result.FKDataRaports is not iterable
+20240422	13:36:47	fkRaportController, getData: ReferenceError: FKObject is not defined
+20240422	13:36:49	fkRaportController, getData: ReferenceError: FKObject is not defined

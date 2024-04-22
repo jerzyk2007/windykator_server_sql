@@ -21,7 +21,9 @@ router
   );
 
 // pobieranie danych do raportu FK wg wstępnego filtrowania
-router.route("/get-data").post(verifyRoles(ROLES_LIST.FK), fKRaport.getData);
+router
+  .route("/get-raport-data")
+  .post(verifyRoles(ROLES_LIST.FK), fKRaport.getData);
 
 // pobiera wszytskie nazwy kolumn z pierwszego dokumnetu w DB danych FK
 router
