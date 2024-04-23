@@ -199,7 +199,7 @@ const getNewColumns = async (req, res) => {
       {
         $project: {
           _id: 0, // Wyłączamy pole _id z wyniku
-          FKData: "$data.FKData", // Wybieramy tylko pole FKData z pola data
+          FKData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
         },
       },
     ]);

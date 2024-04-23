@@ -64,7 +64,7 @@ router
   );
 
 router
-  .route("/save-items-data/:type")
+  .route("/save-items-data/:info")
   .patch(
     verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
     fkItemsData.saveItemsData
@@ -115,5 +115,9 @@ router
     verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
     fkGenerateRaport.checkRaportErrors
   );
+
+router
+  .route("/save-item/:info")
+  .patch(verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK), fkItemsData.saveItem);
 
 module.exports = router;

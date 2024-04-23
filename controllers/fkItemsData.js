@@ -40,7 +40,7 @@ const getFKSettingsItems = async (req, res) => {
     res.json({
       departments: result[0].data.departments,
       areas: result[0].data.areas,
-      localization: result[0].data.localization,
+      localizations: result[0].data.localizations,
       owners: result[0].data.owners,
       guardians: result[0].data.guardians,
     });
@@ -57,42 +57,30 @@ const getFKSettingsItems = async (req, res) => {
 
 //funckja zapisujaca działy, ownerów, lokalizacje
 const saveItemsData = async (req, res) => {
-  const { type } = req.params;
-  const { departments, localization, areas, owners, guardians, aging } =
+  const { info } = req.params;
+  const { departments, localizations, areas, owners, guardians, aging } =
     req.body;
+
+  // Mapowanie nazw na odpowiadające im klucze
+  const dataMap = {
+    departments,
+    localizations,
+    areas,
+    owners,
+    guardians,
+    aging,
+  };
+
   try {
-    if (type === "departments") {
-      const result = await FKRaport.updateOne(
+    if (info !== "aging") {
+      await FKRaport.updateOne(
         {},
-        { $set: { "items.departments": departments } },
+        { $set: { [`items.${info}`]: dataMap[info] } },
         { new: true, upsert: true }
       );
-    } else if (type === "localization") {
-      const result = await FKRaport.updateOne(
-        {},
-        { $set: { "items.localization": localization } },
-        { new: true, upsert: true }
-      );
-    } else if (type === "areas") {
-      const result = await FKRaport.updateOne(
-        {},
-        { $set: { "items.areas": areas } },
-        { new: true, upsert: true }
-      );
-    } else if (type === "owners") {
-      const result = await FKRaport.updateOne(
-        {},
-        { $set: { "items.owners": owners } },
-        { new: true, upsert: true }
-      );
-    } else if (type === "guardians") {
-      const result = await FKRaport.updateOne(
-        {},
-        { $set: { "items.guardians": guardians } },
-        { new: true, upsert: true }
-      );
-    } else if (type === "aging") {
-      const result = await FKRaport.updateOne(
+    } else {
+      console.log(aging);
+      await FKRaport.updateOne(
         {},
         { $set: { "items.aging": aging } },
         { new: true, upsert: true }
@@ -114,23 +102,29 @@ const getDepfromAccountancy = async (req, res) => {
       {
         $project: {
           _id: 0,
-          FKAccountancy: "$data.FKAccountancy",
+          depData: "$preparedRaportData",
         },
       },
     ]);
 
-    let uniqueDepartments = [];
-    result[0].FKAccountancy.forEach((item) => {
-      if (item.DZIAL && typeof item.DZIAL === "string") {
-        if (!uniqueDepartments.includes(item.DZIAL)) {
-          uniqueDepartments.push(item.DZIAL);
+    if (result[0].depData.length > 1) {
+      let uniqueDepartments = [];
+      result[0].depData.forEach((item) => {
+        if (item.DZIAL && typeof item.DZIAL === "string") {
+          if (!uniqueDepartments.includes(item.DZIAL)) {
+            uniqueDepartments.push(item.DZIAL);
+          }
         }
-      }
-    });
+      });
 
-    res.json({
-      departments: uniqueDepartments.sort(),
-    });
+      res.json({
+        departments: uniqueDepartments.sort(),
+      });
+    } else {
+      res.json({
+        departments: [],
+      });
+    }
   } catch (error) {
     logEvents(
       `fkItemsData, getDepfromAccountancy: ${error}`,
@@ -175,6 +169,106 @@ const getPreparedItems = async (req, res) => {
   }
 };
 
+//funckja zapisujaca zmianę pojedyńczego itema np. ownera, wykonuje również zmianę w preparedItemsData
+const saveItem = async (req, res) => {
+  const { info } = req.params;
+  const { departments, localizations, areas, owners, guardians, aging } =
+    req.body;
+  // Mapowanie nazw na odpowiadające im klucze
+  const dataMap = {
+    departments,
+    localizations,
+    areas,
+    owners,
+    guardians,
+    aging,
+  };
+
+  const variableItem = {
+    departments: "department",
+    localizations: "localization",
+    areas: "area",
+    owners: "owner",
+    guardians: "guardian",
+  };
+  try {
+    if (info !== "aging") {
+      const result = await FKRaport.aggregate([
+        {
+          $project: {
+            _id: 0,
+            data: "$items",
+          },
+        },
+      ]);
+
+      const itemsData = result[0].data[info];
+      const updatedItemsData = itemsData.map((item) => {
+        if (item === dataMap[info].oldName) {
+          return dataMap[info].newName;
+        }
+        return item;
+      });
+
+      await FKRaport.updateOne(
+        {},
+        { $set: { [`items.${info}`]: updatedItemsData } },
+        { new: true, upsert: true }
+      );
+
+      const resultItems = await FKRaport.aggregate([
+        {
+          $project: {
+            _id: 0, // Wyłączamy pole _id z wyniku
+            preparedItemsData: "$preparedItemsData", // Wybieramy tylko pole FKData z pola data
+          },
+        },
+      ]);
+
+      const preparedItemsData = [...resultItems[0].preparedItemsData];
+      const updateItems = preparedItemsData.map((item) => {
+        if (info === "owners" || info === "guardians") {
+          // Jeśli tak, przeiteruj przez każdy element tablicy
+          item[variableItem[info]].forEach((value, index) => {
+            // Sprawdź, czy wartość jest równa dataMap[info].oldName
+            if (value === dataMap[info].oldName) {
+              // Jeśli tak, zaktualizuj wartość na dataMap[info].newName
+              item[variableItem[info]][index] = dataMap[info].newName;
+            }
+          });
+        } else {
+          if (item[variableItem[info]] === dataMap[info].oldName) {
+            return {
+              ...item,
+              [variableItem[info]]: dataMap[info].newName,
+            };
+          }
+        }
+        return item;
+      });
+
+      await FKRaport.updateOne(
+        {},
+        { $set: { preparedItemsData: updateItems } },
+        { new: true, upsert: true }
+      );
+    } else {
+      console.log("aging");
+      await FKRaport.updateOne(
+        {},
+        { $set: { "items.aging": aging } },
+        { new: true, upsert: true }
+      );
+    }
+
+    res.end();
+  } catch (error) {
+    logEvents(`fkItemsData, saveItem: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   getDataItems,
   saveItemsData,
@@ -182,4 +276,5 @@ module.exports = {
   getDepfromAccountancy,
   savePreparedItems,
   getPreparedItems,
+  saveItem,
 };

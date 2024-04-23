@@ -297,7 +297,7 @@ const FKAllDataSchema = new Schema({
       type: [String],
       default: [],
     },
-    localization: {
+    localizations: {
       type: [String],
       default: [],
     },

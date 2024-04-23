@@ -155,3 +155,45 @@
 20240422	13:23:09	fkRaportController, getData: TypeError: result.FKDataRaports is not iterable
 20240422	13:36:47	fkRaportController, getData: ReferenceError: FKObject is not defined
 20240422	13:36:49	fkRaportController, getData: ReferenceError: FKObject is not defined
+20240423	11:02:47	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading '0')
+20240423	11:02:47	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading '0')
+20240423	11:03:50	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading '0')
+20240423	11:03:50	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading '0')
+20240423	11:04:27	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	11:04:27	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	11:04:38	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	11:04:38	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	11:04:55	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	11:04:55	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	11:10:46	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	11:25:56	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'length')
+20240423	11:25:56	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'length')
+20240423	11:26:04	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'length')
+20240423	11:26:04	fkItemsData, getDepfromAccountancy: TypeError: Cannot read properties of undefined (reading 'length')
+20240423	11:30:36	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading '0')
+20240423	11:30:36	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading '0')
+20240423	14:55:33	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240423	15:06:06	fkItemsData, saveItem: ReferenceError: resultItems is not defined
+20240423	15:08:15	fkItemsData, saveItem: TypeError: result[0].data is not iterable
+20240423	15:08:32	fkItemsData, saveItem: TypeError: result[0] is not iterable
+20240423	15:09:11	fkItemsData, saveItem: TypeError: result[0].data is not iterable
+20240423	15:21:30	fkItemsData, saveItem: TypeError: dataMap[type].find is not a function
+20240423	15:49:11	fkItemsData, saveItem: ReferenceError: guardian is not defined
+20240423	15:57:25	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'map')
+20240423	15:57:58	fkItemsData, saveItem: ReferenceError: type is not defined
+20240423	15:58:19	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'map')
+20240423	15:58:37	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'map')
+20240423	16:01:49	fkItemsData, saveItem: ReferenceError: info is not defined
+20240423	16:03:39	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'map')
+20240423	16:04:24	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'map')
+20240423	16:13:32	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'oldName')
+20240423	16:15:12	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'oldName')
+20240423	16:49:33	fkItemsData, saveItem: TypeError: variableItem is not a function
+20240423	16:50:02	fkItemsData, saveItem: TypeError: variableItem is not a function
+20240423	16:50:23	fkItemsData, saveItem: TypeError: variableItem is not a function
+20240423	16:51:07	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'guardians')
+20240423	17:09:20	fkItemsData, saveItem: ReferenceError: item is not defined
+20240423	18:05:32	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	18:05:41	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'forEach')
+20240423	18:36:36	fkItemsData, saveItemsData: ReferenceError: type is not defined
+20240423	18:36:43	fkItemsData, saveItemsData: ReferenceError: type is not defined
