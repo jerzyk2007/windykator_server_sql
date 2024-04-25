@@ -268,3 +268,13 @@
   PRZETER_NIEPRZETER: 'Nieprzeterminowane',
   ILE_DNI_NA_PLATNOSC_FV: 45976
 }" (type Object) at path "preparedRaportData" because of "CastError"
+20240425	10:43:58	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240425	10:44:23	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240425	13:06:54	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading 'FKDataRaports')
+20240425	13:06:54	fkRaportController, getNewColumns: TypeError: Cannot read properties of undefined (reading 'FKDataRaports')
+20240425	18:45:40	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240425	18:46:01	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240425	18:46:11	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240425	18:46:29	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240425	18:46:49	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240425	18:46:59	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017

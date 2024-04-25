@@ -1,4 +1,4 @@
-const FKRaport = require("../model/FKRaport");
+const { FKRaport } = require("../model/FKRaport");
 const UpdateDB = require("../model/UpdateDB");
 const Document = require("../model/Document");
 

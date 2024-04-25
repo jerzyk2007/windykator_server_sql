@@ -1,4 +1,4 @@
-const FKRaport = require("../model/FKRaport");
+const { FKRaport } = require("../model/FKRaport");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 

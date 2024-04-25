@@ -120,4 +120,18 @@ router
   .route("/save-item/:info")
   .patch(verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK), fkItemsData.saveItem);
 
+router
+  .route("/save-table-settings")
+  .patch(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fKRaport.saveTableSettings
+  );
+
+router
+  .route("/get-table-settings")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fKRaport.getTableSettings
+  );
+
 module.exports = router;

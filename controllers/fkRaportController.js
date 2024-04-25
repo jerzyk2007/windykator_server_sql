@@ -1,6 +1,6 @@
 // const FKRaport = require("../model/FKRaport");
-const FKRaport = require("../model/FKRaport");
-const FKDataRaport = require("../model/FKRaportData");
+const { FKRaport, FKDataRaport } = require("../model/FKRaport");
+// const FKDataRaport = require("../model/FKRaportData");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 
@@ -194,16 +194,16 @@ const getData = async (req, res) => {
 const getNewColumns = async (req, res) => {
   try {
     // const result = await FKRaport.findOne();
-    const result = await FKRaport.aggregate([
+    const result = await FKDataRaport.aggregate([
       {
         $project: {
           _id: 0, // Wyłączamy pole _id z wyniku
-          FKData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
+          FKDataRaports: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
         },
       },
     ]);
 
-    const firstDocument = result[0].FKData[0];
+    const firstDocument = result[0].FKDataRaports[0];
 
     if (firstDocument) {
       // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
@@ -230,9 +230,9 @@ const getNewColumns = async (req, res) => {
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny
 const changeColumns = async (req, res) => {
   const { columns } = req.body;
-  const updateColumns = { tableSettings: { columns } };
+  const updateColumns = { tableColumns: columns };
   try {
-    const result = await FKRaport.updateOne(
+    await FKRaport.updateOne(
       {},
       { $set: updateColumns },
       { new: true, upsert: true }
@@ -256,10 +256,11 @@ const getColumns = async (req, res) => {
       {
         $project: {
           _id: 0, // Wyłączamy pole _id z wyniku
-          columns: "$tableSettings.columns", // Wybieramy tylko pole FKData z pola data
+          columns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
         },
       },
     ]);
+
     res.json(result[0].columns);
   } catch (error) {
     logEvents(
@@ -318,6 +319,47 @@ const deleteDataRaport = async (req, res) => {
   }
 };
 
+const saveTableSettings = async (req, res) => {
+  try {
+    const { tableSettings } = req.body;
+    await FKRaport.updateOne(
+      {},
+      { $set: { tableSettings } },
+      { new: true, upsert: true }
+    );
+
+    res.end();
+  } catch (error) {
+    logEvents(
+      `fkRaportController, saveTableSettings: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const getTableSettings = async (req, res) => {
+  try {
+    console.log("ok");
+    const result = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    res.json(result[0].tableSettings);
+  } catch (error) {
+    logEvents(
+      `fkRaportController, getTableSettings: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 module.exports = {
   documentsFromFile,
   getData,
@@ -326,4 +368,6 @@ module.exports = {
   getColumns,
   getDateCounter,
   deleteDataRaport,
+  saveTableSettings,
+  getTableSettings,
 };

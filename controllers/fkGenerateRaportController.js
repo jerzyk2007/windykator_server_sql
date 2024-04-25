@@ -1,5 +1,5 @@
-const FKRaport = require("../model/FKRaport");
-const FKDataRaport = require("../model/FKRaportData");
+const { FKRaport, FKDataRaport } = require("../model/FKRaport");
+// const FKDataRaport = require("../model/FKRaportData");
 const UpdateDB = require("../model/UpdateDB");
 
 const { logEvents } = require("../middleware/logEvents");
