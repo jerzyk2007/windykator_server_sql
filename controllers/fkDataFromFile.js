@@ -75,6 +75,8 @@ const accountancyData = async (rows, res) => {
         TYP_DOKUMENTU: "",
         NR_KLIENTA: Number(row["Nr klienta"]),
         OPIS_ROZRACHUNKU: [],
+        JAKA_KANCELARIA: " ",
+        KWOTA_WPS: 0,
       };
     });
 
@@ -147,20 +149,20 @@ const accountancyData = async (rows, res) => {
         const { _id, ...rest } = item;
         return {
           ...rest,
-          OWNER:
-            matchingDepItem.owner.length === 1
-              ? matchingDepItem.owner[0]
-              : Array.isArray(matchingDepItem.owner) // Sprawdzamy, czy matchingDepItem.area jest tablicą
-              ? matchingDepItem.owner.join("/") // Jeśli jest tablicą, używamy join
-              : matchingDepItem.owner,
+          OWNER: matchingDepItem.owner,
+          // matchingDepItem.owner.length === 1
+          //   ? matchingDepItem.owner[0]
+          //   : Array.isArray(matchingDepItem.owner) // Sprawdzamy, czy matchingDepItem.area jest tablicą
+          //   ? matchingDepItem.owner.join("/") // Jeśli jest tablicą, używamy join
+          //   : matchingDepItem.owner,
           LOKALIZACJA: matchingDepItem.localization,
           OBSZAR: matchingDepItem.area,
-          OPIEKUN_OBSZARU_CENTRALI:
-            matchingDepItem.guardian.length === 1
-              ? matchingDepItem.guardian[0]
-              : Array.isArray(matchingDepItem.guardian)
-              ? matchingDepItem.guardian.join(" / ")
-              : matchingDepItem.guardian,
+          OPIEKUN_OBSZARU_CENTRALI: matchingDepItem.guardian,
+          // matchingDepItem.guardian.length === 1
+          //   ? matchingDepItem.guardian[0]
+          //   : Array.isArray(matchingDepItem.guardian)
+          //   ? matchingDepItem.guardian.join(" / ")
+          //   : matchingDepItem.guardian,
         };
       } else {
         return item;
@@ -486,8 +488,10 @@ const caseStatus = async (rows, res) => {
         return {
           ...item,
           ETAP_SPRAWY: status,
-          KWOTA_WPS: item.DO_ROZLICZENIA_AS,
-          JAKA_KANCELARIA: matchingSettlemnt["Firma zewnętrzna"],
+          KWOTA_WPS: item.DO_ROZLICZENIA_AS ? item.DO_ROZLICZENIA_AS : 0,
+          JAKA_KANCELARIA: matchingSettlemnt["Firma zewnętrzna"]
+            ? matchingSettlemnt["Firma zewnętrzna"]
+            : " ",
           CZY_W_KANCELARI: matchingSettlemnt["Firma zewnętrzna"]
             ? "TAK"
             : "NIE",
@@ -500,8 +504,8 @@ const caseStatus = async (rows, res) => {
         return {
           ...item,
           ETAP_SPRAWY: "",
-          KWOTA_WPS: item.DO_ROZLICZENIA_AS,
-          JAKA_KANCELARIA: "",
+          KWOTA_WPS: item.DO_ROZLICZENIA_AS ? item.DO_ROZLICZENIA_AS : 0,
+          JAKA_KANCELARIA: " ",
           CZY_W_KANCELARI: "NIE",
           DATA_WYSTAWIENIA_FV:
             item.DATA_WYSTAWIENIA_FV === "1900-01-01"
@@ -512,8 +516,8 @@ const caseStatus = async (rows, res) => {
         return {
           ...item,
           ETAP_SPRAWY: "",
-          KWOTA_WPS: "",
-          JAKA_KANCELARIA: "",
+          KWOTA_WPS: 0,
+          JAKA_KANCELARIA: " ",
           CZY_W_KANCELARI: "NIE",
         };
       }
@@ -536,7 +540,9 @@ const caseStatus = async (rows, res) => {
           JAKA_KANCELARIA:
             matchingSettlemnt.JAKA_KANCELARIA !== "BRAK"
               ? matchingSettlemnt.JAKA_KANCELARIA
-              : "",
+                ? matchingSettlemnt.JAKA_KANCELARIA
+                : " "
+              : " ",
           CZY_W_KANCELARI:
             matchingSettlemnt.JAKA_KANCELARIA !== "BRAK" ? "TAK" : "NIE",
           KWOTA_WPS: matchingSettlemnt.KWOTA_WINDYKOWANA_BECARED

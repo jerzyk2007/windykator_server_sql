@@ -146,7 +146,6 @@ const getData = async (req, res) => {
     const preparedDataWithoutId = result[0].data.map(
       ({ _id, ...rest }) => rest
     );
-
     let dataRaport = [...preparedDataWithoutId];
 
     if (filter.business !== "201203") {
@@ -179,7 +178,7 @@ const getData = async (req, res) => {
           (item) => item.CZY_W_KANCELARI === "NIE"
         );
       }
-    } else if (filter.actions === "All") {
+    } else if (filter.actions === "All" && filter.raport === "lawyerRaport") {
       dataRaport = dataRaport.filter((item) => item.CZY_W_KANCELARI === "TAK");
     }
 

@@ -59,13 +59,13 @@ const FKDataRaports = new Schema({
         type: String,
       },
       OPIEKUN_OBSZARU_CENTRALI: {
-        type: String,
+        type: [String],
       },
       OPIS_ROZRACHUNKU: {
         type: [String],
       },
       OWNER: {
-        type: String,
+        type: [String],
       },
       PRZEDZIAL_WIEKOWANIE: {
         type: String,

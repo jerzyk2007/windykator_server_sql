@@ -197,3 +197,74 @@
 20240423	18:05:41	fkItemsData, saveItem: TypeError: Cannot read properties of undefined (reading 'forEach')
 20240423	18:36:36	fkItemsData, saveItemsData: ReferenceError: type is not defined
 20240423	18:36:43	fkItemsData, saveItemsData: ReferenceError: type is not defined
+20240424	13:21:59	fkDataFromFile, caseStatus: ReferenceError: cosnole is not defined
+20240424	15:11:02	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240424	19:21:02	fkDataFromFile, accountancyData: CastError: Cast to embedded failed for value "{
+  NR_DOKUMENTU: 'FV/AN/175/24/A/D71',
+  DZIAL: 'D071',
+  KONTRAHENT: 'VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRA',
+  KWOTA_DO_ROZLICZENIA_FK: 194980,
+  TERMIN_PLATNOSCI_FV: '2025-11-17',
+  RODZAJ_KONTA: 201,
+  TYP_DOKUMENTU: 'Faktura',
+  NR_KLIENTA: 100588,
+  OPIS_ROZRACHUNKU: [],
+  JAKA_KANCELARIA: ' ',
+  KWOTA_WPS: 0,
+  OWNER: [ 'Królak Konrad', 'Dutkowska Katarzyna' ],
+  LOKALIZACJA: 'Warszawa  Radzymińska',
+  OBSZAR: 'SAMOCHODY NOWE',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Plewka Katarzyna' ],
+  DATA_WYSTAWIENIA_FV: '1900-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  ROZNICA: 194980,
+  PRZEDZIAL_WIEKOWANIE: '<0',
+  PRZETER_NIEPRZETER: 'Nieprzeterminowane',
+  ILE_DNI_NA_PLATNOSC_FV: 45976
+}" (type Object) at path "preparedRaportData" because of "CastError"
+20240424	19:21:33	fkDataFromFile, accountancyData: CastError: Cast to embedded failed for value "{
+  NR_DOKUMENTU: 'FV/AN/175/24/A/D71',
+  DZIAL: 'D071',
+  KONTRAHENT: 'VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRA',
+  KWOTA_DO_ROZLICZENIA_FK: 194980,
+  TERMIN_PLATNOSCI_FV: '2025-11-17',
+  RODZAJ_KONTA: 201,
+  TYP_DOKUMENTU: 'Faktura',
+  NR_KLIENTA: 100588,
+  OPIS_ROZRACHUNKU: [],
+  JAKA_KANCELARIA: ' ',
+  KWOTA_WPS: 0,
+  OWNER: [ 'Królak Konrad', 'Dutkowska Katarzyna' ],
+  LOKALIZACJA: 'Warszawa  Radzymińska',
+  OBSZAR: 'SAMOCHODY NOWE',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Plewka Katarzyna' ],
+  DATA_WYSTAWIENIA_FV: '1900-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  ROZNICA: 194980,
+  PRZEDZIAL_WIEKOWANIE: '<0',
+  PRZETER_NIEPRZETER: 'Nieprzeterminowane',
+  ILE_DNI_NA_PLATNOSC_FV: 45976
+}" (type Object) at path "preparedRaportData" because of "CastError"
+20240424	19:21:53	fkDataFromFile, accountancyData: CastError: Cast to embedded failed for value "{
+  NR_DOKUMENTU: 'FV/AN/175/24/A/D71',
+  DZIAL: 'D071',
+  KONTRAHENT: 'VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRA',
+  KWOTA_DO_ROZLICZENIA_FK: 194980,
+  TERMIN_PLATNOSCI_FV: '2025-11-17',
+  RODZAJ_KONTA: 201,
+  TYP_DOKUMENTU: 'Faktura',
+  NR_KLIENTA: 100588,
+  OPIS_ROZRACHUNKU: [],
+  JAKA_KANCELARIA: ' ',
+  KWOTA_WPS: 0,
+  OWNER: [ 'Królak Konrad', 'Dutkowska Katarzyna' ],
+  LOKALIZACJA: 'Warszawa  Radzymińska',
+  OBSZAR: 'SAMOCHODY NOWE',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Plewka Katarzyna' ],
+  DATA_WYSTAWIENIA_FV: '1900-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  ROZNICA: 194980,
+  PRZEDZIAL_WIEKOWANIE: '<0',
+  PRZETER_NIEPRZETER: 'Nieprzeterminowane',
+  ILE_DNI_NA_PLATNOSC_FV: 45976
+}" (type Object) at path "preparedRaportData" because of "CastError"
