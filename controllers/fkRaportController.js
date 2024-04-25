@@ -341,7 +341,6 @@ const saveTableSettings = async (req, res) => {
 
 const getTableSettings = async (req, res) => {
   try {
-    console.log("ok");
     const result = await FKRaport.aggregate([
       {
         $project: {
