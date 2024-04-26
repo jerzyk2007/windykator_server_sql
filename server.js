@@ -13,11 +13,12 @@ const https = require("https");
 const path = require("path");
 const fs = require("fs");
 const app = express();
+const compression = require("compression");
 // const http = require("http");
 
 // limit to 10 MB
-// app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ limit: "100mb", extended: true }));
 
 // custom middleware logger
 app.use(logger);
@@ -33,6 +34,7 @@ app.use(cors(corsOptions));
 
 // built-in middleware for json
 app.use(express.json());
+app.use(compression());
 
 // middleware for cookies
 app.use(cookieParser());
@@ -71,7 +73,7 @@ connectDB();
 //         "Express server listening on port " +
 //           `${process.env.PORT ? process.env.PORT : 3000}`
 //       );
-//    s });
+//     });
 // });
 
 mongoose.connection.once("open", () => {

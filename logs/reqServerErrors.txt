@@ -278,3 +278,6 @@
 20240425	18:46:29	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240425	18:46:49	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240425	18:46:59	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240426	13:15:22	generateFKRaportController, prepareExcelFIle: ReferenceError: modifiedTableColumn is not defined
+20240426	13:27:17	generateFKRaportController, prepareExcelFIle: TypeError: XLSXStyle.utils.book_new is not a function
+20240426	14:07:48	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017

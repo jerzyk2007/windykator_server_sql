@@ -20,6 +20,7 @@ const isExcelDate = (value) => {
   }
 
   return false;
+  s;
 };
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
@@ -359,6 +360,53 @@ const getTableSettings = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+const getColumnsOrder = async (req, res) => {
+  try {
+    const resultTableSettings = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+
+    const resultColumnsSettings = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          tableColumns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const tableColumns = [...resultColumnsSettings[0].tableColumns];
+    const modifiedTableColumns = tableColumns.map(
+      ({ accessorKey, header }) => ({ accessorKey, header })
+    );
+    const tableOrder = [...resultTableSettings[0].tableSettings.order];
+
+    const order = tableOrder.map((item) => {
+      const matching = modifiedTableColumns.find(
+        (match) => match.accessorKey === item
+      );
+      if (matching) {
+        return matching.header;
+      }
+      return item;
+    });
+
+    res.json({ order, columns: modifiedTableColumns });
+  } catch (error) {
+    logEvents(
+      `generateFKRaportController, getColumnsOrder: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   documentsFromFile,
   getData,
@@ -369,4 +417,5 @@ module.exports = {
   deleteDataRaport,
   saveTableSettings,
   getTableSettings,
+  getColumnsOrder,
 };

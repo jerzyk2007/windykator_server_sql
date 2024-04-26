@@ -134,4 +134,11 @@ router
     fKRaport.getTableSettings
   );
 
+router
+  .route("/get-columns-order")
+  .get(
+    verifyRoles(ROLES_LIST.Admin && ROLES_LIST.FK),
+    fKRaport.getColumnsOrder
+  );
+
 module.exports = router;
