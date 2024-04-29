@@ -65,6 +65,10 @@ const accountancyData = async (rows, res) => {
           DZIAL_NR = DZIAL_NR.split("/")[0];
         }
       }
+      let NR_KLIENTA = 0;
+      if (!isNaN(row["Nr klienta"])) {
+        NR_KLIENTA = Number(row["Nr klienta"]);
+      }
       return {
         NR_DOKUMENTU: row["Nr. dokumentu"],
         DZIAL: DZIAL_NR,
@@ -73,7 +77,7 @@ const accountancyData = async (rows, res) => {
         TERMIN_PLATNOSCI_FV: excelDateToISODate(row["Data płatn."]),
         RODZAJ_KONTA: Number(row["Synt."]),
         TYP_DOKUMENTU: "",
-        NR_KLIENTA: Number(row["Nr klienta"]),
+        NR_KLIENTA: NR_KLIENTA,
         OPIS_ROZRACHUNKU: [],
         JAKA_KANCELARIA: " ",
         KWOTA_WPS: 0,

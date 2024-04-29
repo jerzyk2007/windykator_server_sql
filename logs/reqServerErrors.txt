@@ -281,3 +281,49 @@
 20240426	13:15:22	generateFKRaportController, prepareExcelFIle: ReferenceError: modifiedTableColumn is not defined
 20240426	13:27:17	generateFKRaportController, prepareExcelFIle: TypeError: XLSXStyle.utils.book_new is not a function
 20240426	14:07:48	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240427	16:24:04	fkDataFromFile, accountancyData: CastError: Cast to embedded failed for value "{
+  NR_DOKUMENTU: 'FV/AN/175/24/A/D71',
+  DZIAL: 'D071',
+  KONTRAHENT: 'VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRA',
+  KWOTA_DO_ROZLICZENIA_FK: 194980,
+  TERMIN_PLATNOSCI_FV: '2025-11-17',
+  RODZAJ_KONTA: 201,
+  TYP_DOKUMENTU: 'Faktura',
+  NR_KLIENTA: NaN,
+  OPIS_ROZRACHUNKU: [],
+  JAKA_KANCELARIA: ' ',
+  KWOTA_WPS: 0,
+  OWNER: [ 'Królak Konrad', 'Dutkowska Katarzyna' ],
+  LOKALIZACJA: 'Warszawa  Radzymińska',
+  OBSZAR: 'SAMOCHODY NOWE',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Plewka Katarzyna' ],
+  DATA_WYSTAWIENIA_FV: '1900-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  ROZNICA: 194980,
+  PRZEDZIAL_WIEKOWANIE: '<0',
+  PRZETER_NIEPRZETER: 'Nieprzeterminowane',
+  ILE_DNI_NA_PLATNOSC_FV: 45976
+}" (type Object) at path "preparedRaportData" because of "CastError"
+20240427	16:25:24	fkDataFromFile, accountancyData: CastError: Cast to embedded failed for value "{
+  NR_DOKUMENTU: 'FV/AN/175/24/A/D71',
+  DZIAL: 'D071',
+  KONTRAHENT: 'VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRA',
+  KWOTA_DO_ROZLICZENIA_FK: 194980,
+  TERMIN_PLATNOSCI_FV: '2025-11-17',
+  RODZAJ_KONTA: 201,
+  TYP_DOKUMENTU: 'Faktura',
+  NR_KLIENTA: NaN,
+  OPIS_ROZRACHUNKU: [],
+  JAKA_KANCELARIA: ' ',
+  KWOTA_WPS: 0,
+  OWNER: [ 'Królak Konrad', 'Dutkowska Katarzyna' ],
+  LOKALIZACJA: 'Warszawa  Radzymińska',
+  OBSZAR: 'SAMOCHODY NOWE',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Plewka Katarzyna' ],
+  DATA_WYSTAWIENIA_FV: '1900-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  ROZNICA: 194980,
+  PRZEDZIAL_WIEKOWANIE: '<0',
+  PRZETER_NIEPRZETER: 'Nieprzeterminowane',
+  ILE_DNI_NA_PLATNOSC_FV: 45976
+}" (type Object) at path "preparedRaportData" because of "CastError"
