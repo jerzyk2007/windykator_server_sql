@@ -293,6 +293,14 @@ const FKAllDataSchema = new Schema({
         type: Number,
       },
     },
+    genrateRaport: {
+      date: {
+        type: String,
+      },
+      counter: {
+        type: Number,
+      },
+    },
   },
   items: {
     departments: {

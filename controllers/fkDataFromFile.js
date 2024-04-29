@@ -492,13 +492,13 @@ const caseStatus = async (rows, res) => {
         return {
           ...item,
           ETAP_SPRAWY: status,
-          KWOTA_WPS: item.DO_ROZLICZENIA_AS ? item.DO_ROZLICZENIA_AS : 0,
-          JAKA_KANCELARIA: matchingSettlemnt["Firma zewnętrzna"]
-            ? matchingSettlemnt["Firma zewnętrzna"]
-            : " ",
-          CZY_W_KANCELARI: matchingSettlemnt["Firma zewnętrzna"]
-            ? "TAK"
-            : "NIE",
+          KWOTA_WPS:
+            item.DO_ROZLICZENIA_AS && status !== "BRAK"
+              ? item.DO_ROZLICZENIA_AS
+              : 0,
+          JAKA_KANCELARIA:
+            status !== "BRAK" ? matchingSettlemnt["Firma zewnętrzna"] : " ",
+          CZY_W_KANCELARI: status !== "BRAK" ? "TAK" : "NIE",
           DATA_WYSTAWIENIA_FV:
             item.DATA_WYSTAWIENIA_FV === "1900-01-01"
               ? matchingSettlemnt["Data faktury"]
@@ -607,6 +607,9 @@ const caseStatus = async (rows, res) => {
 };
 
 const settlementNames = async (rows, res) => {
+  if (!rows[0]["NUMER"] && !rows[0]["OPIS"] && !rows[0]["DataRozlAutostacja"]) {
+    return res.status(500).json({ error: "Invalid file" });
+  }
   try {
     // pobieram wcześniej przygotowane dane z raportData
     const resultItems = await FKRaport.aggregate([
@@ -626,7 +629,6 @@ const settlementNames = async (rows, res) => {
       rows.forEach((preparedItem) => {
         if (
           preparedItem.NUMER === item.NR_DOKUMENTU &&
-          preparedItem.DataRozlAutostacja !== "NULL" &&
           preparedItem.OPIS !== "NULL"
         ) {
           const checkDate = isExcelDate(preparedItem.DataRozlAutostacja);

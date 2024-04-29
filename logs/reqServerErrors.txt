@@ -327,3 +327,5 @@
   PRZETER_NIEPRZETER: 'Nieprzeterminowane',
   ILE_DNI_NA_PLATNOSC_FV: 45976
 }" (type Object) at path "preparedRaportData" because of "CastError"
+20240429	14:29:02	fkDataFromFile, caseStatus: ReferenceError: cosnole is not defined
+20240429	14:41:28	fkDataFromFile, caseStatus: ReferenceError: text is not defined
