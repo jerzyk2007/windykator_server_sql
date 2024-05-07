@@ -515,9 +515,26 @@ const changeSingleDocument = async (req, res) => {
   }
 };
 
+// pobieram wybrany wiersz, w celu jego edycji
+const getSingleRow = async (req, res) => {
+  try {
+    const { _id } = req.params;
+    const rowData = await Document.findOne({ _id });
+    res.json(rowData);
+  } catch (error) {
+    logEvents(
+      `documentsController, getQuickNote: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   getAllDocuments,
   documentsFromFile,
   getColumns,
   changeSingleDocument,
+  getSingleRow,
 };

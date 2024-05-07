@@ -329,3 +329,19 @@
 }" (type Object) at path "preparedRaportData" because of "CastError"
 20240429	14:29:02	fkDataFromFile, caseStatus: ReferenceError: cosnole is not defined
 20240429	14:41:28	fkDataFromFile, caseStatus: ReferenceError: text is not defined
+20240429	16:46:10	generateFKRaportController, generateRaport: ReferenceError: preparedItems is not defined
+20240506	20:05:24	documentsController, getAllDocuments: MongoNetworkError: connection 5 to 10.8.20.11:27017 closed
+20240506	20:05:42	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:06:02	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:06:12	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:06:25	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:06:45	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:06:55	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:07:25	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:07:29	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240506	20:10:56	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
+20240506	20:10:56	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
+20240506	20:10:56	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
+20240506	20:10:56	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
+20240506	20:10:58	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
+20240506	20:10:58	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"

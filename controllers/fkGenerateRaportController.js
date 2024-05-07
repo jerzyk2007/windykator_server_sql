@@ -135,12 +135,53 @@ const generateRaport = async (req, res) => {
       };
     });
 
+    // pobieram przygotowane działy, przypisanych ownerów, obszary, localizacje i poiekunów
+    const items = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedItems: "$preparedItemsData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedItems = [...items[0].preparedItems];
+
+    // do danych z pliku księgowego przypisuję wcześniej przygotowane dane działów
+    const preparedDataDep = preparedDataAging.map((item) => {
+      const matchingDepItem = preparedItems.find(
+        (preparedItem) => preparedItem.department === item.DZIAL
+      );
+
+      if (matchingDepItem) {
+        const { _id, ...rest } = item;
+        return {
+          ...rest,
+          OWNER: matchingDepItem.owner,
+          // matchingDepItem.owner.length === 1
+          //   ? matchingDepItem.owner[0]
+          //   : Array.isArray(matchingDepItem.owner) // Sprawdzamy, czy matchingDepItem.area jest tablicą
+          //   ? matchingDepItem.owner.join("/") // Jeśli jest tablicą, używamy join
+          //   : matchingDepItem.owner,
+          LOKALIZACJA: matchingDepItem.localization,
+          OBSZAR: matchingDepItem.area,
+          OPIEKUN_OBSZARU_CENTRALI: matchingDepItem.guardian,
+          // matchingDepItem.guardian.length === 1
+          //   ? matchingDepItem.guardian[0]
+          //   : Array.isArray(matchingDepItem.guardian)
+          //   ? matchingDepItem.guardian.join(" / ")
+          //   : matchingDepItem.guardian,
+        };
+      } else {
+        return item;
+      }
+    });
+
     // zapis do DB po zmianach
     await FKDataRaport.findOneAndUpdate(
       {},
       {
         $set: {
-          FKDataRaports: preparedDataAging,
+          FKDataRaports: preparedDataDep,
         },
       },
       {
