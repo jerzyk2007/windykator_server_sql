@@ -43,7 +43,7 @@ const accountancyData = async (rows, res) => {
     !rows[0]["Kontrahent"] &&
     !rows[0]["Płatność"] &&
     !rows[0]["Data płatn."] &&
-    !rows[0]["Nr klienta"] &&
+    !rows[0]["Nr kontrahenta"] &&
     !rows[0]["Synt."]
   ) {
     return res.status(500).json({ error: "Invalid file" });
@@ -66,8 +66,8 @@ const accountancyData = async (rows, res) => {
         }
       }
       let NR_KLIENTA = 0;
-      if (!isNaN(row["Nr klienta"])) {
-        NR_KLIENTA = Number(row["Nr klienta"]);
+      if (!isNaN(row["Nr kontrahenta"])) {
+        NR_KLIENTA = Number(row["Nr kontrahenta"]);
       }
       return {
         NR_DOKUMENTU: row["Nr. dokumentu"],

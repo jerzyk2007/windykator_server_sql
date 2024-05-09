@@ -345,3 +345,52 @@
 20240506	20:10:56	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
 20240506	20:10:58	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
 20240506	20:10:58	usersController, getUserColumns: CastError: Cast to ObjectId failed for value "undefined" (type string) at path "_id" for model "Users"
+20240507	15:23:01	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:23:08	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:23:28	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:23:34	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:23:54	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:24:05	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:24:35	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:24:38	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:24:57	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:25:17	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:25:27	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:25:57	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:26:05	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:26:25	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:26:35	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:26:38	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:26:45	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:27:05	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:27:12	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:27:32	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:27:42	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:28:12	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:28:24	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:28:44	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:28:47	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240507	15:29:07	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240509	17:04:00	fkDataFromFile, accountancyData: CastError: Cast to embedded failed for value "{
+  NR_DOKUMENTU: 'FV/AN/175/24/A/D71',
+  DZIAL: 'D071',
+  KONTRAHENT: 'VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRA',
+  KWOTA_DO_ROZLICZENIA_FK: 194980,
+  TERMIN_PLATNOSCI_FV: '2025-11-17',
+  RODZAJ_KONTA: 201,
+  TYP_DOKUMENTU: 'Faktura',
+  NR_KLIENTA: NaN,
+  OPIS_ROZRACHUNKU: [],
+  JAKA_KANCELARIA: ' ',
+  KWOTA_WPS: 0,
+  OWNER: [ 'Królak Konrad', 'Dutkowska Katarzyna' ],
+  LOKALIZACJA: 'Warszawa  Radzymińska',
+  OBSZAR: 'SAMOCHODY NOWE',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Plewka Katarzyna' ],
+  DATA_WYSTAWIENIA_FV: '1900-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  ROZNICA: 194980,
+  PRZEDZIAL_WIEKOWANIE: '<0',
+  PRZETER_NIEPRZETER: 'Nieprzeterminowane',
+  ILE_DNI_NA_PLATNOSC_FV: 45976
+}" (type Object) at path "preparedRaportData" because of "CastError"
