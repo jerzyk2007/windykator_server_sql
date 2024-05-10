@@ -41,6 +41,10 @@ const getAllDocuments = async (req, res) => {
       } else {
         item.CZY_PRZETERMINOWANE = "N";
       }
+      item["100_VAT"] = (item.BRUTTO - item.NETTO).toFixed(2);
+      item["50_VAT"] = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
+      item.DATA_FV = new Date(item.DATA_FV);
+      item.TERMIN = new Date(item.TERMIN);
     });
 
     if (truePermissions[0] === "Basic") {
@@ -48,7 +52,7 @@ const getAllDocuments = async (req, res) => {
         (item) => item.DORADCA === DORADCA
       );
       return res.json(basicFiltered);
-    } else {
+    } else if (truePermissions[0] === "Standard") {
       const standardFiltered = filteredData.filter((item) =>
         trueDepartments.includes(item.DZIAL)
       );
