@@ -8,7 +8,7 @@ const changeColumns = async (req, res) => {
   const { columns } = req.body;
 
   try {
-    const result = await Setting.findOneAndUpdate(
+    await Setting.findOneAndUpdate(
       {},
       { $set: { columns } },
       { new: true, upsert: true }
@@ -16,21 +16,48 @@ const changeColumns = async (req, res) => {
     const allUsers = await User.find({});
 
     for (const user of allUsers) {
-      for (const columnToUpdate of columns) {
-        const existingColumnIndex = user.columns.findIndex(
-          (existingColumn) =>
-            existingColumn.accessorKey === columnToUpdate.accessorKey
-        );
+      // Przechowuje klucze accessorKey obiektów z columns
+      const columnKeys = columns.map((column) => column.accessorKey);
 
-        if (existingColumnIndex !== -1) {
-          user.columns[existingColumnIndex] = columnToUpdate;
+      // Przechodzimy przez kolumny użytkownika wstecz, aby móc bezpiecznie usuwać elementy
+      for (let i = user.columns.length - 1; i >= 0; i--) {
+        const userColumn = user.columns[i];
+        // Sprawdzamy, czy klucz accessorKey z userColumn znajduje się w kolumnach
+        const correspondingColumn = columns.find(
+          (column) => column.accessorKey === userColumn.accessorKey
+        );
+        if (correspondingColumn) {
+          // Jeśli istnieje odpowiedni obiekt w columns, podmieniamy go w user.columns
+          user.columns[i] = correspondingColumn;
+        } else {
+          // Jeśli nie ma odpowiadającego klucza, usuwamy ten obiekt z user.columns
+          user.columns.splice(i, 1);
         }
       }
-      const result = await user.updateOne(
+
+      // Teraz możemy zaktualizować użytkownika w bazie danych
+      await user.updateOne(
         { $set: { columns: user.columns } },
         { upsert: true }
       );
     }
+
+    // for (const user of allUsers) {
+    //   for (const columnToUpdate of columns) {
+    //     const existingColumnIndex = user.columns.findIndex(
+    //       (existingColumn) =>
+    //         existingColumn.accessorKey === columnToUpdate.accessorKey
+    //     );
+
+    //     if (existingColumnIndex !== -1) {
+    //       user.columns[existingColumnIndex] = columnToUpdate;
+    //     }
+    //   }
+    //   await user.updateOne(
+    //     { $set: { columns: user.columns } },
+    //     { upsert: true }
+    //   );
+    // }
     res.end();
   } catch (error) {
     logEvents(

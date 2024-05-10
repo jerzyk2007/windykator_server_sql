@@ -394,3 +394,7 @@
   PRZETER_NIEPRZETER: 'Nieprzeterminowane',
   ILE_DNI_NA_PLATNOSC_FV: 45976
 }" (type Object) at path "preparedRaportData" because of "CastError"
+20240510	15:22:11	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240510	15:22:31	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240510	15:22:31	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240510	15:22:41	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017

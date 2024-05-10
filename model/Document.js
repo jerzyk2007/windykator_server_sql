@@ -2,147 +2,82 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const documentsSchema = new Schema({
-  NUMER_FV: {
+  BLAD_DORADCY: {
     type: String,
   },
-
-  KOREKTA: {
-    type: String,
-  },
-
-  DATA_FV: {
-    type: String,
-  },
-
-  TERMIN: {
-    type: String,
-  },
-
-  DZIAL: {
-    type: String,
-  },
-
-  CZY_PRZETERMINOWANE: {
-    type: String,
-  },
-
-  ILE_DNI_PO_TERMINIE: {
-    type: Number,
-    default: 0,
-  },
-
   BRUTTO: {
     type: Number,
   },
-
-  NETTO: {
-    type: Number,
+  DATA_FV: {
+    type: String,
   },
-
+  DATA_KOMENTARZA_BECARED: {
+    type: String,
+  },
   DO_ROZLICZENIA: {
     type: Number,
   },
-
-  "100_VAT": {
-    type: Number,
-  },
-
-  "50_VAT": {
-    type: Number,
-  },
-  PLATNOSC: {
-    type: String,
-  },
-
-  KONTRAHENT: {
-    type: String,
-  },
-
-  NIP: {
-    type: String,
-  },
-
-  ASYSTENTKA: {
-    type: String,
-  },
-
   DORADCA: {
     type: String,
   },
-
+  DZIAL: {
+    type: String,
+  },
+  DZIALANIA: {
+    type: String,
+  },
+  JAKA_KANCELARIA: {
+    type: String,
+  },
+  KOMENTARZ_KANCELARIA_BECARED: {
+    type: String,
+  },
+  KONTRAHENT: {
+    type: String,
+  },
+  KWOTA_WINDYKOWANA_BECARED: {
+    type: Number,
+    default: 0,
+  },
+  NETTO: {
+    type: Number,
+  },
   NR_REJESTRACYJNY: {
     type: String,
   },
-
-  NR_VIN: {
-    type: String,
-  },
-
   NR_SZKODY: {
     type: String,
   },
-
-  NR_AUTORYZACJI: {
+  NUMER_FV: {
     type: String,
   },
-
-  UWAGI_Z_FAKTURY: [
-    {
-      type: String,
-    },
-  ],
-
+  NUMER_SPRAWY_BECARED: {
+    type: String,
+  },
+  POBRANO_VAT: {
+    type: String,
+  },
+  STATUS_SPRAWY_KANCELARIA: {
+    type: String,
+  },
+  STATUS_SPRAWY_WINDYKACJA: {
+    type: String,
+  },
+  TERMIN: {
+    type: String,
+  },
   UWAGI_ASYSTENT: [
     {
       type: String,
       default: [],
     },
   ],
+  UWAGI_Z_FAKTURY: [
+    {
+      type: String,
+    },
+  ],
 
-  STATUS_SPRAWY_WINDYKACJA: {
-    type: String,
-  },
-
-  DZIALANIA: {
-    type: String,
-  },
-
-  JAKA_KANCELARIA: {
-    type: String,
-  },
-
-  BLAD_DORADCY: {
-    type: String,
-  },
-
-  BLAD_W_DOKUMENTACJI: {
-    type: String,
-  },
-
-  POBRANO_VAT: {
-    type: String,
-  },
-
-  STATUS_SPRAWY_KANCELARIA: {
-    type: String,
-  },
-
-  KOMENTARZ_KANCELARIA_BECARED: {
-    type: String,
-  },
-
-  DATA_KOMENTARZA_BECARED: {
-    type: String,
-  },
-
-  NUMER_SPRAWY_BECARED: {
-    type: String,
-  },
-
-  KWOTA_WINDYKOWANA_BECARED: {
-    type: Number,
-    default: 0,
-  },
   ZAZNACZ_KONTRAHENTA: {
     type: String,
     default: "Nie",

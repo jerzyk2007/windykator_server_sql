@@ -1,74 +1,73 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-    username: {
-        type: String,
-        required: true,
-        // maxlength: 30
+  username: {
+    type: String,
+    required: true,
+    // maxlength: 30
+  },
+  usersurname: {
+    type: String,
+    required: true,
+    // maxlength: 30
+  },
+  userlogin: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  roles: {
+    User: {
+      type: Number,
+      // default: 100
     },
-    usersurname: {
-        type: String,
-        required: true,
-        // maxlength: 30
+    Editor: Number,
+    FK: Number,
+    Admin: Number,
+    Root: Number,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  tableSettings: {
+    type: Map,
+    of: Schema.Types.Mixed,
+    default: {},
+  },
+  raportSettings: {
+    raportDepartments: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
     },
-    userlogin: {
-        type: String,
-        required: true,
-        unique: true,
+    raportAdvisers: {
+      type: Map,
+      of: Schema.Types.Mixed,
+      default: {},
     },
-    roles: {
-        User: {
-            type: Number,
-            // default: 100
-        },
-        Editor: Number,
-        FK: Number,
-        Admin: Number,
-        Root: Number
+  },
+  permissions: {
+    Basic: {
+      type: Boolean,
+      default: true,
     },
-    password: {
-        type: String,
-        required: true
+    Standard: {
+      type: Boolean,
+      default: false,
     },
-    tableSettings: {
-        type: Map,
-        of: Schema.Types.Mixed,
-        default: {}
-    },
-    raportSettings: {
-        raportDepartments: {
-            type: Map,
-            of: Schema.Types.Mixed,
-            default: {}
-        },
-        raportAdvisers: {
-            type: Map,
-            of: Schema.Types.Mixed,
-            default: {}
-        }
-    },
-    permissions:
-    {
-        Basic: {
-            type: Boolean,
-            default: true
-        },
-        Standard: {
-            type: Boolean,
-            default: false
-        }
-    },
-    refreshToken: String,
-    departments: {
-        type: Map,
-        of: Schema.Types.Mixed,
-        default: {}
-    },
-    columns: {
-        type: Schema.Types.Mixed,
-        default: []
-    },
+  },
+  refreshToken: String,
+  departments: {
+    type: Map,
+    of: Schema.Types.Mixed,
+    default: {},
+  },
+  columns: {
+    type: Schema.Types.Mixed,
+    default: [],
+  },
 });
 
 module.exports = mongoose.model("Users", userSchema);

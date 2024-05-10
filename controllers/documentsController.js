@@ -21,7 +21,9 @@ const getAllDocuments = async (req, res) => {
 
     const DORADCA = `${usersurname} ${username}`;
 
-    const result = await Document.find({});
+    // lean oczyszcza dane mongo
+    const result = await Document.find({}).lean();
+    // const result = await Document.find({});
     if (info === "actual") {
       filteredData = result.filter((item) => item.DO_ROZLICZENIA !== 0);
     } else if (info === "archive") {
@@ -30,34 +32,63 @@ const getAllDocuments = async (req, res) => {
       filteredData = result;
     }
 
-    filteredData.forEach((item) => {
+    const newKeys = filteredData.map((item) => {
       const date = new Date();
       const lastDate = new Date(item.TERMIN);
       const timeDifference = date - lastDate;
       const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-      item.ILE_DNI_PO_TERMINIE = daysDifference;
+      const ILE_DNI_PO_TERMINIE = daysDifference;
+      let CZY_PRZETERMINOWANE = "";
       if (daysDifference > 0) {
-        item.CZY_PRZETERMINOWANE = "P";
+        CZY_PRZETERMINOWANE = "P";
       } else {
-        item.CZY_PRZETERMINOWANE = "N";
+        CZY_PRZETERMINOWANE = "N";
       }
-      item["100_VAT"] = (item.BRUTTO - item.NETTO).toFixed(2);
-      item["50_VAT"] = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
-      item.DATA_FV = new Date(item.DATA_FV);
-      item.TERMIN = new Date(item.TERMIN);
+      const fullVAT = (item.BRUTTO - item.NETTO).toFixed(2);
+      const halfVAT = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
+
+      return {
+        ...item,
+        ILE_DNI_PO_TERMINIE: ILE_DNI_PO_TERMINIE,
+        CZY_PRZETERMINOWANE: CZY_PRZETERMINOWANE,
+        "100_VAT": Number(fullVAT),
+        "50_VAT": Number(halfVAT),
+      };
     });
 
+    // console.log(filteredData[0]);
+    // console.log(newKeys[0]._doc);
+    // filteredData.forEach((item) => {
+    //   const date = new Date();
+    //   const lastDate = new Date(item.TERMIN);
+    //   const timeDifference = date - lastDate;
+    //   const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    //   item.ILE_DNI_PO_TERMINIE = daysDifference;
+    //   if (daysDifference > 0) {
+    //     item.CZY_PRZETERMINOWANE = "P";
+    //   } else {
+    //     item.CZY_PRZETERMINOWANE = "N";
+    //   }
+    //   item["100_VAT"] = (item.BRUTTO - item.NETTO).toFixed(2);
+    //   item["50_VAT"] = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
+
+    // });
+    // console.log(newKeys[0]);
+    // console.log("standardFiltered");
+
     if (truePermissions[0] === "Basic") {
-      const basicFiltered = filteredData.filter(
-        (item) => item.DORADCA === DORADCA
-      );
+      const basicFiltered = newKeys.filter((item) => item.DORADCA === DORADCA);
       return res.json(basicFiltered);
     } else if (truePermissions[0] === "Standard") {
-      const standardFiltered = filteredData.filter((item) =>
+      const standardFiltered = newKeys.filter((item) =>
         trueDepartments.includes(item.DZIAL)
       );
+      // console.log(newKeys);
+      // return res.json(filteredData);
       return res.json(standardFiltered);
     }
+
+    // res.json(newKeys);
   } catch (error) {
     logEvents(
       `documentsController, getAllDocuments: ${error}`,
@@ -184,35 +215,35 @@ const ASFile = async (documents, res) => {
         const DZIAL_NR = document.NUMER.substring(indexD);
 
         if (DZIAL_NR === "D8") {
-          ASYSTENTKA = "Ela / Jurek";
+          // ASYSTENTKA = "Ela / Jurek";
           DZIAL = "D08";
         }
         if (DZIAL_NR === "D38") {
-          ASYSTENTKA = "Jola / Ania";
+          // ASYSTENTKA = "Jola / Ania";
           DZIAL = "D38";
         }
         if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
-          ASYSTENTKA = "Jola / Ania";
+          // ASYSTENTKA = "Jola / Ania";
           DZIAL = "D48/D58";
         }
         if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
-          ASYSTENTKA = "Jola / Ania";
+          // ASYSTENTKA = "Jola / Ania";
           DZIAL = "D68/D78";
         }
         if (DZIAL_NR === "D88") {
-          ASYSTENTKA = "Dawid Antosik";
+          // ASYSTENTKA = "Dawid Antosik";
           DZIAL = "D88";
         }
         if (DZIAL_NR === "D98") {
-          ASYSTENTKA = "Dawid Antosik";
+          // ASYSTENTKA = "Dawid Antosik";
           DZIAL = "D98";
         }
         if (DZIAL_NR === "D118" || DZIAL_NR === "D148" || DZIAL_NR === "D168") {
-          ASYSTENTKA = "Marta Bednarek";
+          // ASYSTENTKA = "Marta Bednarek";
           DZIAL = "D118/D148";
         }
         if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
-          ASYSTENTKA = "Dawid Antosik";
+          // ASYSTENTKA = "Dawid Antosik";
           DZIAL = "D308/D318";
         }
         // else {
@@ -238,16 +269,16 @@ const ASFile = async (documents, res) => {
             ? excelDateToISODate(document["WYSTAWIONO"]).toString()
             : "",
           TERMIN: found["TERMIN"] ? found["TERMIN"] : "",
-          BRUTTO: document["W. BRUTTO"],
-          NETTO: document["W. NETTO"],
-          DO_ROZLICZENIA: found["DO_ROZLICZENIA"],
-          "100_VAT": document["W. BRUTTO"] - document["W. NETTO"],
-          "50_VAT": (document["W. BRUTTO"] - document["W. NETTO"]) / 2,
+          BRUTTO: document["W. BRUTTO"].toFixed(2),
+          NETTO: document["W. NETTO"].toFixed(2),
+          DO_ROZLICZENIA: found["DO_ROZLICZENIA"].toFixed(2),
+          // "100_VAT": document["W. BRUTTO"] - document["W. NETTO"],
+          // "50_VAT": (document["W. BRUTTO"] - document["W. NETTO"]) / 2,
           NR_REJESTRACYJNY: document["NR REJESTRACYJNY"]
             ? document["NR REJESTRACYJNY"]
             : "",
           KONTRAHENT: document["KONTRAHENT"] ? document["KONTRAHENT"] : "",
-          ASYSTENTKA,
+          // ASYSTENTKA,
           DORADCA: document["PRZYGOTOWAŁ"] ? document["PRZYGOTOWAŁ"] : "",
           NR_SZKODY: document["NR SZKODY"] ? document["NR SZKODY"] : "",
           UWAGI_ASYSTENT: [],
@@ -261,7 +292,7 @@ const ASFile = async (documents, res) => {
           NUMER_SPRAWY_BECARED: "",
           KWOTA_WINDYKOWANA_BECARED: "",
           BLAD_DORADCY: "NIE",
-          BLAD_W_DOKUMENTACJI: "NIE",
+          // BLAD_W_DOKUMENTACJI: "NIE",
           POBRANO_VAT: "Nie dotyczy",
           ZAZNACZ_KONTRAHENTA: "Nie",
           CZY_PRZETERMINOWANE: "",
@@ -270,7 +301,7 @@ const ASFile = async (documents, res) => {
       }
     }
     // console.log(newDocumentsToDB);
-    const update = await Document.insertMany(newDocumentsToDB);
+    await Document.insertMany(newDocumentsToDB);
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
@@ -311,8 +342,8 @@ const settlementsFile = async (rows, res) => {
       NUMER_FV: cleanDoc,
       TERMIN: termin_fv,
       DATA_WYSTAWIENIA_FV: data_fv,
-      DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"] : 0,
-      ZOBOWIAZANIA: row["ZOBOWIĄZANIE"] ? row["ZOBOWIĄZANIE"] : 0,
+      DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"].toFixed(2) : 0,
+      ZOBOWIAZANIA: row["ZOBOWIĄZANIE"] ? row["ZOBOWIĄZANIE"].toFixed(2) : 0,
     };
   });
 
@@ -356,7 +387,7 @@ const settlementsFile = async (rows, res) => {
         try {
           await Document.updateOne(
             { NUMER_FV: doc.NUMER_FV },
-            { $set: { DO_ROZLICZENIA: found.DO_ROZLICZENIA } }
+            { $set: { DO_ROZLICZENIA: found.DO_ROZLICZENIA.toFixed(2) } }
           );
         } catch (error) {
           console.error("Error while updating the document", error);
@@ -395,47 +426,84 @@ const settlementsFile = async (rows, res) => {
 const repairFile = async (rows, res) => {
   const allDocuments = await Document.find({});
 
-  const filteredData = allDocuments
-    .map((document) => {
-      if (document.NUMER_SPRAWY_BECARED === " ") {
-        return {
-          NUMER_FV: document.NUMER_FV,
-          NUMER_SPRAWY_BECARED: "",
-          //   DZIAL: "D118/D148",
-          //   ASYSTENTKA: "Marta Bednarek",
-        };
-      }
-    })
-    .filter(Boolean);
+  // const filteredData = allDocuments
+  //   .map((document) => {
+  //     if (document.BLAD_W_DOKUMENTACJI === "TAK") {
+  //       console.log(document);
+  //       return {
+  //         NUMER_FV: document.NUMER_FV,
+  //         BLAD_DORADCY: "TAK",
+  //       };
+  //     }
+  //   })
+  //   .filter(Boolean);
 
-  console.log(filteredData.length);
+  // const filteredData = allDocuments.map((doc) => {
+  //   return {
+  //     NUMER_FV: doc.NUMER_FV,
+  //     BLAD_DORADCY: doc.BLAD_DORADCY,
+  //     BRUTTO: Number(doc.BRUTTO.toFixed(2)),
+  //     DATA_FV: doc.DATA_FV,
+  //     DATA_KOMENTARZA_BECARED: doc.DATA_KOMENTARZA_BECARED,
+  //     DORADCA: doc.DORADCA,
+  //     DO_ROZLICZENIA: Number(doc.DO_ROZLICZENIA.toFixed(2)),
+  //     DZIAL: doc.DZIAL,
+  //     DZIALANIA: doc.DZIALANIA,
+  //     JAKA_KANCELARIA: doc.JAKA_KANCELARIA,
+  //     KOMENTARZ_KANCELARIA_BECARED: doc.KOMENTARZ_KANCELARIA_BECARED,
+  //     KONTRAHENT: doc.KONTRAHENT,
+  //     KWOTA_WINDYKOWANA_BECARED: doc.KWOTA_WINDYKOWANA_BECARED
+  //       ? Number(doc.KWOTA_WINDYKOWANA_BECARED.toFixed(2))
+  //       : 0,
+  //     NETTO: Number(doc.NETTO.toFixed(2)),
+  //     NR_REJESTRACYJNY: doc.NR_REJESTRACYJNY,
+  //     NR_SZKODY: doc.NR_SZKODY,
+  //     NUMER_SPRAWY_BECARED: doc.NUMER_SPRAWY_BECARED,
+  //     POBRANO_VAT: doc.POBRANO_VAT,
+  //     STATUS_SPRAWY_KANCELARIA: doc.STATUS_SPRAWY_KANCELARIA,
+  //     STATUS_SPRAWY_WINDYKACJA: doc.STATUS_SPRAWY_WINDYKACJA,
+  //     TERMIN: doc.TERMIN,
+  //     UWAGI_ASYSTENT: doc.UWAGI_ASYSTENT,
+  //     ZAZNACZ_KONTRAHENTA: doc.ZAZNACZ_KONTRAHENTA,
+  //     UWAGI_Z_FAKTURY: doc.UWAGI_Z_FAKTURY,
+  //   };
+  // });
 
-  for (const doc of filteredData) {
-    if (true) {
-      try {
-        // const result = await Document.updateOne(
-        //   { NUMER_FV: doc.NUMER_FV },
-        //   {
-        //     $set: {
-        //       NUMER_SPRAWY_BECARED: doc.NUMER_SPRAWY_BECARED,
-        //     },
-        //   }
-        // );
-        //
-        //
-        //
-        // const result = await Document.deleteOne(
-        //     { NUMER_FV: doc.NUMER_FV },
-        // );
-      } catch (error) {
-        logEvents(
-          `documentsController, repairFile: ${error}`,
-          "reqServerErrors.txt"
-        );
-        console.error("Error while updating the document", error);
-      }
-    }
-  }
+  console.log(allDocuments[1]);
+
+  // const result = await Document.updateMany({}, { $set: filteredData });
+  // Usunięcie wszystkich dokumentów z kolekcji
+  // await Document.deleteMany({});
+
+  // Wstawienie nowych danych
+  // await Document.insertMany(filteredData);
+
+  // for (const doc of filteredData) {
+  //   if (true) {
+  //     try {
+  //       // const result = await Document.updateOne(
+  //       //   { NUMER_FV: doc.NUMER_FV },
+  //       //   {
+  //       //     $set: {
+  //       //       BLAD_DORADCY: doc.BLAD_DORADCY,
+  //       //     },
+  //       //   }
+  //       // );
+  //       //
+  //       //
+  //       //
+  //       // const result = await Document.deleteOne(
+  //       //     { NUMER_FV: doc.NUMER_FV },
+  //       // );
+  //     } catch (error) {
+  //       logEvents(
+  //         `documentsController, repairFile: ${error}`,
+  //         "reqServerErrors.txt"
+  //       );
+  //       console.error("Error while updating the document", error);
+  //     }
+  //   }
+  // }
 
   res.end();
 };
@@ -520,25 +588,25 @@ const changeSingleDocument = async (req, res) => {
 };
 
 // pobieram wybrany wiersz, w celu jego edycji
-const getSingleRow = async (req, res) => {
-  try {
-    const { _id } = req.params;
-    const rowData = await Document.findOne({ _id });
-    res.json(rowData);
-  } catch (error) {
-    logEvents(
-      `documentsController, getQuickNote: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+// const getSingleRow = async (req, res) => {
+//   try {
+//     const { _id } = req.params;
+//     const rowData = await Document.findOne({ _id });
+//     res.json(rowData);
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, getQuickNote: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 module.exports = {
   getAllDocuments,
   documentsFromFile,
   getColumns,
   changeSingleDocument,
-  getSingleRow,
+  // getSingleRow,
 };
