@@ -398,3 +398,10 @@
 20240510	15:22:31	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240510	15:22:31	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240510	15:22:41	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240510	21:18:20	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"

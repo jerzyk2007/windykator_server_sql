@@ -374,6 +374,7 @@ const settlementsFile = async (rows, res) => {
       noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
     }
   });
+  // console.log(cleanDocument);
 
   try {
     const allDocuments = await Document.find({});
@@ -385,9 +386,15 @@ const settlementsFile = async (rows, res) => {
       );
       if (found) {
         try {
+          // console.log(found.DO_ROZLICZENIA);
+
+          // jeśli found.DO_ROZLICZENIA nie można zamienić na NUmber to dajemy zero
+          const newValue = isNaN(Number(found.DO_ROZLICZENIA))
+            ? 0
+            : Number(found.DO_ROZLICZENIA);
           await Document.updateOne(
             { NUMER_FV: doc.NUMER_FV },
-            { $set: { DO_ROZLICZENIA: found.DO_ROZLICZENIA.toFixed(2) } }
+            { $set: { DO_ROZLICZENIA: newValue } }
           );
         } catch (error) {
           console.error("Error while updating the document", error);
@@ -405,11 +412,11 @@ const settlementsFile = async (rows, res) => {
         }
       }
     }
-    await UpdateDB.updateOne(
-      {},
-      { $set: { date: actualDate, settlements: noDoubleDocuments } },
-      { upsert: true }
-    );
+    // await UpdateDB.updateOne(
+    //   {},
+    //   { $set: { date: actualDate, settlements: noDoubleDocuments } },
+    //   { upsert: true }
+    // );
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
