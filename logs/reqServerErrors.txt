@@ -413,3 +413,75 @@
 20240511	09:39:15	documentsController, getDataTable: ReferenceError: res is not defined
 20240511	09:39:17	documentsController, getDataDocuments: TypeError: item.DO_ROZLICZENIA.tofixed is not a function
 20240511	09:39:17	documentsController, getDataTable: ReferenceError: res is not defined
+20240511	13:22:16	settingsController, getSettings: ReferenceError: Cannot access 'roles' before initialization
+20240511	13:22:16	settingsController, getSettings: ReferenceError: Cannot access 'roles' before initialization
+20240511	13:58:38	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	13:59:34	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:01:37	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:04:38	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:06:16	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: null
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:14:23	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:16:09	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:18:59	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:22:22	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"
+20240511	14:32:07	documentsController, settlementsFile: CastError: Cast to embedded failed for value "{
+  NUMER_FV: 'FV/MN/986/19/D7',
+  TERMIN: '2019-01-29',
+  DATA_WYSTAWIENIA_FV: '2019-01-29',
+  DO_ROZLICZENIA: '683.425301.60',
+  ZOBOWIAZANIA: 0
+}" (type Object) at path "settlements" because of "CastError"

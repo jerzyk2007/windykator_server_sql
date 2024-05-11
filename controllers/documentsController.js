@@ -306,14 +306,44 @@ const ASFile = async (documents, res) => {
 
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
+  //   console.log(rows[0]);
   if (
     !rows[0]["TYTUŁ"] &&
     !rows[0]["TERMIN"] &&
     !rows[0]["NALEŻNOŚĆ"] &&
-    !rows[0]["WPROWADZONO"]
+    !rows[0]["WPROWADZONO"] &&
+    !rows[0]["ZOBOWIĄZANIE"]
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }
+
+  //   const cleanDocument = rows.map((row) => {
+  //     const cleanDoc = row["TYTUŁ"].split(" ")[0];
+  //     let termin_fv = "";
+  //     let data_fv = "";
+  //     if (
+  //       row["TERMIN"] &&
+  //       isExcelDate(row["TERMIN"]) &&
+  //       row["WPROWADZONO"] &&
+  //       isExcelDate(row["WPROWADZONO"])
+  //     ) {
+  //       termin_fv = excelDateToISODate(row["TERMIN"]).toString();
+  //       data_fv = excelDateToISODate(row["WPROWADZONO"]).toString();
+  //     } else {
+  //       termin_fv = row["TERMIN"] ? row["TERMIN"] : "";
+  //       data_fv = row["WPROWADZONO"] ? row["WPROWADZONO"] : "";
+  //     }
+  //     return {
+  //       NUMER_FV: cleanDoc,
+  //       TERMIN: termin_fv,
+  //       DATA_WYSTAWIENIA_FV: data_fv,
+  //       DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"].toFixed(2) : 0,
+  //       ZOBOWIAZANIA:
+  //         row["ZOBOWIĄZANIE"] && row["ZOBOWIĄZANIE"] !== 0
+  //           ? row["ZOBOWIĄZANIE"].toFixed(2)
+  //           : 0,
+  //     };
+  //   });
 
   const cleanDocument = rows.map((row) => {
     const cleanDoc = row["TYTUŁ"].split(" ")[0];
@@ -331,12 +361,29 @@ const settlementsFile = async (rows, res) => {
       termin_fv = row["TERMIN"] ? row["TERMIN"] : "";
       data_fv = row["WPROWADZONO"] ? row["WPROWADZONO"] : "";
     }
+
+    // Zabezpieczenie: Sprawdzenie, czy wartość "NALEŻNOŚĆ" może być przekonwertowana na liczbę
+    // Jeśli nie, zastąpienie ją zerem, w przeciwnym razie, użycie metody toFixed(2)
+    const do_rozliczenia = row["NALEŻNOŚĆ"]
+      ? isNaN(parseFloat(row["NALEŻNOŚĆ"]))
+        ? 0
+        : parseFloat(row["NALEŻNOŚĆ"]).toFixed(2)
+      : 0;
+
+    // Analogicznie dla "ZOBOWIĄZANIE"
+    const zobowiazania =
+      row["ZOBOWIĄZANIE"] && row["ZOBOWIĄZANIE"] !== 0
+        ? isNaN(parseFloat(row["ZOBOWIĄZANIE"]))
+          ? 0
+          : parseFloat(row["ZOBOWIĄZANIE"]).toFixed(2)
+        : 0;
+
     return {
       NUMER_FV: cleanDoc,
       TERMIN: termin_fv,
       DATA_WYSTAWIENIA_FV: data_fv,
-      DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"].toFixed(2) : 0,
-      ZOBOWIAZANIA: row["ZOBOWIĄZANIE"] ? row["ZOBOWIĄZANIE"].toFixed(2) : 0,
+      DO_ROZLICZENIA: do_rozliczenia,
+      ZOBOWIAZANIA: zobowiazania,
     };
   });
 
@@ -344,13 +391,42 @@ const settlementsFile = async (rows, res) => {
 
   let noDoubleDocuments = [];
 
+  //   cleanDocument.forEach((doc) => {
+  //     let existingDocIndex = noDoubleDocuments.findIndex(
+  //       (tempDoc) => tempDoc.NUMER_FV === doc.NUMER_FV
+  //     );
+  //     if (existingDocIndex === -1) {
+  //       // Jeśli nie istnieje, dodaj nowy obiekt
+  //       noDoubleDocuments.push({ ...doc });
+  //     } else {
+  //       // Jeśli istnieje, sprawdź, czy data DATA_WYSTAWIENIA_FV nowego dokumentu jest mniejsza
+  //       const existingDocDate = new Date(
+  //         noDoubleDocuments[existingDocIndex].DATA_WYSTAWIENIA_FV
+  //       );
+  //       const newDocDate = new Date(doc.DATA_WYSTAWIENIA_FV);
+
+  //       if (newDocDate < existingDocDate) {
+  //         noDoubleDocuments[existingDocIndex].DATA_WYSTAWIENIA_FV =
+  //           doc.DATA_WYSTAWIENIA_FV;
+  //       }
+
+  //       // Zaktualizuj wartość DO_ROZLICZENIA
+  //       noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
+  //     }
+  //   });
+
   cleanDocument.forEach((doc) => {
+    // Zabezpieczenie: Sprawdzenie, czy wartość "DO_ROZLICZENIA" może być przekonwertowana na liczbę
+    const do_rozliczenia = isNaN(parseFloat(doc.DO_ROZLICZENIA))
+      ? 0
+      : parseFloat(doc.DO_ROZLICZENIA);
+
     let existingDocIndex = noDoubleDocuments.findIndex(
       (tempDoc) => tempDoc.NUMER_FV === doc.NUMER_FV
     );
     if (existingDocIndex === -1) {
       // Jeśli nie istnieje, dodaj nowy obiekt
-      noDoubleDocuments.push({ ...doc });
+      noDoubleDocuments.push({ ...doc, DO_ROZLICZENIA: do_rozliczenia });
     } else {
       // Jeśli istnieje, sprawdź, czy data DATA_WYSTAWIENIA_FV nowego dokumentu jest mniejsza
       const existingDocDate = new Date(
@@ -364,27 +440,55 @@ const settlementsFile = async (rows, res) => {
       }
 
       // Zaktualizuj wartość DO_ROZLICZENIA
-      noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
+      noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += do_rozliczenia;
     }
   });
-  // console.log(cleanDocument);
 
   try {
     const allDocuments = await Document.find({});
 
     // sprawdzenie czy w rozrachunkach znajduje się faktura z DB
+    // for (const doc of allDocuments) {
+    //   const found = noDoubleDocuments.find(
+    //     (double) => double.NUMER_FV === doc.NUMER_FV
+    //   );
+    //   if (found) {
+    //     try {
+    //       // console.log(found.DO_ROZLICZENIA);
+
+    //       // jeśli found.DO_ROZLICZENIA nie można zamienić na NUmber to dajemy zero
+    //       const newValue = isNaN(Number(found.DO_ROZLICZENIA))
+    //         ? 0
+    //         : Number(found.DO_ROZLICZENIA);
+    //       await Document.updateOne(
+    //         { NUMER_FV: doc.NUMER_FV },
+    //         { $set: { DO_ROZLICZENIA: newValue } }
+    //       );
+    //     } catch (error) {
+    //       console.error("Error while updating the document", error);
+    //     }
+    //   } else {
+    //     try {
+    //       if (doc.DO_ROZLICZENIA !== 0) {
+    //         await Document.updateOne(
+    //           { NUMER_FV: doc.NUMER_FV },
+    //           { $set: { DO_ROZLICZENIA: 0 } }
+    //         );
+    //       }
+    //     } catch (error) {
+    //       console.error("Error while updating the document", error);
+    //     }
+    //   }
+    // }
+
     for (const doc of allDocuments) {
       const found = noDoubleDocuments.find(
         (double) => double.NUMER_FV === doc.NUMER_FV
       );
       if (found) {
         try {
-          // console.log(found.DO_ROZLICZENIA);
-
-          // jeśli found.DO_ROZLICZENIA nie można zamienić na NUmber to dajemy zero
-          const newValue = isNaN(Number(found.DO_ROZLICZENIA))
-            ? 0
-            : Number(found.DO_ROZLICZENIA);
+          // Próba przekonwertowania found.DO_ROZLICZENIA na liczbę, jeśli niepowodzenie, wartość zostanie zastąpiona zerem
+          const newValue = parseFloat(found.DO_ROZLICZENIA) || 0;
           await Document.updateOne(
             { NUMER_FV: doc.NUMER_FV },
             { $set: { DO_ROZLICZENIA: newValue } }
@@ -394,22 +498,26 @@ const settlementsFile = async (rows, res) => {
         }
       } else {
         try {
-          if (doc.DO_ROZLICZENIA !== 0) {
-            await Document.updateOne(
-              { NUMER_FV: doc.NUMER_FV },
-              { $set: { DO_ROZLICZENIA: 0 } }
-            );
-          }
+          const newValue =
+            typeof doc.DO_ROZLICZENIA !== "undefined" &&
+            doc.DO_ROZLICZENIA !== null
+              ? doc.DO_ROZLICZENIA
+              : 0;
+          await Document.updateOne(
+            { NUMER_FV: doc.NUMER_FV },
+            { $set: { DO_ROZLICZENIA: newValue } }
+          );
         } catch (error) {
           console.error("Error while updating the document", error);
         }
       }
     }
-    // await UpdateDB.updateOne(
-    //   {},
-    //   { $set: { date: actualDate, settlements: noDoubleDocuments } },
-    //   { upsert: true }
-    // );
+
+    await UpdateDB.updateOne(
+      {},
+      { $set: { date: actualDate, settlements: noDoubleDocuments } },
+      { upsert: true }
+    );
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {

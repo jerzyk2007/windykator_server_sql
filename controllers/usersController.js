@@ -68,7 +68,7 @@ const handleChangeLogin = async (req, res) => {
       `usersController, handleChangeLogin: ${error}`,
       "reqServerErrors.txt"
     );
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -101,7 +101,7 @@ const handleChangeName = async (req, res) => {
       `usersController, handleChangeName: ${error}`,
       "reqServerErrors.txt"
     );
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -283,7 +283,7 @@ const saveTableSettings = async (req, res) => {
       `usersController, saveTableSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -383,10 +383,7 @@ const changeRoles = async (req, res) => {
     const findUser = await User.findOne({ _id }).exec();
 
     if (findUser) {
-      const result = await User.updateOne(
-        { _id },
-        { $set: { roles: filteredRoles } }
-      );
+      await User.updateOne({ _id }, { $set: { roles: filteredRoles } });
 
       res.status(201).json({ message: "Roles are saved." });
     } else {

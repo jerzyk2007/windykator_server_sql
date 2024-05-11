@@ -24,6 +24,7 @@ const userSchema = new Schema({
     },
     Editor: Number,
     FK: Number,
+    FKAdmin: Number,
     Admin: Number,
     Root: Number,
   },
