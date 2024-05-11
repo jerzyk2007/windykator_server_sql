@@ -405,3 +405,11 @@
   DO_ROZLICZENIA: '683.425301.60',
   ZOBOWIAZANIA: 0
 }" (type Object) at path "settlements" because of "CastError"
+20240511	09:38:13	documentsController, getDataDocuments: TypeError: item.DO_ROZLICZENIA.tofixed is not a function
+20240511	09:38:13	documentsController, getDataTable: ReferenceError: res is not defined
+20240511	09:38:17	documentsController, getDataDocuments: TypeError: item.DO_ROZLICZENIA.tofixed is not a function
+20240511	09:38:17	documentsController, getDataTable: ReferenceError: res is not defined
+20240511	09:39:15	documentsController, getDataDocuments: TypeError: item.DO_ROZLICZENIA.tofixed is not a function
+20240511	09:39:15	documentsController, getDataTable: ReferenceError: res is not defined
+20240511	09:39:17	documentsController, getDataDocuments: TypeError: item.DO_ROZLICZENIA.tofixed is not a function
+20240511	09:39:17	documentsController, getDataTable: ReferenceError: res is not defined

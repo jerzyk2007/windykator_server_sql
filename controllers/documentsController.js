@@ -4,9 +4,7 @@ const UpdateDB = require("../model/UpdateDB");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 
-// pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
-const getAllDocuments = async (req, res) => {
-  const { info, _id } = req.params;
+const getDataDocuments = async (_id, info) => {
   let filteredData = [];
   try {
     const findUser = await User.find({ _id });
@@ -56,39 +54,34 @@ const getAllDocuments = async (req, res) => {
       };
     });
 
-    // console.log(filteredData[0]);
-    // console.log(newKeys[0]._doc);
-    // filteredData.forEach((item) => {
-    //   const date = new Date();
-    //   const lastDate = new Date(item.TERMIN);
-    //   const timeDifference = date - lastDate;
-    //   const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-    //   item.ILE_DNI_PO_TERMINIE = daysDifference;
-    //   if (daysDifference > 0) {
-    //     item.CZY_PRZETERMINOWANE = "P";
-    //   } else {
-    //     item.CZY_PRZETERMINOWANE = "N";
-    //   }
-    //   item["100_VAT"] = (item.BRUTTO - item.NETTO).toFixed(2);
-    //   item["50_VAT"] = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
-
-    // });
-    // console.log(newKeys[0]);
-    // console.log("standardFiltered");
-
     if (truePermissions[0] === "Basic") {
       const basicFiltered = newKeys.filter((item) => item.DORADCA === DORADCA);
-      return res.json(basicFiltered);
+      return basicFiltered;
     } else if (truePermissions[0] === "Standard") {
       const standardFiltered = newKeys.filter((item) =>
         trueDepartments.includes(item.DZIAL)
       );
-      // console.log(newKeys);
-      // return res.json(filteredData);
-      return res.json(standardFiltered);
+
+      return standardFiltered;
     }
 
     // res.json(newKeys);
+  } catch (error) {
+    logEvents(
+      `documentsController, getDataDocuments: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
+const getAllDocuments = async (req, res) => {
+  const { info, _id } = req.params;
+  try {
+    const result = await getDataDocuments(_id, info);
+    res.json(result);
   } catch (error) {
     logEvents(
       `documentsController, getAllDocuments: ${error}`,
@@ -594,26 +587,40 @@ const changeSingleDocument = async (req, res) => {
   }
 };
 
-// pobieram wybrany wiersz, w celu jego edycji
-// const getSingleRow = async (req, res) => {
-//   try {
-//     const { _id } = req.params;
-//     const rowData = await Document.findOne({ _id });
-//     res.json(rowData);
-//   } catch (error) {
-//     logEvents(
-//       `documentsController, getQuickNote: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     console.error(error);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
+// pobieram dane do tabeli, ustawienia tabeli(order, visiblility itd), kolumny
+const getDataTable = async (req, res) => {
+  const { _id, info } = req.params;
+  if (!_id || !info) {
+    return res.status(400).json({ message: "Id and info are required." });
+  }
+  try {
+    const dataTable = await getDataDocuments(_id, info);
+
+    let tableSettings = {};
+    let columns = [];
+    const findUser = await User.findOne({ _id }).exec();
+    if (findUser) {
+      tableSettings = findUser.tableSettings;
+      columns = findUser.columns;
+    } else {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.json({ dataTable, tableSettings, columns });
+  } catch (error) {
+    logEvents(
+      `documentsController, getDataTable: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 module.exports = {
   getAllDocuments,
   documentsFromFile,
   getColumns,
   changeSingleDocument,
-  // getSingleRow,
+  getDataTable,
 };

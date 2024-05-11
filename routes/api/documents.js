@@ -28,8 +28,8 @@ router
     Documents.documentsFromFile
   );
 
-// router
-// .route("/get-single-row/:_id")
-// .get(verifyRoles(ROLES_LIST.User), Documents.getSingleRow);
+router
+  .route("/get-data-table/:_id/:info")
+  .get(verifyRoles(ROLES_LIST.User), Documents.getDataTable);
 
 module.exports = router;
