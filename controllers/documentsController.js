@@ -263,6 +263,7 @@ const ASFile = async (documents, res) => {
             : "",
           TERMIN: found["TERMIN"] ? found["TERMIN"] : "",
           BRUTTO: document["W. BRUTTO"].toFixed(2),
+          BRUTTO: document["W. BRUTTO"].toFixed(2),
           NETTO: document["W. NETTO"].toFixed(2),
           DO_ROZLICZENIA: found["DO_ROZLICZENIA"].toFixed(2),
           // "100_VAT": document["W. BRUTTO"] - document["W. NETTO"],

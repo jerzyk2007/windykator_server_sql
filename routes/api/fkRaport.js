@@ -38,13 +38,13 @@ router
 //zmiana ustawień kolumn w tabeli raportu
 router
   .route("/change-columns")
-  .patch(verifyRoles(ROLES_LIST.FK), fKRaport.changeColumns);
+  .patch(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.changeColumns);
 
 //przesyłanie danych z frontu w postaci pliku excel, dotyczy plików z danycmi do raportu FK
 router
   .route("/send-documents/:type")
   .post(
-    verifyRoles(ROLES_LIST.FK),
+    verifyRoles(ROLES_LIST.FKAdmin),
     upload.single("excelFile"),
     fkDataFromFile.addDataFromFile
   );
@@ -59,7 +59,7 @@ router
 
 router
   .route("/save-items-data/:info")
-  .patch(verifyRoles(ROLES_LIST.FK), fkItemsData.saveItemsData);
+  .patch(verifyRoles(ROLES_LIST.FKAdmin), fkItemsData.saveItemsData);
 
 router
   .route("/save-prepared-items")
