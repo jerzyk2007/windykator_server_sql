@@ -4,6 +4,7 @@ const UpdateDB = require("../model/UpdateDB");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 
+//pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all
 const getDataDocuments = async (_id, info) => {
   let filteredData = [];
   try {
@@ -54,16 +55,26 @@ const getDataDocuments = async (_id, info) => {
       };
     });
 
+    // if (truePermissions[0] === "Basic") {
+    //   dataToExport= newKeys.filter((item) => item.DORADCA === DORADCA);
+    //   return basicFiltered;
+    // } else if (truePermissions[0] === "Standard") {
+    //   const standardFiltered = newKeys.filter((item) =>
+    //     trueDepartments.includes(item.DZIAL)
+    //   );
+    //   return standardFiltered;
+    // }
+
+    let dataToExport = [];
     if (truePermissions[0] === "Basic") {
-      const basicFiltered = newKeys.filter((item) => item.DORADCA === DORADCA);
-      return basicFiltered;
+      dataToExport = newKeys.filter((item) => item.DORADCA === DORADCA);
     } else if (truePermissions[0] === "Standard") {
-      const standardFiltered = newKeys.filter((item) =>
+      dataToExport = newKeys.filter((item) =>
         trueDepartments.includes(item.DZIAL)
       );
-
-      return standardFiltered;
     }
+
+    return { data: dataToExport, permission: truePermissions[0] };
 
     // res.json(newKeys);
   } catch (error) {
@@ -81,7 +92,8 @@ const getAllDocuments = async (req, res) => {
   const { info, _id } = req.params;
   try {
     const result = await getDataDocuments(_id, info);
-    res.json(result);
+
+    res.json(result.data);
   } catch (error) {
     logEvents(
       `documentsController, getAllDocuments: ${error}`,
@@ -294,7 +306,6 @@ const ASFile = async (documents, res) => {
         newDocumentsToDB.push(newDocument);
       }
     }
-    // console.log(newDocumentsToDB);
     await Document.insertMany(newDocumentsToDB);
 
     res.status(201).json({ message: "Documents are updated" });
@@ -307,7 +318,6 @@ const ASFile = async (documents, res) => {
 
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
-  //   console.log(rows[0]);
   if (
     !rows[0]["TYTUŁ"] &&
     !rows[0]["TERMIN"] &&
@@ -703,7 +713,7 @@ const getDataTable = async (req, res) => {
     return res.status(400).json({ message: "Id and info are required." });
   }
   try {
-    const dataTable = await getDataDocuments(_id, info);
+    const result = await getDataDocuments(_id, info);
 
     let tableSettings = {};
     let columns = [];
@@ -715,7 +725,7 @@ const getDataTable = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    res.json({ dataTable, tableSettings, columns });
+    res.json({ dataTable: result.data, tableSettings, columns });
   } catch (error) {
     logEvents(
       `documentsController, getDataTable: ${error}`,
@@ -732,4 +742,5 @@ module.exports = {
   getColumns,
   changeSingleDocument,
   getDataTable,
+  getDataDocuments,
 };

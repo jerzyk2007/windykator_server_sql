@@ -485,3 +485,7 @@
   DO_ROZLICZENIA: '683.425301.60',
   ZOBOWIAZANIA: 0
 }" (type Object) at path "settlements" because of "CastError"
+20240513	14:04:04	raportsController, getDataRaport: ReferenceError: getData is not defined
+20240513	14:04:08	raportsController, getDataRaport: ReferenceError: getData is not defined
+20240513	14:05:54	raportsController, getDataRaport: ReferenceError: getData is not defined
+20240513	14:05:58	raportsController, getDataRaport: ReferenceError: getData is not defined

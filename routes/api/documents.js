@@ -8,6 +8,7 @@ const verifyRoles = require("../../middleware/verifyRoles");
 const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
 const upload = multer({ storage: storage });
 
+// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all
 router
   .route("/get-all/:_id/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getAllDocuments);
@@ -28,6 +29,7 @@ router
     Documents.documentsFromFile
   );
 
+// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all oraz ustawienia tabeli
 router
   .route("/get-data-table/:_id/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getDataTable);
