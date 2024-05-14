@@ -23,37 +23,43 @@ const generateRaport = async (req, res) => {
     const settlementItems = [...allSettlements[0].settlements];
 
     const preparedDataSettlements = preparedDataWithoutId.map((item) => {
-      const matchingSettlemnt = settlementItems.find(
+      const matchingSettlement = settlementItems.find(
         (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
       );
-      if (matchingSettlemnt && item.OBSZAR !== "BLACHARNIA") {
+      if (matchingSettlement && item.OBSZAR !== "BLACHARNIA") {
         return {
           ...item,
           DO_ROZLICZENIA_AS:
             item.TYP_DOKUMENTU === "Korekta zaliczki" ||
             item.TYP_DOKUMENTU === "Korekta"
-              ? matchingSettlemnt.ZOBOWIAZANIA
-              : matchingSettlemnt.DO_ROZLICZENIA,
+              ? matchingSettlement.ZOBOWIAZANIA === 0
+                ? 0
+                : -matchingSettlement.ZOBOWIAZANIA
+              : matchingSettlement.DO_ROZLICZENIA,
           ROZNICA:
             item.TYP_DOKUMENTU === "Korekta zaliczki" ||
             item.TYP_DOKUMENTU === "Korekta"
-              ? matchingSettlemnt.ZOBOWIAZANIA
-              : matchingSettlemnt.DO_ROZLICZENIA - item.KWOTA_DO_ROZLICZENIA_FK,
-          KWOTA_WPS: matchingSettlemnt.DO_ROZLICZENIA,
+              ? -matchingSettlement.ZOBOWIAZANIA - item.KWOTA_DO_ROZLICZENIA_FK
+              : matchingSettlement.DO_ROZLICZENIA -
+                item.KWOTA_DO_ROZLICZENIA_FK,
+          KWOTA_WPS: matchingSettlement.DO_ROZLICZENIA,
         };
-      } else if (matchingSettlemnt && item.OBSZAR === "BLACHARNIA") {
+      } else if (matchingSettlement && item.OBSZAR === "BLACHARNIA") {
         return {
           ...item,
           DO_ROZLICZENIA_AS:
             item.TYP_DOKUMENTU === "Korekta zaliczki" ||
             item.TYP_DOKUMENTU === "Korekta"
-              ? matchingSettlemnt.ZOBOWIAZANIA
-              : matchingSettlemnt.DO_ROZLICZENIA,
+              ? matchingSettlement.ZOBOWIAZANIA === 0
+                ? 0
+                : -matchingSettlement.ZOBOWIAZANIA
+              : matchingSettlement.DO_ROZLICZENIA,
           ROZNICA:
             item.TYP_DOKUMENTU === "Korekta zaliczki" ||
             item.TYP_DOKUMENTU === "Korekta"
-              ? matchingSettlemnt.ZOBOWIAZANIA
-              : matchingSettlemnt.DO_ROZLICZENIA - item.KWOTA_DO_ROZLICZENIA_FK,
+              ? -matchingSettlement.ZOBOWIAZANIA - item.KWOTA_DO_ROZLICZENIA_FK
+              : matchingSettlement.DO_ROZLICZENIA -
+                item.KWOTA_DO_ROZLICZENIA_FK,
         };
       } else {
         return {
@@ -175,6 +181,7 @@ const generateRaport = async (req, res) => {
         return item;
       }
     });
+    // console.log(preparedDataDep[0]);
 
     // zapis do DB po zmianach
     await FKDataRaport.findOneAndUpdate(
@@ -218,6 +225,7 @@ const generateRaport = async (req, res) => {
     );
 
     res.json(preparedDataAging);
+    // res.end();
   } catch (error) {
     logEvents(
       `generateFKRaportController, generateRaport: ${error}`,

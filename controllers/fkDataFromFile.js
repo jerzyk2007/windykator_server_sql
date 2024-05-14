@@ -81,6 +81,7 @@ const accountancyData = async (rows, res) => {
         OPIS_ROZRACHUNKU: [],
         JAKA_KANCELARIA: " ",
         KWOTA_WPS: 0,
+        DATA_ROZLICZENIA_AS: "",
       };
     });
 
@@ -143,35 +144,29 @@ const accountancyData = async (rows, res) => {
     ]);
     const preparedItems = [...resultItems[0].preparedItems];
 
+    let errorDepartments = [];
     // do danych z pliku księgowego przypisuję wcześniej przygotowane dane działów
     const preparedDataDep = update.map((item) => {
       const matchingDepItem = preparedItems.find(
         (preparedItem) => preparedItem.department === item.DZIAL
       );
-
       if (matchingDepItem) {
         const { _id, ...rest } = item;
         return {
           ...rest,
           OWNER: matchingDepItem.owner,
-          // matchingDepItem.owner.length === 1
-          //   ? matchingDepItem.owner[0]
-          //   : Array.isArray(matchingDepItem.owner) // Sprawdzamy, czy matchingDepItem.area jest tablicą
-          //   ? matchingDepItem.owner.join("/") // Jeśli jest tablicą, używamy join
-          //   : matchingDepItem.owner,
           LOKALIZACJA: matchingDepItem.localization,
           OBSZAR: matchingDepItem.area,
           OPIEKUN_OBSZARU_CENTRALI: matchingDepItem.guardian,
-          // matchingDepItem.guardian.length === 1
-          //   ? matchingDepItem.guardian[0]
-          //   : Array.isArray(matchingDepItem.guardian)
-          //   ? matchingDepItem.guardian.join(" / ")
-          //   : matchingDepItem.guardian,
         };
       } else {
-        return item;
+        return errorDepartments.push(item.DZIAL);
       }
     });
+
+    if (errorDepartments.length) {
+      return res.json({ data: errorDepartments, error: true });
+    }
 
     // pobieram dane z rozrachunków
     const allSettlements = await UpdateDB.find({}, { settlements: 1 });
@@ -179,23 +174,26 @@ const accountancyData = async (rows, res) => {
     const settlementItems = [...allSettlements[0].settlements];
 
     const preparedDataSettlements = preparedDataDep.map((item) => {
-      const matchingSettlemnt = settlementItems.find(
+      const matchingSettlement = settlementItems.find(
         (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
       );
-      if (matchingSettlemnt) {
+      if (matchingSettlement) {
         return {
           ...item,
-          DATA_WYSTAWIENIA_FV: matchingSettlemnt.DATA_WYSTAWIENIA_FV,
+          DATA_WYSTAWIENIA_FV: matchingSettlement.DATA_WYSTAWIENIA_FV,
           DO_ROZLICZENIA_AS:
             item.TYP_DOKUMENTU === "Korekta zaliczki" ||
             item.TYP_DOKUMENTU === "Korekta"
-              ? matchingSettlemnt.ZOBOWIAZANIA
-              : matchingSettlemnt.DO_ROZLICZENIA,
+              ? matchingSettlement.ZOBOWIAZANIA === 0
+                ? 0
+                : -matchingSettlement.ZOBOWIAZANIA
+              : matchingSettlement.DO_ROZLICZENIA,
           ROZNICA:
             item.TYP_DOKUMENTU === "Korekta zaliczki" ||
             item.TYP_DOKUMENTU === "Korekta"
-              ? matchingSettlemnt.ZOBOWIAZANIA
-              : matchingSettlemnt.DO_ROZLICZENIA - item.KWOTA_DO_ROZLICZENIA_FK,
+              ? -matchingSettlement.ZOBOWIAZANIA - item.KWOTA_DO_ROZLICZENIA_FK
+              : matchingSettlement.DO_ROZLICZENIA -
+                item.KWOTA_DO_ROZLICZENIA_FK,
         };
       } else {
         return {
@@ -208,6 +206,7 @@ const accountancyData = async (rows, res) => {
       }
     });
 
+    // console.log(preparedDataSettlements[0]);
     const resultAging = await FKRaport.aggregate([
       {
         $project: {
@@ -320,7 +319,9 @@ const accountancyData = async (rows, res) => {
         returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
       }
     );
-    return res.json(preparedDataAging);
+    // return res.json({ data: preparedDataAging, error: false });
+    // return res.json({ data: errorDepartments, error: true });
+    res.end();
   } catch (error) {
     logEvents(
       `fkDataFromFile, accountancyData: ${error}`,
@@ -438,7 +439,8 @@ const carsReleased = async (rows, res) => {
         returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
       }
     );
-    return res.json(preparedDataReleasedCars);
+    // return res.json(preparedDataReleasedCars);
+    return res.end();
   } catch (error) {
     logEvents(`fkDataFromFile, carsReleased: ${error}`, "reqServerErrors.txt");
     console.error(error);
@@ -479,13 +481,13 @@ const caseStatus = async (rows, res) => {
         counter++;
 
         const status =
-          matchingSettlemnt["Status aktualny"] !== "Brak działań" &&
-          matchingSettlemnt["Status aktualny"] !== "Rozliczona" &&
-          matchingSettlemnt["Status aktualny"] !== "sms/mail +3" &&
-          matchingSettlemnt["Status aktualny"] !== "sms/mail -2" &&
-          matchingSettlemnt["Status aktualny"] !== "Zablokowana" &&
-          matchingSettlemnt["Status aktualny"] !== "Zablokowana BL" &&
-          matchingSettlemnt["Status aktualny"] !== "Zablokowana KF" &&
+          matchingSettlemnt["Status aktualny"] !== "Brak działań" ||
+          matchingSettlemnt["Status aktualny"] !== "Rozliczona" ||
+          matchingSettlemnt["Status aktualny"] !== "sms/mail +3" ||
+          matchingSettlemnt["Status aktualny"] !== "sms/mail -2" ||
+          matchingSettlemnt["Status aktualny"] !== "Zablokowana" ||
+          matchingSettlemnt["Status aktualny"] !== "Zablokowana BL" ||
+          matchingSettlemnt["Status aktualny"] !== "Zablokowana KF" ||
           matchingSettlemnt["Status aktualny"] !== "Zablokowana KF BL"
             ? matchingSettlemnt["Status aktualny"]
             : "BRAK";
@@ -598,7 +600,8 @@ const caseStatus = async (rows, res) => {
       }
     );
 
-    res.json(preparedCaseStatusBL);
+    // res.json(preparedCaseStatusBL);
+    res.end();
   } catch (error) {
     logEvents(`fkDataFromFile, caseStatus: ${error}`, "reqServerErrors.txt");
     console.error(error);
@@ -624,9 +627,60 @@ const settlementNames = async (rows, res) => {
 
     let counter = 0;
 
+    // const preparedSettlementName = preparedData.map((item) => {
+    //   let dateAndName = [];
+    //   let dateSettlement = "";
+    //   rows.forEach((preparedItem) => {
+    //     if (
+    //       preparedItem.NUMER === item.NR_DOKUMENTU &&
+    //       preparedItem.OPIS !== "NULL"
+    //     ) {
+    //       const checkDate = isExcelDate(preparedItem.DataRozlAutostacja);
+    //       const date =
+    //         preparedItem.DataRozlAutostacja === "NULL"
+    //           ? "BRAK"
+    //           : checkDate
+    //           ? excelDateToISODate(preparedItem.DataRozlAutostacja)
+    //           : "BRAK";
+
+    //       if (date !== "BRAK" && /\d{4}-\d{2}-\d{2}/.test(date)) {
+    //         // Jeśli dateSettlement jest puste lub data jest większa niż dateSettlement
+    //         if (
+    //           dateSettlement === "" ||
+    //           new Date(date) > new Date(dateSettlement)
+    //         ) {
+    //           dateSettlement = date; // Aktualizacja dateSettlement
+    //         }
+    //       }
+
+    //       const name =
+    //         preparedItem.OPIS === "NULL" ? "BRAK" : preparedItem.OPIS;
+
+    //       dateAndName.push(`${date} - ${name}`); // Dodajemy do tablicy dateAndName
+    //     }
+    //   });
+    //   if (dateAndName.length > 0) {
+    //     counter++;
+    //     // Jeśli tablica nie jest pusta, przypisujemy ją do OPIS_ROZRACHUNKU
+    //     return {
+    //       ...item,
+    //       OPIS_ROZRACHUNKU: item.ROZNICA !== 0 ? dateAndName : "NULL",
+    //       DATA_ROZLICZENIA_AS: item.ROZNICA !== 0 ? dateSettlement : "",
+    //     };
+    //   } else {
+    //     // Jeśli tablica jest pusta, przypisujemy pustą tablicę do OPIS_ROZRACHUNKU
+    //     return {
+    //       ...item,
+    //       OPIS_ROZRACHUNKU: "NULL",
+    //     };
+    //   }
+    // });
+
     const preparedSettlementName = preparedData.map((item) => {
       let dateAndName = [];
-      rows.forEach((preparedItem) => {
+      let dateSettlement = "";
+      rows = rows.filter((preparedItem) => {
+        // Użycie metody filter()
         if (
           preparedItem.NUMER === item.NR_DOKUMENTU &&
           preparedItem.OPIS !== "NULL"
@@ -638,11 +692,24 @@ const settlementNames = async (rows, res) => {
               : checkDate
               ? excelDateToISODate(preparedItem.DataRozlAutostacja)
               : "BRAK";
+
+          if (date !== "BRAK" && /\d{4}-\d{2}-\d{2}/.test(date)) {
+            // Jeśli dateSettlement jest puste lub data jest większa niż dateSettlement
+            if (
+              dateSettlement === "" ||
+              new Date(date) > new Date(dateSettlement)
+            ) {
+              dateSettlement = date; // Aktualizacja dateSettlement
+            }
+          }
+
           const name =
             preparedItem.OPIS === "NULL" ? "BRAK" : preparedItem.OPIS;
 
           dateAndName.push(`${date} - ${name}`); // Dodajemy do tablicy dateAndName
+          return false; // Usunięcie obiektu preparedItem z tablicy rows
         }
+        return true; // Zachowaj obiekt preparedItem w tablicy rows
       });
 
       if (dateAndName.length > 0) {
@@ -650,11 +717,15 @@ const settlementNames = async (rows, res) => {
         // Jeśli tablica nie jest pusta, przypisujemy ją do OPIS_ROZRACHUNKU
         return {
           ...item,
-          OPIS_ROZRACHUNKU: dateAndName,
+          OPIS_ROZRACHUNKU: item.ROZNICA !== 0 ? dateAndName : "NULL",
+          DATA_ROZLICZENIA_AS: item.ROZNICA !== 0 ? dateSettlement : "",
         };
       } else {
         // Jeśli tablica jest pusta, przypisujemy pustą tablicę do OPIS_ROZRACHUNKU
-        return item;
+        return {
+          ...item,
+          OPIS_ROZRACHUNKU: "NULL",
+        };
       }
     });
 
@@ -696,7 +767,8 @@ const settlementNames = async (rows, res) => {
         returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
       }
     );
-    res.json(preparedSettlementName);
+    // res.json(preparedSettlementName);
+    res.end();
   } catch (error) {
     logEvents(
       `fkDataFromFile, settlementNames: ${error}`,
