@@ -44,7 +44,7 @@ const FKAllDataSchema = new Schema({
         type: Number,
       },
       KWOTA_WPS: {
-        type: String,
+        type: Number,
       },
       LOKALIZACJA: {
         type: String,
@@ -149,7 +149,7 @@ const FKAllDataSchema = new Schema({
           type: String,
         },
         KWOTA_WPS: {
-          type: String,
+          type: Number,
         },
         CZY_W_KANCELARI: {
           type: String,
@@ -352,7 +352,7 @@ const FKDataRaports = new Schema({
         type: String,
       },
       DO_ROZLICZENIA_AS: {
-        type: Number,
+        type: String,
       },
       DZIAL: {
         type: String,
@@ -409,7 +409,7 @@ const FKDataRaports = new Schema({
         type: Number,
       },
       ROZNICA: {
-        type: Number,
+        type: String,
       },
       TERMIN_PLATNOSCI_FV: {
         type: String,

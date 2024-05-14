@@ -181,14 +181,46 @@ const generateRaport = async (req, res) => {
         return item;
       }
     });
-    // console.log(preparedDataDep[0]);
+
+    const prepareDataToRaport = preparedDataDep.map((item) => {
+      let KANCELARIA;
+
+      if (item.JAKA_KANCELARIA === "M Legal Solutions") {
+        KANCELARIA = "M_LEGAL";
+      } else if (item.JAKA_KANCELARIA === "Inwest Inkaso") {
+        KANCELARIA = "INWEST INKASO";
+      } else {
+        KANCELARIA = item.JAKA_KANCELARIA;
+      }
+      return {
+        ...item,
+        CZY_SAMOCHOD_WYDANY_AS:
+          item.CZY_SAMOCHOD_WYDANY_AS !== "-"
+            ? item.CZY_SAMOCHOD_WYDANY_AS
+            : "NULL",
+        DATA_ROZLICZENIA_AS:
+          item.DATA_ROZLICZENIA_AS !== "-" && item.KWOTA_WPS !== 0
+            ? item.DATA_ROZLICZENIA_AS
+            : "NULL",
+        DATA_WYDANIA_AUTA:
+          item.DATA_WYDANIA_AUTA !== "-" ? item.DATA_WYDANIA_AUTA : "NULL",
+        DO_ROZLICZENIA_AS:
+          item.DO_ROZLICZENIA_AS !== 0 ? item.DO_ROZLICZENIA_AS : "NULL",
+        JAKA_KANCELARIA:
+          item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
+        KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? "0" : item.KWOTA_WPS,
+        OPIS_ROZRACHUNKU:
+          item.KWOTA_WPS !== 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
+        ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
+      };
+    });
 
     // zapis do DB po zmianach
     await FKDataRaport.findOneAndUpdate(
       {},
       {
         $set: {
-          FKDataRaports: preparedDataDep,
+          FKDataRaports: prepareDataToRaport,
         },
       },
       {
@@ -224,7 +256,7 @@ const generateRaport = async (req, res) => {
       }
     );
 
-    res.json(preparedDataAging);
+    res.json(prepareDataToRaport);
     // res.end();
   } catch (error) {
     logEvents(
