@@ -143,3 +143,4 @@
   TERMIN_PLATNOSCI_FV: '2024-06-30',
   TYP_DOKUMENTU: 'Faktura'
 }" (type Object) at path "FKDataRaports" because of "CastError"
+20240515	10:02:57	documentsController, settlementsFile: ReferenceError: cleanDoc is not defined

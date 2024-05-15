@@ -220,41 +220,29 @@ const ASFile = async (documents, res) => {
         const DZIAL_NR = document.NUMER.substring(indexD);
 
         if (DZIAL_NR === "D8") {
-          // ASYSTENTKA = "Ela / Jurek";
           DZIAL = "D08";
         }
         if (DZIAL_NR === "D38") {
-          // ASYSTENTKA = "Jola / Ania";
           DZIAL = "D38";
         }
         if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
-          // ASYSTENTKA = "Jola / Ania";
           DZIAL = "D48/D58";
         }
         if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
-          // ASYSTENTKA = "Jola / Ania";
           DZIAL = "D68/D78";
         }
         if (DZIAL_NR === "D88") {
-          // ASYSTENTKA = "Dawid Antosik";
           DZIAL = "D88";
         }
         if (DZIAL_NR === "D98") {
-          // ASYSTENTKA = "Dawid Antosik";
           DZIAL = "D98";
         }
         if (DZIAL_NR === "D118" || DZIAL_NR === "D148" || DZIAL_NR === "D168") {
-          // ASYSTENTKA = "Marta Bednarek";
           DZIAL = "D118/D148";
         }
         if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
-          // ASYSTENTKA = "Dawid Antosik";
           DZIAL = "D308/D318";
         }
-        // else {
-        //     ASYSTENTKA = document['PRZYGOTOWAŁ'];
-        //     DZIAL = DZIAL_NR;
-        // }
 
         filteredDocuments.push(document);
       }
@@ -328,34 +316,6 @@ const settlementsFile = async (rows, res) => {
     return res.status(500).json({ error: "Invalid file" });
   }
 
-  //   const cleanDocument = rows.map((row) => {
-  //     const cleanDoc = row["TYTUŁ"].split(" ")[0];
-  //     let termin_fv = "";
-  //     let data_fv = "";
-  //     if (
-  //       row["TERMIN"] &&
-  //       isExcelDate(row["TERMIN"]) &&
-  //       row["WPROWADZONO"] &&
-  //       isExcelDate(row["WPROWADZONO"])
-  //     ) {
-  //       termin_fv = excelDateToISODate(row["TERMIN"]).toString();
-  //       data_fv = excelDateToISODate(row["WPROWADZONO"]).toString();
-  //     } else {
-  //       termin_fv = row["TERMIN"] ? row["TERMIN"] : "";
-  //       data_fv = row["WPROWADZONO"] ? row["WPROWADZONO"] : "";
-  //     }
-  //     return {
-  //       NUMER_FV: cleanDoc,
-  //       TERMIN: termin_fv,
-  //       DATA_WYSTAWIENIA_FV: data_fv,
-  //       DO_ROZLICZENIA: row["NALEŻNOŚĆ"] ? row["NALEŻNOŚĆ"].toFixed(2) : 0,
-  //       ZOBOWIAZANIA:
-  //         row["ZOBOWIĄZANIE"] && row["ZOBOWIĄZANIE"] !== 0
-  //           ? row["ZOBOWIĄZANIE"].toFixed(2)
-  //           : 0,
-  //     };
-  //   });
-
   const cleanDocument = rows.map((row) => {
     const cleanDoc = row["TYTUŁ"].split(" ")[0];
     let termin_fv = "";
@@ -402,30 +362,6 @@ const settlementsFile = async (rows, res) => {
 
   let noDoubleDocuments = [];
 
-  //   cleanDocument.forEach((doc) => {
-  //     let existingDocIndex = noDoubleDocuments.findIndex(
-  //       (tempDoc) => tempDoc.NUMER_FV === doc.NUMER_FV
-  //     );
-  //     if (existingDocIndex === -1) {
-  //       // Jeśli nie istnieje, dodaj nowy obiekt
-  //       noDoubleDocuments.push({ ...doc });
-  //     } else {
-  //       // Jeśli istnieje, sprawdź, czy data DATA_WYSTAWIENIA_FV nowego dokumentu jest mniejsza
-  //       const existingDocDate = new Date(
-  //         noDoubleDocuments[existingDocIndex].DATA_WYSTAWIENIA_FV
-  //       );
-  //       const newDocDate = new Date(doc.DATA_WYSTAWIENIA_FV);
-
-  //       if (newDocDate < existingDocDate) {
-  //         noDoubleDocuments[existingDocIndex].DATA_WYSTAWIENIA_FV =
-  //           doc.DATA_WYSTAWIENIA_FV;
-  //       }
-
-  //       // Zaktualizuj wartość DO_ROZLICZENIA
-  //       noDoubleDocuments[existingDocIndex].DO_ROZLICZENIA += doc.DO_ROZLICZENIA;
-  //     }
-  //   });
-
   cleanDocument.forEach((doc) => {
     // Zabezpieczenie: Sprawdzenie, czy wartość "DO_ROZLICZENIA" może być przekonwertowana na liczbę
     const do_rozliczenia = isNaN(parseFloat(doc.DO_ROZLICZENIA))
@@ -459,43 +395,11 @@ const settlementsFile = async (rows, res) => {
     const allDocuments = await Document.find({});
 
     // sprawdzenie czy w rozrachunkach znajduje się faktura z DB
-    // for (const doc of allDocuments) {
-    //   const found = noDoubleDocuments.find(
-    //     (double) => double.NUMER_FV === doc.NUMER_FV
-    //   );
-    //   if (found) {
-    //     try {
-    //       // console.log(found.DO_ROZLICZENIA);
-
-    //       // jeśli found.DO_ROZLICZENIA nie można zamienić na NUmber to dajemy zero
-    //       const newValue = isNaN(Number(found.DO_ROZLICZENIA))
-    //         ? 0
-    //         : Number(found.DO_ROZLICZENIA);
-    //       await Document.updateOne(
-    //         { NUMER_FV: doc.NUMER_FV },
-    //         { $set: { DO_ROZLICZENIA: newValue } }
-    //       );
-    //     } catch (error) {
-    //       console.error("Error while updating the document", error);
-    //     }
-    //   } else {
-    //     try {
-    //       if (doc.DO_ROZLICZENIA !== 0) {
-    //         await Document.updateOne(
-    //           { NUMER_FV: doc.NUMER_FV },
-    //           { $set: { DO_ROZLICZENIA: 0 } }
-    //         );
-    //       }
-    //     } catch (error) {
-    //       console.error("Error while updating the document", error);
-    //     }
-    //   }
-    // }
-
     for (const doc of allDocuments) {
       const found = noDoubleDocuments.find(
         (double) => double.NUMER_FV === doc.NUMER_FV
       );
+
       if (found) {
         try {
           // Próba przekonwertowania found.DO_ROZLICZENIA na liczbę, jeśli niepowodzenie, wartość zostanie zastąpiona zerem
@@ -509,14 +413,9 @@ const settlementsFile = async (rows, res) => {
         }
       } else {
         try {
-          const newValue =
-            typeof doc.DO_ROZLICZENIA !== "undefined" &&
-            doc.DO_ROZLICZENIA !== null
-              ? doc.DO_ROZLICZENIA
-              : 0;
           await Document.updateOne(
             { NUMER_FV: doc.NUMER_FV },
-            { $set: { DO_ROZLICZENIA: newValue } }
+            { $set: { DO_ROZLICZENIA: 0 } }
           );
         } catch (error) {
           console.error("Error while updating the document", error);
