@@ -361,7 +361,7 @@ const FKDataRaports = new Schema({
         type: String,
       },
       ILE_DNI_NA_PLATNOSC_FV: {
-        type: Number,
+        type: String,
       },
       JAKA_KANCELARIA: {
         type: String,
@@ -385,7 +385,7 @@ const FKDataRaports = new Schema({
         type: String,
       },
       NR_KLIENTA: {
-        type: Number,
+        type: String,
       },
       OBSZAR: {
         type: String,
@@ -406,7 +406,7 @@ const FKDataRaports = new Schema({
         type: String,
       },
       RODZAJ_KONTA: {
-        type: Number,
+        type: String,
       },
       ROZNICA: {
         type: String,

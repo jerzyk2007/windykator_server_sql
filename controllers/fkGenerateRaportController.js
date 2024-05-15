@@ -204,11 +204,19 @@ const generateRaport = async (req, res) => {
             : "NULL",
         DATA_WYDANIA_AUTA:
           item.DATA_WYDANIA_AUTA !== "-" ? item.DATA_WYDANIA_AUTA : "NULL",
+        // DO_ROZLICZENIA_AS:
+        //   item.DO_ROZLICZENIA_AS !== 0 ? item.DO_ROZLICZENIA_AS : "NULL",
+        // JAKA_KANCELARIA:
+        //   item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
+        // KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? "0" : item.KWOTA_WPS,
+        // OPIS_ROZRACHUNKU:
+        //   item.KWOTA_WPS !== 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
+        // ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
         DO_ROZLICZENIA_AS:
           item.DO_ROZLICZENIA_AS !== 0 ? item.DO_ROZLICZENIA_AS : "NULL",
         JAKA_KANCELARIA:
           item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
-        KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? "0" : item.KWOTA_WPS,
+        KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? "NULL" : item.KWOTA_WPS,
         OPIS_ROZRACHUNKU:
           item.KWOTA_WPS !== 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
         ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
