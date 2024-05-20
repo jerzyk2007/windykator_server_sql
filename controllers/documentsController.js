@@ -158,14 +158,20 @@ const becaredFile = async (rows, res) => {
             { NUMER_FV: doc.NUMER_FV },
             {
               $set: {
-                STATUS_SPRAWY_KANCELARIA: found["Etap Sprawy"],
-                KOMENTARZ_KANCELARIA_BECARED: found["Ostatni komentarz"],
+                STATUS_SPRAWY_KANCELARIA: found["Etap Sprawy"]
+                  ? found["Etap Sprawy"]
+                  : "-",
+                KOMENTARZ_KANCELARIA_BECARED: found["Ostatni komentarz"]
+                  ? found["Ostatni komentarz"]
+                  : "-",
                 DATA_KOMENTARZA_BECARED: checkDate
                   ? excelDateToISODate(
                       found["Data ostatniego komentarza"]
                     ).toString()
-                  : "",
-                NUMER_SPRAWY_BECARED: found["Numer sprawy"],
+                  : "-",
+                NUMER_SPRAWY_BECARED: found["Numer sprawy"]
+                  ? found["Numer sprawy"]
+                  : "-",
                 KWOTA_WINDYKOWANA_BECARED: found["Suma roszczeń"],
               },
             }
@@ -456,72 +462,47 @@ const repairFile = async (rows, res) => {
   //   })
   //   .filter(Boolean);
 
-  // const filteredData = allDocuments.map((doc) => {
-  //   return {
-  //     NUMER_FV: doc.NUMER_FV,
-  //     BLAD_DORADCY: doc.BLAD_DORADCY,
-  //     BRUTTO: Number(doc.BRUTTO.toFixed(2)),
-  //     DATA_FV: doc.DATA_FV,
-  //     DATA_KOMENTARZA_BECARED: doc.DATA_KOMENTARZA_BECARED,
-  //     DORADCA: doc.DORADCA,
-  //     DO_ROZLICZENIA: Number(doc.DO_ROZLICZENIA.toFixed(2)),
-  //     DZIAL: doc.DZIAL,
-  //     DZIALANIA: doc.DZIALANIA,
-  //     JAKA_KANCELARIA: doc.JAKA_KANCELARIA,
-  //     KOMENTARZ_KANCELARIA_BECARED: doc.KOMENTARZ_KANCELARIA_BECARED,
-  //     KONTRAHENT: doc.KONTRAHENT,
-  //     KWOTA_WINDYKOWANA_BECARED: doc.KWOTA_WINDYKOWANA_BECARED
-  //       ? Number(doc.KWOTA_WINDYKOWANA_BECARED.toFixed(2))
-  //       : 0,
-  //     NETTO: Number(doc.NETTO.toFixed(2)),
-  //     NR_REJESTRACYJNY: doc.NR_REJESTRACYJNY,
-  //     NR_SZKODY: doc.NR_SZKODY,
-  //     NUMER_SPRAWY_BECARED: doc.NUMER_SPRAWY_BECARED,
-  //     POBRANO_VAT: doc.POBRANO_VAT,
-  //     STATUS_SPRAWY_KANCELARIA: doc.STATUS_SPRAWY_KANCELARIA,
-  //     STATUS_SPRAWY_WINDYKACJA: doc.STATUS_SPRAWY_WINDYKACJA,
-  //     TERMIN: doc.TERMIN,
-  //     UWAGI_ASYSTENT: doc.UWAGI_ASYSTENT,
-  //     ZAZNACZ_KONTRAHENTA: doc.ZAZNACZ_KONTRAHENTA,
-  //     UWAGI_Z_FAKTURY: doc.UWAGI_Z_FAKTURY,
-  //   };
-  // });
+  const filteredData = allDocuments.map((item) => {
+    if (
+      item.NUMER_SPRAWY_BECARED === null ||
+      item.NUMER_SPRAWY_BECARED === ""
+    ) {
+      return {
+        ...item,
+        NUMER_SPRAWY_BECARED: "-",
+      };
+    }
+    return item;
+  });
 
-  console.log(allDocuments[1]);
-
-  // const result = await Document.updateMany({}, { $set: filteredData });
-  // Usunięcie wszystkich dokumentów z kolekcji
-  // await Document.deleteMany({});
-
-  // Wstawienie nowych danych
-  // await Document.insertMany(filteredData);
-
-  // for (const doc of filteredData) {
-  //   if (true) {
-  //     try {
-  //       // const result = await Document.updateOne(
-  //       //   { NUMER_FV: doc.NUMER_FV },
-  //       //   {
-  //       //     $set: {
-  //       //       BLAD_DORADCY: doc.BLAD_DORADCY,
-  //       //     },
-  //       //   }
-  //       // );
-  //       //
-  //       //
-  //       //
-  //       // const result = await Document.deleteOne(
-  //       //     { NUMER_FV: doc.NUMER_FV },
-  //       // );
-  //     } catch (error) {
-  //       logEvents(
-  //         `documentsController, repairFile: ${error}`,
-  //         "reqServerErrors.txt"
-  //       );
-  //       console.error("Error while updating the document", error);
-  //     }
-  //   }
-  // }
+  for (const doc of filteredData) {
+    // if (!doc.NUMER_SPRAWY_BECARED) {
+    //   console.log(doc);
+    // }
+    if (true) {
+      try {
+        // const result = await Document.updateOne(
+        //   { NUMER_FV: doc.NUMER_FV },
+        //   {
+        //     $set: {
+        //       NUMER_SPRAWY_BECARED: doc.NUMER_SPRAWY_BECARED
+        //         ? doc.NUMER_SPRAWY_BECARED
+        //         : "-",
+        //     },
+        //   }
+        // );
+        // const result = await Document.deleteOne(
+        //     { NUMER_FV: doc.NUMER_FV },
+        // );
+      } catch (error) {
+        logEvents(
+          `documentsController, repairFile: ${error}`,
+          "reqServerErrors.txt"
+        );
+        console.error("Error while updating the document", error);
+      }
+    }
+  }
 
   res.end();
 };
@@ -635,6 +616,22 @@ const getDataTable = async (req, res) => {
   }
 };
 
+// pobiera pojedyńczy dokument
+const getSingleDocument = async (req, res) => {
+  const { _id } = req.params;
+  try {
+    const result = await Document.findOne({ _id });
+    res.json(result);
+  } catch (error) {
+    logEvents(
+      `documentsController, getSingleDocument: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   getAllDocuments,
   documentsFromFile,
@@ -642,4 +639,5 @@ module.exports = {
   changeSingleDocument,
   getDataTable,
   getDataDocuments,
+  getSingleDocument,
 };

@@ -34,4 +34,9 @@ router
   .route("/get-data-table/:_id/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getDataTable);
 
+//pobiera pojedyńczy dokument
+router
+  .route("/get-single-document/:_id")
+  .get(verifyRoles(ROLES_LIST.User), Documents.getSingleDocument);
+
 module.exports = router;
