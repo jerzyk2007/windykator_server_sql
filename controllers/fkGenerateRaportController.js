@@ -218,7 +218,9 @@ const generateRaport = async (req, res) => {
           item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
         KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? "NULL" : item.KWOTA_WPS,
         OPIS_ROZRACHUNKU:
-          item.KWOTA_WPS !== 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
+          item.OPIS_ROZRACHUNKU.length > 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
+        // OPIS_ROZRACHUNKU:
+        //   item.KWOTA_WPS !== 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
         ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
       };
     });

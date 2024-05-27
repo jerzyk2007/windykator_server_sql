@@ -462,11 +462,10 @@ const repairFile = async (rows, res) => {
   //   })
   //   .filter(Boolean);
 
+  const result = await Document.deleteOne({ NUMER_FV: "FV/AN/244/24/A/D81" });
+
   const filteredData = allDocuments.map((item) => {
-    if (
-      item.NUMER_SPRAWY_BECARED === null ||
-      item.NUMER_SPRAWY_BECARED === ""
-    ) {
+    if (item.NUMER_FV === "" || item.NUMER_SPRAWY_BECARED === "") {
       return {
         ...item,
         NUMER_SPRAWY_BECARED: "-",
