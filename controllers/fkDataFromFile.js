@@ -1005,6 +1005,7 @@ const caseStatus = async (rows, res) => {
   }
 };
 
+// funkcja dodajaca opisy rozrachunków
 const settlementNames = async (rows, res) => {
   if (!rows[0]["NUMER"] && !rows[0]["OPIS"] && !rows[0]["DataRozlAutostacja"]) {
     return res.status(500).json({ error: "Invalid file" });

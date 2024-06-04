@@ -131,7 +131,7 @@ const documentsFromFile = async (req, res) => {
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika
 const getData = async (req, res) => {
   const { filter } = req.body;
-
+  console.log(filter);
   try {
     // const result = await FKRaport.find({});
 
@@ -156,7 +156,10 @@ const getData = async (req, res) => {
     }
 
     if (filter.payment !== "Wszystko") {
-      if (filter.payment === "Przeterminowane") {
+      if (
+        filter.payment === "Przeterminowane" ||
+        filter.payment === "Przeterminowane > 8"
+      ) {
         dataRaport = dataRaport.filter(
           (item) => item.PRZETER_NIEPRZETER === "Przeterminowane"
         );
