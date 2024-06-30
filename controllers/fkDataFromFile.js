@@ -748,7 +748,8 @@ const caseStatus = async (rows, res) => {
         (preparedItem) => preparedItem["Faktura nr"] === item.NR_DOKUMENTU
       );
 
-      if (matchingSettlemnt && item.OBSZAR !== "BLACHARNIA") {
+      // if (matchingSettlemnt && item.OBSZAR !== "BLACHARNIA") {
+      if (matchingSettlemnt) {
         counter++;
 
         const status =
@@ -793,7 +794,14 @@ const caseStatus = async (rows, res) => {
       const matchingSettlemnt = resultDocuments.find(
         (preparedItem) => preparedItem.NUMER_FV === item.NR_DOKUMENTU
       );
-      if (matchingSettlemnt && item.OBSZAR === "BLACHARNIA") {
+
+      if (
+        matchingSettlemnt &&
+        item.OBSZAR === "BLACHARNIA" &&
+        (matchingSettlemnt.JAKA_KANCELARIA === "ROK-KONOPA" ||
+          matchingSettlemnt.JAKA_KANCELARIA === "CNP" ||
+          matchingSettlemnt.JAKA_KANCELARIA === "KRAUZE")
+      ) {
         return {
           ...item,
           ETAP_SPRAWY: matchingSettlemnt.STATUS_SPRAWY_KANCELARIA
@@ -1132,11 +1140,12 @@ const settlementNames = async (rows, res) => {
     });
 
     // const test = preparedSettlementName.map((item) => {
-    //   if (item.NR_DOKUMENTU === "FV/UB/21/24/X/D79") {
+    //   if (item.NR_DOKUMENTU === "FV/MN/3911/24/A/D47") {
     //     console.log(item);
     //   }
     // });
 
+    //zapis do db
     await FKRaport.findOneAndUpdate(
       {},
       {
@@ -1175,7 +1184,6 @@ const settlementNames = async (rows, res) => {
         returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
       }
     );
-    // res.json(preparedSettlementName);
     res.end();
   } catch (error) {
     logEvents(

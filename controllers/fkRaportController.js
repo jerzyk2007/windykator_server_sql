@@ -131,7 +131,6 @@ const documentsFromFile = async (req, res) => {
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika
 const getData = async (req, res) => {
   const { filter } = req.body;
-  console.log(filter);
   try {
     // const result = await FKRaport.find({});
 
