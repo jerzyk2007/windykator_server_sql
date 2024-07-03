@@ -152,3 +152,64 @@
 20240516	15:44:37	loginController, handleLogin: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240516	15:44:48	loginController, handleLogin: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240516	15:44:51	loginController, handleLogin: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240703	16:42:41	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240703	16:43:11	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240703	16:58:21	generateFKRaportController, generateRaport: TypeError: Cannot destructure property '_id' of 'object null' as it is null.
+20240703	16:58:53	generateFKRaportController, generateRaport: TypeError: Cannot destructure property '_id' of 'object null' as it is null.
+20240703	17:00:32	generateFKRaportController, generateRaport: TypeError: Cannot read properties of null (reading 'NR_DOKUMENTU')
+20240703	20:44:28	savePreparedData, caseStatus: CastError: Cast to embedded failed for value "{
+  CZY_SAMOCHOD_WYDANY_AS: 'NULL',
+  CZY_W_KANCELARI: 'NIE',
+  DATA_ROZLICZENIA_AS: '-',
+  DATA_WYDANIA_AUTA: 'NULL',
+  DATA_WYSTAWIENIA_FV: '2000-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  DZIAL: 'D058',
+  ETAP_SPRAWY: 'BRAK',
+  ILE_DNI_NA_PLATNOSC_FV: 0,
+  JAKA_KANCELARIA: 'NIE DOTYCZY',
+  KONTRAHENT: 'VOLKSWAGEN GROUP POLSKA SP. Z O.O.',
+  KWOTA_DO_ROZLICZENIA_FK: 4279.38,
+  KWOTA_WPS: 'NULL',
+  LOKALIZACJA: 'Wolica',
+  NR_DOKUMENTU: 'FV/BL/45/24/V/D58',
+  NR_KLIENTA: 22980,
+  OBSZAR: 'BLACHARNIA',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Antosik Dawid' ],
+  OPIS_ROZRACHUNKU: [],
+  OWNER: [ 'Janasz Mateusz', 'Adamiak Artur' ],
+  PRZEDZIAL_WIEKOWANIE: '-',
+  PRZETER_NIEPRZETER: 'NIE',
+  RODZAJ_KONTA: 201,
+  ROZNICA: 0,
+  TERMIN_PLATNOSCI_FV: '2024-08-29',
+  TYP_DOKUMENTU: 'Faktura'
+}" (type Object) at path "preparedRaportData" because of "CastError"
+20240703	20:44:41	savePreparedData, caseStatus: CastError: Cast to embedded failed for value "{
+  CZY_SAMOCHOD_WYDANY_AS: 'NULL',
+  CZY_W_KANCELARI: 'NIE',
+  DATA_ROZLICZENIA_AS: '-',
+  DATA_WYDANIA_AUTA: 'NULL',
+  DATA_WYSTAWIENIA_FV: '2000-01-01',
+  DO_ROZLICZENIA_AS: 0,
+  DZIAL: 'D058',
+  ETAP_SPRAWY: 'BRAK',
+  ILE_DNI_NA_PLATNOSC_FV: 0,
+  JAKA_KANCELARIA: 'NIE DOTYCZY',
+  KONTRAHENT: 'VOLKSWAGEN GROUP POLSKA SP. Z O.O.',
+  KWOTA_DO_ROZLICZENIA_FK: 4279.38,
+  KWOTA_WPS: 'NULL',
+  LOKALIZACJA: 'Wolica',
+  NR_DOKUMENTU: 'FV/BL/45/24/V/D58',
+  NR_KLIENTA: 22980,
+  OBSZAR: 'BLACHARNIA',
+  OPIEKUN_OBSZARU_CENTRALI: [ 'Antosik Dawid' ],
+  OPIS_ROZRACHUNKU: [],
+  OWNER: [ 'Janasz Mateusz', 'Adamiak Artur' ],
+  PRZEDZIAL_WIEKOWANIE: '-',
+  PRZETER_NIEPRZETER: 'NIE',
+  RODZAJ_KONTA: 201,
+  ROZNICA: 0,
+  TERMIN_PLATNOSCI_FV: '2024-08-29',
+  TYP_DOKUMENTU: 'Faktura'
+}" (type Object) at path "preparedRaportData" because of "CastError"

@@ -35,98 +35,98 @@ const isExcelFile = (data) => {
 };
 
 // funkcja która przesyła na server już gotowe dane z przygotowanego raportu
-const documentsFromFile = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "Not delivered file" });
-  }
-  try {
-    const buffer = req.file.buffer;
-    const data = new Uint8Array(buffer);
+// const documentsFromFile = async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).json({ error: "Not delivered file" });
+//   }
+//   try {
+//     const buffer = req.file.buffer;
+//     const data = new Uint8Array(buffer);
 
-    if (!isExcelFile(data)) {
-      return res.status(500).json({ error: "Invalid file" });
-    }
-    const workbook = read(buffer, { type: "buffer" });
-    const workSheetName = workbook.SheetNames[0];
-    const workSheet = workbook.Sheets[workSheetName];
-    const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
+//     if (!isExcelFile(data)) {
+//       return res.status(500).json({ error: "Invalid file" });
+//     }
+//     const workbook = read(buffer, { type: "buffer" });
+//     const workSheetName = workbook.SheetNames[0];
+//     const workSheet = workbook.Sheets[workSheetName];
+//     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
 
-    if (
-      !rows[0]["TYP DOK."] &&
-      !rows[0]["NUMER DOKUMENTU"] &&
-      !rows[0]["DZIAŁ"] &&
-      !rows[0]["KONTRAHENT"] &&
-      !rows[0]["RODZAJ KONTA"] &&
-      !rows[0][" KWOTA DO ROZLICZENIA FK "] &&
-      !rows[0]["   DO ROZLICZENIA AS3 (2024-03-12)  "] &&
-      !rows[0][" UWAGI DAWID-  "]
-    ) {
-      return res.status(500).json({ error: "Invalid file" });
-    }
+//     if (
+//       !rows[0]["TYP DOK."] &&
+//       !rows[0]["NUMER DOKUMENTU"] &&
+//       !rows[0]["DZIAŁ"] &&
+//       !rows[0]["KONTRAHENT"] &&
+//       !rows[0]["RODZAJ KONTA"] &&
+//       !rows[0][" KWOTA DO ROZLICZENIA FK "] &&
+//       !rows[0]["   DO ROZLICZENIA AS3 (2024-03-12)  "] &&
+//       !rows[0][" UWAGI DAWID-  "]
+//     ) {
+//       return res.status(500).json({ error: "Invalid file" });
+//     }
 
-    const updateRows = rows.map((row) => {
-      return {
-        TYP_DOK: row["TYP DOK."],
-        NR_DOKUMENTU: row["NUMER DOKUMENTU"],
-        DZIAL: row["DZIAŁ"],
-        KONTRAHENT: row["KONTRAHENT"],
-        RODZAJ_KONTA: row["RODZAJ KONTA"],
-        KWOTA_DO_ROZLICZENIA_FK: row[" KWOTA DO ROZLICZENIA FK "],
-        DO_ROZLICZENIA_AS: row["   DO ROZLICZENIA AS3 (2024-03-12)  "],
-        ROZNICA:
-          row[" KWOTA DO ROZLICZENIA FK "] -
-          row["   DO ROZLICZENIA AS3 (2024-03-12)  "],
-        DATA_ROZLICZENIA_AS:
-          row["  DATA ROZLICZENIA W AS3  "] &&
-          row["  DATA ROZLICZENIA W AS3  "] !== "BRAK"
-            ? excelDateToISODate(
-                row["  DATA ROZLICZENIA W AS3  "],
-                row["NUMER DOKUMENTU"]
-              )
-            : "",
-        UWAGI_DAWID: row[" UWAGI DAWID-  "],
-        DATA_WYSTAWIENIA_FV:
-          row["DATA WYSTAWIENIA FV"] && row["DATA WYSTAWIENIA FV"] !== "BRAK"
-            ? excelDateToISODate(row["DATA WYSTAWIENIA FV"])
-            : "",
-        TERMIN_PLATNOSCI_FV:
-          row["TERMIN PŁATNOŚCI"] && row["TERMIN PŁATNOŚCI"] !== "BRAK"
-            ? excelDateToISODate(row["TERMIN PŁATNOŚCI"])
-            : "",
-        ILE_DNI_NA_PLATNOSC_FV: row["ILOŚĆ DNI NA PŁATNOŚĆ"],
-        PRZETER_NIEPRZETER: row["PRZETERMINOWANE/NIEPRZETERMINOWANE"],
-        PRZEDZIAL_WIEKOWANIE: row["PRZEDZIAŁ"],
-        NR_KLIENTA: row["Nr klienta"],
-        JAKA_KANCELARIA: row["JAKA KANCELARIA"],
-        ETAP_SPRAWY: row["ETAP SPRAWY"],
-        KWOTA_WPS: row[" Kwota WPS "],
-        CZY_W_KANCELARI: row["CZY KANCELARIA\r\nTAK/ NIE"],
-        OBSZAR: row[" OBSZAR "],
-        CZY_SAMOCHOD_WYDANY_AS: row["CZY SAMOCHÓD WYDANY (dane As3)"],
-        OWNER: row["OWNER"],
-        OPIENKUN_OBSZARU_CENTRALI: row["OPIEKUN OBSZARU Z CENTRALI"],
-        KONTRAHENT_CZARNA_LISTA: row["CZY KONTRAHNET NA CZARNEJ LIŚCIE"],
-      };
-    });
+//     const updateRows = rows.map((row) => {
+//       return {
+//         TYP_DOK: row["TYP DOK."],
+//         NR_DOKUMENTU: row["NUMER DOKUMENTU"],
+//         DZIAL: row["DZIAŁ"],
+//         KONTRAHENT: row["KONTRAHENT"],
+//         RODZAJ_KONTA: row["RODZAJ KONTA"],
+//         KWOTA_DO_ROZLICZENIA_FK: row[" KWOTA DO ROZLICZENIA FK "],
+//         DO_ROZLICZENIA_AS: row["   DO ROZLICZENIA AS3 (2024-03-12)  "],
+//         ROZNICA:
+//           row[" KWOTA DO ROZLICZENIA FK "] -
+//           row["   DO ROZLICZENIA AS3 (2024-03-12)  "],
+//         DATA_ROZLICZENIA_AS:
+//           row["  DATA ROZLICZENIA W AS3  "] &&
+//           row["  DATA ROZLICZENIA W AS3  "] !== "BRAK"
+//             ? excelDateToISODate(
+//                 row["  DATA ROZLICZENIA W AS3  "],
+//                 row["NUMER DOKUMENTU"]
+//               )
+//             : "",
+//         UWAGI_DAWID: row[" UWAGI DAWID-  "],
+//         DATA_WYSTAWIENIA_FV:
+//           row["DATA WYSTAWIENIA FV"] && row["DATA WYSTAWIENIA FV"] !== "BRAK"
+//             ? excelDateToISODate(row["DATA WYSTAWIENIA FV"])
+//             : "",
+//         TERMIN_PLATNOSCI_FV:
+//           row["TERMIN PŁATNOŚCI"] && row["TERMIN PŁATNOŚCI"] !== "BRAK"
+//             ? excelDateToISODate(row["TERMIN PŁATNOŚCI"])
+//             : "",
+//         ILE_DNI_NA_PLATNOSC_FV: row["ILOŚĆ DNI NA PŁATNOŚĆ"],
+//         PRZETER_NIEPRZETER: row["PRZETERMINOWANE/NIEPRZETERMINOWANE"],
+//         PRZEDZIAL_WIEKOWANIE: row["PRZEDZIAŁ"],
+//         NR_KLIENTA: row["Nr klienta"],
+//         JAKA_KANCELARIA: row["JAKA KANCELARIA"],
+//         ETAP_SPRAWY: row["ETAP SPRAWY"],
+//         KWOTA_WPS: row[" Kwota WPS "],
+//         CZY_W_KANCELARI: row["CZY KANCELARIA\r\nTAK/ NIE"],
+//         OBSZAR: row[" OBSZAR "],
+//         CZY_SAMOCHOD_WYDANY_AS: row["CZY SAMOCHÓD WYDANY (dane As3)"],
+//         OWNER: row["OWNER"],
+//         OPIENKUN_OBSZARU_CENTRALI: row["OPIEKUN OBSZARU Z CENTRALI"],
+//         KONTRAHENT_CZARNA_LISTA: row["CZY KONTRAHNET NA CZARNEJ LIŚCIE"],
+//       };
+//     });
 
-    const update = await FKRaport.updateOne(
-      {},
-      {
-        $set: { "data.FKData": updateRows }, // Ustaw nowe dane dla pola data.FKData, nadpisując stare dane
-      },
-      { upsert: true }
-    );
+//     const update = await FKRaport.updateOne(
+//       {},
+//       {
+//         $set: { "data.FKData": updateRows }, // Ustaw nowe dane dla pola data.FKData, nadpisując stare dane
+//       },
+//       { upsert: true }
+//     );
 
-    res.json("Updated data");
-  } catch (error) {
-    logEvents(
-      `fkRaportController, documentsFromFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.json("Updated data");
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, documentsFromFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika
 const getData = async (req, res) => {
@@ -410,7 +410,7 @@ const getColumnsOrder = async (req, res) => {
 };
 
 module.exports = {
-  documentsFromFile,
+  // documentsFromFile,
   getData,
   getNewColumns,
   changeColumns,

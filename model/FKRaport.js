@@ -44,7 +44,7 @@ const FKAllDataSchema = new Schema({
         type: Number,
       },
       KWOTA_WPS: {
-        type: Number,
+        type: String,
       },
       LOKALIZACJA: {
         type: String,
@@ -149,7 +149,7 @@ const FKAllDataSchema = new Schema({
           type: String,
         },
         KWOTA_WPS: {
-          type: Number,
+          type: String,
         },
         CZY_W_KANCELARI: {
           type: String,

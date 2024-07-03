@@ -133,7 +133,7 @@ const accountancyData = async (rows, res) => {
     return res.status(500).json({ error: "Invalid file" });
   }
   try {
-    // pobieram przygotowane działy, przypisanych ownerów, obszary, localizacje i poiekunów
+    // pobieram przygotowane działy, przypisanych ownerów, obszary, localizacje i opiekunów
     const resultItems = await FKRaport.aggregate([
       {
         $project: {
@@ -1237,6 +1237,129 @@ const addDataFromFile = async (req, res) => {
   }
 };
 
+//pobieranie danych do front żeby odciążyć
+const getPreparedItems = async (req, res) => {
+  try {
+    // pobieram przygotowane działy, przypisanych ownerów, obszary, localizacje i opiekunów
+    const resultItems = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedItems: "$preparedItemsData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedItems = [...resultItems[0].preparedItems];
+    res.json(preparedItems);
+  } catch (error) {
+    logEvents(`getPreparedItems, caseStatus: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// zapis do DB po zmianach i wczytaniu kolejnych plików excel
+const savePreparedData = async (req, res) => {
+  const { type, data, counter } = req.body;
+  if (!type || !data) {
+    return res.status(500).json({ error: "Server error" });
+  }
+  try {
+    //zapis do db
+    // await FKRaport.findOneAndUpdate(
+    //   {},
+    //   {
+    //     $set: {
+    //       preparedRaportData: data,
+    //     },
+    //   },
+    //   {
+    //     returnOriginal: false,
+    //     upsert: true,
+    //   }
+    // );
+
+    // usunięcie danych
+    await FKRaport.updateMany({}, { $unset: { preparedRaportData: 1 } });
+
+    //zapis do db
+    await FKRaport.updateOne(
+      {},
+      { $set: { preparedRaportData: data } },
+      { upsert: true }
+    );
+
+    // zapis daty i ilości danych zapisanych do DB
+    const dateObj = new Date();
+    // Pobieramy poszczególne elementy daty i czasu
+    const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
+    const year = dateObj.getFullYear(); // Rok
+
+    // Formatujemy datę i czas według wymagań
+    const actualDate = `${day}-${month}-${year}`;
+
+    const updateDate = {
+      date: actualDate,
+      counter,
+    };
+
+    await FKRaport.findOneAndUpdate(
+      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+      {
+        $set: {
+          [`updateDate.${type}`]: updateDate,
+        },
+      }, // Nowe dane, które mają zostać ustawione
+      {
+        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+        returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+      }
+    );
+
+    res.end();
+  } catch (error) {
+    logEvents(`savePreparedData, caseStatus: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+const getPreparedData = async (req, res) => {
+  try {
+    // pobieram wcześniej przygotowane dane z raportData
+    const resultItems = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedRaportData: "$preparedRaportData", // Wybieramy tylko pole FKData z pola data
+        },
+      },
+    ]);
+    const preparedData = [...resultItems[0].preparedRaportData];
+    res.json(preparedData);
+  } catch (error) {
+    logEvents(`getPreparedData, caseStatus: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+const getDocumentsBL = async (req, res) => {
+  try {
+    const result = await Document.find({});
+    res.json(result);
+  } catch (error) {
+    logEvents(`getDocumentsBL, caseStatus: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   addDataFromFile,
+  getPreparedItems,
+  savePreparedData,
+  getPreparedData,
+  getDocumentsBL,
 };

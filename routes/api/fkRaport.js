@@ -12,13 +12,13 @@ const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
 const upload = multer({ storage: storage });
 
 //dodaje dane już z gotowego raportu - wersja do testu
-router
-  .route("/send-data-fk")
-  .post(
-    verifyRoles(ROLES_LIST.Admin),
-    upload.single("excelFile"),
-    fKRaport.documentsFromFile
-  );
+// router
+//   .route("/send-data-fk")
+//   .post(
+//     verifyRoles(ROLES_LIST.Admin),
+//     upload.single("excelFile"),
+//     fKRaport.documentsFromFile
+//   );
 
 // pobieranie danych do raportu FK wg wstępnego filtrowania
 router
@@ -104,5 +104,25 @@ router
 router
   .route("/get-columns-order")
   .get(verifyRoles(ROLES_LIST.FK), fKRaport.getColumnsOrder);
+
+// pobieranie danych do front żeby odciążyć serwer
+router
+  .route("/prepared-items")
+  .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.getPreparedItems);
+
+// zapis do DB po zmianach i wczytaniu kolejnych plików excel
+router
+  .route("/save-data")
+  .post(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.savePreparedData);
+
+// pobranie wstępnie przygotowanych danych do raportu, do dalszej obróbki
+router
+  .route("/get-prepared-data")
+  .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.getPreparedData);
+
+// pobiera wszytskie dokumenty z BL
+router
+  .route("/get-documents-BL")
+  .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.getDocumentsBL);
 
 module.exports = router;
