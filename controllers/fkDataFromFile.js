@@ -748,8 +748,8 @@ const caseStatus = async (rows, res) => {
         (preparedItem) => preparedItem["Faktura nr"] === item.NR_DOKUMENTU
       );
 
-      // if (matchingSettlemnt && item.OBSZAR !== "BLACHARNIA") {
-      if (matchingSettlemnt) {
+      if (matchingSettlemnt && item.OBSZAR !== "BLACHARNIA") {
+        // if (matchingSettlemnt) {
         counter++;
 
         const status =
