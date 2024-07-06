@@ -4,6 +4,7 @@ const { FKRaport, FKDataRaport } = require("../model/FKRaport");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 
+// do usunięcia
 // Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
 const excelDateToISODate = (excelDate) => {
   // const date = new Date((excelDate - (25567 + 1)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
@@ -11,6 +12,7 @@ const excelDateToISODate = (excelDate) => {
   return date.toISOString().split("T")[0]; // Pobranie daty w formacie "yyyy-mm-dd"
 };
 
+//do usunięcia
 // funkcja wykonuje sprawdzenie czy data jest sformatowana w excelu czy zwykły string
 const isExcelDate = (value) => {
   // Sprawdź, czy wartość jest liczbą i jest większa od zera (Excelowa data to liczba większa od zera)
@@ -23,6 +25,7 @@ const isExcelDate = (value) => {
   s;
 };
 
+//do usunięcia
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
 const isExcelFile = (data) => {
   const excelSignature = [0x50, 0x4b, 0x03, 0x04];
@@ -34,6 +37,7 @@ const isExcelFile = (data) => {
   return true;
 };
 
+//do usunięcia
 // funkcja która przesyła na server już gotowe dane z przygotowanego raportu
 // const documentsFromFile = async (req, res) => {
 //   if (!req.file) {
@@ -275,6 +279,7 @@ const getColumns = async (req, res) => {
   }
 };
 
+// pobieram daty  aktualizacji plików excel dla raportu FK
 const getDateCounter = async (req, res) => {
   try {
     const result = await FKRaport.aggregate([
@@ -322,6 +327,7 @@ const deleteDataRaport = async (req, res) => {
   }
 };
 
+// zapis ustawień tabeli raportu FK
 const saveTableSettings = async (req, res) => {
   try {
     const { tableSettings } = req.body;
@@ -342,6 +348,7 @@ const saveTableSettings = async (req, res) => {
   }
 };
 
+// pobieram wcześniejsze ustawienia tabeli FK
 const getTableSettings = async (req, res) => {
   try {
     const result = await FKRaport.aggregate([
@@ -363,6 +370,7 @@ const getTableSettings = async (req, res) => {
   }
 };
 
+// funkcja zapisująca kolejnosc kolumn wyświetlanych w tabeli FK i raportach EXCEL
 const getColumnsOrder = async (req, res) => {
   try {
     const resultTableSettings = await FKRaport.aggregate([
@@ -401,7 +409,7 @@ const getColumnsOrder = async (req, res) => {
     res.json({ order, columns: modifiedTableColumns });
   } catch (error) {
     logEvents(
-      `generateFKRaportController, getColumnsOrder: ${error}`,
+      `fkRaportController, getColumnsOrder: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);

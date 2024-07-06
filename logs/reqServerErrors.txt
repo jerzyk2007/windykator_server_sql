@@ -213,3 +213,8 @@
   TERMIN_PLATNOSCI_FV: '2024-08-29',
   TYP_DOKUMENTU: 'Faktura'
 }" (type Object) at path "preparedRaportData" because of "CastError"
+20240706	12:26:04	fkRaportController, getData: TypeError: Cannot read properties of undefined (reading 'data')
+20240706	12:26:04	fkRaportController, getData: TypeError: Cannot read properties of undefined (reading 'data')
+20240706	12:26:07	fkRaportController, getData: TypeError: Cannot read properties of undefined (reading 'data')
+20240706	12:26:07	fkRaportController, getData: TypeError: Cannot read properties of undefined (reading 'data')
+20240706	12:26:50	saveRaportFK, caseStatus: ReferenceError: preparedDataAging is not defined

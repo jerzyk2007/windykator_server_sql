@@ -11,15 +11,6 @@ const verifyRoles = require("../../middleware/verifyRoles");
 const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
 const upload = multer({ storage: storage });
 
-//dodaje dane już z gotowego raportu - wersja do testu
-// router
-//   .route("/send-data-fk")
-//   .post(
-//     verifyRoles(ROLES_LIST.Admin),
-//     upload.single("excelFile"),
-//     fKRaport.documentsFromFile
-//   );
-
 // pobieranie danych do raportu FK wg wstępnego filtrowania
 router
   .route("/get-raport-data")
@@ -40,47 +31,48 @@ router
   .route("/change-columns")
   .patch(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.changeColumns);
 
-//przesyłanie danych z frontu w postaci pliku excel, dotyczy plików z danycmi do raportu FK
-router
-  .route("/send-documents/:type")
-  .post(
-    verifyRoles(ROLES_LIST.FKAdmin),
-    upload.single("excelFile"),
-    fkDataFromFile.addDataFromFile
-  );
-
+//funckja odczytująca działy, ownerów, lokalizacje
 router
   .route("/get-items-data")
   .get(verifyRoles(ROLES_LIST.FK), fkItemsData.getDataItems);
 
+// funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
 router
   .route("/get-fksettings-data")
   .get(verifyRoles(ROLES_LIST.FK), fkItemsData.getFKSettingsItems);
 
+//funckja zapisujaca działy, ownerów, lokalizacje
 router
   .route("/save-items-data/:info")
   .patch(verifyRoles(ROLES_LIST.FKAdmin), fkItemsData.saveItemsData);
 
+// funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
 router
   .route("/save-prepared-items")
   .patch(verifyRoles(ROLES_LIST.FK), fkItemsData.savePreparedItems);
 
+// funkcja pobierająca kpl owner, dział, lokalizacja
 router
   .route("/get-prepared-items")
   .get(verifyRoles(ROLES_LIST.FK), fkItemsData.getPreparedItems);
 
+// funkcja pobiera unikalne nazwy działów z pliku księgowego
 router
   .route("/get-uniques-dep")
   .get(verifyRoles(ROLES_LIST.FK), fkItemsData.getDepfromAccountancy);
 
+// pobieram daty  aktualizacji plików excel dla raportu FK
 router
   .route("/get-date-counter")
   .get(verifyRoles(ROLES_LIST.FK), fKRaport.getDateCounter);
 
-router
-  .route("/generate-raport")
-  .get(verifyRoles(ROLES_LIST.FK), fkGenerateRaport.generateRaport);
+//do usuniecia
+// pobieram przygotowane dane, przygotowane wiekowania, ownerzy, rozrachunki do wygenerowania raportu
+// router
+//   .route("/generate-raport")
+//   .get(verifyRoles(ROLES_LIST.FK), fkGenerateRaport.generateRaport);
 
+// usuwam wszystkie dane wczytanych plików excel raportu FK
 router
   .route("/delete-data-raport")
   .get(verifyRoles(ROLES_LIST.FK), fKRaport.deleteDataRaport);
@@ -89,18 +81,22 @@ router
   .route("/check-error-raport")
   .get(verifyRoles(ROLES_LIST.FK), fkGenerateRaport.checkRaportErrors);
 
+//funckja zapisujaca zmianę pojedyńczego itema np. ownera, wykonuje również zmianę w preparedItemsData
 router
   .route("/save-item/:info")
   .patch(verifyRoles(ROLES_LIST.FK), fkItemsData.saveItem);
 
+// zapis ustawień tabeli raportu FK
 router
   .route("/save-table-settings")
   .patch(verifyRoles(ROLES_LIST.FK), fKRaport.saveTableSettings);
 
+// pobieram wcześniejsze ustawienia tabeli FK
 router
   .route("/get-table-settings")
   .get(verifyRoles(ROLES_LIST.FK), fKRaport.getTableSettings);
 
+// funkcja zapisująca kolejnosc kolumn wyświetlanych w tabeli FK i raportach EXCEL
 router
   .route("/get-columns-order")
   .get(verifyRoles(ROLES_LIST.FK), fKRaport.getColumnsOrder);
@@ -120,9 +116,17 @@ router
   .route("/get-prepared-data")
   .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.getPreparedData);
 
-// pobiera wszytskie dokumenty z BL
+// pobiera wszytskie dane z raportu BL do dalszej obróbki dla raportu FK
 router
   .route("/get-documents-BL")
   .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.getDocumentsBL);
+
+router
+  .route("/generate-raport-front")
+  .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.dataToGenerateRaport);
+
+router
+  .route("/save-raport-FK")
+  .post(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.saveRaportFK);
 
 module.exports = router;

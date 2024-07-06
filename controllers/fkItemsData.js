@@ -135,10 +135,11 @@ const getDepfromAccountancy = async (req, res) => {
   }
 };
 
+// funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
 const savePreparedItems = async (req, res) => {
   const { dataItems } = req.body;
   try {
-    const result = await FKRaport.updateOne(
+    await FKRaport.updateOne(
       {},
       { $set: { preparedItemsData: dataItems } },
       { new: true, upsert: true }
@@ -150,6 +151,7 @@ const savePreparedItems = async (req, res) => {
   }
 };
 
+// funkcja pobierająca kpl owner, dział, lokalizacja
 const getPreparedItems = async (req, res) => {
   try {
     const result = await FKRaport.aggregate([

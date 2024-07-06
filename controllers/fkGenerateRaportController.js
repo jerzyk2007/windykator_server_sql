@@ -4,6 +4,7 @@ const UpdateDB = require("../model/UpdateDB");
 
 const { logEvents } = require("../middleware/logEvents");
 
+// do usunięcia
 const generateRaport = async (req, res) => {
   try {
     // pobieram wcześniej przygotowane dane z raportData
@@ -208,10 +209,10 @@ const generateRaport = async (req, res) => {
       }
       return {
         ...item,
-        CZY_SAMOCHOD_WYDANY_AS:
-          item.CZY_SAMOCHOD_WYDANY_AS !== "-"
-            ? item.CZY_SAMOCHOD_WYDANY_AS
-            : "NULL",
+        // CZY_SAMOCHOD_WYDANY_AS:
+        //   item.CZY_SAMOCHOD_WYDANY_AS !== "-"
+        //     ? item.CZY_SAMOCHOD_WYDANY_AS
+        //     : "NULL",
 
         //zmiana na prośbę Kasi Plewki, ma się zawsze pojawiać data rozliczenia
         DATA_ROZLICZENIA_AS:
@@ -220,9 +221,9 @@ const generateRaport = async (req, res) => {
           item.DATA_WYDANIA_AUTA !== "-" ? item.DATA_WYDANIA_AUTA : "NULL",
         DO_ROZLICZENIA_AS:
           item.DO_ROZLICZENIA_AS !== 0 ? item.DO_ROZLICZENIA_AS : "NULL",
-        JAKA_KANCELARIA:
-          item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
-        KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? " " : item.KWOTA_WPS,
+        // JAKA_KANCELARIA:
+        //   item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
+        // KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? " " : item.KWOTA_WPS,
         OPIS_ROZRACHUNKU:
           item.OPIS_ROZRACHUNKU.length > 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
         ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
