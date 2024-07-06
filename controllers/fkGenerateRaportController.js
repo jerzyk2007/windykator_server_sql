@@ -46,22 +46,9 @@ const generateRaport = async (req, res) => {
                   matchingSettlement.DO_ROZLICZENIA
               : item.KWOTA_DO_ROZLICZENIA_FK -
                 matchingSettlement.DO_ROZLICZENIA,
-          KWOTA_WPS: matchingSettlement.DO_ROZLICZENIA,
-          // ...item,
-          // DO_ROZLICZENIA_AS:
-          //   item.TYP_DOKUMENTU === "Korekta zaliczki" ||
-          //   item.TYP_DOKUMENTU === "Korekta"
-          //     ? matchingSettlement.ZOBOWIAZANIA === 0
-          //       ? 0
-          //       : -matchingSettlement.ZOBOWIAZANIA
-          //     : matchingSettlement.DO_ROZLICZENIA,
-          // ROZNICA:
-          //   item.TYP_DOKUMENTU === "Korekta zaliczki" ||
-          //   item.TYP_DOKUMENTU === "Korekta"
-          //     ? -matchingSettlement.ZOBOWIAZANIA - item.KWOTA_DO_ROZLICZENIA_FK
-          //     : item.KWOTA_DO_ROZLICZENIA_FK -
-          //       matchingSettlement.DO_ROZLICZENIA,
-          // KWOTA_WPS: matchingSettlement.DO_ROZLICZENIA,
+          KWOTA_WPS: matchingSettlement.DO_ROZLICZENIA
+            ? matchingSettlement.DO_ROZLICZENIA
+            : " ",
         };
       } else if (matchingSettlement && item.OBSZAR === "BLACHARNIA") {
         return {
@@ -200,19 +187,9 @@ const generateRaport = async (req, res) => {
         return {
           ...rest,
           OWNER: matchingDepItem.owner,
-          // matchingDepItem.owner.length === 1
-          //   ? matchingDepItem.owner[0]
-          //   : Array.isArray(matchingDepItem.owner) // Sprawdzamy, czy matchingDepItem.area jest tablicą
-          //   ? matchingDepItem.owner.join("/") // Jeśli jest tablicą, używamy join
-          //   : matchingDepItem.owner,
           LOKALIZACJA: matchingDepItem.localization,
           OBSZAR: matchingDepItem.area,
           OPIEKUN_OBSZARU_CENTRALI: matchingDepItem.guardian,
-          // matchingDepItem.guardian.length === 1
-          //   ? matchingDepItem.guardian[0]
-          //   : Array.isArray(matchingDepItem.guardian)
-          //   ? matchingDepItem.guardian.join(" / ")
-          //   : matchingDepItem.guardian,
         };
       } else {
         return item;
@@ -239,30 +216,15 @@ const generateRaport = async (req, res) => {
         //zmiana na prośbę Kasi Plewki, ma się zawsze pojawiać data rozliczenia
         DATA_ROZLICZENIA_AS:
           item.DATA_ROZLICZENIA_AS !== "-" ? item.DATA_ROZLICZENIA_AS : "NULL",
-
-        // DATA_ROZLICZENIA_AS:
-        //   item.DATA_ROZLICZENIA_AS !== "-" && item.KWOTA_WPS !== 0
-        //     ? item.DATA_ROZLICZENIA_AS
-        //     : "NULL",
         DATA_WYDANIA_AUTA:
           item.DATA_WYDANIA_AUTA !== "-" ? item.DATA_WYDANIA_AUTA : "NULL",
-        // DO_ROZLICZENIA_AS:
-        //   item.DO_ROZLICZENIA_AS !== 0 ? item.DO_ROZLICZENIA_AS : "NULL",
-        // JAKA_KANCELARIA:
-        //   item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
-        // KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? "0" : item.KWOTA_WPS,
-        // OPIS_ROZRACHUNKU:
-        //   item.KWOTA_WPS !== 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
-        // ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
         DO_ROZLICZENIA_AS:
           item.DO_ROZLICZENIA_AS !== 0 ? item.DO_ROZLICZENIA_AS : "NULL",
         JAKA_KANCELARIA:
           item.JAKA_KANCELARIA !== "-" ? KANCELARIA : "NIE DOTYCZY",
-        KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? "NULL" : item.KWOTA_WPS,
+        KWOTA_WPS: item.CZY_W_KANCELARI === "NIE" ? " " : item.KWOTA_WPS,
         OPIS_ROZRACHUNKU:
           item.OPIS_ROZRACHUNKU.length > 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
-        // OPIS_ROZRACHUNKU:
-        //   item.KWOTA_WPS !== 0 ? item.OPIS_ROZRACHUNKU : ["NULL"],
         ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
       };
     });
