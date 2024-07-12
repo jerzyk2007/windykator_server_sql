@@ -54,7 +54,7 @@ const savePreparedData = async (req, res) => {
 
     const updateDate = {
       date: actualDate,
-      counter,
+      counter: counter ? counter : 0,
     };
 
     await FKRaport.findOneAndUpdate(

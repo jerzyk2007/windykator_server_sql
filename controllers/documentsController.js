@@ -136,11 +136,11 @@ const isExcelFile = (data) => {
 // funkcja która dodaje dane z becared
 const becaredFile = async (rows, res) => {
   if (
-    !rows[0]["Numery Faktur"] &&
-    !rows[0]["Etap Sprawy"] &&
-    !rows[0]["Ostatni komentarz"] &&
-    !rows[0]["Data ostatniego komentarza"] &&
-    !rows[0]["Numer sprawy"] &&
+    !rows[0]["Numery Faktur"] ||
+    !rows[0]["Etap Sprawy"] ||
+    !rows[0]["Ostatni komentarz"] ||
+    !rows[0]["Data ostatniego komentarza"] ||
+    !rows[0]["Numer sprawy"] ||
     !rows[0]["Suma roszczeń"]
   ) {
     return res.status(500).json({ error: "Invalid file" });
@@ -151,10 +151,13 @@ const becaredFile = async (rows, res) => {
 
     for (const doc of allDocuments) {
       const found = rows.find((row) => row["Numery Faktur"] === doc.NUMER_FV);
+      if (found?.["Numery Faktur"] === "FV/UBL/165/24/A/D38") {
+        console.log(found);
+      }
       if (found) {
         const checkDate = isExcelDate(found["Data ostatniego komentarza"]);
         try {
-          const result = await Document.updateOne(
+          await Document.updateOne(
             { NUMER_FV: doc.NUMER_FV },
             {
               $set: {
@@ -313,11 +316,11 @@ const ASFile = async (documents, res) => {
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
   if (
-    !rows[0]["TYTUŁ"] &&
-    !rows[0]["TERMIN"] &&
-    !rows[0]["NALEŻNOŚĆ"] &&
-    !rows[0]["WPROWADZONO"] &&
-    !rows[0]["ZOBOWIĄZANIE"]
+    !rows[0]["TYTUŁ"] ||
+    !rows[0]["TERMIN"] ||
+    !rows[0]["NALEŻNOŚĆ"] ||
+    !rows[0]["WPROWADZONO"]
+    // ||  !rows[0]["ZOBOWIĄZANIE"]
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }

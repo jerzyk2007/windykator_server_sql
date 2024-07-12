@@ -218,3 +218,5 @@
 20240706	12:26:07	fkRaportController, getData: TypeError: Cannot read properties of undefined (reading 'data')
 20240706	12:26:07	fkRaportController, getData: TypeError: Cannot read properties of undefined (reading 'data')
 20240706	12:26:50	saveRaportFK, caseStatus: ReferenceError: preparedDataAging is not defined
+20240711	18:05:13	fkRaportController, changeColumns: MongoNetworkError: connection 4 to 10.8.20.11:27017 closed
+20240711	18:05:14	fkRaportController, changeColumns: MongoNetworkError: connection 5 to 10.8.20.11:27017 closed

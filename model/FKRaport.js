@@ -4,6 +4,9 @@ const { Schema } = mongoose;
 const FKAllDataSchema = new Schema({
   preparedRaportData: [
     {
+      BRAK_DATY_WYSTAWIENIA_FV: {
+        type: String,
+      },
       CZY_SAMOCHOD_WYDANY_AS: {
         type: String,
       },
@@ -94,6 +97,9 @@ const FKAllDataSchema = new Schema({
   data: {
     FKData: [
       {
+        BRAK_DATY_WYSTAWIENIA_FV: {
+          type: String,
+        },
         TYP_DOK: {
           type: String,
         },
@@ -250,6 +256,14 @@ const FKAllDataSchema = new Schema({
           type: Number,
         },
       },
+      missedDate: {
+        date: {
+          type: String,
+        },
+        counter: {
+          type: Number,
+        },
+      },
     },
   },
   tableColumns: {
@@ -286,6 +300,14 @@ const FKAllDataSchema = new Schema({
       },
     },
     settlementNames: {
+      date: {
+        type: String,
+      },
+      counter: {
+        type: Number,
+      },
+    },
+    missedDate: {
       date: {
         type: String,
       },
@@ -336,6 +358,9 @@ const FKAllDataSchema = new Schema({
 const FKDataRaports = new Schema({
   FKDataRaports: [
     {
+      BRAK_DATY_WYSTAWIENIA_FV: {
+        type: String,
+      },
       CZY_SAMOCHOD_WYDANY_AS: {
         type: String,
       },
