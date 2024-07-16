@@ -136,12 +136,12 @@ const isExcelFile = (data) => {
 // funkcja która dodaje dane z becared
 const becaredFile = async (rows, res) => {
   if (
-    !rows[0]["Numery Faktur"] ||
-    !rows[0]["Etap Sprawy"] ||
-    !rows[0]["Ostatni komentarz"] ||
-    !rows[0]["Data ostatniego komentarza"] ||
-    !rows[0]["Numer sprawy"] ||
-    !rows[0]["Suma roszczeń"]
+    !("Numery Faktur" in rows[0]) ||
+    !("Etap Sprawy" in rows[0]) ||
+    !("Ostatni komentarz" in rows[0]) ||
+    !("Data ostatniego komentarza" in rows[0]) ||
+    !("Numer sprawy" in rows[0]) ||
+    !("Suma roszczeń" in rows[0])
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }
@@ -151,9 +151,7 @@ const becaredFile = async (rows, res) => {
 
     for (const doc of allDocuments) {
       const found = rows.find((row) => row["Numery Faktur"] === doc.NUMER_FV);
-      if (found?.["Numery Faktur"] === "FV/UBL/165/24/A/D38") {
-        console.log(found);
-      }
+
       if (found) {
         const checkDate = isExcelDate(found["Data ostatniego komentarza"]);
         try {
@@ -199,15 +197,15 @@ const becaredFile = async (rows, res) => {
 // funkcja która dodaje dane z z pliku dokumenty autostacja
 const ASFile = async (documents, res) => {
   if (
-    !documents[0]["NUMER"] &&
-    !documents[0]["WYSTAWIONO"] &&
-    !documents[0]["W. BRUTTO"] &&
-    !documents[0]["W. NETTO"] &&
-    !documents[0]["NR REJESTRACYJNY"] &&
-    !documents[0]["KONTRAHENT"] &&
-    !documents[0]["PRZYGOTOWAŁ"] &&
-    !documents[0]["NR SZKODY"] &&
-    !documents[0]["UWAGI"]
+    !("NUMER" in documents[0]) ||
+    !("WYSTAWIONO" in documents[0]) ||
+    !("W. BRUTTO" in documents[0]) ||
+    !("W. NETTO" in documents[0]) ||
+    !("NR REJESTRACYJNY" in documents[0]) ||
+    !("KONTRAHENT" in documents[0]) ||
+    !("PRZYGOTOWAŁ" in documents[0]) ||
+    !("NR SZKODY" in documents[0]) ||
+    !("UWAGI" in documents[0])
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }
@@ -316,11 +314,11 @@ const ASFile = async (documents, res) => {
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
   if (
-    !rows[0]["TYTUŁ"] ||
-    !rows[0]["TERMIN"] ||
-    !rows[0]["NALEŻNOŚĆ"] ||
-    !rows[0]["WPROWADZONO"]
-    // ||  !rows[0]["ZOBOWIĄZANIE"]
+    !("TYTUŁ" in rows[0]) ||
+    !("TERMIN" in rows[0]) ||
+    !("NALEŻNOŚĆ" in rows[0]) ||
+    !("WPROWADZONO" in rows[0]) ||
+    !("ZOBOWIĄZANIE" in rows[0])
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }
