@@ -142,6 +142,51 @@ const getSettings = async (req, res) => {
   }
 };
 
+// pobieranie unikalnych nazw działów
+const getDepartments = async (req, res) => {
+  try {
+    const mappedDepartments = await getFilteredDepartments();
+    const uniqueDepartmentsValues = Array.from(
+      new Set(mappedDepartments.map((filtr) => filtr["DZIAL"]))
+    ).filter(Boolean);
+
+    //pobieram zapisane cele
+    const getTarget = await Setting.find({}, "target").exec();
+
+    res.json({
+      departments: uniqueDepartmentsValues,
+      target: getTarget[0].target,
+    });
+  } catch (error) {
+    logEvents(
+      `settingsController, getDepartments: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// zapis nowych procentów kwartalnych
+const saveTargetPercent = async (req, res) => {
+  const { target } = req.body;
+  try {
+    await Setting.findOneAndUpdate(
+      {},
+      { $set: { target } },
+      { new: true, upsert: true }
+    );
+    res.end();
+  } catch (error) {
+    logEvents(
+      `settingsController, saveTargetPercent: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 const getColumns = async (req, res) => {
   try {
     const result = await Setting.find({}).exec();
@@ -159,6 +204,8 @@ const getColumns = async (req, res) => {
 
 module.exports = {
   getSettings,
+  getDepartments,
+  saveTargetPercent,
   changeColumns,
   getColumns,
 };

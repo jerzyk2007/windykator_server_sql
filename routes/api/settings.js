@@ -13,6 +13,14 @@ router
   .get(verifyRoles(ROLES_LIST.Admin), settings.getSettings);
 
 router
+  .route("/save-target-percent")
+  .patch(verifyRoles(ROLES_LIST.Admin), settings.saveTargetPercent);
+
+router
+  .route("/get-departments")
+  .get(verifyRoles(ROLES_LIST.Admin), settings.getDepartments);
+
+router
   .route("/get-columns")
   .get(verifyRoles(ROLES_LIST.User), settings.getColumns);
 

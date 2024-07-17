@@ -223,3 +223,20 @@
 20240713	06:56:56	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240713	06:57:16	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
 20240713	06:57:26	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	15:09:51	documentsController, getDataDocuments: MongoNetworkError: connection 5 to 10.8.20.11:27017 closed
+20240716	15:09:51	documentsController, getAllDocuments: ReferenceError: res is not defined
+20240716	15:10:05	documentsController, getDataDocuments: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	15:10:05	documentsController, getAllDocuments: ReferenceError: res is not defined
+20240716	15:10:14	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	15:10:34	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:38:05	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:38:25	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:38:35	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:38:35	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:38:35	refreshTokenController, handleRefreshToken: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:39:05	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:39:25	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	18:39:25	logoutController, handleLogout: MongoServerSelectionError: connect ETIMEDOUT 10.8.20.11:27017
+20240716	19:46:25	settingsController, getDepartments: ReferenceError: Cannot access 'target' before initialization
+20240716	19:46:31	settingsController, getDepartments: ReferenceError: Cannot access 'target' before initialization
+20240716	19:47:01	settingsController, getDepartments: ReferenceError: target is not defined
