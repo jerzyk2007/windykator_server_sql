@@ -18,7 +18,7 @@ router
 
 router
   .route("/get-departments")
-  .get(verifyRoles(ROLES_LIST.Admin), settings.getDepartments);
+  .get(verifyRoles(ROLES_LIST.User), settings.getDepartments);
 
 router
   .route("/get-columns")
