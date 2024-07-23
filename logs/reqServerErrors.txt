@@ -240,3 +240,5 @@
 20240716	19:46:25	settingsController, getDepartments: ReferenceError: Cannot access 'target' before initialization
 20240716	19:46:31	settingsController, getDepartments: ReferenceError: Cannot access 'target' before initialization
 20240716	19:47:01	settingsController, getDepartments: ReferenceError: target is not defined
+20240723	16:21:21	documentsController, ASFile: ReferenceError: DZIAL is not defined
+20240723	16:21:59	documentsController, ASFile: ReferenceError: DZIAL is not defined

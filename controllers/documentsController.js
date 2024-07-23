@@ -209,48 +209,84 @@ const ASFile = async (documents, res) => {
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }
-
   try {
     const allDocuments = await Document.find({});
     const allSettlements = await UpdateDB.find({}, { settlements: 1 });
     const settlements = allSettlements[0].settlements;
 
-    let DZIAL = "";
-    let ASYSTENTKA = "";
-    // szukam brakujących faktur w bazie danych
+    const dzialMap = {
+      D8: "D08",
+      D38: "D38",
+      D48: "D48/D58",
+      D58: "D48/D58",
+      D68: "D68/D78",
+      D78: "D68/D78",
+      D88: "D88",
+      D98: "D98",
+      D118: "D118/D148",
+      D148: "D118/D148",
+      D168: "D118/D148",
+      D308: "D308/D318",
+      D318: "D308/D318",
+    };
+
+    const checkDocuments = documents.map((document) => {
+      const indexD = document.NUMER.lastIndexOf("D");
+      const DZIAL_NR = document.NUMER.substring(indexD);
+
+      const DZIAL = dzialMap[DZIAL_NR] || "BRAK";
+
+      return {
+        ...document,
+        DZIAL: DZIAL,
+      };
+    });
+
+    // const checkDocuments = documents.map((document) => {
+    //   const indexD = document.NUMER.lastIndexOf("D");
+    //   const DZIAL_NR = document.NUMER.substring(indexD);
+
+    //   let DZIAL = "";
+
+    //   if (DZIAL_NR === "D8") {
+    //     DZIAL = "D08";
+    //   } else if (DZIAL_NR === "D38") {
+    //     DZIAL = "D38";
+    //   } else if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
+    //     DZIAL = "D48/D58";
+    //   } else if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
+    //     DZIAL = "D68/D78";
+    //   } else if (DZIAL_NR === "D88") {
+    //     DZIAL = "D88";
+    //   } else if (DZIAL_NR === "D98") {
+    //     DZIAL = "D98";
+    //   } else if (
+    //     DZIAL_NR === "D118" ||
+    //     DZIAL_NR === "D148" ||
+    //     DZIAL_NR === "D168"
+    //   ) {
+    //     DZIAL = "D118/D148";
+    //   } else if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
+    //     DZIAL = "D308/D318";
+    //   } else {
+    //     DZIAL = "BRAK";
+    //   }
+    //   return {
+    //     ...document,
+    //     DZIAL: DZIAL,
+    //   };
+    // });
+
+    // const filteredDocumentsBL = checkDocuments.filter(
+    //   (item) => item.DZIAL !== "BRAK"
+    // );
+
+    // szukam brakujących faktur w bazie danych i uswam te które mają DZIAL=BRAK
     const filteredDocuments = [];
-    for (const document of documents) {
+    for (const document of checkDocuments) {
       const found = allDocuments.find((doc) => doc.NUMER_FV === document.NUMER);
 
-      if (!found) {
-        const indexD = document.NUMER.lastIndexOf("D");
-        const DZIAL_NR = document.NUMER.substring(indexD);
-
-        if (DZIAL_NR === "D8") {
-          DZIAL = "D08";
-        }
-        if (DZIAL_NR === "D38") {
-          DZIAL = "D38";
-        }
-        if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
-          DZIAL = "D48/D58";
-        }
-        if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
-          DZIAL = "D68/D78";
-        }
-        if (DZIAL_NR === "D88") {
-          DZIAL = "D88";
-        }
-        if (DZIAL_NR === "D98") {
-          DZIAL = "D98";
-        }
-        if (DZIAL_NR === "D118" || DZIAL_NR === "D148" || DZIAL_NR === "D168") {
-          DZIAL = "D118/D148";
-        }
-        if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
-          DZIAL = "D308/D318";
-        }
-
+      if (!found && document.DZIAL !== "BRAK") {
         filteredDocuments.push(document);
       }
     }
@@ -264,7 +300,7 @@ const ASFile = async (documents, res) => {
       if (found) {
         const newDocument = {
           NUMER_FV: document["NUMER"],
-          DZIAL,
+          DZIAL: document.DZIAL,
           DATA_FV: document["WYSTAWIONO"]
             ? excelDateToISODate(document["WYSTAWIONO"]).toString()
             : "",
@@ -301,6 +337,7 @@ const ASFile = async (documents, res) => {
         newDocumentsToDB.push(newDocument);
       }
     }
+
     await Document.insertMany(newDocumentsToDB);
 
     res.status(201).json({ message: "Documents are updated" });
@@ -310,6 +347,121 @@ const ASFile = async (documents, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+// const ASFile = async (documents, res) => {
+//   if (
+//     !("NUMER" in documents[0]) ||
+//     !("WYSTAWIONO" in documents[0]) ||
+//     !("W. BRUTTO" in documents[0]) ||
+//     !("W. NETTO" in documents[0]) ||
+//     !("NR REJESTRACYJNY" in documents[0]) ||
+//     !("KONTRAHENT" in documents[0]) ||
+//     !("PRZYGOTOWAŁ" in documents[0]) ||
+//     !("NR SZKODY" in documents[0]) ||
+//     !("UWAGI" in documents[0])
+//   ) {
+//     return res.status(500).json({ error: "Invalid file" });
+//   }
+
+//   try {
+//     const allDocuments = await Document.find({});
+//     const allSettlements = await UpdateDB.find({}, { settlements: 1 });
+//     const settlements = allSettlements[0].settlements;
+
+//     let DZIAL = "";
+//     let ASYSTENTKA = "";
+//     // szukam brakujących faktur w bazie danych
+//     const filteredDocuments = [];
+//     for (const document of documents) {
+//       const found = allDocuments.find((doc) => doc.NUMER_FV === document.NUMER);
+
+//       if (!found) {
+//         const indexD = document.NUMER.lastIndexOf("D");
+//         const DZIAL_NR = document.NUMER.substring(indexD);
+
+//         if (DZIAL_NR === "D8") {
+//           DZIAL = "D08";
+//         }
+//         if (DZIAL_NR === "D38") {
+//           DZIAL = "D38";
+//         }
+//         if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
+//           DZIAL = "D48/D58";
+//         }
+//         if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
+//           DZIAL = "D68/D78";
+//         }
+//         if (DZIAL_NR === "D88") {
+//           DZIAL = "D88";
+//         }
+//         if (DZIAL_NR === "D98") {
+//           DZIAL = "D98";
+//         }
+//         if (DZIAL_NR === "D118" || DZIAL_NR === "D148" || DZIAL_NR === "D168") {
+//           DZIAL = "D118/D148";
+//         }
+//         if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
+//           DZIAL = "D308/D318";
+//         }
+
+//         filteredDocuments.push(document);
+//       }
+//     }
+
+//     // ta funkcja usuwa faktury których nie ma w bazie danych bo sa rozliczone, zmienić po otrzymaniu docelowego pliku, obecnie będzie trudno ze względu na brak informacji o terminie płatności
+//     const newDocumentsToDB = [];
+//     for (const document of filteredDocuments) {
+//       const found = settlements.find(
+//         (settlement) => settlement.NUMER_FV === document.NUMER
+//       );
+//       if (found) {
+//         const newDocument = {
+//           NUMER_FV: document["NUMER"],
+//           DZIAL,
+//           DATA_FV: document["WYSTAWIONO"]
+//             ? excelDateToISODate(document["WYSTAWIONO"]).toString()
+//             : "",
+//           TERMIN: found["TERMIN"] ? found["TERMIN"] : "",
+//           BRUTTO: document["W. BRUTTO"].toFixed(2),
+//           BRUTTO: document["W. BRUTTO"].toFixed(2),
+//           NETTO: document["W. NETTO"].toFixed(2),
+//           DO_ROZLICZENIA: found["DO_ROZLICZENIA"].toFixed(2),
+//           // "100_VAT": document["W. BRUTTO"] - document["W. NETTO"],
+//           // "50_VAT": (document["W. BRUTTO"] - document["W. NETTO"]) / 2,
+//           NR_REJESTRACYJNY: document["NR REJESTRACYJNY"]
+//             ? document["NR REJESTRACYJNY"]
+//             : "",
+//           KONTRAHENT: document["KONTRAHENT"] ? document["KONTRAHENT"] : "",
+//           // ASYSTENTKA,
+//           DORADCA: document["PRZYGOTOWAŁ"] ? document["PRZYGOTOWAŁ"] : "",
+//           NR_SZKODY: document["NR SZKODY"] ? document["NR SZKODY"] : "",
+//           UWAGI_ASYSTENT: [],
+//           UWAGI_Z_FAKTURY: document["UWAGI"] ? document["UWAGI"] : "",
+//           STATUS_SPRAWY_WINDYKACJA: "",
+//           DZIALANIA: "BRAK",
+//           JAKA_KANCELARIA: "BRAK",
+//           STATUS_SPRAWY_KANCELARIA: "",
+//           KOMENTARZ_KANCELARIA_BECARED: "",
+//           DATA_KOMENTARZA_BECARED: "",
+//           NUMER_SPRAWY_BECARED: "",
+//           KWOTA_WINDYKOWANA_BECARED: "",
+//           BLAD_DORADCY: "NIE",
+//           // BLAD_W_DOKUMENTACJI: "NIE",
+//           POBRANO_VAT: "Nie dotyczy",
+//           ZAZNACZ_KONTRAHENTA: "Nie",
+//           CZY_PRZETERMINOWANE: "",
+//         };
+//         newDocumentsToDB.push(newDocument);
+//       }
+//     }
+//     await Document.insertMany(newDocumentsToDB);
+
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     logEvents(`documentsController, ASFile: ${error}`, "reqServerErrors.txt");
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
