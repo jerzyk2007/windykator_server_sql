@@ -601,59 +601,36 @@ const settlementsFile = async (rows, res) => {
 
 //chwilowa funckja do naprawienia danych w DB
 const repairFile = async (rows, res) => {
-  const allDocuments = await Document.find({});
+  const allUsers = await User.find({});
 
-  // const filteredData = allDocuments
-  //   .map((document) => {
-  //     if (document.BLAD_W_DOKUMENTACJI === "TAK") {
-  //       console.log(document);
-  //       return {
-  //         NUMER_FV: document.NUMER_FV,
-  //         BLAD_DORADCY: "TAK",
-  //       };
-  //     }
-  //   })
-  //   .filter(Boolean);
-
-  const result = await Document.deleteOne({ NUMER_FV: "FV/AN/244/24/A/D81" });
-
-  const filteredData = allDocuments.map((item) => {
-    if (item.NUMER_FV === "" || item.NUMER_SPRAWY_BECARED === "") {
-      return {
-        ...item,
-        NUMER_SPRAWY_BECARED: "-",
-      };
-    }
-    return item;
-  });
-
-  for (const doc of filteredData) {
-    // if (!doc.NUMER_SPRAWY_BECARED) {
-    //   console.log(doc);
-    // }
-    if (true) {
-      try {
-        // const result = await Document.updateOne(
-        //   { NUMER_FV: doc.NUMER_FV },
-        //   {
-        //     $set: {
-        //       NUMER_SPRAWY_BECARED: doc.NUMER_SPRAWY_BECARED
-        //         ? doc.NUMER_SPRAWY_BECARED
-        //         : "-",
-        //     },
-        //   }
-        // );
-        // const result = await Document.deleteOne(
-        //     { NUMER_FV: doc.NUMER_FV },
-        // );
-      } catch (error) {
-        logEvents(
-          `documentsController, repairFile: ${error}`,
-          "reqServerErrors.txt"
-        );
-        console.error("Error while updating the document", error);
+  try {
+    // Modyfikowanie każdego użytkownika
+    for (const user of allUsers) {
+      if (user.roles) {
+        user.roles.Start = 1;
       }
+      // Zapisanie zmienionego użytkownika do bazy danych
+      // await user.save();
     }
+    // const result = await Document.updateOne(
+    //   { NUMER_FV: doc.NUMER_FV },
+    //   {
+    //     $set: {
+    //       NUMER_SPRAWY_BECARED: doc.NUMER_SPRAWY_BECARED
+    //         ? doc.NUMER_SPRAWY_BECARED
+    //         : "-",
+    //     },
+    //   }
+    // );
+    // const result = await Document.deleteOne(
+    //     { NUMER_FV: doc.NUMER_FV },
+    // );
+  } catch (error) {
+    logEvents(
+      `documentsController, repairFile: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error("Error while updating the document", error);
   }
 
   res.end();
