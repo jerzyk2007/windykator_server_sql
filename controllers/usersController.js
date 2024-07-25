@@ -20,12 +20,14 @@ const createNewUser = async (req, res) => {
       .json({ message: `User ${userlogin} is existing in databse` }); // conflict - Unauthorized
   try {
     // encrypt the password
+    // const roles = { Start: 1 };
     const hashedPwd = await bcryptjs.hash(password, 10);
-    const result = await User.create({
+    await User.create({
       username,
       usersurname,
       userlogin,
       password: hashedPwd,
+      roles: { Start: 1 },
     });
 
     res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);

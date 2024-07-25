@@ -113,10 +113,36 @@ const getSettings = async (req, res) => {
     const rolesObject = Object.fromEntries(sortedEntries);
 
     const roles = Object.entries(rolesObject).map(([role]) => role);
-    const indexToRemove = roles.indexOf("Root");
-    if (indexToRemove !== -1) {
-      roles.splice(indexToRemove, 1);
-    }
+
+    const rolesToRemove = ["Root", "Start"];
+
+    rolesToRemove.forEach((roleToRemove) => {
+      const indexToRemove = roles.indexOf(roleToRemove);
+      if (indexToRemove !== -1) {
+        roles.splice(indexToRemove, 1);
+      }
+    });
+
+    const rolesOrder = [
+      "User",
+      "Editor",
+      "EditorPlus",
+      "FK",
+      "FKAdmin",
+      "Nora",
+      "Admin",
+    ];
+    roles.sort((a, b) => {
+      // Uzyskujemy indeksy ról a i b w tablicy rolesOrder
+      const indexA = rolesOrder.indexOf(a);
+      const indexB = rolesOrder.indexOf(b);
+
+      // Porównujemy indeksy. Jeśli rola nie jest w rolesOrder, przypisujemy jej duży indeks, aby była na końcu.
+      return (
+        (indexA === -1 ? rolesOrder.length : indexA) -
+        (indexB === -1 ? rolesOrder.length : indexB)
+      );
+    });
 
     const columns = [...result[0].columns];
     const permissions = [...result[0].permissions];
