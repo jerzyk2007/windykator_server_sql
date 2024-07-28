@@ -19,12 +19,12 @@ router
 
 router
   .route("/get-columns")
-  .get(verifyRoles(ROLES_LIST.Admin), Documents.getColumns);
+  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL), Documents.getColumns);
 
 router
   .route("/send-documents/:type")
   .post(
-    verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin),
+    verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     upload.single("excelFile"),
     Documents.documentsFromFile
   );

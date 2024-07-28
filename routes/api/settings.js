@@ -6,15 +6,21 @@ const verifyRoles = require("../../middleware/verifyRoles");
 
 router
   .route("/change-columns")
-  .patch(verifyRoles(ROLES_LIST.Admin), settings.changeColumns);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    settings.changeColumns
+  );
 
 router
   .route("/get-settings")
-  .get(verifyRoles(ROLES_LIST.Admin), settings.getSettings);
+  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL), settings.getSettings);
 
 router
   .route("/save-target-percent")
-  .patch(verifyRoles(ROLES_LIST.Admin), settings.saveTargetPercent);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    settings.saveTargetPercent
+  );
 
 router
   .route("/get-departments")

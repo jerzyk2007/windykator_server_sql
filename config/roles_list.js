@@ -1,13 +1,14 @@
 const ROLES_LIST = {
   Start: 1,
-  Root: 500,
-  Admin: 300,
-  FK: 220,
-  FKAdmin: 250,
-  Editor: 200,
-  EditorPlus: 210,
-  Nora: 120,
   User: 100,
+  Editor: 110,
+  EditorPlus: 120,
+  AdminBL: 150,
+  FK: 200,
+  FKAdmin: 250,
+  Nora: 300,
+  Admin: 1000,
+  Root: 5000,
 };
 
 module.exports = ROLES_LIST;

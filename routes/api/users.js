@@ -12,45 +12,72 @@ router.route("/change-pass/:_id").patch(
 router
   .route("/another-user-change-pass/:_id")
   .patch(
-    verifyRoles(ROLES_LIST.Admin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     usersController.changePasswordAnotherUser
   );
 
 router
   .route("/change-login/:_id")
-  .patch(verifyRoles(ROLES_LIST.Admin), usersController.handleChangeLogin);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.handleChangeLogin
+  );
 
 router
   .route("/change-name/:_id")
-  .patch(verifyRoles(ROLES_LIST.Admin), usersController.handleChangeName);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.handleChangeName
+  );
 
 router
   .route("/change-roles/:_id")
-  .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeRoles);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.changeRoles
+  );
 
 router
   .route("/change-columns/:_id")
-  .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeColumns);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.changeColumns
+  );
 
 router
   .route("/change-permissions/:_id")
-  .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeUserPermissions);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.changeUserPermissions
+  );
 
 router
   .route("/change-departments/:_id")
-  .patch(verifyRoles(ROLES_LIST.Admin), usersController.changeUserDepartments);
+  .patch(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.changeUserDepartments
+  );
 
 router
   .route("/register")
-  .post(verifyRoles(ROLES_LIST.Admin), usersController.createNewUser);
+  .post(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.createNewUser
+  );
 
 router
   .route("/delete-user/:_id")
-  .delete(verifyRoles(ROLES_LIST.Admin), usersController.deleteUser);
+  .delete(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.deleteUser
+  );
 
 router
   .route("/get-userdata")
-  .get(verifyRoles(ROLES_LIST.Admin), usersController.getUsersData);
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    usersController.getUsersData
+  );
 
 router
   .route("/save-table-settings/:_id")

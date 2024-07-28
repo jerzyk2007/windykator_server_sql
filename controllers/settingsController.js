@@ -127,6 +127,7 @@ const getSettings = async (req, res) => {
       "User",
       "Editor",
       "EditorPlus",
+      "AdminBL",
       "FK",
       "FKAdmin",
       "Nora",

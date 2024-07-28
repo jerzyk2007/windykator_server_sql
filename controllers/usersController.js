@@ -157,7 +157,7 @@ const changePasswordAnotherUser = async (req, res) => {
       if (findUser?.roles && findUser.roles.Root) {
         return res.status(404).json({ message: "User not found." });
       } else {
-        const result = await User.updateOne(
+        await User.updateOne(
           { _id },
           { $set: { password: hashedPwd } },
           { upsert: true }
@@ -187,7 +187,7 @@ const changeUserPermissions = async (req, res) => {
       if (findUser?.roles && findUser.roles.Root) {
         return res.status(404).json({ message: "User not found." });
       } else {
-        const result = await User.updateOne(
+        await User.updateOne(
           { _id },
           { $set: { permissions } },
           { upsert: true }
@@ -218,7 +218,7 @@ const changeUserDepartments = async (req, res) => {
       if (findUser?.roles && findUser.roles.Root) {
         return res.status(404).json({ message: "User not found." });
       } else {
-        const result = await User.updateOne(
+        await User.updateOne(
           { _id },
           { $set: { departments } },
           { upsert: true }
@@ -250,7 +250,7 @@ const deleteUser = async (req, res) => {
       if (findUser?.roles && findUser.roles.Root) {
         return res.status(404).json({ message: "User not found." });
       } else {
-        const result = await User.deleteOne({ _id });
+        await User.deleteOne({ _id });
         res.status(201).json({ message: "User is deleted." });
       }
     } else {
@@ -274,7 +274,7 @@ const saveTableSettings = async (req, res) => {
   try {
     const findUser = await User.findOne({ _id }).exec();
     if (findUser) {
-      const result = await User.updateOne({ _id }, { $set: { tableSettings } });
+      await User.updateOne({ _id }, { $set: { tableSettings } });
 
       res.status(201).json({ message: "Table settings are changed" });
     } else {

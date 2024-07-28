@@ -25,6 +25,7 @@ const userSchema = new Schema({
     FK: Number,
     FKAdmin: Number,
     Nora: Number,
+    AdminBL: Number,
     Admin: Number,
     Root: Number,
   },
