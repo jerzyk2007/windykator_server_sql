@@ -79,7 +79,6 @@ const saveItemsData = async (req, res) => {
         { new: true, upsert: true }
       );
     } else {
-      // console.log(aging);
       await FKRaport.updateOne(
         {},
         { $set: { "items.aging": aging } },
@@ -255,7 +254,6 @@ const saveItem = async (req, res) => {
         { new: true, upsert: true }
       );
     } else {
-      // console.log("aging");
       await FKRaport.updateOne(
         {},
         { $set: { "items.aging": aging } },
