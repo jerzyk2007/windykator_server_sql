@@ -14,3 +14,4 @@
 20240906	17:40:41	documentsController, getDataTable: ReferenceError: res is not defined
 20240906	17:40:41	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
 20240906	17:40:41	documentsController, getDataTable: ReferenceError: res is not defined
+20240906	18:28:00	usersController, createNewUser: Error: Duplicate entry 'jerzy1.komorowski@krotoski.com' for key 'users.userlogin_UNIQUE'

@@ -2,6 +2,7 @@ const User = require("../model/User");
 const bcryptjs = require("bcryptjs");
 const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
+const { connect_SQL } = require("../config/dbConn");
 
 // rejestracja nowego użytkownika
 const createNewUser = async (req, res) => {
@@ -12,24 +13,28 @@ const createNewUser = async (req, res) => {
       .status(400)
       .json({ message: "Userlogin and password are required." });
   }
-  // check for duplicate userlogin in db
-  const duplicate = await User.findOne({ userlogin }).exec();
-  if (duplicate)
-    return res
-      .status(409)
-      .json({ message: `User ${userlogin} is existing in databse` }); // conflict - Unauthorized
-  try {
-    // encrypt the password
-    // const roles = { Start: 1 };
-    const hashedPwd = await bcryptjs.hash(password, 10);
-    await User.create({
-      username,
-      usersurname,
-      userlogin,
-      password: hashedPwd,
-      roles: { Start: 1 },
-    });
 
+  // check for duplicate userlogin in db
+  // const duplicate = await User.findOne({ userlogin }).exec();
+
+  try {
+    const [rows, fields] = await connect_SQL.query(
+      "SELECT userlogin FROM users WHERE userlogin = ?",
+      [userlogin]
+    );
+
+    if (rows[0]?.userlogin)
+      return res
+        .status(409)
+        .json({ message: `User ${userlogin} is existing in databse` });
+
+    // encrypt the password
+    const hashedPwd = await bcryptjs.hash(password, 10);
+
+    await connect_SQL.query(
+      "INSERT INTO users (username, usersurname, userlogin, password) VALUES (?, ?, ?, ?)",
+      [username, usersurname, userlogin, hashedPwd]
+    );
     res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
   } catch (error) {
     logEvents(
@@ -40,6 +45,43 @@ const createNewUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// // rejestracja nowego użytkownika
+// const createNewUser = async (req, res) => {
+//   const { userlogin, password, username, usersurname } = req.body;
+
+//   if (!userlogin || !password || !username || !usersurname) {
+//     return res
+//       .status(400)
+//       .json({ message: "Userlogin and password are required." });
+//   }
+//   // check for duplicate userlogin in db
+//   const duplicate = await User.findOne({ userlogin }).exec();
+//   if (duplicate)
+//     return res
+//       .status(409)
+//       .json({ message: `User ${userlogin} is existing in databse` }); // conflict - Unauthorized
+//   try {
+//     // encrypt the password
+//     // const roles = { Start: 1 };
+//     const hashedPwd = await bcryptjs.hash(password, 10);
+//     await User.create({
+//       username,
+//       usersurname,
+//       userlogin,
+//       password: hashedPwd,
+//       roles: { Start: 1 },
+//     });
+
+//     res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
+//   } catch (error) {
+//     logEvents(
+//       `usersController, createNewUser: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 // zmiana loginu użytkownika
 const handleChangeLogin = async (req, res) => {
