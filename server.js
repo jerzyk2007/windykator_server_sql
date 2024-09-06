@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-const connectDB = require("./config/dbConn");
+const {connectMongoDB} = require("./config/dbConn");
 const corsOptions = require("./config/corsOptions");
 const credentials = require("./middleware/credentials");
 const verifyJWT = require("./middleware/verifyJWT");
@@ -52,6 +52,7 @@ app.use("/user", require("./routes/api/users"));
 app.use("/raport", require("./routes/api/raports"));
 app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
+app.use("/sql", require("./routes/api/sql"));
 
 app.all("*", (req, res) => {
   res.status(404);
@@ -63,7 +64,7 @@ const options = {
 };
 
 // // connect to mongoDB
-connectDB();
+connectMongoDB();
 
 // mongoose.connection.once("open", () => {
 //   const server = https

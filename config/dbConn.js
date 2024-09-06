@@ -13,8 +13,9 @@
 // module.exports = connectDB;
 
 const mongoose = require('mongoose');
+const mysql = require('mysql2/promise');
 
-const connectDB = async () => {
+const connectMongoDB = async () => {
     try {
         await mongoose.connect(`${process.env.DATABASE_URI_LOCAL}`, {
             dbName: 'Windykator',
@@ -27,7 +28,18 @@ const connectDB = async () => {
     }
 };
 
-module.exports = connectDB;
+
+
+const connect_SQL = mysql.createPool({
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE
+});
+
+
+
+module.exports = {connectMongoDB, connect_SQL};
 
 
 

@@ -38,7 +38,6 @@ const handleLogin = async (req, res) => {
         process.env.REFRESH_TOKEN_SECRET,
         { expiresIn: "1d" }
       );
-
       findUser.refreshToken = refreshToken;
       await findUser.save();
       res.cookie("jwt", refreshToken, {
