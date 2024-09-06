@@ -1,35 +1,43 @@
-const Users = require("../model/User");
+// const Users = require("../model/User");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { logEvents } = require("../middleware/logEvents");
+const { connect_SQL } = require("../config/dbConn");
 
 const handleLogin = async (req, res) => {
   const { userlogin, password } = req.body;
-
   try {
     if (!userlogin || !password) {
       return res
         .status(400)
         .json({ message: "Userlogin and password are required" });
     }
-    const findUser = await Users.findOne({ userlogin }).exec();
+
+    const [rows, fields] = await connect_SQL.query(
+      "SELECT * FROM users WHERE userlogin = ?",
+      [userlogin]
+    );
+
+    const findUser = { ...rows[0] };
 
     if (!findUser) {
       return res.sendStatus(401);
     }
+
     const match = await bcryptjs.compare(password, findUser.password);
+
     if (match) {
       const roles = Object.values(findUser.roles).filter(Boolean);
-      const accessToken = jwt.sign(
-        {
-          UserInfo: {
-            userlogin: findUser.userlogin,
-            roles: roles,
-          },
-        },
-        process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: "10s" }
-      );
+      // const accessToken = jwt.sign(
+      //   {
+      //     UserInfo: {
+      //       userlogin: findUser.userlogin,
+      //       roles: roles,
+      //     },
+      //   },
+      //   process.env.ACCESS_TOKEN_SECRET,
+      //   { expiresIn: "10s" }
+      // );
 
       const refreshToken = jwt.sign(
         {
@@ -38,30 +46,96 @@ const handleLogin = async (req, res) => {
         process.env.REFRESH_TOKEN_SECRET,
         { expiresIn: "1d" }
       );
-      findUser.refreshToken = refreshToken;
-      await findUser.save();
-      res.cookie("jwt", refreshToken, {
-        httpOnly: true,
-        sameSite: "None",
-        secure: true,
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-      res.json({
-        userlogin: findUser.userlogin,
-        username: findUser.username,
-        usersurname: findUser.usersurname,
-        _id: findUser._id,
-        roles,
-        permissions: findUser.permissions,
-      });
+
+      await connect_SQL.query(
+        "UPDATE users SET refreshToken = ? WHERE userlogin = ?",
+        [refreshToken, userlogin]
+      );
+      res
+        .cookie("jwt", refreshToken, {
+          httpOnly: true,
+          sameSite: "None",
+          secure: true,
+          maxAge: 24 * 60 * 60 * 1000,
+        })
+        .json({
+          userlogin: findUser.userlogin,
+          username: findUser.username,
+          usersurname: findUser.usersurname,
+          _id: findUser._id,
+          roles,
+          permissions: findUser.permissions,
+        });
     } else {
       res.sendStatus(401);
     }
+
+    // res.end();
   } catch (error) {
     logEvents(`loginController, handleLogin: ${error}`, "reqServerErrors.txt");
     console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
+// const handleLogin = async (req, res) => {
+//   const { userlogin, password } = req.body;
+
+//   try {
+//     if (!userlogin || !password) {
+//       return res
+//         .status(400)
+//         .json({ message: "Userlogin and password are required" });
+//     }
+//     const findUser = await Users.findOne({ userlogin }).exec();
+
+//     if (!findUser) {
+//       return res.sendStatus(401);
+//     }
+//     const match = await bcryptjs.compare(password, findUser.password);
+//     if (match) {
+//       const roles = Object.values(findUser.roles).filter(Boolean);
+//       const accessToken = jwt.sign(
+//         {
+//           UserInfo: {
+//             userlogin: findUser.userlogin,
+//             roles: roles,
+//           },
+//         },
+//         process.env.ACCESS_TOKEN_SECRET,
+//         { expiresIn: "10s" }
+//       );
+
+//       const refreshToken = jwt.sign(
+//         {
+//           userlogin: findUser.userlogin,
+//         },
+//         process.env.REFRESH_TOKEN_SECRET,
+//         { expiresIn: "1d" }
+//       );
+//       findUser.refreshToken = refreshToken;
+//       await findUser.save();
+//       res.cookie("jwt", refreshToken, {
+//         httpOnly: true,
+//         sameSite: "None",
+//         secure: true,
+//         maxAge: 24 * 60 * 60 * 1000,
+//       });
+//       res.json({
+//         userlogin: findUser.userlogin,
+//         username: findUser.username,
+//         usersurname: findUser.usersurname,
+//         _id: findUser._id,
+//         roles,
+//         permissions: findUser.permissions,
+//       });
+//     } else {
+//       res.sendStatus(401);
+//     }
+//   } catch (error) {
+//     logEvents(`loginController, handleLogin: ${error}`, "reqServerErrors.txt");
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 module.exports = { handleLogin };

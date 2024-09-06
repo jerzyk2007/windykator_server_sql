@@ -1,0 +1,16 @@
+20240906	17:21:39	loginController, handleLogin: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '@krotoski.com' at line 1
+20240906	17:23:19	loginController, handleLogin: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '@krotoski.com' at line 1
+20240906	17:23:27	loginController, handleLogin: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '@krotoski.com' at line 1
+20240906	17:23:52	loginController, handleLogin: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '@krotoski.com' at line 1
+20240906	17:26:47	loginController, handleLogin: ReferenceError: findUser is not defined
+20240906	17:26:59	loginController, handleLogin: Error: Illegal arguments: string, undefined
+20240906	17:27:57	loginController, handleLogin: Error: Illegal arguments: string, undefined
+20240906	17:38:02	loginController, handleLogin: ReferenceError: connection is not defined
+20240906	17:40:18	refreshTokenController, handleRefreshToken: ReferenceError: connect_SQL is not defined
+20240906	17:40:18	refreshTokenController, handleRefreshToken: ReferenceError: connect_SQL is not defined
+20240906	17:40:20	refreshTokenController, handleRefreshToken: ReferenceError: connect_SQL is not defined
+20240906	17:40:20	refreshTokenController, handleRefreshToken: ReferenceError: connect_SQL is not defined
+20240906	17:40:41	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240906	17:40:41	documentsController, getDataTable: ReferenceError: res is not defined
+20240906	17:40:41	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240906	17:40:41	documentsController, getDataTable: ReferenceError: res is not defined
