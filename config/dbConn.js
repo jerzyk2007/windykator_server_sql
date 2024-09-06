@@ -16,8 +16,8 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(`${process.env.DATABASE_URI_ONLINE}`, {
-            dbName: 'WINDYKATOR',
+        await mongoose.connect(`${process.env.DATABASE_URI_LOCAL}`, {
+            dbName: 'Windykator',
             // useNewUrlParser: true,
             // useUnifiedTopology: true
         });
