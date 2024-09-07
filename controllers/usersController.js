@@ -199,25 +199,23 @@ const changePasswordAnotherUser = async (req, res) => {
   }
 };
 
-// zmiana uprawnień użytkownika Doradca/Asystentka
+// zmiana uprawnień użytkownika Doradca/Asystentka SQL
 const changeUserPermissions = async (req, res) => {
   const { _id } = req.params;
   const { permissions } = req.body;
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      if (findUser?.roles && findUser.roles.Root) {
-        return res.status(404).json({ message: "User not found." });
-      } else {
-        await User.updateOne(
-          { _id },
-          { $set: { permissions } },
-          { upsert: true }
-        );
-        res.status(201).json({ message: "Permissions are changed" });
-      }
-    } else {
+    const findUser = await connect_SQL.query(
+      "SELECT  roles FROM users WHERE _id = ?",
+      [_id]
+    );
+    if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
       return res.status(404).json({ message: "User not found." });
+    } else {
+      await connect_SQL.query("UPDATE users SET permissions = ?WHERE _id = ?", [
+        JSON.stringify(permissions),
+        _id,
+      ]);
+      res.status(201).json({ message: "Permissions are changed" });
     }
   } catch (error) {
     logEvents(
