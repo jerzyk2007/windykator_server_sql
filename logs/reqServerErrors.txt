@@ -51,3 +51,7 @@
 20240907	13:22:24	documentsController, getDataTable: ReferenceError: res is not defined
 20240907	13:22:24	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
 20240907	13:22:24	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:36:33	usersController, changeColumns: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''[object Object]' WHERE _id = '37'' at line 1
+20240907	13:38:01	usersController, changeColumns: Error: Unknown column 'undefined' in 'field list'
+20240907	13:38:50	usersController, changeColumns: ReferenceError: Cannot access 'columns' before initialization
+20240907	13:39:08	usersController, changeColumns: Error: No valid columns to update.

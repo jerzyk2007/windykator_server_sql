@@ -431,15 +431,15 @@ const changeRoles = async (req, res) => {
   }
 };
 
+// zmiana dostępu do kolumn tabeli dla użytkownika (jakie kolumny ma widzieć) SQL
 const changeColumns = async (req, res) => {
   const { _id } = req.params;
   const { columns } = req.body;
   try {
-    const result = await User.updateOne(
-      { _id },
-      { $set: { columns } },
-      { upsert: true }
-    );
+    await connect_SQL.query("UPDATE users SET columns = ? WHERE _id = ?", [
+      [JSON.stringify(columns)],
+      _id,
+    ]);
 
     res.status(201).json({ message: "Columns are saved." });
   } catch (error) {
