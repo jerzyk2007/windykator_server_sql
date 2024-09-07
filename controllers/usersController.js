@@ -4,7 +4,7 @@ const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 
-// rejestracja nowego użytkownika
+// rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
   const { userlogin, password, username, usersurname } = req.body;
 
@@ -45,7 +45,7 @@ const createNewUser = async (req, res) => {
   }
 };
 
-// zmiana loginu użytkownika
+// zmiana loginu użytkownika SQL
 const handleChangeLogin = async (req, res) => {
   const { _id } = req.params;
   const { newUserlogin } = req.body;
@@ -54,8 +54,6 @@ const handleChangeLogin = async (req, res) => {
       .status(400)
       .json({ message: "Userlogin and new userlogin are required." });
   }
-  // const duplicate = await User.findOne({ userlogin: newUserlogin }).exec();
-
   try {
     //check duplicate
     const [rows, fields] = await connect_SQL.query(
@@ -66,10 +64,10 @@ const handleChangeLogin = async (req, res) => {
       return res.status(409).json({ message: newUserlogin }); // conflict - duplicate
 
     const findUser = await connect_SQL.query(
-      "SELECT userlogin FROM users WHERE _id = ?",
+      "SELECT userlogin, roles FROM users WHERE _id = ?",
       [_id]
     );
-    if (findUser[0]?.roles && findUser[0]?.role.Root) {
+    if (findUser[0][0]?.roles && findUser[0][0]?.roles.Root) {
       return res.status(404).json({ message: "User not found." });
     } else {
       await connect_SQL.query("UPDATE users SET userlogin = ? WHERE _id = ?", [
@@ -88,39 +86,6 @@ const handleChangeLogin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// // zmiana loginu użytkownika
-// const handleChangeLogin = async (req, res) => {
-//   const { _id } = req.params;
-//   const { newUserlogin } = req.body;
-//   if (!newUserlogin) {
-//     return res
-//       .status(400)
-//       .json({ message: "Userlogin and new userlogin are required." });
-//   }
-//   const duplicate = await User.findOne({ userlogin: newUserlogin }).exec();
-//   if (duplicate) return res.status(409).json({ message: newUserlogin }); // conflict - Unauthorized
-
-//   try {
-//     const findUser = await User.findOne({ _id }).exec();
-//     if (findUser?.roles && findUser.roles.Root) {
-//       return res.status(404).json({ message: "User not found." });
-//     } else {
-//       // const result = await User.updateOne(
-//       //   { _id },
-//       //   { $set: { userlogin: newUserlogin } },
-//       //   { upsert: true }
-//       // );
-//       res.status(201).json({ message: newUserlogin });
-//     }
-//   } catch (error) {
-//     logEvents(
-//       `usersController, handleChangeLogin: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     console.error(error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 // zmiana imienia i nazwiska użytkownika
 const handleChangeName = async (req, res) => {
@@ -154,6 +119,38 @@ const handleChangeName = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// const handleChangeName = async (req, res) => {
+//   const { _id } = req.params;
+//   const { name, surname } = req.body;
+//   if (!name || !surname) {
+//     return res
+//       .status(400)
+//       .json({ message: "Userlogin, name and surname are required." });
+//   }
+//   try {
+//     const findUser = await User.findOne({ _id }).exec();
+//     if (findUser?.roles && findUser.roles.Root) {
+//       return res.status(404).json({ message: "User not found." });
+//     } else {
+//       const result = await User.updateOne(
+//         { _id },
+//         { $set: { username: name, usersurname: surname } },
+//         { upsert: true }
+//       );
+//       res
+//         .status(201)
+//         .json({ message: "The name and surname have been changed." });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `usersController, handleChangeName: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 // zmiana hasła użytkownika
 const changePassword = async (req, res) => {
@@ -285,19 +282,24 @@ const changeUserDepartments = async (req, res) => {
   }
 };
 
-// usunięcie uzytkownika
+// usunięcie uzytkownika SQL
 const deleteUser = async (req, res) => {
   const { _id } = req.params;
   if (!_id) {
     return res.status(400).json({ message: "Id is required." });
   }
   try {
-    const findUser = await User.findOne({ _id }).exec();
+    // const findUser = await User.findOne({ _id }).exec();
+    const findUser = await connect_SQL.query(
+      "SELECT userlogin, roles FROM users WHERE _id = ?",
+      [_id]
+    );
     if (findUser) {
-      if (findUser?.roles && findUser.roles.Root) {
+      if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
         return res.status(404).json({ message: "User not found." });
       } else {
-        await User.deleteOne({ _id });
+        await connect_SQL.query("DELETE FROM users WHERE _id = ?", [_id]);
+
         res.status(201).json({ message: "User is deleted." });
       }
     } else {
