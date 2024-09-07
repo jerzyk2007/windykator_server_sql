@@ -55,3 +55,206 @@
 20240907	13:38:01	usersController, changeColumns: Error: Unknown column 'undefined' in 'field list'
 20240907	13:38:50	usersController, changeColumns: ReferenceError: Cannot access 'columns' before initialization
 20240907	13:39:08	usersController, changeColumns: Error: No valid columns to update.
+20240907	13:54:41	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:54:41	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:54:41	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:54:41	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:56:21	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:56:21	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:56:21	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:56:21	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:57:12	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:57:12	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:57:12	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:57:12	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:57:35	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:57:35	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:57:35	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:57:35	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:59:42	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:59:42	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:59:42	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:59:42	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:00:52	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:00:52	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:02:15	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:02:15	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:02:31	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:02:31	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:03:17	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:03:17	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:03:57	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:03:57	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:03:57	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:03:57	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:04:30	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:04:30	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:04:30	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:04:30	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:05:49	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:05:49	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:05:49	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:05:49	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:06:17	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:06:17	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:06:17	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:06:17	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:09:07	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:09:07	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:09:07	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:09:07	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:10:04	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:10:04	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:10:04	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:10:04	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:12:06	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:12:06	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:12:09	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:12:09	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:12:09	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:12:09	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:12:19	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:12:19	documentsController, getDataTable: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:13:15	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:13:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:13:15	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:13:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:13:50	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:13:50	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:13:50	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:13:50	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:14:12	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:14:12	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:14:12	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:14:12	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:14:53	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:14:53	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:14:53	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:14:53	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:15:58	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:15:58	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:15:58	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:15:58	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:16:14	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:16:14	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:16:14	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:16:14	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:16:35	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:16:35	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:16:35	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:16:35	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:16:55	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:16:55	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:16:56	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:16:56	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:17:21	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:17:21	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:17:21	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:17:21	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:17:38	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:17:38	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:17:38	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:17:38	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:17:48	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:17:48	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:17:48	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:17:48	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:18:15	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:18:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:18:15	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:18:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:18:35	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:18:35	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:18:35	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:18:35	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:18:57	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:18:57	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:18:57	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:18:57	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:19:17	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:19:17	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:19:17	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:19:17	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:19:40	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:19:40	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:19:40	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:19:40	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:19:55	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:19:55	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:19:55	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:19:55	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:20:04	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:20:04	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:20:04	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:20:04	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:20:27	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:20:27	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:20:27	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:20:27	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:20:49	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:20:49	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:20:49	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:20:49	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:21:24	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:21:24	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:21:24	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:21:24	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:21:35	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:21:35	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:21:36	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:21:36	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:22:38	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:22:38	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:22:38	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:22:38	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:23:25	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:23:25	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:23:25	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:23:25	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:23:58	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:23:58	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:23:58	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:23:58	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:24:13	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:24:13	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:24:13	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:24:13	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:24:52	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:24:53	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:24:53	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:24:53	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:25:14	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:25:14	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:25:14	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:25:14	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:25:35	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:25:35	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:25:35	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:25:35	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:25:51	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:25:51	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:25:51	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:25:51	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:28:04	documentsController, getDataDocuments: ReferenceError: permission is not defined
+20240907	14:28:04	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:28:04	documentsController, getDataDocuments: ReferenceError: permission is not defined
+20240907	14:28:04	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:28:12	documentsController, getDataDocuments: ReferenceError: permission is not defined
+20240907	14:28:12	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:28:12	documentsController, getDataDocuments: ReferenceError: permission is not defined
+20240907	14:28:12	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:29:42	documentsController, getDataDocuments: TypeError: Cannot convert undefined or null to object
+20240907	14:29:42	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:29:42	documentsController, getDataDocuments: TypeError: Cannot convert undefined or null to object
+20240907	14:29:42	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:29:52	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:29:52	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:29:52	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:29:52	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:30:03	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:30:03	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:30:03	documentsController, getDataDocuments: TypeError: departments.entries is not a function
+20240907	14:30:03	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240907	14:55:15	usersController, saveTableSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	14:56:01	usersController, saveTableSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	15:01:21	usersController, saveTableSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''BRUTTO', 'DATA_KOMENTARZA_BECARED', 'BLAD_DORADCY', 'mrt-row-spacer', `pinning`' at line 1

@@ -82,7 +82,7 @@ const handleChangeLogin = async (req, res) => {
       `usersController, handleChangeLogin: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -290,20 +290,24 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// zapisanie ustawień tabeli dla użytkownika
+// zapisanie ustawień tabeli dla użytkownika SQL
 const saveTableSettings = async (req, res) => {
   const { _id } = req.params;
   const { tableSettings } = req.body;
   if (!_id) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
-  console.log(tableSettings);
 
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      // await User.updateOne({ _id }, { $set: { tableSettings } });
-
+    const findUser = await connect_SQL.query(
+      "SELECT  _id FROM users WHERE _id = ?",
+      [_id]
+    );
+    if (findUser[0][0]?._id) {
+      await connect_SQL.query(
+        "UPDATE users SET tableSettings = ? WHERE _id = ?",
+        [JSON.stringify(tableSettings), _id]
+      );
       res.status(201).json({ message: "Table settings are changed" });
     } else {
       res.status(400).json({ message: "Table settings are not changed" });
