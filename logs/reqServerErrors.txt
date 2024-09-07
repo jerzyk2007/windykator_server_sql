@@ -15,3 +15,20 @@
 20240906	17:40:41	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
 20240906	17:40:41	documentsController, getDataTable: ReferenceError: res is not defined
 20240906	18:28:00	usersController, createNewUser: Error: Duplicate entry 'jerzy1.komorowski@krotoski.com' for key 'users.userlogin_UNIQUE'
+20240907	09:37:49	loginController, handleLogin: TypeError: Cannot convert undefined or null to object
+20240907	09:42:16	loginController, handleLogin: Error: Illegal arguments: string, undefined
+20240907	09:42:38	loginController, handleLogin: Error: Illegal arguments: string, undefined
+20240907	09:42:44	loginController, handleLogin: Error: Illegal arguments: string, undefined
+20240907	09:43:16	loginController, handleLogin: Error: Illegal arguments: string, undefined
+20240907	09:47:37	usersController, createNewUser: Error: Unknown column 'start' in 'field list'
+20240907	09:48:16	usersController, createNewUser: Error: Unknown column 'Start' in 'field list'
+20240907	09:59:15	usersController, getUsersData: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'LIKE %'komoro'%' at line 1
+20240907	10:00:06	usersController, getUsersData: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'LIKE '%komoro%'' at line 1
+20240907	10:06:29	usersController, getUsersData: TypeError: rows[0].map is not a function
+20240907	10:14:31	usersController, getUsersData: ReferenceError: keysToRemove is not defined
+20240907	10:15:30	usersController, getUsersData: ReferenceError: filteredUser is not defined
+20240907	10:29:50	usersController, getUsersData: ReferenceError: keysToRemove is not defined
+20240907	10:30:16	usersController, getUsersData: ReferenceError: keysToRemove is not defined
+20240907	10:36:38	usersController, getUsersData: ReferenceError: filteredUser is not defined
+20240907	12:03:59	usersController, handleChangeLogin: TypeError: Cannot read properties of undefined (reading 'Root')
+20240907	12:04:30	usersController, handleChangeLogin: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE _id = 'test.komorowski@krotoski.com'' at line 1

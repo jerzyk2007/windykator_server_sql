@@ -16,7 +16,7 @@ const handleLogout = async (req, res) => {
 
     const findUser = { ...rows[0] };
 
-    if (!findUser) {
+    if (!findUser?.userlogin) {
       res.clearCookie("jwt", {
         httpOnly: true,
         sameSite: "None",

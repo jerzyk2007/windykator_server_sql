@@ -20,7 +20,7 @@ const handleLogin = async (req, res) => {
 
     const findUser = { ...rows[0] };
 
-    if (!findUser) {
+    if (!findUser?.userlogin) {
       return res.sendStatus(401);
     }
 
@@ -28,16 +28,6 @@ const handleLogin = async (req, res) => {
 
     if (match) {
       const roles = Object.values(findUser.roles).filter(Boolean);
-      // const accessToken = jwt.sign(
-      //   {
-      //     UserInfo: {
-      //       userlogin: findUser.userlogin,
-      //       roles: roles,
-      //     },
-      //   },
-      //   process.env.ACCESS_TOKEN_SECRET,
-      //   { expiresIn: "10s" }
-      // );
 
       const refreshToken = jwt.sign(
         {

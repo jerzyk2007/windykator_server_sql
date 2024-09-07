@@ -14,15 +14,13 @@ const createNewUser = async (req, res) => {
       .json({ message: "Userlogin and password are required." });
   }
 
-  // check for duplicate userlogin in db
-  // const duplicate = await User.findOne({ userlogin }).exec();
-
   try {
     const [rows, fields] = await connect_SQL.query(
       "SELECT userlogin FROM users WHERE userlogin = ?",
       [userlogin]
     );
 
+    // check for duplicate userlogin in db
     if (rows[0]?.userlogin)
       return res
         .status(409)
@@ -30,10 +28,11 @@ const createNewUser = async (req, res) => {
 
     // encrypt the password
     const hashedPwd = await bcryptjs.hash(password, 10);
+    const roles = { Start: 1 };
 
     await connect_SQL.query(
-      "INSERT INTO users (username, usersurname, userlogin, password) VALUES (?, ?, ?, ?)",
-      [username, usersurname, userlogin, hashedPwd]
+      "INSERT INTO users (username, usersurname, userlogin, password, roles) VALUES (?, ?, ?, ?, ?)",
+      [username, usersurname, userlogin, hashedPwd, JSON.stringify(roles)]
     );
     res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
   } catch (error) {
@@ -45,43 +44,6 @@ const createNewUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// // rejestracja nowego użytkownika
-// const createNewUser = async (req, res) => {
-//   const { userlogin, password, username, usersurname } = req.body;
-
-//   if (!userlogin || !password || !username || !usersurname) {
-//     return res
-//       .status(400)
-//       .json({ message: "Userlogin and password are required." });
-//   }
-//   // check for duplicate userlogin in db
-//   const duplicate = await User.findOne({ userlogin }).exec();
-//   if (duplicate)
-//     return res
-//       .status(409)
-//       .json({ message: `User ${userlogin} is existing in databse` }); // conflict - Unauthorized
-//   try {
-//     // encrypt the password
-//     // const roles = { Start: 1 };
-//     const hashedPwd = await bcryptjs.hash(password, 10);
-//     await User.create({
-//       username,
-//       usersurname,
-//       userlogin,
-//       password: hashedPwd,
-//       roles: { Start: 1 },
-//     });
-
-//     res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
-//   } catch (error) {
-//     logEvents(
-//       `usersController, createNewUser: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     console.error(error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 // zmiana loginu użytkownika
 const handleChangeLogin = async (req, res) => {
@@ -92,19 +54,29 @@ const handleChangeLogin = async (req, res) => {
       .status(400)
       .json({ message: "Userlogin and new userlogin are required." });
   }
-  const duplicate = await User.findOne({ userlogin: newUserlogin }).exec();
-  if (duplicate) return res.status(409).json({ message: newUserlogin }); // conflict - Unauthorized
+  // const duplicate = await User.findOne({ userlogin: newUserlogin }).exec();
 
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser?.roles && findUser.roles.Root) {
+    //check duplicate
+    const [rows, fields] = await connect_SQL.query(
+      "SELECT userlogin FROM users WHERE userlogin = ?",
+      [newUserlogin]
+    );
+    if (rows[0]?.userlogin)
+      return res.status(409).json({ message: newUserlogin }); // conflict - duplicate
+
+    const findUser = await connect_SQL.query(
+      "SELECT userlogin FROM users WHERE _id = ?",
+      [_id]
+    );
+    if (findUser[0]?.roles && findUser[0]?.role.Root) {
       return res.status(404).json({ message: "User not found." });
     } else {
-      const result = await User.updateOne(
-        { _id },
-        { $set: { userlogin: newUserlogin } },
-        { upsert: true }
-      );
+      await connect_SQL.query("UPDATE users SET userlogin = ? WHERE _id = ?", [
+        newUserlogin,
+        _id,
+      ]);
+
       res.status(201).json({ message: newUserlogin });
     }
   } catch (error) {
@@ -116,6 +88,39 @@ const handleChangeLogin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// // zmiana loginu użytkownika
+// const handleChangeLogin = async (req, res) => {
+//   const { _id } = req.params;
+//   const { newUserlogin } = req.body;
+//   if (!newUserlogin) {
+//     return res
+//       .status(400)
+//       .json({ message: "Userlogin and new userlogin are required." });
+//   }
+//   const duplicate = await User.findOne({ userlogin: newUserlogin }).exec();
+//   if (duplicate) return res.status(409).json({ message: newUserlogin }); // conflict - Unauthorized
+
+//   try {
+//     const findUser = await User.findOne({ _id }).exec();
+//     if (findUser?.roles && findUser.roles.Root) {
+//       return res.status(404).json({ message: "User not found." });
+//     } else {
+//       // const result = await User.updateOne(
+//       //   { _id },
+//       //   { $set: { userlogin: newUserlogin } },
+//       //   { upsert: true }
+//       // );
+//       res.status(201).json({ message: newUserlogin });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `usersController, handleChangeLogin: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 // zmiana imienia i nazwiska użytkownika
 const handleChangeName = async (req, res) => {
@@ -382,6 +387,71 @@ const getUserColumns = async (req, res) => {
 const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
+    const [rows, fields] = await connect_SQL.query(
+      "SELECT _id, username, usersurname, userlogin, roles, tableSettings, raportSettings, permissions, departments, columns FROM users WHERE userlogin LIKE ?",
+      [`%${search}%`]
+    );
+
+    if (rows[0]?.userlogin.length > 0) {
+      // sprawdzenie ilu użytkowników pasuje do search, jesli użytkownik ma uprawnienia Root to nie jest dodany
+      // const filteredUsers = rows
+      //   .map((user) => {
+      //     const filteredUser = { ...user._doc };
+      //     keysToRemove.forEach((key) => delete filteredUser[key]);
+      //     if (filteredUser.roles) {
+      //       filteredUser.roles = Object.keys(filteredUser.roles).map(
+      //         (role) => role
+      //       );
+      //     }
+      //     return filteredUser;
+      //   })
+      //   .filter((user) => !user.roles.includes("Root"));
+
+      const filteredUsers = rows
+        .map((user) => {
+          if (user.roles) {
+            user.roles = Object.keys(user.roles).map((role) => role);
+          }
+          return user;
+        })
+        .filter((user) => !user.roles.includes("Root"));
+      res.json(filteredUsers);
+    } else {
+      res.json([]);
+    }
+    // const findUsers = await User.find({
+    //   userlogin: { $regex: search, $options: "i" },
+    // }).exec();
+    // if (findUsers.length > 0) {
+    //   const keysToRemove = ["password", "refreshToken"];
+
+    //   // sprawdzenie ilu użytkowników pasuje do search, jesli użytkownik ma uprawnienia Root to nie jest dodany
+    //   const filteredUsers = findUsers
+    //     .map((user) => {
+    //       const filteredUser = { ...user._doc };
+    //       keysToRemove.forEach((key) => delete filteredUser[key]);
+    //       if (filteredUser.roles) {
+    //         filteredUser.roles = Object.keys(filteredUser.roles).map(
+    //           (role) => role
+    //         );
+    //       }
+    //       return filteredUser;
+    //     })
+    //     .filter((user) => !user.roles.includes("Root"));
+
+    //   res.json(filteredUsers);
+    // } else {
+    //   res.json([]);
+    // }
+  } catch (error) {
+    logEvents(`usersController, getUsersData: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+const getUsersData2 = async (req, res) => {
+  const { search } = req.query;
+  try {
     const findUsers = await User.find({
       userlogin: { $regex: search, $options: "i" },
     }).exec();
@@ -392,7 +462,10 @@ const getUsersData = async (req, res) => {
       const filteredUsers = findUsers
         .map((user) => {
           const filteredUser = { ...user._doc };
+          console.log(filteredUser);
           keysToRemove.forEach((key) => delete filteredUser[key]);
+          console.log(filteredUser.roles);
+
           if (filteredUser.roles) {
             filteredUser.roles = Object.keys(filteredUser.roles).map(
               (role) => role
