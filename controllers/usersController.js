@@ -87,7 +87,7 @@ const handleChangeLogin = async (req, res) => {
   }
 };
 
-// zmiana imienia i nazwiska użytkownika
+// zmiana imienia i nazwiska użytkownika SQL
 const handleChangeName = async (req, res) => {
   const { _id } = req.params;
   const { name, surname } = req.body;
@@ -297,11 +297,12 @@ const saveTableSettings = async (req, res) => {
   if (!_id) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
+  console.log(tableSettings);
 
   try {
     const findUser = await User.findOne({ _id }).exec();
     if (findUser) {
-      await User.updateOne({ _id }, { $set: { tableSettings } });
+      // await User.updateOne({ _id }, { $set: { tableSettings } });
 
       res.status(201).json({ message: "Table settings are changed" });
     } else {
@@ -363,7 +364,7 @@ const getUserColumns = async (req, res) => {
   }
 };
 
-// wyszukanie uzytkownika żeby zmienić jego ustawienia
+// wyszukanie uzytkownika żeby zmienić jego ustawienia SQL
 const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
@@ -373,20 +374,6 @@ const getUsersData = async (req, res) => {
     );
 
     if (rows[0]?.userlogin.length > 0) {
-      // sprawdzenie ilu użytkowników pasuje do search, jesli użytkownik ma uprawnienia Root to nie jest dodany
-      // const filteredUsers = rows
-      //   .map((user) => {
-      //     const filteredUser = { ...user._doc };
-      //     keysToRemove.forEach((key) => delete filteredUser[key]);
-      //     if (filteredUser.roles) {
-      //       filteredUser.roles = Object.keys(filteredUser.roles).map(
-      //         (role) => role
-      //       );
-      //     }
-      //     return filteredUser;
-      //   })
-      //   .filter((user) => !user.roles.includes("Root"));
-
       const filteredUsers = rows
         .map((user) => {
           if (user.roles) {
@@ -399,66 +386,6 @@ const getUsersData = async (req, res) => {
     } else {
       res.json([]);
     }
-    // const findUsers = await User.find({
-    //   userlogin: { $regex: search, $options: "i" },
-    // }).exec();
-    // if (findUsers.length > 0) {
-    //   const keysToRemove = ["password", "refreshToken"];
-
-    //   // sprawdzenie ilu użytkowników pasuje do search, jesli użytkownik ma uprawnienia Root to nie jest dodany
-    //   const filteredUsers = findUsers
-    //     .map((user) => {
-    //       const filteredUser = { ...user._doc };
-    //       keysToRemove.forEach((key) => delete filteredUser[key]);
-    //       if (filteredUser.roles) {
-    //         filteredUser.roles = Object.keys(filteredUser.roles).map(
-    //           (role) => role
-    //         );
-    //       }
-    //       return filteredUser;
-    //     })
-    //     .filter((user) => !user.roles.includes("Root"));
-
-    //   res.json(filteredUsers);
-    // } else {
-    //   res.json([]);
-    // }
-  } catch (error) {
-    logEvents(`usersController, getUsersData: ${error}`, "reqServerErrors.txt");
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
-const getUsersData2 = async (req, res) => {
-  const { search } = req.query;
-  try {
-    const findUsers = await User.find({
-      userlogin: { $regex: search, $options: "i" },
-    }).exec();
-    if (findUsers.length > 0) {
-      const keysToRemove = ["password", "refreshToken"];
-
-      // sprawdzenie ilu użytkowników pasuje do search, jesli użytkownik ma uprawnienia Root to nie jest dodany
-      const filteredUsers = findUsers
-        .map((user) => {
-          const filteredUser = { ...user._doc };
-          console.log(filteredUser);
-          keysToRemove.forEach((key) => delete filteredUser[key]);
-          console.log(filteredUser.roles);
-
-          if (filteredUser.roles) {
-            filteredUser.roles = Object.keys(filteredUser.roles).map(
-              (role) => role
-            );
-          }
-          return filteredUser;
-        })
-        .filter((user) => !user.roles.includes("Root"));
-
-      res.json(filteredUsers);
-    } else {
-      res.json([]);
-    }
   } catch (error) {
     logEvents(`usersController, getUsersData: ${error}`, "reqServerErrors.txt");
     console.error(error);
@@ -466,7 +393,7 @@ const getUsersData2 = async (req, res) => {
   }
 };
 
-// zmiana roli użytkownika User, Editor, Admin
+// zmiana roli użytkownika User, Editor, Admin SQL
 const changeRoles = async (req, res) => {
   const { _id } = req.params;
   const { roles } = req.body;
@@ -477,12 +404,23 @@ const changeRoles = async (req, res) => {
   );
 
   try {
-    const findUser = await User.findOne({ _id }).exec();
+    // const findUser = await User.findOne({ _id }).exec();
+    const findUser = await connect_SQL.query(
+      "SELECT  roles FROM users WHERE _id = ?",
+      [_id]
+    );
 
-    if (findUser) {
-      await User.updateOne({ _id }, { $set: { roles: filteredRoles } });
+    if (findUser[0][0]) {
+      if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
+        return res.status(404).json({ message: "User not found." });
+      } else {
+        await connect_SQL.query("UPDATE users SET roles = ? WHERE _id = ?", [
+          JSON.stringify(filteredRoles),
+          _id,
+        ]);
 
-      res.status(201).json({ message: "Roles are saved." });
+        res.status(201).json({ message: "Roles are saved." });
+      }
     } else {
       res.status(400).json({ message: "Roles are not saved." });
     }

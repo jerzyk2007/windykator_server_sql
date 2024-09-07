@@ -37,3 +37,17 @@
 20240907	12:31:18	usersController, handleChangeName: Error: Unknown column 'surname' in 'field list'
 20240907	12:35:45	usersController, changePassword: ReferenceError: findUser is not defined
 20240907	13:03:44	usersController, changeUserPermissions: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '_id = '37'' at line 1
+20240907	13:20:30	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:20:30	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:20:30	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:20:30	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:20:57	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:20:57	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:20:57	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:20:57	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:21:30	usersController, getUsersData: ReferenceError: s is not defined
+20240907	13:21:55	usersController, getUsersData: ReferenceError: s is not defined
+20240907	13:22:24	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:22:24	documentsController, getDataTable: ReferenceError: res is not defined
+20240907	13:22:24	documentsController, getDataDocuments: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240907	13:22:24	documentsController, getDataTable: ReferenceError: res is not defined
