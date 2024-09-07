@@ -97,15 +97,19 @@ const handleChangeName = async (req, res) => {
       .json({ message: "Userlogin, name and surname are required." });
   }
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser?.roles && findUser.roles.Root) {
+    const findUser = await connect_SQL.query(
+      "SELECT  roles FROM users WHERE _id = ?",
+      [_id]
+    );
+
+    if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
       return res.status(404).json({ message: "User not found." });
     } else {
-      const result = await User.updateOne(
-        { _id },
-        { $set: { username: name, usersurname: surname } },
-        { upsert: true }
+      await connect_SQL.query(
+        "UPDATE users SET username = ?, usersurname = ? WHERE _id = ?",
+        [name, surname, _id]
       );
+
       res
         .status(201)
         .json({ message: "The name and surname have been changed." });
@@ -119,38 +123,6 @@ const handleChangeName = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-// const handleChangeName = async (req, res) => {
-//   const { _id } = req.params;
-//   const { name, surname } = req.body;
-//   if (!name || !surname) {
-//     return res
-//       .status(400)
-//       .json({ message: "Userlogin, name and surname are required." });
-//   }
-//   try {
-//     const findUser = await User.findOne({ _id }).exec();
-//     if (findUser?.roles && findUser.roles.Root) {
-//       return res.status(404).json({ message: "User not found." });
-//     } else {
-//       const result = await User.updateOne(
-//         { _id },
-//         { $set: { username: name, usersurname: surname } },
-//         { upsert: true }
-//       );
-//       res
-//         .status(201)
-//         .json({ message: "The name and surname have been changed." });
-//     }
-//   } catch (error) {
-//     logEvents(
-//       `usersController, handleChangeName: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     console.error(error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 // zmiana hasła użytkownika
 const changePassword = async (req, res) => {

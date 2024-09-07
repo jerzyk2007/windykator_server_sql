@@ -32,3 +32,6 @@
 20240907	10:36:38	usersController, getUsersData: ReferenceError: filteredUser is not defined
 20240907	12:03:59	usersController, handleChangeLogin: TypeError: Cannot read properties of undefined (reading 'Root')
 20240907	12:04:30	usersController, handleChangeLogin: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE _id = 'test.komorowski@krotoski.com'' at line 1
+20240907	12:30:52	usersController, handleChangeName: Error: Unknown column 'name' in 'field list'
+20240907	12:31:16	usersController, handleChangeName: Error: Unknown column 'surname' in 'field list'
+20240907	12:31:18	usersController, handleChangeName: Error: Unknown column 'surname' in 'field list'
