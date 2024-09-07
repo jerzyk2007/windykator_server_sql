@@ -124,7 +124,7 @@ const handleChangeName = async (req, res) => {
   }
 };
 
-// zmiana hasła użytkownika
+// zmiana hasła użytkownika SQL
 const changePassword = async (req, res) => {
   const { _id } = req.params;
   const { password } = req.body;
@@ -135,13 +135,17 @@ const changePassword = async (req, res) => {
       .json({ message: "Userlogin and new userlogin are required." });
   }
   try {
-    const findUser = await User.find({ refreshToken, _id }).exec();
+    const findUser = await connect_SQL.query(
+      "SELECT  _id FROM users WHERE _id = ? AND refreshToken = ?",
+      [_id, refreshToken]
+    );
+
     const hashedPwd = await bcryptjs.hash(password, 10);
-    if (findUser) {
-      const result = await User.updateOne(
-        { _id },
-        { $set: { password: hashedPwd } }
-      );
+    if (findUser[0][0]._id) {
+      await connect_SQL.query("UPDATE users SET password = ? WHERE _id = ?", [
+        hashedPwd,
+        _id,
+      ]);
     } else {
       return res.status(404).json({ message: "User not found." });
     }
