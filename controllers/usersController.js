@@ -227,21 +227,23 @@ const changeUserPermissions = async (req, res) => {
   }
 };
 
-// zmiana dostępu do działów
+// zmiana dostępu do działów SQL
 const changeUserDepartments = async (req, res) => {
   const { _id } = req.params;
   const { departments } = req.body;
 
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      if (findUser?.roles && findUser.roles.Root) {
+    const findUser = await connect_SQL.query(
+      "SELECT  roles FROM users WHERE _id = ?",
+      [_id]
+    );
+    if (findUser[0][0]) {
+      if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
         return res.status(404).json({ message: "User not found." });
       } else {
-        await User.updateOne(
-          { _id },
-          { $set: { departments } },
-          { upsert: true }
+        await connect_SQL.query(
+          "UPDATE users SET departments = ?WHERE _id = ?",
+          [JSON.stringify(departments), _id]
         );
         res.status(201).json({ message: "Departments are changed" });
       }
