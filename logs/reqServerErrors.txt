@@ -278,3 +278,10 @@
 20240909	16:38:14	usersController, getRaportAdviserSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
 20240909	16:50:02	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
 20240909	16:50:02	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240909	16:55:56	loginController, handleLogin: ReferenceError: findUser is not defined
+20240909	16:56:03	loginController, handleLogin: ReferenceError: findUser is not defined
+20240909	16:56:15	loginController, handleLogin: ReferenceError: findUser is not defined
+20240909	16:59:48	loginController, handleLogin: Error: Illegal arguments: string, undefined
+20240909	17:03:12	loginController, handleLogin: TypeError: Cannot read properties of undefined (reading 'userlogin')
+20240909	17:06:36	refreshTokenController, handleRefreshToken: ReferenceError: findUser is not defined
+20240909	17:06:36	refreshTokenController, handleRefreshToken: ReferenceError: findUser is not defined

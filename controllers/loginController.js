@@ -1,4 +1,3 @@
-// const Users = require("../model/User");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { logEvents } = require("../middleware/logEvents");
@@ -13,25 +12,22 @@ const handleLogin = async (req, res) => {
         .json({ message: "Userlogin and password are required" });
     }
 
-    const [rows, fields] = await connect_SQL.query(
-      "SELECT * FROM users WHERE userlogin = ?",
+    const [result] = await connect_SQL.query(
+      "SELECT userlogin, username, usersurname, password, _id, permissions, roles FROM users WHERE userlogin = ?",
       [userlogin]
     );
-
-    const findUser = { ...rows[0] };
-
-    if (!findUser?.userlogin) {
+    if (!result[0]?.userlogin) {
       return res.sendStatus(401);
     }
 
-    const match = await bcryptjs.compare(password, findUser.password);
+    const match = await bcryptjs.compare(password, result[0].password);
 
     if (match) {
-      const roles = Object.values(findUser.roles).filter(Boolean);
+      const roles = Object.values(result[0].roles).filter(Boolean);
 
       const refreshToken = jwt.sign(
         {
-          userlogin: findUser.userlogin,
+          userlogin: result[0].userlogin,
         },
         process.env.REFRESH_TOKEN_SECRET,
         { expiresIn: "1d" }
@@ -49,83 +45,21 @@ const handleLogin = async (req, res) => {
           maxAge: 24 * 60 * 60 * 1000,
         })
         .json({
-          userlogin: findUser.userlogin,
-          username: findUser.username,
-          usersurname: findUser.usersurname,
-          _id: findUser._id,
+          userlogin: result[0].userlogin,
+          username: result[0].username,
+          usersurname: result[0].usersurname,
+          _id: result[0]._id,
           roles,
-          permissions: findUser.permissions,
+          permissions: result[0].permissions,
         });
     } else {
       res.sendStatus(401);
     }
-
-    // res.end();
   } catch (error) {
     logEvents(`loginController, handleLogin: ${error}`, "reqServerErrors.txt");
     console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
-// const handleLogin = async (req, res) => {
-//   const { userlogin, password } = req.body;
-
-//   try {
-//     if (!userlogin || !password) {
-//       return res
-//         .status(400)
-//         .json({ message: "Userlogin and password are required" });
-//     }
-//     const findUser = await Users.findOne({ userlogin }).exec();
-
-//     if (!findUser) {
-//       return res.sendStatus(401);
-//     }
-//     const match = await bcryptjs.compare(password, findUser.password);
-//     if (match) {
-//       const roles = Object.values(findUser.roles).filter(Boolean);
-//       const accessToken = jwt.sign(
-//         {
-//           UserInfo: {
-//             userlogin: findUser.userlogin,
-//             roles: roles,
-//           },
-//         },
-//         process.env.ACCESS_TOKEN_SECRET,
-//         { expiresIn: "10s" }
-//       );
-
-//       const refreshToken = jwt.sign(
-//         {
-//           userlogin: findUser.userlogin,
-//         },
-//         process.env.REFRESH_TOKEN_SECRET,
-//         { expiresIn: "1d" }
-//       );
-//       findUser.refreshToken = refreshToken;
-//       await findUser.save();
-//       res.cookie("jwt", refreshToken, {
-//         httpOnly: true,
-//         sameSite: "None",
-//         secure: true,
-//         maxAge: 24 * 60 * 60 * 1000,
-//       });
-//       res.json({
-//         userlogin: findUser.userlogin,
-//         username: findUser.username,
-//         usersurname: findUser.usersurname,
-//         _id: findUser._id,
-//         roles,
-//         permissions: findUser.permissions,
-//       });
-//     } else {
-//       res.sendStatus(401);
-//     }
-//   } catch (error) {
-//     logEvents(`loginController, handleLogin: ${error}`, "reqServerErrors.txt");
-//     console.error(error);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
 
 module.exports = { handleLogin };

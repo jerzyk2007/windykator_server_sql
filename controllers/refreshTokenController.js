@@ -15,14 +15,12 @@ const handleRefreshToken = async (req, res) => {
   try {
     // const findUser = await User.findOne({ refreshToken }).exec();
 
-    const [rows, fields] = await connect_SQL.query(
-      "SELECT * FROM users WHERE refreshToken = ?",
+    const [findUser] = await connect_SQL.query(
+      "SELECT _id, userlogin, username, usersurname, permissions, roles FROM users WHERE refreshToken = ?",
       [refreshToken]
     );
 
-    const findUser = { ...rows[0] };
-
-    if (!findUser) {
+    if (!findUser[0]) {
       return res.sendStatus(403); // forbidden
     }
 
@@ -31,9 +29,9 @@ const handleRefreshToken = async (req, res) => {
       refreshToken,
       process.env.REFRESH_TOKEN_SECRET,
       (err, decoded) => {
-        if (err || findUser.userlogin !== decoded.userlogin)
+        if (err || findUser[0].userlogin !== decoded.userlogin)
           return res.sendStatus(403);
-        const roles = Object.values(findUser.roles).filter(Boolean);
+        const roles = Object.values(findUser[0].roles).filter(Boolean);
         const accessToken = jwt.sign(
           {
             UserInfo: {
@@ -50,10 +48,10 @@ const handleRefreshToken = async (req, res) => {
           accessToken,
           roles,
           userlogin: decoded.userlogin,
-          username: findUser.username,
-          usersurname: findUser.usersurname,
-          permissions: findUser.permissions,
-          _id: findUser._id,
+          username: findUser[0].username,
+          usersurname: findUser[0].usersurname,
+          permissions: findUser[0].permissions,
+          _id: findUser[0]._id,
         });
       }
     );

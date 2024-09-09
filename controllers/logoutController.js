@@ -9,14 +9,12 @@ const handleLogout = async (req, res) => {
   }
   const refreshToken = cookies.jwt;
   try {
-    const [rows, fields] = await connect_SQL.query(
+    const [result] = await connect_SQL.query(
       "SELECT * FROM users WHERE refreshToken = ?",
       [refreshToken]
     );
 
-    const findUser = { ...rows[0] };
-
-    if (!findUser?.userlogin) {
+    if (!result[0]?.userlogin) {
       res.clearCookie("jwt", {
         httpOnly: true,
         sameSite: "None",
