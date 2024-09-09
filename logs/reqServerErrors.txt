@@ -258,3 +258,23 @@
 20240907	14:55:15	usersController, saveTableSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
 20240907	14:56:01	usersController, saveTableSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
 20240907	15:01:21	usersController, saveTableSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''BRUTTO', 'DATA_KOMENTARZA_BECARED', 'BLAD_DORADCY', 'mrt-row-spacer', `pinning`' at line 1
+20240907	19:42:15	usersController, handleChangeLogin: ReferenceError: rows is not defined
+20240907	19:42:23	usersController, handleChangeLogin: ReferenceError: rows is not defined
+20240907	19:42:35	usersController, handleChangeLogin: ReferenceError: rows is not defined
+20240907	19:42:41	usersController, handleChangeLogin: ReferenceError: rows is not defined
+20240907	19:48:36	usersController, handleChangeName: ReferenceError: newUserlogin is not defined
+20240909	14:59:58	usersController, changePasswordAnotherUser: ReferenceError: newUserlogin is not defined
+20240909	15:41:28	usersController, getUsersData: ReferenceError: rows is not defined
+20240909	16:11:24	usersController, getRaportDepartmentSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240909	16:11:25	usersController, getRaportDepartmentSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240909	16:12:18	usersController, getRaportDepartmentSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240909	16:12:18	usersController, getRaportDepartmentSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240909	16:14:36	usersController, getRaportDepartmentSettings: Error: Unknown column 'raportSettings.raportDepartments' in 'field list'
+20240909	16:14:36	usersController, getRaportDepartmentSettings: Error: Unknown column 'raportSettings.raportDepartments' in 'field list'
+20240909	16:22:44	usersController, saveRaporDepartmentSettings: ReferenceError: nowaWartoscRaportDepartments is not defined
+20240909	16:23:50	usersController, saveRaporDepartmentSettings: Error: Unknown column 'size' in 'field list'
+20240909	16:24:11	usersController, saveRaporDepartmentSettings: Error: Unknown column 'size' in 'field list'
+20240909	16:38:14	usersController, getRaportAdviserSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240909	16:38:14	usersController, getRaportAdviserSettings: CastError: Cast to ObjectId failed for value "7" (type string) at path "_id" for model "Users"
+20240909	16:50:02	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240909	16:50:02	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON

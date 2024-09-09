@@ -15,7 +15,7 @@ const createNewUser = async (req, res) => {
   }
 
   try {
-    const [rows, fields] = await connect_SQL.query(
+    const [rows] = await connect_SQL.query(
       "SELECT userlogin FROM users WHERE userlogin = ?",
       [userlogin]
     );
@@ -55,27 +55,24 @@ const handleChangeLogin = async (req, res) => {
       .json({ message: "Userlogin and new userlogin are required." });
   }
   try {
-    //check duplicate
-    const [rows, fields] = await connect_SQL.query(
+    const [existingUser] = await connect_SQL.query(
       "SELECT userlogin FROM users WHERE userlogin = ?",
       [newUserlogin]
     );
-    if (rows[0]?.userlogin)
+    if (existingUser.length > 0) {
       return res.status(409).json({ message: newUserlogin }); // conflict - duplicate
+    }
 
-    const findUser = await connect_SQL.query(
-      "SELECT userlogin, roles FROM users WHERE _id = ?",
-      [_id]
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET userlogin = ? WHERE _id = ?",
+      [newUserlogin, _id]
     );
-    if (findUser[0][0]?.roles && findUser[0][0]?.roles.Root) {
-      return res.status(404).json({ message: "User not found." });
-    } else {
-      await connect_SQL.query("UPDATE users SET userlogin = ? WHERE _id = ?", [
-        newUserlogin,
-        _id,
-      ]);
-
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
       res.status(201).json({ message: newUserlogin });
+    } else {
+      // Jeśli aktualizacja nie powiodła się
+      return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
     logEvents(
@@ -97,22 +94,18 @@ const handleChangeName = async (req, res) => {
       .json({ message: "Userlogin, name and surname are required." });
   }
   try {
-    const findUser = await connect_SQL.query(
-      "SELECT  roles FROM users WHERE _id = ?",
-      [_id]
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET username = ?, usersurname = ? WHERE _id = ?",
+      [name, surname, _id]
     );
-
-    if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
-      return res.status(404).json({ message: "User not found." });
-    } else {
-      await connect_SQL.query(
-        "UPDATE users SET username = ?, usersurname = ? WHERE _id = ?",
-        [name, surname, _id]
-      );
-
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
       res
         .status(201)
         .json({ message: "The name and surname have been changed." });
+    } else {
+      // Jeśli aktualizacja nie powiodła się
+      return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
     logEvents(
@@ -129,28 +122,26 @@ const changePassword = async (req, res) => {
   const { _id } = req.params;
   const { password } = req.body;
   const refreshToken = req.cookies.jwt;
+
   if (!password) {
     return res
       .status(400)
       .json({ message: "Userlogin and new userlogin are required." });
   }
   try {
-    const findUser = await connect_SQL.query(
-      "SELECT  _id FROM users WHERE _id = ? AND refreshToken = ?",
-      [_id, refreshToken]
-    );
-
     const hashedPwd = await bcryptjs.hash(password, 10);
-    if (findUser[0][0]._id) {
-      await connect_SQL.query("UPDATE users SET password = ? WHERE _id = ?", [
-        hashedPwd,
-        _id,
-      ]);
+
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET password = ? WHERE _id = ? AND refreshToken = ? ",
+      [hashedPwd, _id, refreshToken]
+    );
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Password is changed" });
     } else {
+      // Jeśli aktualizacja nie powiodła się
       return res.status(404).json({ message: "User not found." });
     }
-
-    res.status(201).json({ message: "Password is changed" });
   } catch (error) {
     logEvents(
       `usersController, changePassword: ${error}`,
@@ -171,22 +162,17 @@ const changePasswordAnotherUser = async (req, res) => {
       .json({ message: "Userlogin and new userlogin are required." });
   }
   try {
-    const findUser = await connect_SQL.query(
-      "SELECT  roles FROM users WHERE _id = ?",
-      [_id]
-    );
     const hashedPwd = await bcryptjs.hash(password, 10);
-    if (findUser[0][0]) {
-      if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
-        return res.status(404).json({ message: "User not found." });
-      } else {
-        await connect_SQL.query("UPDATE users SET password = ? WHERE _id = ?", [
-          hashedPwd,
-          _id,
-        ]);
-        res.status(201).json({ message: "Password is changed" });
-      }
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET password = ? WHERE _id = ?",
+      [hashedPwd, _id]
+    );
+
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Password is changed" });
     } else {
+      // Jeśli aktualizacja nie powiodła się
       return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
@@ -204,18 +190,16 @@ const changeUserPermissions = async (req, res) => {
   const { _id } = req.params;
   const { permissions } = req.body;
   try {
-    const findUser = await connect_SQL.query(
-      "SELECT  roles FROM users WHERE _id = ?",
-      [_id]
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET permissions = ?WHERE _id = ?",
+      [JSON.stringify(permissions), _id]
     );
-    if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
-      return res.status(404).json({ message: "User not found." });
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Permissions are changed" });
     } else {
-      await connect_SQL.query("UPDATE users SET permissions = ?WHERE _id = ?", [
-        JSON.stringify(permissions),
-        _id,
-      ]);
-      res.status(201).json({ message: "Permissions are changed" });
+      // Jeśli aktualizacja nie powiodła się
+      return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
     logEvents(
@@ -233,21 +217,16 @@ const changeUserDepartments = async (req, res) => {
   const { departments } = req.body;
 
   try {
-    const findUser = await connect_SQL.query(
-      "SELECT  roles FROM users WHERE _id = ?",
-      [_id]
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET departments = ?WHERE _id = ?",
+      [JSON.stringify(departments), _id]
     );
-    if (findUser[0][0]) {
-      if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
-        return res.status(404).json({ message: "User not found." });
-      } else {
-        await connect_SQL.query(
-          "UPDATE users SET departments = ?WHERE _id = ?",
-          [JSON.stringify(departments), _id]
-        );
-        res.status(201).json({ message: "Departments are changed" });
-      }
+
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Departments are changed" });
     } else {
+      // Jeśli aktualizacja nie powiodła się
       return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
@@ -267,21 +246,15 @@ const deleteUser = async (req, res) => {
     return res.status(400).json({ message: "Id is required." });
   }
   try {
-    // const findUser = await User.findOne({ _id }).exec();
-    const findUser = await connect_SQL.query(
-      "SELECT userlogin, roles FROM users WHERE _id = ?",
+    const [result] = await connect_SQL.query(
+      "DELETE FROM users WHERE _id = ?",
       [_id]
     );
-    if (findUser) {
-      if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
-        return res.status(404).json({ message: "User not found." });
-      } else {
-        await connect_SQL.query("DELETE FROM users WHERE _id = ?", [_id]);
 
-        res.status(201).json({ message: "User is deleted." });
-      }
-    } else {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ message: "User not found." });
+    } else {
+      res.status(201).json({ message: "User is deleted." });
     }
   } catch (error) {
     logEvents(`usersController, deleteUser: ${error}`, "reqServerErrors.txt");
@@ -299,17 +272,15 @@ const saveTableSettings = async (req, res) => {
   }
 
   try {
-    const findUser = await connect_SQL.query(
-      "SELECT  _id FROM users WHERE _id = ?",
-      [_id]
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET tableSettings = ? WHERE _id = ?",
+      [JSON.stringify(tableSettings), _id]
     );
-    if (findUser[0][0]?._id) {
-      await connect_SQL.query(
-        "UPDATE users SET tableSettings = ? WHERE _id = ?",
-        [JSON.stringify(tableSettings), _id]
-      );
-      res.status(201).json({ message: "Table settings are changed" });
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Table settings are changed" });
     } else {
+      // Jeśli aktualizacja nie powiodła się
       res.status(400).json({ message: "Table settings are not changed" });
     }
   } catch (error) {
@@ -322,63 +293,67 @@ const saveTableSettings = async (req, res) => {
   }
 };
 
-// pobieranie ustawień tabeli
-const getTableSettings = async (req, res) => {
-  const { _id } = req.params;
-  if (!_id) {
-    return res.status(400).json({ message: "Userlogin is required." });
-  }
-  try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      res.json(findUser.tableSettings);
-    } else {
-      return res.status(404).json({ message: "User not found." });
-    }
-  } catch (error) {
-    logEvents(
-      `usersController, getTableSettings: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+// pobieranie ustawień tabeli/ obecnie jest pobierane równocześnie z danymi tabeli
+// const getTableSettings = async (req, res) => {
+//   const { _id } = req.params;
+//   if (!_id) {
+//     return res.status(400).json({ message: "Userlogin is required." });
+//   }
+//   try {
+//     const findUser = await User.findOne({ _id }).exec();
+//     if (findUser) {
+//       console.log("findUser.tableSettings");
+//       res.json(findUser.tableSettings);
+//       // res.json({});
+//     } else {
+//       return res.status(404).json({ message: "User not found." });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `usersController, getTableSettings: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // pobieranie column które może widziec użytkownik
-const getUserColumns = async (req, res) => {
-  const { _id } = req.params;
-  if (!_id) {
-    return res.status(400).json({ message: "Userlogin is required." });
-  }
-  try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      res.json(findUser.columns);
-    } else {
-      return res.status(404).json({ message: "User not found." });
-    }
-  } catch (error) {
-    logEvents(
-      `usersController, getUserColumns: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+// const getUserColumns = async (req, res) => {
+//   const { _id } = req.params;
+//   if (!_id) {
+//     return res.status(400).json({ message: "Userlogin is required." });
+//   }
+//   try {
+//     const findUser = await User.findOne({ _id }).exec();
+//     if (findUser) {
+//       console.log(findUser.columns);
+//       res.json(findUser.columns);
+//     } else {
+//       return res.status(404).json({ message: "User not found." });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `usersController, getUserColumns: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // wyszukanie uzytkownika żeby zmienić jego ustawienia SQL
+
 const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
-    const [rows, fields] = await connect_SQL.query(
+    const [result] = await connect_SQL.query(
       "SELECT _id, username, usersurname, userlogin, roles, tableSettings, raportSettings, permissions, departments, columns FROM users WHERE userlogin LIKE ?",
       [`%${search}%`]
     );
 
-    if (rows[0]?.userlogin.length > 0) {
-      const filteredUsers = rows
+    if (result[0]?.userlogin.length > 0) {
+      const filteredUsers = result
         .map((user) => {
           if (user.roles) {
             user.roles = Object.keys(user.roles).map((role) => role);
@@ -386,9 +361,9 @@ const getUsersData = async (req, res) => {
           return user;
         })
         .filter((user) => !user.roles.includes("Root"));
-      res.json(filteredUsers);
+      return res.json(filteredUsers);
     } else {
-      res.json([]);
+      return res.json([]);
     }
   } catch (error) {
     logEvents(`usersController, getUsersData: ${error}`, "reqServerErrors.txt");
@@ -408,25 +383,17 @@ const changeRoles = async (req, res) => {
   );
 
   try {
-    // const findUser = await User.findOne({ _id }).exec();
-    const findUser = await connect_SQL.query(
-      "SELECT  roles FROM users WHERE _id = ?",
-      [_id]
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET roles = ? WHERE _id = ?",
+      [JSON.stringify(filteredRoles), _id]
     );
 
-    if (findUser[0][0]) {
-      if (findUser[0][0]?.roles && findUser[0][0].roles.Root) {
-        return res.status(404).json({ message: "User not found." });
-      } else {
-        await connect_SQL.query("UPDATE users SET roles = ? WHERE _id = ?", [
-          JSON.stringify(filteredRoles),
-          _id,
-        ]);
-
-        res.status(201).json({ message: "Roles are saved." });
-      }
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Roles are saved." });
     } else {
-      res.status(400).json({ message: "Roles are not saved." });
+      // Jeśli aktualizacja nie powiodła się
+      return res.status(400).json({ message: "Roles are not saved." });
     }
   } catch (error) {
     logEvents(`usersController, changeRoles: ${error}`, "reqServerErrors.txt");
@@ -440,12 +407,18 @@ const changeColumns = async (req, res) => {
   const { _id } = req.params;
   const { columns } = req.body;
   try {
-    await connect_SQL.query("UPDATE users SET columns = ? WHERE _id = ?", [
-      [JSON.stringify(columns)],
-      _id,
-    ]);
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET columns = ? WHERE _id = ?",
+      [[JSON.stringify(columns)], _id]
+    );
 
-    res.status(201).json({ message: "Columns are saved." });
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Columns are saved." });
+    } else {
+      // Jeśli aktualizacja nie powiodła się
+      return res.status(400).json({ message: "Columns are not saved." });
+    }
   } catch (error) {
     logEvents(
       `usersController, changeColumns: ${error}`,
@@ -463,18 +436,20 @@ const saveRaporDepartmentSettings = async (req, res) => {
   if (!_id) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
-
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      const result = await User.updateOne(
-        { _id },
-        { $set: { "raportSettings.raportDepartments": raportDepartments } },
-        { upsert: true }
-      );
-      res.status(201).json({ message: "Table settings are changed" });
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportDepartments', ?) WHERE _id = ?",
+      [JSON.stringify(raportDepartments), _id]
+    );
+
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Table settings are changed" });
     } else {
-      res.status(400).json({ message: "Table settings are not changed" });
+      // Jeśli aktualizacja nie powiodła się
+      return res
+        .status(400)
+        .json({ message: "Table settings are not changed" });
     }
   } catch (error) {
     logEvents(
@@ -492,10 +467,15 @@ const getRaportDepartmentSettings = async (req, res) => {
   if (!_id) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
+
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      res.json(findUser.raportSettings.raportDepartments);
+    //pobiera od razu klucz z obiektu json
+    const [result] = await connect_SQL.query(
+      "SELECT raportSettings->'$.raportDepartments' AS raportDepartments FROM users WHERE _id = ?",
+      [_id]
+    );
+    if (result[0]?.raportDepartments) {
+      res.json(JSON.parse(result[0].raportDepartments));
     } else {
       return res.status(404).json({ message: "User not found." });
     }
@@ -518,17 +498,31 @@ const saveRaporAdviserSettings = async (req, res) => {
   }
 
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      const result = await User.updateOne(
-        { _id },
-        { $set: { "raportSettings.raportAdvisers": raportAdvisers } },
-        { upsert: true }
-      );
-      res.status(201).json({ message: "Table settings are changed" });
+    const [result] = await connect_SQL.query(
+      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportAdvisers', ?) WHERE _id = ?",
+      [JSON.stringify(raportAdvisers), _id]
+    );
+
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Table settings are changed" });
     } else {
-      res.status(400).json({ message: "Table settings are not changed" });
+      // Jeśli aktualizacja nie powiodła się
+      return res
+        .status(400)
+        .json({ message: "Table settings are not changed" });
     }
+    // const findUser = await User.findOne({ _id }).exec();
+    // if (findUser) {
+    //   const result = await User.updateOne(
+    //     { _id },
+    //     { $set: { "raportSettings.raportAdvisers": raportAdvisers } },
+    //     { upsert: true }
+    //   );
+    //   res.status(201).json({ message: "Table settings are changed" });
+    // } else {
+    //   res.status(400).json({ message: "Table settings are not changed" });
+    // }
   } catch (error) {
     logEvents(
       `usersController, saveRaporAdviserSettings: ${error}`,
@@ -546,9 +540,13 @@ const getRaportAdviserSettings = async (req, res) => {
     return res.status(400).json({ message: "Userlogin is required." });
   }
   try {
-    const findUser = await User.findOne({ _id }).exec();
-    if (findUser) {
-      res.json(findUser.raportSettings.raportAdvisers);
+    //pobiera od razu klucz z obiektu json
+    const [result] = await connect_SQL.query(
+      "SELECT raportSettings->'$.raportAdvisers' AS raportAdvisers FROM users WHERE _id = ?",
+      [_id]
+    );
+    if (result[0]?.raportAdvisers) {
+      res.json(JSON.parse(result[0].raportAdvisers));
     } else {
       return res.status(404).json({ message: "User not found." });
     }
@@ -572,8 +570,8 @@ module.exports = {
   changeUserDepartments,
   deleteUser,
   saveTableSettings,
-  getTableSettings,
-  getUserColumns,
+  // getTableSettings,
+  // getUserColumns,
   getUsersData,
   changeRoles,
   changeColumns,

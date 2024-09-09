@@ -83,13 +83,15 @@ router
   .route("/save-table-settings/:_id")
   .patch(verifyRoles(ROLES_LIST.User), usersController.saveTableSettings);
 
-router
-  .route("/get-table-settings/:_id")
-  .get(verifyRoles(ROLES_LIST.User), usersController.getTableSettings);
+// pobiera ustawienia tabeli / obecnie dane et pobierane sa razem z danymi do tabelif
+// router
+//   .route("/get-table-settings/:_id")
+//   .get(verifyRoles(ROLES_LIST.User), usersController.getTableSettings);
 
-router
-  .route("/get-columns/:_id")
-  .get(verifyRoles(ROLES_LIST.User), usersController.getUserColumns);
+// pobiera ustawienia column użytkownika / obecnie dane et pobierane sa razem z danymi do tabelif
+// router
+//   .route("/get-columns/:_id")
+//   .get(verifyRoles(ROLES_LIST.User), usersController.getUserColumns);
 
 router
   .route("/save-raport-departments-settings/:_id")
