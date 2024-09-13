@@ -772,7 +772,11 @@ const getDataTable = async (req, res) => {
 const getSingleDocument = async (req, res) => {
   const { _id } = req.params;
   try {
-    const result = await Document.findOne({ _id });
+    // const result = await Document.findOne({ _id });
+    const [result] = await connect_SQL.query(
+      "SELECT * FROM documents WHERE _id = ?",
+      [_id]
+    );
     res.json(result);
   } catch (error) {
     logEvents(
