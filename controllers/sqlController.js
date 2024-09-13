@@ -1,6 +1,7 @@
 const { connect_SQL } = require("../config/dbConn");
 const User = require("../model/User");
 const Setting = require("../model/Setting");
+const Document = require("../model/Document");
 
 const copyUsersToMySQL = async (req, res) => {
   try {
@@ -114,8 +115,57 @@ const copySettingsToMySQL = async (req, res) => {
     });
   }
 };
+const copyDocumentsToMySQL = async (req, res) => {
+  try {
+    const result = await Document.find({}).lean();
+    // const [documents] = await connect_SQL.query(
+    //   "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    //   [
+    //     JSON.stringify(roles),
+    //     JSON.stringify(departments),
+    //     JSON.stringify(columns),
+    //     JSON.stringify(permissions),
+    //     JSON.stringify(target),
+    //   ]
+    // );
+    const saveToDB = result.map((item) => {
+      connect_SQL.query(
+        "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          item.NUMER_FV,
+          item.BRUTTO,
+          item.NETTO,
+          item.DZIAL,
+          item.DO_ROZLICZENIA,
+          item.DATA_FV,
+          item.TERMIN,
+          item.KONTRAHENT,
+          item.DORADCA,
+          item.NR_REJESTRACYJNY,
+          item.NR_SZKODY,
+          JSON.stringify(item.UWAGI_Z_FAKTURY),
+        ]
+      );
+    });
+    // const test = result.map((item) => {
+    //   console.log(item.DATA_FV);
+    // });
+    // const [test] = await connect_SQL.query("SELECT * FROM documents")
+
+    // res.json(test);
+    res.end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      succes: false,
+      message: "Error in Get All User API",
+      error: err,
+    });
+  }
+};
 
 module.exports = {
   copyUsersToMySQL,
   copySettingsToMySQL,
+  copyDocumentsToMySQL,
 };

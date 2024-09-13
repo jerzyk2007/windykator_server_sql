@@ -293,3 +293,22 @@
 20240910	17:44:52	settingsController, getSettings: ReferenceError: Cannot access 'roles' before initialization
 20240910	18:02:24	settingsController, getDepartments: ReferenceError: depTarget is not defined
 20240910	18:02:25	settingsController, getDepartments: ReferenceError: depTarget is not defined
+20240913	15:17:23	documentsController, getDataDocuments: TypeError: object is not iterable (cannot read property Symbol(Symbol.iterator))
+20240913	15:17:23	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:17:23	documentsController, getDataDocuments: TypeError: object is not iterable (cannot read property Symbol(Symbol.iterator))
+20240913	15:17:23	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:17:52	documentsController, getDataDocuments: TypeError: object is not iterable (cannot read property Symbol(Symbol.iterator))
+20240913	15:17:52	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:17:52	documentsController, getDataDocuments: TypeError: object is not iterable (cannot read property Symbol(Symbol.iterator))
+20240913	15:17:52	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:18:20	documentsController, getDataDocuments: TypeError: object is not iterable (cannot read property Symbol(Symbol.iterator))
+20240913	15:18:20	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:18:20	documentsController, getDataDocuments: TypeError: object is not iterable (cannot read property Symbol(Symbol.iterator))
+20240913	15:18:20	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:18:34	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:18:34	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:19:47	documentsController, getSingleDocument: CastError: Cast to ObjectId failed for value "5829" (type string) at path "_id" for model "Documents"
+20240913	15:25:15	documentsController, getDataDocuments: ReferenceError: result is not defined
+20240913	15:25:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	15:25:15	documentsController, getDataDocuments: ReferenceError: result is not defined
+20240913	15:25:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')

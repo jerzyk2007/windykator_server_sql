@@ -32,50 +32,72 @@ const getDataDocuments = async (_id, info) => {
 
     const DORADCA = `${usersurname} ${username}`;
     // lean oczyszcza dane mongo
-    const result = await Document.find({}).lean();
-    // const result = await Document.find({});
+    // const result = await Document.find({}).lean();
+
+    // const [result] = await connect_SQL.query("SELECT * FROM documents");
+    // console.log(result);
+
     if (info === "actual") {
-      filteredData = result.filter((item) => item.DO_ROZLICZENIA !== 0);
+      // filteredData = result.filter((item) => item.DO_ROZLICZENIA !== 0);
+      // [filteredData] = await connect_SQL.query(
+      //   "SELECT * FROM documents WHERE DO_ROZLICZENIA <> 0"
+      // );
+      [filteredData] = await connect_SQL.query(
+        "SELECT *, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN > NOW(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents WHERE DO_ROZLICZENIA <> 0"
+      );
+      // filteredData = result;
     } else if (info === "archive") {
-      filteredData = result.filter((item) => item.DO_ROZLICZENIA === 0);
+      // filteredData = result.filter((item) => item.DO_ROZLICZENIA === 0);
+      [filteredData] = await connect_SQL.query(
+        "SELECT *, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN > NOW(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents WHERE DO_ROZLICZENIA = 0"
+      );
     } else if (info === "all") {
-      filteredData = result;
+      [filteredData] = await connect_SQL.query(
+        "SELECT *, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN > NOW(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents"
+      );
     }
 
-    const newKeys = filteredData.map((item) => {
-      const date = new Date();
-      const lastDate = new Date(item.TERMIN);
-      const timeDifference = date - lastDate;
-      const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-      const ILE_DNI_PO_TERMINIE = daysDifference;
-      let CZY_PRZETERMINOWANE = "";
-      if (daysDifference > 0) {
-        CZY_PRZETERMINOWANE = "P";
-      } else {
-        CZY_PRZETERMINOWANE = "N";
-      }
-      const fullVAT = (item.BRUTTO - item.NETTO).toFixed(2);
-      const halfVAT = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
+    // const newKeys = filteredData.map((item) => {
+    //   const date = new Date();
+    //   const lastDate = new Date(item.TERMIN);
+    //   const timeDifference = date - lastDate;
+    //   const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    //   const ILE_DNI_PO_TERMINIE = daysDifference;
+    //   let CZY_PRZETERMINOWANE = "";
+    //   if (daysDifference > 0) {
+    //     CZY_PRZETERMINOWANE = "P";
+    //   } else {
+    //     CZY_PRZETERMINOWANE = "N";
+    //   }
+    //   const fullVAT = (item.BRUTTO - item.NETTO).toFixed(2);
+    //   const halfVAT = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
 
-      return {
-        ...item,
-        ILE_DNI_PO_TERMINIE: ILE_DNI_PO_TERMINIE,
-        CZY_PRZETERMINOWANE: CZY_PRZETERMINOWANE,
-        "100_VAT": Number(fullVAT),
-        "50_VAT": Number(halfVAT),
-      };
-    });
+    //   return {
+    //     ...item,
+    //     ILE_DNI_PO_TERMINIE: ILE_DNI_PO_TERMINIE,
+    //     CZY_PRZETERMINOWANE: CZY_PRZETERMINOWANE,
+    //     "100_VAT": Number(fullVAT),
+    //     "50_VAT": Number(halfVAT),
+    //   };
+    // });
 
-    let dataToExport = [];
+    // let dataToExport = [];
+    // if (truePermissions[0] === "Basic") {
+    //   dataToExport = newKeys.filter((item) => item.DORADCA === DORADCA);
+    // } else if (truePermissions[0] === "Standard") {
+    //   dataToExport = newKeys.filter((item) =>
+    //     trueDepartments.includes(item.DZIAL)
+    //   );
+    // }
     if (truePermissions[0] === "Basic") {
-      dataToExport = newKeys.filter((item) => item.DORADCA === DORADCA);
+      filteredData = filteredData.filter((item) => item.DORADCA === DORADCA);
     } else if (truePermissions[0] === "Standard") {
-      dataToExport = newKeys.filter((item) =>
+      filteredData = filteredData.filter((item) =>
         trueDepartments.includes(item.DZIAL)
       );
     }
 
-    return { data: dataToExport, permission: truePermissions[0] };
+    return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
     logEvents(
       `documentsController, getDataDocuments: ${error}`,
