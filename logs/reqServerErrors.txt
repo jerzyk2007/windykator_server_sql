@@ -285,3 +285,11 @@
 20240909	17:03:12	loginController, handleLogin: TypeError: Cannot read properties of undefined (reading 'userlogin')
 20240909	17:06:36	refreshTokenController, handleRefreshToken: ReferenceError: findUser is not defined
 20240909	17:06:36	refreshTokenController, handleRefreshToken: ReferenceError: findUser is not defined
+20240910	16:52:32	settingsController, changeColumns: Error: Unknown column 'id' in 'where clause'
+20240910	17:01:39	settingsController, changeColumns: Error: Table 'windykacja.user' doesn't exist
+20240910	17:44:36	settingsController, getSettings: ReferenceError: Cannot access 'roles' before initialization
+20240910	17:44:36	settingsController, getSettings: ReferenceError: Cannot access 'roles' before initialization
+20240910	17:44:52	settingsController, getSettings: ReferenceError: Cannot access 'roles' before initialization
+20240910	17:44:52	settingsController, getSettings: ReferenceError: Cannot access 'roles' before initialization
+20240910	18:02:24	settingsController, getDepartments: ReferenceError: depTarget is not defined
+20240910	18:02:25	settingsController, getDepartments: ReferenceError: depTarget is not defined

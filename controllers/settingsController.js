@@ -2,23 +2,22 @@ const Setting = require("../model/Setting");
 const User = require("../model/User");
 const Document = require("../model/Document");
 const { logEvents } = require("../middleware/logEvents");
+const { connect_SQL } = require("../config/dbConn");
 
-// funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny
+// funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny SQL
 const changeColumns = async (req, res) => {
   const { columns } = req.body;
-
   try {
-    await Setting.findOneAndUpdate(
-      {},
-      { $set: { columns } },
-      { new: true, upsert: true }
+    await connect_SQL.query(
+      "Update settings SET columns = ? WHERE idsettings = 1",
+      [JSON.stringify(columns)]
     );
-    const allUsers = await User.find({});
 
-    for (const user of allUsers) {
-      // Przechowuje klucze accessorKey obiektów z columns
-      const columnKeys = columns.map((column) => column.accessorKey);
+    const [userColumns] = await connect_SQL.query(
+      "SELECT _id, columns FROM users"
+    );
 
+    for (const user of userColumns) {
       // Przechodzimy przez kolumny użytkownika wstecz, aby móc bezpiecznie usuwać elementy
       for (let i = user.columns.length - 1; i >= 0; i--) {
         const userColumn = user.columns[i];
@@ -34,30 +33,11 @@ const changeColumns = async (req, res) => {
           user.columns.splice(i, 1);
         }
       }
-
-      // Teraz możemy zaktualizować użytkownika w bazie danych
-      await user.updateOne(
-        { $set: { columns: user.columns } },
-        { upsert: true }
-      );
+      await connect_SQL.query("Update users SET columns = ? WHERE _id = ?", [
+        JSON.stringify(user.columns),
+        user._id,
+      ]);
     }
-
-    // for (const user of allUsers) {
-    //   for (const columnToUpdate of columns) {
-    //     const existingColumnIndex = user.columns.findIndex(
-    //       (existingColumn) =>
-    //         existingColumn.accessorKey === columnToUpdate.accessorKey
-    //     );
-
-    //     if (existingColumnIndex !== -1) {
-    //       user.columns[existingColumnIndex] = columnToUpdate;
-    //     }
-    //   }
-    //   await user.updateOne(
-    //     { $set: { columns: user.columns } },
-    //     { upsert: true }
-    //   );
-    // }
     res.end();
   } catch (error) {
     logEvents(
@@ -68,21 +48,6 @@ const changeColumns = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
-// const changeColumns = async (req, res) => {
-//     const { columns } = req.body;
-//     try {
-//         // console.log(columns);
-//         const getUserColumns = User.find({});
-//         console.log(getUserColumns);
-//         // const result = await Setting.findOneAndUpdate({}, { $set: { columns } }, { new: true, upsert: true });
-//         res.end();
-//     }
-//     catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: 'Server error' });
-//     }
-// };
 
 //pobieranie unikalnych nazw Działów z documentów, dzięki temu jesli jakiś przybędzie/ubędzie to na Front będzie to widac w ustawieniach użytkonika
 const getFilteredDepartments = async () => {
@@ -102,17 +67,11 @@ const getFilteredDepartments = async () => {
 // pobieranie głównych ustawień
 const getSettings = async (req, res) => {
   try {
-    const result = await Setting.find().exec();
-    const rolesJSON = JSON.stringify(result[0].roles);
-    const rolesObjectNoSort = JSON.parse(rolesJSON);
-
-    // sortowanie roles wg wartości liczbowej
-    const sortedEntries = Object.entries(rolesObjectNoSort).sort(
-      (a, b) => a[1] - b[1]
+    const [userSettings] = await connect_SQL.query(
+      "SELECT roles, permissions FROM settings WHERE idsettings = 1"
     );
-    const rolesObject = Object.fromEntries(sortedEntries);
 
-    const roles = Object.entries(rolesObject).map(([role]) => role);
+    const roles = Object.entries(userSettings[0].roles).map(([role]) => role);
 
     const rolesToRemove = ["Root", "Start"];
 
@@ -133,6 +92,7 @@ const getSettings = async (req, res) => {
       "Nora",
       "Admin",
     ];
+
     roles.sort((a, b) => {
       // Uzyskujemy indeksy ról a i b w tablicy rolesOrder
       const indexA = rolesOrder.indexOf(a);
@@ -144,6 +104,10 @@ const getSettings = async (req, res) => {
         (indexB === -1 ? rolesOrder.length : indexB)
       );
     });
+
+    // console.log(rolesToRemove1);
+
+    const result = await Setting.find().exec();
 
     const columns = [...result[0].columns];
     const permissions = [...result[0].permissions];
@@ -178,8 +142,9 @@ const getDepartments = async (req, res) => {
     ).filter(Boolean);
 
     //pobieram zapisane cele
-    const getTarget = await Setting.find({}, "target").exec();
-
+    const [getTarget] = await connect_SQL.query(
+      "SELECT target from settings WHERE idsettings = 1"
+    );
     res.json({
       departments: uniqueDepartmentsValues,
       target: getTarget[0].target,
@@ -194,15 +159,17 @@ const getDepartments = async (req, res) => {
   }
 };
 
-// zapis nowych procentów kwartalnych
+// zapis nowych procentów kwartalnych SQL
 const saveTargetPercent = async (req, res) => {
   const { target } = req.body;
   try {
-    await Setting.findOneAndUpdate(
-      {},
-      { $set: { target } },
-      { new: true, upsert: true }
+    console.log(target);
+
+    await connect_SQL.query(
+      "UPDATE settings SET target = ? WHERE idsettings = 1",
+      [JSON.stringify(target)]
     );
+
     res.end();
   } catch (error) {
     logEvents(
@@ -214,11 +181,13 @@ const saveTargetPercent = async (req, res) => {
   }
 };
 
+// pobiera kolumny tabeli dla Ustawienia kolumn tabeli sql
 const getColumns = async (req, res) => {
   try {
-    const result = await Setting.find({}).exec();
-    const { columns } = result[0];
-    res.json(columns);
+    const [columns] = await connect_SQL.query(
+      "Select columns FROM settings WHERE idsettings = 1"
+    );
+    res.json(columns[0].columns);
   } catch (error) {
     logEvents(
       `settingsController, getColumns: ${error}`,

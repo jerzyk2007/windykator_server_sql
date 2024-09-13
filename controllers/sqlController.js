@@ -1,5 +1,6 @@
 const { connect_SQL } = require("../config/dbConn");
 const User = require("../model/User");
+const Setting = require("../model/Setting");
 
 const copyUsersToMySQL = async (req, res) => {
   try {
@@ -22,13 +23,6 @@ const copyUsersToMySQL = async (req, res) => {
         refreshToken: item.refreshToken ? item.refreshToken : "",
       };
     });
-
-    // const data = await connect_SQL.query(' SELECT * FROM users');
-    // const [rows, fields] = await connect_SQL.execute(" SELECT * FROM users");
-    // console.log(rows);
-    // if (!data) {
-    //     return res.status(404);
-    // }
 
     if (cleanedData.length === 0) {
       console.log("Brak danych do wgrania.");
@@ -68,7 +62,60 @@ const copyUsersToMySQL = async (req, res) => {
     });
   }
 };
+const copySettingsToMySQL = async (req, res) => {
+  try {
+    const settingsData = await Setting.find().exec();
+
+    const roles = Object.fromEntries(settingsData[0].roles);
+    const departments = settingsData[0].departments;
+    const columns = settingsData[0].columns;
+    const permissions = settingsData[0].permissions;
+    const target = settingsData[0].target;
+
+    const [result] = await connect_SQL.query(
+      "INSERT INTO settings (roles, departments, columns, permissions, target) VALUES (?, ?, ?, ?, ?)",
+      [
+        JSON.stringify(roles),
+        JSON.stringify(departments),
+        JSON.stringify(columns),
+        JSON.stringify(permissions),
+        JSON.stringify(target),
+      ]
+    );
+    console.log(result);
+    // // Budujemy część zapytania SQL z nazwami kolumn
+    // const sql = `INSERT INTO users (${columns.join(", ")}) VALUES (${columns
+    //   .map(() => "?")
+    //   .join(", ")})`;
+
+    // for (const item of cleanedData) {
+    //   // Wyciągamy wartości dla każdej kolumny z obiektu
+    //   const values = columns.map((column) => item[column]);
+
+    //   // Wykonujemy zapytanie
+    //   await connect_SQL.execute(sql, values);
+    // }
+
+    // console.log("Dane zostały pomyślnie wgrane do bazy danych MySQL.");
+
+    // res.json({
+    //   success: true,
+    //   message: "All Users Records",
+    //   // totalUsers: data[0].length,
+    //   data: cleanedData,
+    // });
+    res.end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      succes: false,
+      message: "Error in Get All User API",
+      error: err,
+    });
+  }
+};
 
 module.exports = {
   copyUsersToMySQL,
+  copySettingsToMySQL,
 };
