@@ -118,6 +118,7 @@ const copySettingsToMySQL = async (req, res) => {
 const copyDocumentsToMySQL = async (req, res) => {
   try {
     const result = await Document.find({}).lean();
+
     // const [documents] = await connect_SQL.query(
     //   "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     //   [
@@ -129,6 +130,7 @@ const copyDocumentsToMySQL = async (req, res) => {
     //   ]
     // );
     const saveToDB = result.map((item) => {
+      // console.log(item.UWAGI_Z_FAKTURY[0]);
       connect_SQL.query(
         "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
@@ -143,16 +145,28 @@ const copyDocumentsToMySQL = async (req, res) => {
           item.DORADCA,
           item.NR_REJESTRACYJNY,
           item.NR_SZKODY,
-          JSON.stringify(item.UWAGI_Z_FAKTURY),
+          item.UWAGI_Z_FAKTURY[0],
         ]
       );
+      // connect_SQL.query(
+      //   "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      //   [
+      //     item.NUMER_FV,
+      //     item.BRUTTO,
+      //     item.NETTO,
+      //     item.DZIAL,
+      //     item.DO_ROZLICZENIA,
+      //     item.DATA_FV,
+      //     item.TERMIN,
+      //     item.KONTRAHENT,
+      //     item.DORADCA,
+      //     item.NR_REJESTRACYJNY,
+      //     item.NR_SZKODY,
+      //     JSON.stringify(item.UWAGI_Z_FAKTURY),
+      //   ]
+      // );
     });
-    // const test = result.map((item) => {
-    //   console.log(item.DATA_FV);
-    // });
-    // const [test] = await connect_SQL.query("SELECT * FROM documents")
 
-    // res.json(test);
     res.end();
   } catch (err) {
     console.error(err);

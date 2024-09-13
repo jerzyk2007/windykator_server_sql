@@ -312,3 +312,5 @@
 20240913	15:25:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
 20240913	15:25:15	documentsController, getDataDocuments: ReferenceError: result is not defined
 20240913	15:25:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240913	16:45:12	documentsController, getSingleDocument: CastError: Cast to ObjectId failed for value "134" (type string) at path "_id" for model "Documents"
+20240913	17:11:54	documentsController, getSingleDocument: CastError: Cast to ObjectId failed for value "5829" (type string) at path "_id" for model "Documents"
