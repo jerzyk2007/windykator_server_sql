@@ -332,3 +332,18 @@
 20240915	12:24:44	settingsController, getSettings: ReferenceError: result is not defined
 20240915	12:25:25	settingsController, getSettings: ReferenceError: result is not defined
 20240915	12:25:25	settingsController, getSettings: ReferenceError: result is not defined
+20240915	15:42:37	documentsController, changeSingleDocument: TypeError: Cannot read properties of undefined (reading 'length')
+20240915	16:29:04	documentsController, getSingleDocument: Error: Column '_id' in where clause is ambiguous
+20240915	16:35:23	documentsController, changeSingleDocument: Error: Unknown column '_id' in 'field list'
+20240915	16:48:33	documentsController, changeSingleDocument: Error: Unknown column '_id' in 'field list'
+20240915	16:48:37	documentsController, changeSingleDocument: Error: Unknown column '_id' in 'field list'
+20240915	16:53:11	documentsController, changeSingleDocument: Error: Duplicate entry 'FV/BL/95/24/A/D38' for key 'documents_actions.NUMER_FV_UNIQUE'
+20240915	16:53:59	documentsController, changeSingleDocument: Error: Duplicate entry 'FV/BL/95/24/A/D38' for key 'documents_actions.NUMER_FV_UNIQUE'
+20240915	16:55:04	documentsController, changeSingleDocument: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE NUMER_FV_ACTIONS = 'FV/BL/95/24/A/D38'' at line 1
+20240915	16:56:20	documentsController, changeSingleDocument: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE NUMER_FV_ACTIONS = 'FV/BL/95/24/A/D38'' at line 1
+20240915	16:57:18	documentsController, changeSingleDocument: TypeError: Cannot read properties of undefined (reading '_id_actions')
+20240915	16:58:12	documentsController, changeSingleDocument: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE NUMER_FV_ACTIONS = 'FV/BL/95/24/A/D38'' at line 1
+20240915	17:01:47	documentsController, getDataDocuments: TypeError: Cannot destructure property 'permissions' of 'findUser[0][0]' as it is undefined.
+20240915	17:01:47	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240915	17:01:47	documentsController, getDataDocuments: TypeError: Cannot destructure property 'permissions' of 'findUser[0][0]' as it is undefined.
+20240915	17:01:47	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')

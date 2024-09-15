@@ -293,7 +293,6 @@ const saveTableSettings = async (req, res) => {
 };
 
 // wyszukanie uzytkownika żeby zmienić jego ustawienia SQL
-
 const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
@@ -439,7 +438,7 @@ const getRaportDepartmentSettings = async (req, res) => {
   }
 };
 
-// zapisanie ustawień raportu-doradców-tabeli dla użytkownika
+// zapisanie ustawień raportu-doradców-tabeli dla użytkownika SQL
 const saveRaporAdviserSettings = async (req, res) => {
   const { _id } = req.params;
   const { raportAdvisers } = req.body;
@@ -472,7 +471,7 @@ const saveRaporAdviserSettings = async (req, res) => {
   }
 };
 
-// pobieranie ustawień raportu tabeli-działów
+// pobieranie ustawień raportu tabeli-działów SQL
 const getRaportAdviserSettings = async (req, res) => {
   const { _id } = req.params;
   if (!_id) {

@@ -9,11 +9,11 @@ const { connect_SQL } = require("../config/dbConn");
 const getDataDocuments = async (_id, info) => {
   let filteredData = [];
   try {
-    const findUser = await connect_SQL.query(
+    const [findUser] = await connect_SQL.query(
       "SELECT  permissions, username, usersurname, departments FROM users WHERE _id = ?",
       [_id]
     );
-    const { permissions, username, usersurname, departments } = findUser[0][0];
+    const { permissions, username, usersurname, departments } = findUser[0];
 
     const truePermissions = Object.keys(permissions).filter(
       (permission) => permissions[permission]
@@ -26,15 +26,15 @@ const getDataDocuments = async (_id, info) => {
 
     if (info === "actual") {
       [filteredData] = await connect_SQL.query(
-        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV WHERE DO_ROZLICZENIA <> 0"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE DO_ROZLICZENIA <> 0"
       );
     } else if (info === "archive") {
       [filteredData] = await connect_SQL.query(
-        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV WHERE DO_ROZLICZENIA = 0"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE DO_ROZLICZENIA = 0"
       );
     } else if (info === "all") {
       [filteredData] = await connect_SQL.query(
-        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS"
       );
     }
 
@@ -516,8 +516,50 @@ const changeSingleDocument = async (req, res) => {
     // const updatedFieldValue = documentItem[fieldToUpdate];
     // const result = await Document.updateOne({ _id }, documentItem);
 
-    console.log(_id);
-    console.log(documentItem);
+    const [documentsExist] = await connect_SQL.query(
+      "SELECT _id from documents WHERE _id = ?",
+      [_id]
+    );
+
+    if (documentsExist[0]?._id) {
+      await connect_SQL.query(
+        "UPDATE documents SET BRUTTO = ?, NETTO = ? WHERE _id = ?",
+        [documentItem.BRUTTO, documentItem.NETTO, _id]
+      );
+    }
+
+    const [documents_ActionsExist] = await connect_SQL.query(
+      "SELECT _id_actions from documents_actions WHERE NUMER_FV_ACTIONS = ?",
+      [documentItem.NUMER_FV]
+    );
+    if (documents_ActionsExist[0]?._id_actions) {
+      await connect_SQL.query(
+        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?  WHERE  NUMER_FV_ACTIONS = ?",
+        [
+          documentItem.DZIALANIA,
+          documentItem.JAKA_KANCELARIA,
+          documentItem.POBRANO_VAT,
+          documentItem.ZAZNACZ_KONTRAHENTA,
+          JSON.stringify(documentItem.UWAGI_ASYSTENT),
+          documentItem.BLAD_DORADCY,
+          documentItem.NUMER_FV,
+        ]
+      );
+    } else {
+      await connect_SQL.query(
+        "INSERT INTO documents_actions (NUMER_FV_ACTIONS, DZIALANIA, JAKA_KANCELARIA, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          documentItem.NUMER_FV,
+          documentItem.DZIALANIA,
+          documentItem.JAKA_KANCELARIA,
+          documentItem.POBRANO_VAT,
+          documentItem.ZAZNACZ_KONTRAHENTA,
+          JSON.stringify(documentItem.UWAGI_ASYSTENT),
+          documentItem.BLAD_DORADCY,
+        ]
+      );
+    }
+
     res.end();
   } catch (error) {
     logEvents(
@@ -536,8 +578,6 @@ const getDataTable = async (req, res) => {
     return res.status(400).json({ message: "Id and info are required." });
   }
   try {
-    // console.log(_id, info);
-
     const result = await getDataDocuments(_id, info);
 
     const findUser = await connect_SQL.query(
@@ -561,16 +601,16 @@ const getDataTable = async (req, res) => {
   }
 };
 
-// pobiera pojedyńczy dokument
+// pobiera pojedyńczy dokument SQL
 const getSingleDocument = async (req, res) => {
   const { _id } = req.params;
   try {
     // const result = await Document.findOne({ _id });
     const [result] = await connect_SQL.query(
-      "SELECT * FROM documents WHERE _id = ?",
+      "SELECT documents.*, documents_actions.* FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE documents._id = ?",
       [_id]
     );
-    res.json(result);
+    res.json(result[0]);
   } catch (error) {
     logEvents(
       `documentsController, getSingleDocument: ${error}`,
@@ -584,7 +624,6 @@ const getSingleDocument = async (req, res) => {
 module.exports = {
   getAllDocuments,
   documentsFromFile,
-  // getColumns,
   changeSingleDocument,
   getDataTable,
   getDataDocuments,
