@@ -119,62 +119,119 @@ const copyDocumentsToMySQL = async (req, res) => {
   try {
     const result = await Document.find({}).lean();
 
-    // const [documents] = await connect_SQL.query(
-    //   "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    //   [
-    //     JSON.stringify(roles),
-    //     JSON.stringify(departments),
-    //     JSON.stringify(columns),
-    //     JSON.stringify(permissions),
-    //     JSON.stringify(target),
-    //   ]
-    // );
-    const saveToDB = result.map((item) => {
-      // console.log(item.UWAGI_Z_FAKTURY[0]);
-      connect_SQL.query(
-        "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          item.NUMER_FV,
-          item.BRUTTO,
-          item.NETTO,
-          item.DZIAL,
-          item.DO_ROZLICZENIA,
-          item.DATA_FV,
-          item.TERMIN,
-          item.KONTRAHENT,
-          item.DORADCA,
-          item.NR_REJESTRACYJNY,
-          item.NR_SZKODY,
-          item.UWAGI_Z_FAKTURY[0],
-        ]
-      );
-      // connect_SQL.query(
-      //   "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      //   [
-      //     item.NUMER_FV,
-      //     item.BRUTTO,
-      //     item.NETTO,
-      //     item.DZIAL,
-      //     item.DO_ROZLICZENIA,
-      //     item.DATA_FV,
-      //     item.TERMIN,
-      //     item.KONTRAHENT,
-      //     item.DORADCA,
-      //     item.NR_REJESTRACYJNY,
-      //     item.NR_SZKODY,
-      //     JSON.stringify(item.UWAGI_Z_FAKTURY),
-      //   ]
-      // );
-    });
+    const saveToDB = await Promise.all(
+      result.map(async (item) => {
+        const [duplicate] = await connect_SQL.query(
+          "SELECT NUMER_FV FROM documents WHERE NUMER_FV = ?",
+          [item.NUMER_FV]
+        );
+        if (!duplicate.length) {
+          await connect_SQL.query(
+            "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+              item.NUMER_FV,
+              item.BRUTTO,
+              item.NETTO,
+              item.DZIAL,
+              item.DO_ROZLICZENIA,
+              item.DATA_FV,
+              item.TERMIN,
+              item.KONTRAHENT,
+              item.DORADCA,
+              item.NR_REJESTRACYJNY,
+              item.NR_SZKODY,
+              item.UWAGI_Z_FAKTURY[0],
+              "test",
+            ]
+          );
+          // await connect_SQL.query(
+          //   "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          //   [
+          //     item.NUMER_FV,
+          //     item.BRUTTO,
+          //     item.NETTO,
+          //     item.DZIAL,
+          //     item.DO_ROZLICZENIA,
+          //     item.DATA_FV,
+          //     item.TERMIN,
+          //     item.KONTRAHENT,
+          //     item.DORADCA,
+          //     item.NR_REJESTRACYJNY,
+          //     item.NR_SZKODY,
+          //     item.UWAGI_Z_FAKTURY[0],
+          //   ]
+          // );
+        } else {
+          console.log("duplicate");
+        }
+      })
+    );
+    console.log("finish");
+
+    // const saveToDB = result.map((item) => {
+    //   connect_SQL.query(
+    //     "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    //     [
+    //       item.NUMER_FV,
+    //       item.BRUTTO,
+    //       item.NETTO,
+    //       item.DZIAL,
+    //       item.DO_ROZLICZENIA,
+    //       item.DATA_FV,
+    //       item.TERMIN,
+    //       item.KONTRAHENT,
+    //       item.DORADCA,
+    //       item.NR_REJESTRACYJNY,
+    //       item.NR_SZKODY,
+    //       item.UWAGI_Z_FAKTURY[0],
+    //     ]
+    //   );
+    // });
 
     res.end();
   } catch (err) {
     console.error(err);
-    res.status(500).send({
-      succes: false,
-      message: "Error in Get All User API",
-      error: err,
-    });
+    res.status(500);
+  }
+};
+
+const copyDocuments_ActionsToMySQL = async (req, res) => {
+  try {
+    const result = await Document.find({}).lean();
+
+    const saveToDB = await Promise.all(
+      result.map(async (item) => {
+        const [duplicate] = await connect_SQL.query(
+          "SELECT NUMER_FV FROM documents_actions WHERE NUMER_FV = ?",
+          [item.NUMER_FV]
+        );
+        if (!duplicate.length) {
+          await connect_SQL.query(
+            "INSERT INTO documents_actions (NUMER_FV, DZIALANIA, JAKA_KANCELARIA, KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, NUMER_SPRAWY_BECARED, POBRANO_VAT, STATUS_SPRAWY_KANCELARIA, STATUS_SPRAWY_WINDYKACJA, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+              item.NUMER_FV,
+              item.DZIALANIA,
+              item.JAKA_KANCELARIA,
+              item.KOMENTARZ_KANCELARIA_BECARED,
+              item.KWOTA_WINDYKOWANA_BECARED,
+              item.NUMER_SPRAWY_BECARED,
+              item.POBRANO_VAT,
+              item.STATUS_SPRAWY_KANCELARIA,
+              item.STATUS_SPRAWY_WINDYKACJA,
+              item.ZAZNACZ_KONTRAHENTA,
+              JSON.stringify(item.UWAGI_ASYSTENT),
+              item.BLAD_DORADCY ? item.BLAD_DORADCY : "NIE",
+            ]
+          );
+        }
+      })
+    );
+    console.log("finish");
+    res.end();
+    // res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500);
   }
 };
 
@@ -182,4 +239,5 @@ module.exports = {
   copyUsersToMySQL,
   copySettingsToMySQL,
   copyDocumentsToMySQL,
+  copyDocuments_ActionsToMySQL,
 };

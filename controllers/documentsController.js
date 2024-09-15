@@ -5,7 +5,7 @@ const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 
-//pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all
+//pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (_id, info) => {
   let filteredData = [];
   try {
@@ -13,10 +13,6 @@ const getDataDocuments = async (_id, info) => {
       "SELECT  permissions, username, usersurname, departments FROM users WHERE _id = ?",
       [_id]
     );
-    // console.log(findUser[0][0]);
-    // const userlogin = "jerzy.komorowski@krotoski.com";
-    // const findUser = await User.find({ userlogin });
-    // const { permissions, username, usersurname, departments } = findUser[0];
     const { permissions, username, usersurname, departments } = findUser[0][0];
 
     const truePermissions = Object.keys(permissions).filter(
@@ -26,69 +22,22 @@ const getDataDocuments = async (_id, info) => {
       (department) => departments[department]
     );
 
-    // const trueDepartments = Array.from(departments.entries())
-    //   .filter(([department, value]) => value)
-    //   .map(([department]) => department);
-
     const DORADCA = `${usersurname} ${username}`;
-    // lean oczyszcza dane mongo
-    // const result = await Document.find({}).lean();
-
-    // const [result] = await connect_SQL.query("SELECT * FROM documents");
-    // console.log(result);
 
     if (info === "actual") {
-      // filteredData = result.filter((item) => item.DO_ROZLICZENIA !== 0);
-      // [filteredData] = await connect_SQL.query(
-      //   "SELECT * FROM documents WHERE DO_ROZLICZENIA <> 0"
-      // );
       [filteredData] = await connect_SQL.query(
-        "SELECT *, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN > NOW(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents WHERE DO_ROZLICZENIA <> 0"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV WHERE DO_ROZLICZENIA <> 0"
       );
-      // filteredData = result;
     } else if (info === "archive") {
-      // filteredData = result.filter((item) => item.DO_ROZLICZENIA === 0);
       [filteredData] = await connect_SQL.query(
-        "SELECT *, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN > NOW(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents WHERE DO_ROZLICZENIA = 0"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV WHERE DO_ROZLICZENIA = 0"
       );
     } else if (info === "all") {
       [filteredData] = await connect_SQL.query(
-        "SELECT *, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN > NOW(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV"
       );
     }
 
-    // const newKeys = filteredData.map((item) => {
-    //   const date = new Date();
-    //   const lastDate = new Date(item.TERMIN);
-    //   const timeDifference = date - lastDate;
-    //   const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-    //   const ILE_DNI_PO_TERMINIE = daysDifference;
-    //   let CZY_PRZETERMINOWANE = "";
-    //   if (daysDifference > 0) {
-    //     CZY_PRZETERMINOWANE = "P";
-    //   } else {
-    //     CZY_PRZETERMINOWANE = "N";
-    //   }
-    //   const fullVAT = (item.BRUTTO - item.NETTO).toFixed(2);
-    //   const halfVAT = ((item.BRUTTO - item.NETTO) / 2).toFixed(2);
-
-    //   return {
-    //     ...item,
-    //     ILE_DNI_PO_TERMINIE: ILE_DNI_PO_TERMINIE,
-    //     CZY_PRZETERMINOWANE: CZY_PRZETERMINOWANE,
-    //     "100_VAT": Number(fullVAT),
-    //     "50_VAT": Number(halfVAT),
-    //   };
-    // });
-
-    // let dataToExport = [];
-    // if (truePermissions[0] === "Basic") {
-    //   dataToExport = newKeys.filter((item) => item.DORADCA === DORADCA);
-    // } else if (truePermissions[0] === "Standard") {
-    //   dataToExport = newKeys.filter((item) =>
-    //     trueDepartments.includes(item.DZIAL)
-    //   );
-    // }
     if (truePermissions[0] === "Basic") {
       filteredData = filteredData.filter((item) => item.DORADCA === DORADCA);
     } else if (truePermissions[0] === "Standard") {
@@ -103,8 +52,6 @@ const getDataDocuments = async (_id, info) => {
       `documentsController, getDataDocuments: ${error}`,
       "reqServerErrors.txt"
     );
-    // console.error(error);
-    // res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -215,7 +162,7 @@ const becaredFile = async (rows, res) => {
   }
 };
 
-// funkcja która dodaje dane z z pliku dokumenty autostacja
+// funkcja która dodaje dane z pliku excel - dokumenty autostacja
 const ASFile = async (documents, res) => {
   if (
     !("NUMER" in documents[0]) ||
@@ -263,45 +210,6 @@ const ASFile = async (documents, res) => {
       };
     });
 
-    // const checkDocuments = documents.map((document) => {
-    //   const indexD = document.NUMER.lastIndexOf("D");
-    //   const DZIAL_NR = document.NUMER.substring(indexD);
-
-    //   let DZIAL = "";
-
-    //   if (DZIAL_NR === "D8") {
-    //     DZIAL = "D08";
-    //   } else if (DZIAL_NR === "D38") {
-    //     DZIAL = "D38";
-    //   } else if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
-    //     DZIAL = "D48/D58";
-    //   } else if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
-    //     DZIAL = "D68/D78";
-    //   } else if (DZIAL_NR === "D88") {
-    //     DZIAL = "D88";
-    //   } else if (DZIAL_NR === "D98") {
-    //     DZIAL = "D98";
-    //   } else if (
-    //     DZIAL_NR === "D118" ||
-    //     DZIAL_NR === "D148" ||
-    //     DZIAL_NR === "D168"
-    //   ) {
-    //     DZIAL = "D118/D148";
-    //   } else if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
-    //     DZIAL = "D308/D318";
-    //   } else {
-    //     DZIAL = "BRAK";
-    //   }
-    //   return {
-    //     ...document,
-    //     DZIAL: DZIAL,
-    //   };
-    // });
-
-    // const filteredDocumentsBL = checkDocuments.filter(
-    //   (item) => item.DZIAL !== "BRAK"
-    // );
-
     // szukam brakujących faktur w bazie danych i uswam te które mają DZIAL=BRAK
     const filteredDocuments = [];
     for (const document of checkDocuments) {
@@ -330,13 +238,10 @@ const ASFile = async (documents, res) => {
           BRUTTO: document["W. BRUTTO"].toFixed(2),
           NETTO: document["W. NETTO"].toFixed(2),
           DO_ROZLICZENIA: found["DO_ROZLICZENIA"].toFixed(2),
-          // "100_VAT": document["W. BRUTTO"] - document["W. NETTO"],
-          // "50_VAT": (document["W. BRUTTO"] - document["W. NETTO"]) / 2,
           NR_REJESTRACYJNY: document["NR REJESTRACYJNY"]
             ? document["NR REJESTRACYJNY"]
             : "",
           KONTRAHENT: document["KONTRAHENT"] ? document["KONTRAHENT"] : "",
-          // ASYSTENTKA,
           DORADCA: document["PRZYGOTOWAŁ"] ? document["PRZYGOTOWAŁ"] : "",
           NR_SZKODY: document["NR SZKODY"] ? document["NR SZKODY"] : "",
           UWAGI_ASYSTENT: [],
@@ -350,7 +255,6 @@ const ASFile = async (documents, res) => {
           NUMER_SPRAWY_BECARED: "",
           KWOTA_WINDYKOWANA_BECARED: "",
           BLAD_DORADCY: "NIE",
-          // BLAD_W_DOKUMENTACJI: "NIE",
           POBRANO_VAT: "Nie dotyczy",
           ZAZNACZ_KONTRAHENTA: "Nie",
           CZY_PRZETERMINOWANE: "",
@@ -368,121 +272,6 @@ const ASFile = async (documents, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-// const ASFile = async (documents, res) => {
-//   if (
-//     !("NUMER" in documents[0]) ||
-//     !("WYSTAWIONO" in documents[0]) ||
-//     !("W. BRUTTO" in documents[0]) ||
-//     !("W. NETTO" in documents[0]) ||
-//     !("NR REJESTRACYJNY" in documents[0]) ||
-//     !("KONTRAHENT" in documents[0]) ||
-//     !("PRZYGOTOWAŁ" in documents[0]) ||
-//     !("NR SZKODY" in documents[0]) ||
-//     !("UWAGI" in documents[0])
-//   ) {
-//     return res.status(500).json({ error: "Invalid file" });
-//   }
-
-//   try {
-//     const allDocuments = await Document.find({});
-//     const allSettlements = await UpdateDB.find({}, { settlements: 1 });
-//     const settlements = allSettlements[0].settlements;
-
-//     let DZIAL = "";
-//     let ASYSTENTKA = "";
-//     // szukam brakujących faktur w bazie danych
-//     const filteredDocuments = [];
-//     for (const document of documents) {
-//       const found = allDocuments.find((doc) => doc.NUMER_FV === document.NUMER);
-
-//       if (!found) {
-//         const indexD = document.NUMER.lastIndexOf("D");
-//         const DZIAL_NR = document.NUMER.substring(indexD);
-
-//         if (DZIAL_NR === "D8") {
-//           DZIAL = "D08";
-//         }
-//         if (DZIAL_NR === "D38") {
-//           DZIAL = "D38";
-//         }
-//         if (DZIAL_NR === "D48" || DZIAL_NR === "D58") {
-//           DZIAL = "D48/D58";
-//         }
-//         if (DZIAL_NR === "D68" || DZIAL_NR === "D78") {
-//           DZIAL = "D68/D78";
-//         }
-//         if (DZIAL_NR === "D88") {
-//           DZIAL = "D88";
-//         }
-//         if (DZIAL_NR === "D98") {
-//           DZIAL = "D98";
-//         }
-//         if (DZIAL_NR === "D118" || DZIAL_NR === "D148" || DZIAL_NR === "D168") {
-//           DZIAL = "D118/D148";
-//         }
-//         if (DZIAL_NR === "D308" || DZIAL_NR === "D318") {
-//           DZIAL = "D308/D318";
-//         }
-
-//         filteredDocuments.push(document);
-//       }
-//     }
-
-//     // ta funkcja usuwa faktury których nie ma w bazie danych bo sa rozliczone, zmienić po otrzymaniu docelowego pliku, obecnie będzie trudno ze względu na brak informacji o terminie płatności
-//     const newDocumentsToDB = [];
-//     for (const document of filteredDocuments) {
-//       const found = settlements.find(
-//         (settlement) => settlement.NUMER_FV === document.NUMER
-//       );
-//       if (found) {
-//         const newDocument = {
-//           NUMER_FV: document["NUMER"],
-//           DZIAL,
-//           DATA_FV: document["WYSTAWIONO"]
-//             ? excelDateToISODate(document["WYSTAWIONO"]).toString()
-//             : "",
-//           TERMIN: found["TERMIN"] ? found["TERMIN"] : "",
-//           BRUTTO: document["W. BRUTTO"].toFixed(2),
-//           BRUTTO: document["W. BRUTTO"].toFixed(2),
-//           NETTO: document["W. NETTO"].toFixed(2),
-//           DO_ROZLICZENIA: found["DO_ROZLICZENIA"].toFixed(2),
-//           // "100_VAT": document["W. BRUTTO"] - document["W. NETTO"],
-//           // "50_VAT": (document["W. BRUTTO"] - document["W. NETTO"]) / 2,
-//           NR_REJESTRACYJNY: document["NR REJESTRACYJNY"]
-//             ? document["NR REJESTRACYJNY"]
-//             : "",
-//           KONTRAHENT: document["KONTRAHENT"] ? document["KONTRAHENT"] : "",
-//           // ASYSTENTKA,
-//           DORADCA: document["PRZYGOTOWAŁ"] ? document["PRZYGOTOWAŁ"] : "",
-//           NR_SZKODY: document["NR SZKODY"] ? document["NR SZKODY"] : "",
-//           UWAGI_ASYSTENT: [],
-//           UWAGI_Z_FAKTURY: document["UWAGI"] ? document["UWAGI"] : "",
-//           STATUS_SPRAWY_WINDYKACJA: "",
-//           DZIALANIA: "BRAK",
-//           JAKA_KANCELARIA: "BRAK",
-//           STATUS_SPRAWY_KANCELARIA: "",
-//           KOMENTARZ_KANCELARIA_BECARED: "",
-//           DATA_KOMENTARZA_BECARED: "",
-//           NUMER_SPRAWY_BECARED: "",
-//           KWOTA_WINDYKOWANA_BECARED: "",
-//           BLAD_DORADCY: "NIE",
-//           // BLAD_W_DOKUMENTACJI: "NIE",
-//           POBRANO_VAT: "Nie dotyczy",
-//           ZAZNACZ_KONTRAHENTA: "Nie",
-//           CZY_PRZETERMINOWANE: "",
-//         };
-//         newDocumentsToDB.push(newDocument);
-//       }
-//     }
-//     await Document.insertMany(newDocumentsToDB);
-
-//     res.status(201).json({ message: "Documents are updated" });
-//   } catch (error) {
-//     logEvents(`documentsController, ASFile: ${error}`, "reqServerErrors.txt");
-//     console.error(error);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
 
 // funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
@@ -695,28 +484,29 @@ const documentsFromFile = async (req, res) => {
 };
 
 // pobiera wszystkie klucze z pierwszego documentu żeby mozna było nazwy, filtry i ustawienia kolumn edytować, głównie chodzi o nowo dodane kolumny
-const getColumns = async (req, res) => {
-  try {
-    const firstDocument = await Document.findOne();
-    if (firstDocument) {
-      // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
-      const keysArray = Object.keys(firstDocument.toObject());
-      const newArray = keysArray.filter(
-        (item) => item !== "_id" && item !== "__v"
-      );
-      res.json(newArray);
-    } else {
-      return res.status(400).json({ error: "Empty collection." });
-    }
-  } catch (error) {
-    logEvents(
-      `documentsController, getColumns: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+// const getColumns = async (req, res) => {
+//   try {
+//     const firstDocument = await Document.findOne();
+//     // console.log(firstDocument);
+//     if (firstDocument) {
+//       // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
+//       const keysArray = Object.keys(firstDocument.toObject());
+//       const newArray = keysArray.filter(
+//         (item) => item !== "_id" && item !== "__v"
+//       );
+//       res.json(newArray);
+//     } else {
+//       return res.status(400).json({ error: "Empty collection." });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, getColumns: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
 const changeSingleDocument = async (req, res) => {
@@ -724,7 +514,10 @@ const changeSingleDocument = async (req, res) => {
   try {
     // const fieldToUpdate = Object.keys(documentItem)[0]; // Pobierz nazwę pola do aktualizacji
     // const updatedFieldValue = documentItem[fieldToUpdate];
-    const result = await Document.updateOne({ _id }, documentItem);
+    // const result = await Document.updateOne({ _id }, documentItem);
+
+    console.log(_id);
+    console.log(documentItem);
     res.end();
   } catch (error) {
     logEvents(
@@ -791,7 +584,7 @@ const getSingleDocument = async (req, res) => {
 module.exports = {
   getAllDocuments,
   documentsFromFile,
-  getColumns,
+  // getColumns,
   changeSingleDocument,
   getDataTable,
   getDataDocuments,

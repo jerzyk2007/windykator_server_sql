@@ -1,8 +1,5 @@
-const Setting = require("../model/Setting");
-const User = require("../model/User");
-const Document = require("../model/Document");
-const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
+const { logEvents } = require("../middleware/logEvents");
 
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny SQL
 const changeColumns = async (req, res) => {
@@ -52,8 +49,15 @@ const changeColumns = async (req, res) => {
 //pobieranie unikalnych nazw Działów z documentów, dzięki temu jesli jakiś przybędzie/ubędzie to na Front będzie to widac w ustawieniach użytkonika
 const getFilteredDepartments = async () => {
   try {
-    const result = await Document.find().exec();
-    return result;
+    const [mappedDepartments] = await connect_SQL.query(
+      "SELECT DZIAL FROM documents"
+    );
+    const uniqueDepartmentsValues = Array.from(
+      new Set(mappedDepartments.map((filtr) => filtr["DZIAL"]))
+    )
+      .filter(Boolean)
+      .sort();
+    return uniqueDepartmentsValues;
   } catch (error) {
     logEvents(
       `settingsController, getFilteredDepartments: ${error}`,
@@ -68,7 +72,7 @@ const getFilteredDepartments = async () => {
 const getSettings = async (req, res) => {
   try {
     const [userSettings] = await connect_SQL.query(
-      "SELECT roles, permissions FROM settings WHERE idsettings = 1"
+      "SELECT roles, permissions, columns FROM settings WHERE idsettings = 1"
     );
 
     const roles = Object.entries(userSettings[0].roles).map(([role]) => role);
@@ -105,23 +109,13 @@ const getSettings = async (req, res) => {
       );
     });
 
-    // console.log(rolesToRemove1);
-
-    const result = await Setting.find().exec();
-
-    const columns = [...result[0].columns];
-    const permissions = [...result[0].permissions];
-
-    const mappedDepartments = await getFilteredDepartments();
-    const uniqueDepartmentsValues = Array.from(
-      new Set(mappedDepartments.map((filtr) => filtr["DZIAL"]))
-    ).filter(Boolean);
+    const uniqueDepartments = await getFilteredDepartments();
 
     res.json([
       { roles },
-      { departments: uniqueDepartmentsValues },
-      { columns },
-      { permissions },
+      { departments: uniqueDepartments },
+      { columns: userSettings[0].columns },
+      { permissions: userSettings[0].permissions },
     ]);
   } catch (error) {
     logEvents(
@@ -136,17 +130,14 @@ const getSettings = async (req, res) => {
 // pobieranie unikalnych nazw działów
 const getDepartments = async (req, res) => {
   try {
-    const mappedDepartments = await getFilteredDepartments();
-    const uniqueDepartmentsValues = Array.from(
-      new Set(mappedDepartments.map((filtr) => filtr["DZIAL"]))
-    ).filter(Boolean);
+    const uniqueDepartments = await getFilteredDepartments();
 
     //pobieram zapisane cele
     const [getTarget] = await connect_SQL.query(
       "SELECT target from settings WHERE idsettings = 1"
     );
     res.json({
-      departments: uniqueDepartmentsValues,
+      departments: uniqueDepartments,
       target: getTarget[0].target,
     });
   } catch (error) {
@@ -163,8 +154,6 @@ const getDepartments = async (req, res) => {
 const saveTargetPercent = async (req, res) => {
   const { target } = req.body;
   try {
-    console.log(target);
-
     await connect_SQL.query(
       "UPDATE settings SET target = ? WHERE idsettings = 1",
       [JSON.stringify(target)]

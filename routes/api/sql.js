@@ -4,6 +4,7 @@ const {
   copyUsersToMySQL,
   copySettingsToMySQL,
   copyDocumentsToMySQL,
+  copyDocuments_ActionsToMySQL,
 } = require("../../controllers/sqlController");
 
 // router object
@@ -14,5 +15,6 @@ router.get("/copyUsers", copyUsersToMySQL);
 
 router.get("/copySettings", copySettingsToMySQL);
 router.get("/copyDocuments", copyDocumentsToMySQL);
+router.get("/copyDocuments_Actions", copyDocuments_ActionsToMySQL);
 
 module.exports = router;

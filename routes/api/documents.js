@@ -17,9 +17,9 @@ router
   .route("/change-single-document/:_id")
   .patch(verifyRoles(ROLES_LIST.User), Documents.changeSingleDocument);
 
-router
-  .route("/get-columns")
-  .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL), Documents.getColumns);
+// router
+//   .route("/get-columns")
+//   .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL), Documents.getColumns);
 
 router
   .route("/send-documents/:type")

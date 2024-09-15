@@ -314,3 +314,21 @@
 20240913	15:25:15	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
 20240913	16:45:12	documentsController, getSingleDocument: CastError: Cast to ObjectId failed for value "134" (type string) at path "_id" for model "Documents"
 20240913	17:11:54	documentsController, getSingleDocument: CastError: Cast to ObjectId failed for value "5829" (type string) at path "_id" for model "Documents"
+20240915	11:29:08	settingsController, getSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELET d.*, da.* FROM documents AS d JOIN documents_actions AS da ON d_id = da._i' at line 1
+20240915	11:29:08	settingsController, getSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELET d.*, da.* FROM documents AS d JOIN documents_actions AS da ON d_id = da._i' at line 1
+20240915	11:29:34	settingsController, getSettings: Error: Unknown column 'd_id' in 'on clause'
+20240915	11:29:35	settingsController, getSettings: Error: Unknown column 'd_id' in 'on clause'
+20240915	11:32:26	settingsController, getSettings: Error: Unknown column 'd.id' in 'on clause'
+20240915	11:32:27	settingsController, getSettings: Error: Unknown column 'd.id' in 'on clause'
+20240915	11:50:28	settingsController, getSettings: Error: Unknown column '_id' in 'where clause'
+20240915	11:50:29	settingsController, getSettings: Error: Unknown column '_id' in 'where clause'
+20240915	11:50:58	settingsController, getSettings: Error: Unknown column '_idsettings' in 'where clause'
+20240915	11:50:59	settingsController, getSettings: Error: Unknown column '_idsettings' in 'where clause'
+20240915	11:51:46	settingsController, getSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
+20240915	11:51:46	settingsController, getSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
+20240915	12:19:43	settingsController, getDepartments: ReferenceError: getFilteredDepartments is not defined
+20240915	12:19:43	settingsController, getDepartments: ReferenceError: getFilteredDepartments is not defined
+20240915	12:24:44	settingsController, getSettings: ReferenceError: result is not defined
+20240915	12:24:44	settingsController, getSettings: ReferenceError: result is not defined
+20240915	12:25:25	settingsController, getSettings: ReferenceError: result is not defined
+20240915	12:25:25	settingsController, getSettings: ReferenceError: result is not defined

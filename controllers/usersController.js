@@ -1,8 +1,7 @@
-const User = require("../model/User");
+const { connect_SQL } = require("../config/dbConn");
 const bcryptjs = require("bcryptjs");
 const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
-const { connect_SQL } = require("../config/dbConn");
 
 // rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
@@ -293,55 +292,6 @@ const saveTableSettings = async (req, res) => {
   }
 };
 
-// pobieranie ustawień tabeli/ obecnie jest pobierane równocześnie z danymi tabeli
-// const getTableSettings = async (req, res) => {
-//   const { _id } = req.params;
-//   if (!_id) {
-//     return res.status(400).json({ message: "Userlogin is required." });
-//   }
-//   try {
-//     const findUser = await User.findOne({ _id }).exec();
-//     if (findUser) {
-//       console.log("findUser.tableSettings");
-//       res.json(findUser.tableSettings);
-//       // res.json({});
-//     } else {
-//       return res.status(404).json({ message: "User not found." });
-//     }
-//   } catch (error) {
-//     logEvents(
-//       `usersController, getTableSettings: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     console.error(error);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
-
-// pobieranie column które może widziec użytkownik
-// const getUserColumns = async (req, res) => {
-//   const { _id } = req.params;
-//   if (!_id) {
-//     return res.status(400).json({ message: "Userlogin is required." });
-//   }
-//   try {
-//     const findUser = await User.findOne({ _id }).exec();
-//     if (findUser) {
-//       console.log(findUser.columns);
-//       res.json(findUser.columns);
-//     } else {
-//       return res.status(404).json({ message: "User not found." });
-//     }
-//   } catch (error) {
-//     logEvents(
-//       `usersController, getUserColumns: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     console.error(error);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
-
 // wyszukanie uzytkownika żeby zmienić jego ustawienia SQL
 
 const getUsersData = async (req, res) => {
@@ -512,17 +462,6 @@ const saveRaporAdviserSettings = async (req, res) => {
         .status(400)
         .json({ message: "Table settings are not changed" });
     }
-    // const findUser = await User.findOne({ _id }).exec();
-    // if (findUser) {
-    //   const result = await User.updateOne(
-    //     { _id },
-    //     { $set: { "raportSettings.raportAdvisers": raportAdvisers } },
-    //     { upsert: true }
-    //   );
-    //   res.status(201).json({ message: "Table settings are changed" });
-    // } else {
-    //   res.status(400).json({ message: "Table settings are not changed" });
-    // }
   } catch (error) {
     logEvents(
       `usersController, saveRaporAdviserSettings: ${error}`,
@@ -570,8 +509,6 @@ module.exports = {
   changeUserDepartments,
   deleteUser,
   saveTableSettings,
-  // getTableSettings,
-  // getUserColumns,
   getUsersData,
   changeRoles,
   changeColumns,
