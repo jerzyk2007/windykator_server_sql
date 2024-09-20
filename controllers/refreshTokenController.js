@@ -16,7 +16,7 @@ const handleRefreshToken = async (req, res) => {
     // const findUser = await User.findOne({ refreshToken }).exec();
 
     const [findUser] = await connect_SQL.query(
-      "SELECT _id, userlogin, username, usersurname, permissions, roles FROM users WHERE refreshToken = ?",
+      "SELECT id_user, userlogin, username, usersurname, permissions, roles FROM users WHERE refreshToken = ?",
       [refreshToken]
     );
 
@@ -51,7 +51,7 @@ const handleRefreshToken = async (req, res) => {
           username: findUser[0].username,
           usersurname: findUser[0].usersurname,
           permissions: findUser[0].permissions,
-          _id: findUser[0]._id,
+          id_user: findUser[0].id_user,
         });
       }
     );

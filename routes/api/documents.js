@@ -10,7 +10,7 @@ const upload = multer({ storage: storage });
 
 // pobiera wszytskie faktury wg uprawnień oraz actula/archive/all
 router
-  .route("/get-all/:_id/:info")
+  .route("/get-all/:id_user/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getAllDocuments);
 
 router
@@ -38,5 +38,10 @@ router
 router
   .route("/get-single-document/:_id")
   .get(verifyRoles(ROLES_LIST.User), Documents.getSingleDocument);
+
+// pobiera wszytskie nazwy kolumn z dowolnego wiersza dla ustawien systemu
+router
+  .route("/get-columns-name")
+  .get(verifyRoles(ROLES_LIST.User), Documents.getColumnsName);
 
 module.exports = router;

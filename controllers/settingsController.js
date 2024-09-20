@@ -11,7 +11,7 @@ const changeColumns = async (req, res) => {
     );
 
     const [userColumns] = await connect_SQL.query(
-      "SELECT _id, columns FROM users"
+      "SELECT id_user, columns FROM users"
     );
 
     for (const user of userColumns) {
@@ -30,10 +30,10 @@ const changeColumns = async (req, res) => {
           user.columns.splice(i, 1);
         }
       }
-      await connect_SQL.query("Update users SET columns = ? WHERE _id = ?", [
-        JSON.stringify(user.columns),
-        user._id,
-      ]);
+      await connect_SQL.query(
+        "Update users SET columns = ? WHERE id_user = ?",
+        [JSON.stringify(user.columns), user.id_user]
+      );
     }
     res.end();
   } catch (error) {

@@ -13,7 +13,7 @@ const handleLogin = async (req, res) => {
     }
 
     const [result] = await connect_SQL.query(
-      "SELECT userlogin, username, usersurname, password, _id, permissions, roles FROM users WHERE userlogin = ?",
+      "SELECT userlogin, username, usersurname, password, id_user, permissions, roles FROM users WHERE userlogin = ?",
       [userlogin]
     );
     if (!result[0]?.userlogin) {
@@ -48,7 +48,7 @@ const handleLogin = async (req, res) => {
           userlogin: result[0].userlogin,
           username: result[0].username,
           usersurname: result[0].usersurname,
-          _id: result[0]._id,
+          id_user: result[0].id_user,
           roles,
           permissions: result[0].permissions,
         });

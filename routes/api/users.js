@@ -4,55 +4,55 @@ const usersController = require("../../controllers/usersController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
-router.route("/change-pass/:_id").patch(
+router.route("/change-pass/:id_user").patch(
   // verifyRoles(ROLES_LIST.User || ROLES_LIST.FK),
   usersController.changePassword
 );
 
 router
-  .route("/another-user-change-pass/:_id")
+  .route("/another-user-change-pass/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     usersController.changePasswordAnotherUser
   );
 
 router
-  .route("/change-login/:_id")
+  .route("/change-login/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
-    usersController.handleChangeLogin
+    usersController.changeLogin
   );
 
 router
-  .route("/change-name/:_id")
+  .route("/change-name/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
-    usersController.handleChangeName
+    usersController.changeName
   );
 
 router
-  .route("/change-roles/:_id")
+  .route("/change-roles/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     usersController.changeRoles
   );
 
 router
-  .route("/change-columns/:_id")
+  .route("/change-columns/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     usersController.changeColumns
   );
 
 router
-  .route("/change-permissions/:_id")
+  .route("/change-permissions/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     usersController.changeUserPermissions
   );
 
 router
-  .route("/change-departments/:_id")
+  .route("/change-departments/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     usersController.changeUserDepartments
@@ -66,7 +66,7 @@ router
   );
 
 router
-  .route("/delete-user/:_id")
+  .route("/delete-user/:id_user")
   .delete(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL),
     usersController.deleteUser
@@ -80,32 +80,32 @@ router
   );
 
 router
-  .route("/save-table-settings/:_id")
+  .route("/save-table-settings/:id_user")
   .patch(verifyRoles(ROLES_LIST.User), usersController.saveTableSettings);
 
 router
-  .route("/save-raport-departments-settings/:_id")
+  .route("/save-raport-departments-settings/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.User),
     usersController.saveRaporDepartmentSettings
   );
 
 router
-  .route("/get-raport-departments-settings/:_id")
+  .route("/get-raport-departments-settings/:id_user")
   .get(
     verifyRoles(ROLES_LIST.User),
     usersController.getRaportDepartmentSettings
   );
 
 router
-  .route("/save-raport-advisers-settings/:_id")
+  .route("/save-raport-advisers-settings/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.User),
     usersController.saveRaporAdviserSettings
   );
 
 router
-  .route("/get-raport-advisers-settings/:_id")
+  .route("/get-raport-advisers-settings/:id_user")
   .get(verifyRoles(ROLES_LIST.User), usersController.getRaportAdviserSettings);
 
 module.exports = router;

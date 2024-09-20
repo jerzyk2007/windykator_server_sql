@@ -347,3 +347,52 @@
 20240915	17:01:47	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
 20240915	17:01:47	documentsController, getDataDocuments: TypeError: Cannot destructure property 'permissions' of 'findUser[0][0]' as it is undefined.
 20240915	17:01:47	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	17:24:44	refreshTokenController, handleRefreshToken: Error: Unknown column '_id' in 'field list'
+20240918	17:24:44	refreshTokenController, handleRefreshToken: Error: Unknown column '_id' in 'field list'
+20240918	17:24:54	loginController, handleLogin: Error: Unknown column '_id' in 'field list'
+20240918	17:25:23	loginController, handleLogin: Error: Unknown column '_id' in 'field list'
+20240918	17:25:34	loginController, handleLogin: Error: Unknown column '_id' in 'field list'
+20240918	17:26:29	loginController, handleLogin: Error: Unknown column '_id' in 'field list'
+20240918	17:26:36	loginController, handleLogin: Error: Unknown column '_id' in 'field list'
+20240918	17:27:32	usersController, getUsersData: Error: Unknown column '_id' in 'field list'
+20240918	17:29:10	usersController, getUsersData: Error: Unknown column '_id' in 'field list'
+20240918	17:53:29	usersController, getUsersData: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE username LIKE '%kowal%' OR WHERE usersurname LIKE '%kowal%'' at line 1
+20240918	17:54:27	usersController, handleChangeName: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	17:55:51	usersController, changeName: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	17:56:11	usersController, changeName: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	17:57:25	usersController, changeName: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	18:00:33	usersController, changeLogin: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	18:00:39	usersController, changeLogin: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	18:05:37	usersController, changeLogin: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	18:23:49	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:23:49	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:23:49	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:23:49	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:24:01	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:24:01	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:24:01	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:24:01	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:24:13	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:24:13	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:24:13	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:24:13	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:24:41	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:24:41	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:25:06	usersController, changeRoles: Error: Truncated incorrect DOUBLE value: 'undefined'
+20240918	18:29:07	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:29:07	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:29:07	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:29:07	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:29:28	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:29:28	documentsController, getDataTable: Error: Unknown column '_id' in 'where clause'
+20240918	18:29:28	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:29:28	documentsController, getDataTable: Error: Unknown column '_id' in 'where clause'
+20240918	18:31:03	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:31:03	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:31:05	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:31:05	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:31:05	documentsController, getDataDocuments: Error: Unknown column '_id' in 'where clause'
+20240918	18:31:05	documentsController, getAllDocuments: TypeError: Cannot read properties of undefined (reading 'data')
+20240918	18:34:48	settingsController, changeColumns: Error: Unknown column '_id' in 'field list'
+20240918	18:34:50	settingsController, changeColumns: Error: Unknown column '_id' in 'field list'
+20240918	18:56:06	documentsController, getSingleDocument: ReferenceError: _id is not defined

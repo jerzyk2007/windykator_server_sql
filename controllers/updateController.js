@@ -4,7 +4,6 @@ const { logEvents } = require("../middleware/logEvents");
 const getTime = async (req, res) => {
   try {
     const result = await UpdateDB.findOne({}, { date: 1 }).exec();
-    console.log(result);
     res.json(result.date);
   } catch (error) {
     logEvents(`updateController, getTime: ${error}`, "reqServerErrors.txt");

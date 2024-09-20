@@ -45,8 +45,8 @@ const createNewUser = async (req, res) => {
 };
 
 // zmiana loginu użytkownika SQL
-const handleChangeLogin = async (req, res) => {
-  const { _id } = req.params;
+const changeLogin = async (req, res) => {
+  const { id_user } = req.params;
   const { newUserlogin } = req.body;
   if (!newUserlogin) {
     return res
@@ -63,8 +63,8 @@ const handleChangeLogin = async (req, res) => {
     }
 
     const [result] = await connect_SQL.query(
-      "UPDATE users SET userlogin = ? WHERE _id = ?",
-      [newUserlogin, _id]
+      "UPDATE users SET userlogin = ? WHERE id_user = ?",
+      [newUserlogin, id_user]
     );
     if (result.affectedRows > 0) {
       // Jeśli aktualizacja zakończyła się sukcesem
@@ -74,19 +74,17 @@ const handleChangeLogin = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
-    logEvents(
-      `usersController, handleChangeLogin: ${error}`,
-      "reqServerErrors.txt"
-    );
+    logEvents(`usersController, changeLogin: ${error}`, "reqServerErrors.txt");
     // console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
 
 // zmiana imienia i nazwiska użytkownika SQL
-const handleChangeName = async (req, res) => {
-  const { _id } = req.params;
+const changeName = async (req, res) => {
+  const { id_user } = req.params;
   const { name, surname } = req.body;
+
   if (!name || !surname) {
     return res
       .status(400)
@@ -94,8 +92,8 @@ const handleChangeName = async (req, res) => {
   }
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET username = ?, usersurname = ? WHERE _id = ?",
-      [name, surname, _id]
+      "UPDATE users SET username = ?, usersurname = ? WHERE id_user = ?",
+      [name, surname, id_user]
     );
     if (result.affectedRows > 0) {
       // Jeśli aktualizacja zakończyła się sukcesem
@@ -107,10 +105,7 @@ const handleChangeName = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
-    logEvents(
-      `usersController, handleChangeName: ${error}`,
-      "reqServerErrors.txt"
-    );
+    logEvents(`usersController, changeName: ${error}`, "reqServerErrors.txt");
     console.error(error);
     res.status(500).json({ message: error.message });
   }
@@ -118,7 +113,7 @@ const handleChangeName = async (req, res) => {
 
 // zmiana hasła użytkownika SQL
 const changePassword = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { password } = req.body;
   const refreshToken = req.cookies.jwt;
 
@@ -131,8 +126,8 @@ const changePassword = async (req, res) => {
     const hashedPwd = await bcryptjs.hash(password, 10);
 
     const [result] = await connect_SQL.query(
-      "UPDATE users SET password = ? WHERE _id = ? AND refreshToken = ? ",
-      [hashedPwd, _id, refreshToken]
+      "UPDATE users SET password = ? WHERE id_user = ? AND refreshToken = ? ",
+      [hashedPwd, id_user, refreshToken]
     );
     if (result.affectedRows > 0) {
       // Jeśli aktualizacja zakończyła się sukcesem
@@ -153,7 +148,7 @@ const changePassword = async (req, res) => {
 
 // zmiana hasła innemu użytkownikowi SQL
 const changePasswordAnotherUser = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { password } = req.body;
   if (!password) {
     return res
@@ -163,8 +158,8 @@ const changePasswordAnotherUser = async (req, res) => {
   try {
     const hashedPwd = await bcryptjs.hash(password, 10);
     const [result] = await connect_SQL.query(
-      "UPDATE users SET password = ? WHERE _id = ?",
-      [hashedPwd, _id]
+      "UPDATE users SET password = ? WHERE id_user = ?",
+      [hashedPwd, id_user]
     );
 
     if (result.affectedRows > 0) {
@@ -186,12 +181,12 @@ const changePasswordAnotherUser = async (req, res) => {
 
 // zmiana uprawnień użytkownika Doradca/Asystentka SQL
 const changeUserPermissions = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { permissions } = req.body;
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET permissions = ?WHERE _id = ?",
-      [JSON.stringify(permissions), _id]
+      "UPDATE users SET permissions = ?WHERE id_user = ?",
+      [JSON.stringify(permissions), id_user]
     );
     if (result.affectedRows > 0) {
       // Jeśli aktualizacja zakończyła się sukcesem
@@ -212,13 +207,13 @@ const changeUserPermissions = async (req, res) => {
 
 // zmiana dostępu do działów SQL
 const changeUserDepartments = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { departments } = req.body;
 
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET departments = ?WHERE _id = ?",
-      [JSON.stringify(departments), _id]
+      "UPDATE users SET departments = ? WHERE id_user = ?",
+      [JSON.stringify(departments), id_user]
     );
 
     if (result.affectedRows > 0) {
@@ -240,14 +235,14 @@ const changeUserDepartments = async (req, res) => {
 
 // usunięcie uzytkownika SQL
 const deleteUser = async (req, res) => {
-  const { _id } = req.params;
-  if (!_id) {
+  const { id_user } = req.params;
+  if (!id_user) {
     return res.status(400).json({ message: "Id is required." });
   }
   try {
     const [result] = await connect_SQL.query(
-      "DELETE FROM users WHERE _id = ?",
-      [_id]
+      "DELETE FROM users WHERE id_user = ?",
+      [id_user]
     );
 
     if (result.affectedRows === 0) {
@@ -264,16 +259,16 @@ const deleteUser = async (req, res) => {
 
 // zapisanie ustawień tabeli dla użytkownika SQL
 const saveTableSettings = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { tableSettings } = req.body;
-  if (!_id) {
+  if (!id_user) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
 
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET tableSettings = ? WHERE _id = ?",
-      [JSON.stringify(tableSettings), _id]
+      "UPDATE users SET tableSettings = ? WHERE id_user = ?",
+      [JSON.stringify(tableSettings), id_user]
     );
     if (result.affectedRows > 0) {
       // Jeśli aktualizacja zakończyła się sukcesem
@@ -297,8 +292,8 @@ const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
     const [result] = await connect_SQL.query(
-      "SELECT _id, username, usersurname, userlogin, roles, tableSettings, raportSettings, permissions, departments, columns FROM users WHERE userlogin LIKE ?",
-      [`%${search}%`]
+      "SELECT id_user, username, usersurname, userlogin, roles, tableSettings, raportSettings, permissions, departments, columns FROM users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
+      [`%${search}%`, `%${search}%`, `%${search}%`]
     );
 
     if (result[0]?.userlogin.length > 0) {
@@ -323,7 +318,7 @@ const getUsersData = async (req, res) => {
 
 // zmiana roli użytkownika User, Editor, Admin SQL
 const changeRoles = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { roles } = req.body;
 
   const newRoles = { ...ROLES_LIST };
@@ -333,8 +328,8 @@ const changeRoles = async (req, res) => {
 
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET roles = ? WHERE _id = ?",
-      [JSON.stringify(filteredRoles), _id]
+      "UPDATE users SET roles = ? WHERE id_user = ?",
+      [JSON.stringify(filteredRoles), id_user]
     );
 
     if (result.affectedRows > 0) {
@@ -353,12 +348,12 @@ const changeRoles = async (req, res) => {
 
 // zmiana dostępu do kolumn tabeli dla użytkownika (jakie kolumny ma widzieć) SQL
 const changeColumns = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { columns } = req.body;
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET columns = ? WHERE _id = ?",
-      [[JSON.stringify(columns)], _id]
+      "UPDATE users SET columns = ? WHERE id_user = ?",
+      [[JSON.stringify(columns)], id_user]
     );
 
     if (result.affectedRows > 0) {
@@ -380,15 +375,15 @@ const changeColumns = async (req, res) => {
 
 // zapisanie ustawień raportu-działów-tabeli dla użytkownika
 const saveRaporDepartmentSettings = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { raportDepartments } = req.body;
-  if (!_id) {
+  if (!id_user) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportDepartments', ?) WHERE _id = ?",
-      [JSON.stringify(raportDepartments), _id]
+      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportDepartments', ?) WHERE id_user = ?",
+      [JSON.stringify(raportDepartments), id_user]
     );
 
     if (result.affectedRows > 0) {
@@ -412,16 +407,16 @@ const saveRaporDepartmentSettings = async (req, res) => {
 
 // pobieranie ustawień raportu tabeli-działów
 const getRaportDepartmentSettings = async (req, res) => {
-  const { _id } = req.params;
-  if (!_id) {
+  const { id_user } = req.params;
+  if (!id_user) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
 
   try {
     //pobiera od razu klucz z obiektu json
     const [result] = await connect_SQL.query(
-      "SELECT raportSettings->'$.raportDepartments' AS raportDepartments FROM users WHERE _id = ?",
-      [_id]
+      "SELECT raportSettings->'$.raportDepartments' AS raportDepartments FROM users WHERE id_user = ?",
+      [id_user]
     );
     if (result[0]?.raportDepartments) {
       res.json(JSON.parse(result[0].raportDepartments));
@@ -440,16 +435,16 @@ const getRaportDepartmentSettings = async (req, res) => {
 
 // zapisanie ustawień raportu-doradców-tabeli dla użytkownika SQL
 const saveRaporAdviserSettings = async (req, res) => {
-  const { _id } = req.params;
+  const { id_user } = req.params;
   const { raportAdvisers } = req.body;
-  if (!_id) {
+  if (!id_user) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
 
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportAdvisers', ?) WHERE _id = ?",
-      [JSON.stringify(raportAdvisers), _id]
+      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportAdvisers', ?) WHERE id_user = ?",
+      [JSON.stringify(raportAdvisers), id_user]
     );
 
     if (result.affectedRows > 0) {
@@ -473,15 +468,15 @@ const saveRaporAdviserSettings = async (req, res) => {
 
 // pobieranie ustawień raportu tabeli-działów SQL
 const getRaportAdviserSettings = async (req, res) => {
-  const { _id } = req.params;
-  if (!_id) {
+  const { id_user } = req.params;
+  if (!id_user) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
   try {
     //pobiera od razu klucz z obiektu json
     const [result] = await connect_SQL.query(
-      "SELECT raportSettings->'$.raportAdvisers' AS raportAdvisers FROM users WHERE _id = ?",
-      [_id]
+      "SELECT raportSettings->'$.raportAdvisers' AS raportAdvisers FROM users WHERE id_user = ?",
+      [id_user]
     );
     if (result[0]?.raportAdvisers) {
       res.json(JSON.parse(result[0].raportAdvisers));
@@ -500,8 +495,8 @@ const getRaportAdviserSettings = async (req, res) => {
 
 module.exports = {
   createNewUser,
-  handleChangeLogin,
-  handleChangeName,
+  changeLogin,
+  changeName,
   changePassword,
   changePasswordAnotherUser,
   changeUserPermissions,
