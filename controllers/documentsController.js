@@ -26,15 +26,15 @@ const getDataDocuments = async (id_user, info) => {
 
     if (info === "actual") {
       [filteredData] = await connect_SQL.query(
-        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE DO_ROZLICZENIA <> 0"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id WHERE DO_ROZLICZENIA <> 0"
       );
     } else if (info === "archive") {
       [filteredData] = await connect_SQL.query(
-        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE DO_ROZLICZENIA = 0"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id WHERE DO_ROZLICZENIA = 0"
       );
     } else if (info === "all") {
       [filteredData] = await connect_SQL.query(
-        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS"
+        "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id"
       );
     }
 
@@ -525,12 +525,12 @@ const changeSingleDocument = async (req, res) => {
     }
 
     const [documents_ActionsExist] = await connect_SQL.query(
-      "SELECT id_action from documents_actions WHERE NUMER_FV_ACTIONS = ?",
-      [documentItem.NUMER_FV]
+      "SELECT id_action from documents_actions WHERE document_id = ?",
+      [id_document]
     );
     if (documents_ActionsExist[0]?.id_action) {
       await connect_SQL.query(
-        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?  WHERE  NUMER_FV_ACTIONS = ?",
+        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?  WHERE document_id = ?",
         [
           documentItem.DZIALANIA,
           documentItem.JAKA_KANCELARIA,
@@ -538,14 +538,14 @@ const changeSingleDocument = async (req, res) => {
           documentItem.ZAZNACZ_KONTRAHENTA,
           JSON.stringify(documentItem.UWAGI_ASYSTENT),
           documentItem.BLAD_DORADCY,
-          documentItem.NUMER_FV,
+          id_document,
         ]
       );
     } else {
       await connect_SQL.query(
-        "INSERT INTO documents_actions (NUMER_FV_ACTIONS, DZIALANIA, JAKA_KANCELARIA, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
-          documentItem.NUMER_FV,
+          id_document,
           documentItem.DZIALANIA,
           documentItem.JAKA_KANCELARIA,
           documentItem.POBRANO_VAT,
@@ -602,7 +602,7 @@ const getSingleDocument = async (req, res) => {
   const { id_document } = req.params;
   try {
     const [result] = await connect_SQL.query(
-      "SELECT documents.*, documents_actions.* FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE documents.id_document = ?",
+      "SELECT documents.*, documents_actions.* FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id WHERE documents.id_document = ?",
       [id_document]
     );
     res.json(result[0]);
@@ -619,16 +619,14 @@ const getSingleDocument = async (req, res) => {
 const getColumnsName = async (req, res) => {
   try {
     const [result] = await connect_SQL.query(
-      "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS LIMIT 1"
+      "SELECT documents.*, documents_actions.*, datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id LIMIT 1"
     );
     const keysArray = Object.keys(result[0]);
 
     // usuwam kolumny których nie chce przekazać do front
     const newArray = keysArray.filter(
       (item) =>
-        item !== "id_document" &&
-        item !== "id_action" &&
-        item !== "NUMER_FV_ACTIONS"
+        item !== "id_document" && item !== "id_action" && item !== "document_id"
     );
     res.json(newArray);
   } catch (error) {

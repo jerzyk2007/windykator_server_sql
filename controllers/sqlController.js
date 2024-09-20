@@ -148,26 +148,6 @@ const copyDocumentsToMySQL = async (req, res) => {
     );
     console.log("finish");
 
-    // const saveToDB = result.map((item) => {
-    //   connect_SQL.query(
-    //     "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    //     [
-    //       item.NUMER_FV,
-    //       item.BRUTTO,
-    //       item.NETTO,
-    //       item.DZIAL,
-    //       item.DO_ROZLICZENIA,
-    //       item.DATA_FV,
-    //       item.TERMIN,
-    //       item.KONTRAHENT,
-    //       item.DORADCA,
-    //       item.NR_REJESTRACYJNY,
-    //       item.NR_SZKODY,
-    //       item.UWAGI_Z_FAKTURY[0],
-    //     ]
-    //   );
-    // });
-
     res.end();
   } catch (err) {
     console.error(err);
@@ -182,14 +162,17 @@ const copyDocuments_ActionsToMySQL = async (req, res) => {
     const saveToDB = await Promise.all(
       result.map(async (item) => {
         const [duplicate] = await connect_SQL.query(
-          "SELECT NUMER_FV FROM documents_actions WHERE NUMER_FV = ?",
+          "SELECT id_document FROM documents WHERE NUMER_FV = ?",
           [item.NUMER_FV]
         );
-        if (!duplicate.length) {
+
+        if (duplicate.length) {
+          // console.log(duplicate[0].id_document);
+
           await connect_SQL.query(
-            "INSERT INTO documents_actions (NUMER_FV, DZIALANIA, JAKA_KANCELARIA, KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, NUMER_SPRAWY_BECARED, POBRANO_VAT, STATUS_SPRAWY_KANCELARIA, STATUS_SPRAWY_WINDYKACJA, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO documents_actions (document_id , DZIALANIA, JAKA_KANCELARIA, KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, NUMER_SPRAWY_BECARED, POBRANO_VAT, STATUS_SPRAWY_KANCELARIA, STATUS_SPRAWY_WINDYKACJA, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
-              item.NUMER_FV,
+              duplicate[0].id_document,
               item.DZIALANIA,
               item.JAKA_KANCELARIA,
               item.KOMENTARZ_KANCELARIA_BECARED,
