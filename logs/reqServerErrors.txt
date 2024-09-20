@@ -396,3 +396,7 @@
 20240918	18:34:48	settingsController, changeColumns: Error: Unknown column '_id' in 'field list'
 20240918	18:34:50	settingsController, changeColumns: Error: Unknown column '_id' in 'field list'
 20240918	18:56:06	documentsController, getSingleDocument: ReferenceError: _id is not defined
+20240920	07:43:21	settingsController, getColumns: Error: Unknown column 'idsettings' in 'where clause'
+20240920	07:43:21	settingsController, getDepartments: Error: Unknown column 'idsettings' in 'where clause'
+20240920	07:43:21	settingsController, getColumns: Error: Unknown column 'idsettings' in 'where clause'
+20240920	07:43:21	settingsController, getDepartments: Error: Unknown column 'idsettings' in 'where clause'

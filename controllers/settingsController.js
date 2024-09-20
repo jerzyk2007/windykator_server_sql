@@ -6,7 +6,7 @@ const changeColumns = async (req, res) => {
   const { columns } = req.body;
   try {
     await connect_SQL.query(
-      "Update settings SET columns = ? WHERE idsettings = 1",
+      "Update settings SET columns = ? WHERE id_setting = 1",
       [JSON.stringify(columns)]
     );
 
@@ -72,7 +72,7 @@ const getFilteredDepartments = async () => {
 const getSettings = async (req, res) => {
   try {
     const [userSettings] = await connect_SQL.query(
-      "SELECT roles, permissions, columns FROM settings WHERE idsettings = 1"
+      "SELECT roles, permissions, columns FROM settings WHERE id_setting = 1"
     );
 
     const roles = Object.entries(userSettings[0].roles).map(([role]) => role);
@@ -134,7 +134,7 @@ const getDepartments = async (req, res) => {
 
     //pobieram zapisane cele
     const [getTarget] = await connect_SQL.query(
-      "SELECT target from settings WHERE idsettings = 1"
+      "SELECT target from settings WHERE id_setting = 1"
     );
     res.json({
       departments: uniqueDepartments,
@@ -155,7 +155,7 @@ const saveTargetPercent = async (req, res) => {
   const { target } = req.body;
   try {
     await connect_SQL.query(
-      "UPDATE settings SET target = ? WHERE idsettings = 1",
+      "UPDATE settings SET target = ? WHERE id_setting = 1",
       [JSON.stringify(target)]
     );
 
@@ -174,7 +174,7 @@ const saveTargetPercent = async (req, res) => {
 const getColumns = async (req, res) => {
   try {
     const [columns] = await connect_SQL.query(
-      "Select columns FROM settings WHERE idsettings = 1"
+      "Select columns FROM settings WHERE id_setting = 1"
     );
     res.json(columns[0].columns);
   } catch (error) {
