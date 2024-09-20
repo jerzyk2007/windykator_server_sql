@@ -512,10 +512,6 @@ const documentsFromFile = async (req, res) => {
 const changeSingleDocument = async (req, res) => {
   const { id_document, documentItem } = req.body;
   try {
-    // const fieldToUpdate = Object.keys(documentItem)[0]; // Pobierz nazwę pola do aktualizacji
-    // const updatedFieldValue = documentItem[fieldToUpdate];
-    // const result = await Document.updateOne({ _id }, documentItem);
-
     const [documentsExist] = await connect_SQL.query(
       "SELECT id_document from documents WHERE id_document = ?",
       [id_document]
@@ -529,10 +525,10 @@ const changeSingleDocument = async (req, res) => {
     }
 
     const [documents_ActionsExist] = await connect_SQL.query(
-      "SELECT _id_actions from documents_actions WHERE NUMER_FV_ACTIONS = ?",
+      "SELECT id_action from documents_actions WHERE NUMER_FV_ACTIONS = ?",
       [documentItem.NUMER_FV]
     );
-    if (documents_ActionsExist[0]?._id_actions) {
+    if (documents_ActionsExist[0]?.id_action) {
       await connect_SQL.query(
         "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?  WHERE  NUMER_FV_ACTIONS = ?",
         [
@@ -631,7 +627,7 @@ const getColumnsName = async (req, res) => {
     const newArray = keysArray.filter(
       (item) =>
         item !== "id_document" &&
-        item !== "_id_actions" &&
+        item !== "id_action" &&
         item !== "NUMER_FV_ACTIONS"
     );
     res.json(newArray);

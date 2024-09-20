@@ -125,7 +125,7 @@ const copyDocumentsToMySQL = async (req, res) => {
         );
         if (!duplicate.length) {
           await connect_SQL.query(
-            "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, test) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
               item.NUMER_FV,
               item.BRUTTO,
@@ -139,26 +139,8 @@ const copyDocumentsToMySQL = async (req, res) => {
               item.NR_REJESTRACYJNY,
               item.NR_SZKODY,
               item.UWAGI_Z_FAKTURY[0],
-              "test",
             ]
           );
-          // await connect_SQL.query(
-          //   "INSERT INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          //   [
-          //     item.NUMER_FV,
-          //     item.BRUTTO,
-          //     item.NETTO,
-          //     item.DZIAL,
-          //     item.DO_ROZLICZENIA,
-          //     item.DATA_FV,
-          //     item.TERMIN,
-          //     item.KONTRAHENT,
-          //     item.DORADCA,
-          //     item.NR_REJESTRACYJNY,
-          //     item.NR_SZKODY,
-          //     item.UWAGI_Z_FAKTURY[0],
-          //   ]
-          // );
         } else {
           console.log("duplicate");
         }
