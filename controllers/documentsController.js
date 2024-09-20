@@ -510,21 +510,21 @@ const documentsFromFile = async (req, res) => {
 
 // zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
 const changeSingleDocument = async (req, res) => {
-  const { _id, documentItem } = req.body;
+  const { id_document, documentItem } = req.body;
   try {
     // const fieldToUpdate = Object.keys(documentItem)[0]; // Pobierz nazwę pola do aktualizacji
     // const updatedFieldValue = documentItem[fieldToUpdate];
     // const result = await Document.updateOne({ _id }, documentItem);
 
     const [documentsExist] = await connect_SQL.query(
-      "SELECT _id from documents WHERE _id = ?",
-      [_id]
+      "SELECT id_document from documents WHERE id_document = ?",
+      [id_document]
     );
 
-    if (documentsExist[0]?._id) {
+    if (documentsExist[0]?.id_document) {
       await connect_SQL.query(
-        "UPDATE documents SET BRUTTO = ?, NETTO = ? WHERE _id = ?",
-        [documentItem.BRUTTO, documentItem.NETTO, _id]
+        "UPDATE documents SET BRUTTO = ?, NETTO = ? WHERE id_document = ?",
+        [documentItem.BRUTTO, documentItem.NETTO, id_document]
       );
     }
 
@@ -573,16 +573,16 @@ const changeSingleDocument = async (req, res) => {
 
 // pobieram dane do tabeli, ustawienia tabeli(order, visiblility itd), kolumny
 const getDataTable = async (req, res) => {
-  const { _id, info } = req.params;
-  if (!_id || !info) {
+  const { id_user, info } = req.params;
+  if (!id_user || !info) {
     return res.status(400).json({ message: "Id and info are required." });
   }
   try {
-    const result = await getDataDocuments(_id, info);
+    const result = await getDataDocuments(id_user, info);
 
     const findUser = await connect_SQL.query(
       "SELECT  tableSettings, columns  FROM users WHERE id_user = ?",
-      [_id]
+      [id_user]
     );
 
     const tableSettings = findUser[0][0].tableSettings
@@ -603,12 +603,11 @@ const getDataTable = async (req, res) => {
 
 // pobiera pojedyńczy dokument SQL
 const getSingleDocument = async (req, res) => {
-  const { _id } = req.params;
+  const { id_document } = req.params;
   try {
-    // const result = await Document.findOne({ _id });
     const [result] = await connect_SQL.query(
-      "SELECT documents.*, documents_actions.* FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE documents._id = ?",
-      [_id]
+      "SELECT documents.*, documents_actions.* FROM documents LEFT JOIN documents_actions ON documents.NUMER_FV = documents_actions.NUMER_FV_ACTIONS WHERE documents.id_document = ?",
+      [id_document]
     );
     res.json(result[0]);
   } catch (error) {
@@ -631,7 +630,9 @@ const getColumnsName = async (req, res) => {
     // usuwam kolumny których nie chce przekazać do front
     const newArray = keysArray.filter(
       (item) =>
-        item !== "_id" && item !== "_id_actions" && item !== "NUMER_FV_ACTIONS"
+        item !== "id_document" &&
+        item !== "_id_actions" &&
+        item !== "NUMER_FV_ACTIONS"
     );
     res.json(newArray);
   } catch (error) {

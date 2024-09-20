@@ -14,7 +14,7 @@ router
   .get(verifyRoles(ROLES_LIST.User), Documents.getAllDocuments);
 
 router
-  .route("/change-single-document/:_id")
+  .route("/change-single-document/:id_document")
   .patch(verifyRoles(ROLES_LIST.User), Documents.changeSingleDocument);
 
 // router
@@ -31,12 +31,12 @@ router
 
 // pobiera wszytskie faktury wg uprawnień oraz actula/archive/all oraz ustawienia tabeli
 router
-  .route("/get-data-table/:_id/:info")
+  .route("/get-data-table/:id_user/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getDataTable);
 
 //pobiera pojedyńczy dokument
 router
-  .route("/get-single-document/:_id")
+  .route("/get-single-document/:id_document")
   .get(verifyRoles(ROLES_LIST.User), Documents.getSingleDocument);
 
 // pobiera wszytskie nazwy kolumn z dowolnego wiersza dla ustawien systemu

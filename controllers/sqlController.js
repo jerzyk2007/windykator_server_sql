@@ -7,8 +7,6 @@ const copyUsersToMySQL = async (req, res) => {
   try {
     const usersData = await User.find().exec();
 
-    // const cleanedData = usersData.map(({ __v, _id, ...rest }) => rest);
-
     const cleanedData = usersData.map((item) => {
       return {
         username: item.username,
