@@ -1,6 +1,6 @@
-const Document = require("../model/Document");
-const User = require("../model/User");
-const UpdateDB = require("../model/UpdateDB");
+// const Document = require("../model/Document");
+// const User = require("../model/User");
+// const UpdateDB = require("../model/UpdateDB");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
@@ -200,10 +200,6 @@ const ASFile = async (documents, res) => {
     return res.status(500).json({ error: "Invalid file" });
   }
   try {
-    // // const allDocuments = await Document.find({});
-    // const allSettlements = await UpdateDB.find({}, { settlements: 1 });
-    // const settlements = allSettlements[0].settlements;
-
     const dzialMap = {
       D048: "D048/D058",
       D058: "D048/D058",
@@ -215,21 +211,6 @@ const ASFile = async (documents, res) => {
       D308: "D308/D318",
       D318: "D308/D318",
     };
-
-    // const [changeDep] = await connect_SQL.query(
-    //   "SELECT id_document, DZIAL FROM documents"
-    // );
-
-    // for (const dep of changeDep) {
-    //   if (dzialMap[dep.DZIAL]) {
-    //     await connect_SQL.query(
-    //       "UPDATE documents SET DZIAL = ? WHERE id_document = ?",
-    //       [dzialMap[dep.DZIAL], dep.id_document]
-    //     );
-    //     console.log(dzialMap[dep.DZIAL]);
-    //     console.log(dep.id_document);
-    //   }
-    // }
 
     const addDepartment = documents
       .map((document) => {
@@ -283,56 +264,6 @@ const ASFile = async (documents, res) => {
       }
     }
 
-    // // const checkExistDocument = documents.map(document=>{
-    // //   const [duplicate] = await connect_SQL.query('SELECT NUMER_FV FROM documents WHERE NUMER_FV = ?', [document.NUMER_FV])
-    // //   console.log(duplicate)
-    // // })
-    // // const filteredDocuments = [];
-
-    // const checkExistDocument = await Promise.all(
-    //   addDepartment.map(async (document) => {
-    //     const [duplicate] = await connect_SQL.query(
-    //       "SELECT NUMER_FV FROM documents WHERE NUMER_FV = ?",
-    //       [document.NUMER]
-    //     );
-    //     if (!duplicate.length) {
-    //       return document;
-    //     }
-    //     return null;
-    //   })
-    // );
-    // const newDocumentsToDB = await Promise.all(
-    //   checkExistDocument.filter(Boolean).map(async (document) => {
-    //     const findDoc = settlements.find(
-    //       (settlement) => settlement.NUMER_FV === document.NUMER
-    //     );
-    //     if (findDoc) {
-    //       await connect_SQL.query(
-    //         "INSERT INTO documents (NUMER_FV, DZIAL, DATA_FV, TERMIN, BRUTTO, NETTO, DO_ROZLICZENIA, NR_REJESTRACYJNY, KONTRAHENT, DORADCA, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NR_KLIENTA, NIP, VIN ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    //         [
-    //           document["NUMER"],
-    //           document.DZIAL,
-    //           excelDateToISODate(document["WYSTAWIONO"]).toString(),
-    //           findDoc["TERMIN"],
-    //           document["W. BRUTTO"],
-    //           document["W. NETTO"],
-    //           findDoc["DO_ROZLICZENIA"],
-    //           document["NR REJESTRACYJNY"]
-    //             ? document["NR REJESTRACYJNY"]
-    //             : null,
-    //           document["KONTRAHENT"],
-    //           document["PRZYGOTOWAŁ"],
-    //           document["NR SZKODY"],
-    //           document["UWAGI"],
-    //           document["PŁATNOŚĆ"],
-    //           document["NR KONTR."],
-    //           document["NIP"],
-    //           document["NR NADWOZIA"],
-    //         ]
-    //       );
-    //     }
-    //   })
-    // );
     console.log("finish");
 
     res.status(201).json({ message: "Documents are updated" });
@@ -446,6 +377,10 @@ const settlementsFile = async (rows, res) => {
         );
       }
     }
+
+    await connect_SQL.query(
+      "UPDATE updates SET settlements = CURRENT_TIMESTAMP WHERE id_update = 1"
+    );
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
