@@ -198,9 +198,42 @@ const copyDocuments_ActionsToMySQL = async (req, res) => {
   }
 };
 
+const repairDepartments = async (req, res) => {
+  try {
+    const [documents] = await connect_SQL.query(
+      "SELECT id_document, DZIAL FROM documents "
+    );
+    // Aktualizacja DZIAL dla każdego dokumentu
+    const updatedDocuments = documents.map((document) => {
+      const match = document.DZIAL.match(/D(\d+)/);
+      if (match) {
+        const dzialNumber = match[1].padStart(3, "0"); // Dodaj zera do 3 cyfr
+        return {
+          id_document: document.id_document,
+          DZIAL: `D${dzialNumber}`, // Nowy format DZIAL
+        };
+      }
+      return document; // W razie braku dopasowania (co raczej nie wystąpi), zwraca oryginalny dokument
+    });
+
+    // Zaktualizuj każdy rekord w bazie danych
+    for (const doc of updatedDocuments) {
+      await connect_SQL.query(
+        "UPDATE documents SET DZIAL = ? WHERE id_document = ?",
+        [doc.DZIAL, doc.id_document]
+      );
+    }
+
+    console.log("Dokumenty zostały zaktualizowane.");
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 module.exports = {
   copyUsersToMySQL,
   copySettingsToMySQL,
   copyDocumentsToMySQL,
   copyDocuments_ActionsToMySQL,
+  repairDepartments,
 };
