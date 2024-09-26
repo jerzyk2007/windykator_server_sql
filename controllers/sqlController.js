@@ -2,6 +2,7 @@ const { connect_SQL } = require("../config/dbConn");
 const User = require("../model/User");
 const Setting = require("../model/Setting");
 const Document = require("../model/Document");
+const { FKRaport } = require("../model/FKRaport");
 
 const copyUsersToMySQL = async (req, res) => {
   try {
@@ -230,10 +231,81 @@ const repairDepartments = async (req, res) => {
   }
 };
 
+const copyItemsDepartments = async (req, res) => {
+  try {
+    const result = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0,
+          data: "$items",
+        },
+      },
+    ]);
+    // console.log(result[0].data.aging);
+
+    for (const dep of result[0].data.departments) {
+      console.log(dep);
+      // const firstValue = dep.firstValue ? dep.firstValue : null;
+      // const secondValue = dep.secondValue ? dep.secondValue : null;
+      // await connect_SQL.query(
+      //   "INSERT INTO department_items (department) VALUES(?)",
+      //   [dep]
+      // );
+      // const [duplicate] = await connect_SQL.query(
+      //   "SELECT guardian from guardian_items WHERE guardian = ?",
+      //   [dep]
+      // );
+      // if (duplicate?.length) {
+      //   console.log("jest");
+      // } else {
+      //   await connect_SQL.query(
+      //     "INSERT INTO guardian_items (guardian) VALUES(?)",
+      //     [dep]
+      //   );
+      // }
+    }
+    console.log("finish");
+    res.end();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const copyPreparedItems = async (req, res) => {
+  try {
+    const result = await FKRaport.aggregate([
+      {
+        $project: {
+          _id: 0, // Wyłączamy pole _id z wyniku
+          preparedItemsData: 1, // Włączamy tylko pole preparedItemsData
+        },
+      },
+    ]);
+    for (const item of result[0].preparedItemsData) {
+      await connect_SQL.query(
+        "INSERT INTO join_items (department, localization, area, owner, guardian) VALUES (?, ?, ?, ?, ?)",
+        [
+          item.department,
+          item.localization,
+          item.area,
+          JSON.stringify(item.owner),
+          JSON.stringify(item.guardian),
+        ]
+      );
+    }
+    console.log("finish");
+    res.end();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 module.exports = {
   copyUsersToMySQL,
   copySettingsToMySQL,
   copyDocumentsToMySQL,
   copyDocuments_ActionsToMySQL,
   repairDepartments,
+  copyItemsDepartments,
+  copyPreparedItems,
 };
