@@ -315,8 +315,8 @@ const saveItem = async (req, res) => {
   const { departments, localizations, areas, owners, guardians, aging } =
     req.body;
   // Mapowanie nazw na odpowiadające im klucze
-  console.log(info);
-  console.log(departments, localizations, areas, owners, guardians, aging);
+  // console.log(info);
+  // console.log(departments, localizations, areas, owners, guardians, aging);
 
   const dataMap = {
     departments,

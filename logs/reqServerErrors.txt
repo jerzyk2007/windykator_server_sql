@@ -1,0 +1,55 @@
+20240927	08:48:05	documentsController, getDataDocuments: TypeError: Cannot set properties of undefined
+20240927	08:48:05	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240927	08:48:05	documentsController, getDataDocuments: TypeError: Cannot set properties of undefined
+20240927	08:48:05	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20240929	12:30:00	usersController, saveRaporDepartmentSettings: ReferenceError: result is not defined
+20240929	12:30:09	usersController, saveRaporDepartmentSettings: Error: Unknown column 'c' in 'field list'
+20240929	12:33:36	usersController, saveRaporDepartmentSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE id_user = '45'' at line 1
+20240929	12:33:51	usersController, saveRaporDepartmentSettings: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'WHERE id_user = '45'' at line 1
+20240929	12:39:13	usersController, saveRaporDepartmentSettings: Error: Unknown column 'c' in 'field list'
+20240929	13:03:12	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:03:12	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:12:58	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:12:58	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:14:03	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:14:03	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:14:28	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:14:28	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:14:51	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:14:51	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:15:20	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:15:20	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:15:53	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:15:53	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:19:06	usersController, getRaportDepartmentSettings: TypeError: Cannot read properties of null (reading 'length')
+20240929	13:19:06	usersController, getRaportDepartmentSettings: TypeError: Cannot read properties of null (reading 'length')
+20240929	13:19:30	usersController, getRaportAdviserSettings: TypeError: Cannot read properties of null (reading 'length')
+20240929	13:19:30	usersController, getRaportAdviserSettings: TypeError: Cannot read properties of null (reading 'length')
+20240929	13:19:52	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:19:52	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:20:12	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:20:12	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:25:21	usersController, getRaportDepartmentSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:25:21	usersController, getRaportDepartmentSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:25:38	usersController, getRaportDepartmentSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:25:45	usersController, getRaportDepartmentSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:25:45	usersController, getRaportDepartmentSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:30:25	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:30:25	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:31:13	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:31:14	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:31:29	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:31:30	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:31:50	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:31:50	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:32:06	usersController, getRaportAdviserSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:32:06	usersController, getRaportAdviserSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:33:27	usersController, getRaportAdviserSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:33:27	usersController, getRaportAdviserSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:34:11	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:34:16	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:34:17	usersController, getRaportDepartmentSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:37:14	usersController, getRaportAdviserSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:37:14	usersController, getRaportAdviserSettings: TypeError: Cannot convert undefined or null to object
+20240929	13:38:16	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON
+20240929	13:38:17	usersController, getRaportAdviserSettings: SyntaxError: "[object Object]" is not valid JSON

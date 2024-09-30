@@ -377,24 +377,42 @@ const changeColumns = async (req, res) => {
 const saveRaporDepartmentSettings = async (req, res) => {
   const { id_user } = req.params;
   const { raportDepartments } = req.body;
+
   if (!id_user) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
   try {
-    const [result] = await connect_SQL.query(
-      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportDepartments', ?) WHERE id_user = ?",
-      [JSON.stringify(raportDepartments), id_user]
+    const [exist] = await connect_SQL.query(
+      "SELECT raportSettings FROM users WHERE id_user = ?",
+      [id_user]
     );
+    if (!exist[0]?.raportSettings) {
+      const raportSettings = {
+        raportDepartments: raportDepartments,
+        raportAdvisers: {},
+      };
 
-    if (result.affectedRows > 0) {
-      // Jeśli aktualizacja zakończyła się sukcesem
-      return res.status(201).json({ message: "Table settings are changed" });
+      await connect_SQL.query(
+        "UPDATE users SET raportSettings = ? WHERE id_user = ?",
+        [JSON.stringify(raportSettings), id_user]
+      );
     } else {
-      // Jeśli aktualizacja nie powiodła się
-      return res
-        .status(400)
-        .json({ message: "Table settings are not changed" });
+      const [result] = await connect_SQL.query(
+        "UPDATE users SET raportSettings = JSON_SET(raportSettings,'$.raportDepartments', ?) WHERE id_user = ?",
+        [JSON.stringify(raportDepartments), id_user]
+      );
+
+      if (result.affectedRows > 0) {
+        // Jeśli aktualizacja zakończyła się sukcesem
+        return res.status(201).json({ message: "Table settings are changed" });
+      } else {
+        // Jeśli aktualizacja nie powiodła się
+        return res
+          .status(400)
+          .json({ message: "Table settings are not changed" });
+      }
     }
+    return res.status(201).json({ message: "Table settings are changed" });
   } catch (error) {
     logEvents(
       `usersController, saveRaporDepartmentSettings: ${error}`,
@@ -413,15 +431,17 @@ const getRaportDepartmentSettings = async (req, res) => {
   }
 
   try {
-    //pobiera od razu klucz z obiektu json
     const [result] = await connect_SQL.query(
-      "SELECT raportSettings->'$.raportDepartments' AS raportDepartments FROM users WHERE id_user = ?",
+      "SELECT raportSettings FROM users WHERE id_user = ?",
       [id_user]
     );
-    if (result[0]?.raportDepartments) {
-      res.json(JSON.parse(result[0].raportDepartments));
+    if (
+      result[0]?.raportSettings?.raportDepartments &&
+      Object.keys(result[0].raportSettings.raportDepartments).length > 0
+    ) {
+      res.json(JSON.parse(result[0].raportSettings.raportDepartments));
     } else {
-      return res.status(404).json({ message: "User not found." });
+      res.json({});
     }
   } catch (error) {
     logEvents(
@@ -442,20 +462,37 @@ const saveRaporAdviserSettings = async (req, res) => {
   }
 
   try {
-    const [result] = await connect_SQL.query(
-      "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportAdvisers', ?) WHERE id_user = ?",
-      [JSON.stringify(raportAdvisers), id_user]
+    const [exist] = await connect_SQL.query(
+      "SELECT raportSettings FROM users WHERE id_user = ?",
+      [id_user]
     );
+    if (!exist[0]?.raportSettings) {
+      const raportSettings = {
+        raportDepartments: {},
+        raportAdvisers,
+      };
 
-    if (result.affectedRows > 0) {
-      // Jeśli aktualizacja zakończyła się sukcesem
-      return res.status(201).json({ message: "Table settings are changed" });
+      await connect_SQL.query(
+        "UPDATE users SET raportSettings = ? WHERE id_user = ?",
+        [JSON.stringify(raportSettings), id_user]
+      );
     } else {
-      // Jeśli aktualizacja nie powiodła się
-      return res
-        .status(400)
-        .json({ message: "Table settings are not changed" });
+      const [result] = await connect_SQL.query(
+        "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportAdvisers', ?) WHERE id_user = ?",
+        [JSON.stringify(raportAdvisers), id_user]
+      );
+
+      if (result.affectedRows > 0) {
+        // Jeśli aktualizacja zakończyła się sukcesem
+        return res.status(201).json({ message: "Table settings are changed" });
+      } else {
+        // Jeśli aktualizacja nie powiodła się
+        return res
+          .status(400)
+          .json({ message: "Table settings are not changed" });
+      }
     }
+    return res.status(201).json({ message: "Table settings are changed" });
   } catch (error) {
     logEvents(
       `usersController, saveRaporAdviserSettings: ${error}`,
@@ -473,15 +510,17 @@ const getRaportAdviserSettings = async (req, res) => {
     return res.status(400).json({ message: "Userlogin is required." });
   }
   try {
-    //pobiera od razu klucz z obiektu json
     const [result] = await connect_SQL.query(
-      "SELECT raportSettings->'$.raportAdvisers' AS raportAdvisers FROM users WHERE id_user = ?",
+      "SELECT raportSettings FROM users WHERE id_user = ?",
       [id_user]
     );
-    if (result[0]?.raportAdvisers) {
-      res.json(JSON.parse(result[0].raportAdvisers));
+    if (
+      result[0]?.raportSettings?.raportAdvisers &&
+      Object.keys(result[0].raportSettings.raportAdvisers).length > 0
+    ) {
+      res.json(JSON.parse(result[0].raportSettings.raportAdvisers));
     } else {
-      return res.status(404).json({ message: "User not found." });
+      res.json({});
     }
   } catch (error) {
     logEvents(
