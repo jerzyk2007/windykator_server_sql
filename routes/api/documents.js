@@ -44,4 +44,9 @@ router
   .route("/get-columns-name")
   .get(verifyRoles(ROLES_LIST.User), Documents.getColumnsName);
 
+// pobiera dane dla danych Kredytu Kupieckiego
+router
+  .route("/get-data-credit-trade")
+  .get(verifyRoles(ROLES_LIST.User), Documents.getTradeCreditData);
+
 module.exports = router;

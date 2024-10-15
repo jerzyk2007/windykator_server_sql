@@ -383,6 +383,268 @@ const settlementsFile = async (rows, res) => {
   }
 };
 
+// funkcja chwilowa do skopiowania rozrachunków dla kredytów kupieckich
+const settlementsFileCreditTrade = async (rows, res) => {
+  if (
+    !("WPROWADZONO" in rows[0]) ||
+    !("TERMIN" in rows[0]) ||
+    !("TYTUŁ" in rows[0]) ||
+    !("WARTOŚĆ" in rows[0]) ||
+    !("NALEŻNOŚĆ" in rows[0]) ||
+    !("ZOBOWIĄZANIE" in rows[0]) ||
+    !("ROZLICZONO" in rows[0]) ||
+    !("PO TERMINIE" in rows[0]) ||
+    !("KONTRAHENT" in rows[0])
+  ) {
+    return res.status(500).json({ error: "Invalid file" });
+  }
+  try {
+    const processedData = rows.reduce((acc, curr) => {
+      const cleanDoc = curr["TYTUŁ"].split(" ")[0];
+      const termin_fv = isExcelDate(curr["TERMIN"])
+        ? excelDateToISODate(curr["TERMIN"])
+        : curr["TERMIN"]
+        ? curr["TERMIN"]
+        : null;
+      const data_fv = isExcelDate(curr["WPROWADZONO"])
+        ? excelDateToISODate(curr["WPROWADZONO"])
+        : curr["WPROWADZONO"]
+        ? curr["WPROWADZONO"]
+        : null;
+
+      const rozliczono = isExcelDate(curr["ROZLICZONO"])
+        ? excelDateToISODate(curr["ROZLICZONO"])
+        : curr["ROZLICZONO"]
+        ? curr["ROZLICZONO"]
+        : null;
+
+      const wartosc = curr["WARTOŚĆ"]
+        ? isNaN(parseFloat(curr["WARTOŚĆ"]))
+          ? 0
+          : parseFloat(curr["WARTOŚĆ"])
+        : 0;
+
+      const do_rozliczenia = curr["NALEŻNOŚĆ"]
+        ? isNaN(parseFloat(curr["NALEŻNOŚĆ"]))
+          ? 0
+          : parseFloat(curr["NALEŻNOŚĆ"])
+        : 0;
+
+      const zobowiazania =
+        curr["ZOBOWIĄZANIE"] && curr["ZOBOWIĄZANIE"] !== 0
+          ? isNaN(parseFloat(curr["ZOBOWIĄZANIE"]))
+            ? 0
+            : parseFloat(curr["ZOBOWIĄZANIE"])
+          : 0;
+
+      const po_terminie = curr["PO TERMINIE"] ? curr["PO TERMINIE"] : null;
+      const kontrahent = curr["KONTRAHENT"] ? curr["KONTRAHENT"] : null;
+
+      if (!acc[cleanDoc]) {
+        // Jeśli numer faktury nie istnieje jeszcze w accumulatorze, dodajemy nowy obiekt
+        acc[cleanDoc] = {
+          DATA_FV: data_fv,
+          TERMIN: termin_fv,
+          NUMER: cleanDoc,
+          WARTOSC: wartosc,
+          NALEZNOSC: do_rozliczenia,
+          ZOBOWIAZANIA: zobowiazania,
+          ROZLICZONO: rozliczono,
+          PO_TERMINIE: po_terminie,
+          KONTRAHENT: kontrahent,
+        };
+      } else {
+        // Jeśli numer faktury już istnieje, agregujemy dane:
+
+        // Wybór najstarszej daty TERMIN
+        if (isExcelDate(curr["TERMIN"])) {
+          const currentTermDate = excelDateToISODate(curr["TERMIN"]);
+          // const existingTermDate = excelDateToISODate(acc[cleanDoc].TERMIN);
+          const existingTermDate = acc[cleanDoc].TERMIN;
+
+          acc[cleanDoc].TERMIN =
+            currentTermDate < existingTermDate
+              ? currentTermDate
+              : existingTermDate;
+        }
+
+        // Sumowanie wartości DO_ROZLICZENIA
+        acc[cleanDoc].NALEZNOSC += do_rozliczenia;
+
+        // Sumowanie wartości ZOBOWIAZANIA
+        acc[cleanDoc].ZOBOWIAZANIA += zobowiazania;
+      }
+
+      return acc;
+    }, {});
+
+    // Zamiana obiektu na tablicę
+    const result = Object.values(processedData);
+
+    console.log(result.length);
+    console.log(result[10]);
+
+    // await connect_SQL.query(
+    //   "UPDATE settlements SET NALEZNOSC = 0, ZOBOWIAZANIA = 0"
+    // );
+
+    for (const doc of result) {
+      await connect_SQL.query(
+        "INSERT INTO trade_credit_settlements (data_fv, termin, numer, wartosc, naleznosc, zobowiazanie, rozliczono, po_terminie, kontrahent) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          doc.DATA_FV,
+          doc.TERMIN,
+          doc.NUMER,
+          doc.WARTOSC,
+          doc.NALEZNOSC,
+          doc.ZOBOWIAZANIA,
+          doc.ROZLICZONO,
+          doc.PO_TERMINIE,
+          doc.KONTRAHENT,
+        ]
+      );
+    }
+
+    console.log("finish");
+    res.status(201).json({ message: "Documents are updated" });
+  } catch (error) {
+    logEvents(
+      `documentsController, settlementsFileCreditTrade: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+// funkcja chwilowa do skopiowania danych dla kredytów kupieckich
+const dataFileCreditTrade = async (rows, res) => {
+  console.log(rows[0]);
+
+  try {
+    for (const row of rows) {
+      const lokalizacja = row.Lokalizacja ? row.Lokalizacja : null;
+      const dzial = row["Dział"] ? row["Dział"] : null;
+      const segment = row["Segment"] ? row["Segment"] : null;
+      const numer = row["Numer"] ? row["Numer"] : null;
+      const data_wystawienia = isExcelDate(row["Data wystawienia"])
+        ? excelDateToISODate(row["Data wystawienia"])
+        : null;
+      const termin = isExcelDate(row["Termin"])
+        ? excelDateToISODate(row["Termin"])
+        : null;
+      const brutto = row["Wartość brutto faktury"]
+        ? row["Wartość brutto faktury"]
+        : 0;
+      const kontr_nazwa = row["KONTR NAZWA"] ? row["KONTR NAZWA"] : null;
+      const kontr_adres = row["KONTR ADRES"] ? row["KONTR ADRES"] : null;
+      const kontr_kraj = row["KONTR KRAJ"] ? row["KONTR KRAJ"] : null;
+      const kontr_NIP = row["KONTRNIP"] ? row["KONTRNIP"] : null;
+      const kontr_ID = row["KONTRAHENT_ID"] ? row["KONTRAHENT_ID"] : null;
+      const zgoda = row["Zgoda płatności opóźnione"]
+        ? row["Zgoda płatności opóźnione"]
+        : null;
+      const ile = row["Ilośc dni"] ? row["Ilośc dni"] : null;
+      const kredyt = row["Dopuszczalny kredyt"]
+        ? row["Dopuszczalny kredyt"]
+        : null;
+      const sposob_zaplaty = row["Sposób zapłaty"]
+        ? row["Sposób zapłaty"]
+        : null;
+
+      await connect_SQL.query(
+        "INSERT INTO trade_credit_data (lokalizacja, dzial, segment, numer, data_wystawienia, termin, brutto, kontrahent_nazwa, kontrahent_adres, kontrahent_kraj, kontrahent_nip, kontrahent_id, zgoda_na_platnosci_opoznione, ilosc_dni_przelew, dopuszczalny_kredyt, sposob_zaplaty) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          lokalizacja,
+          dzial,
+          segment,
+          numer,
+          data_wystawienia,
+          termin,
+          brutto,
+          kontr_nazwa,
+          kontr_adres,
+          kontr_kraj,
+          kontr_NIP,
+          kontr_ID,
+          zgoda,
+          ile,
+          kredyt,
+          sposob_zaplaty,
+        ]
+      );
+    }
+
+    console.log("finish");
+    res.status(201).json({ message: "Documents are updated" });
+  } catch (error) {
+    logEvents(
+      `documentsController, settlementsFileCreditTrade: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// funkcja chwilowa do dodania uzuepłenionych do Kredytu Kupieckiego
+const addDataToCreditTrade = async (rows, res) => {
+  try {
+    if (
+      !("KONTRAHENT_ID" in rows[0]) ||
+      !("KONTR_NAZWA" in rows[0]) ||
+      !("KONTR_NIP" in rows[0]) ||
+      !("0BSZAR" in rows[0]) ||
+      !("FORMA PŁATNOŚCI (WSKAZUJE BIZNES)" in rows[0]) ||
+      !("TERMIN PŁATNOŚCI" in rows[0]) ||
+      !("CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)" in rows[0]) ||
+      !("ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI" in rows[0]) ||
+      !(" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) " in rows[0])
+    ) {
+      console.log("złe dane");
+      return res.status(500).json({ error: "Error file" });
+    }
+    for (const row of rows) {
+      if (
+        row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"] ||
+        row["TERMIN PŁATNOŚCI"] ||
+        row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"] ||
+        row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"] ||
+        row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "]
+      ) {
+        // console.log(
+        //   row["KONTRAHENT_ID"],
+        //   row["KONTR_NAZWA"],
+        //   row["KONTR_NIP"],
+        //   row["0BSZAR"],
+        //   row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"],
+        //   row["TERMIN PŁATNOŚCI"],
+        //   row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"],
+        //   row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"],
+        //   row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "]
+        // );
+
+        await connect_SQL.query(
+          "INSERT INTO area_data_credit_trade (kontr_id, kontr_nazwa, kontr_nip, area, forma_plat, termin_plat, biznes_zezwala, ile_dni, ile_kredyt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            row["KONTRAHENT_ID"],
+            row["KONTR_NAZWA"],
+            row["KONTR_NIP"],
+            row["0BSZAR"],
+            row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"],
+            row["TERMIN PŁATNOŚCI"],
+            row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"],
+            row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"],
+            row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "],
+          ]
+        );
+      }
+    }
+    res.end();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 // SQL dodaje opisy rozrachunków z pliku
 const settlementsDescriptionFile = async (rows, res) => {
   try {
@@ -524,11 +786,19 @@ const documentsFromFile = async (req, res) => {
       return ASFile(rows, res);
     } else if (type === "settlements") {
       return settlementsFile(rows, res);
+    } else if (type === "settlements_credit_trade") {
+      return settlementsFileCreditTrade(rows, res);
+    } else if (type === "data_credit_trade") {
+      return dataFileCreditTrade(rows, res);
+    } else if (type === "add_data_credit_trade") {
+      return addDataToCreditTrade(rows, res);
     } else if (type === "test") {
     } else if (type === "settlements_description") {
       return settlementsDescriptionFile(rows, res);
     } else if (type === "test") {
       return repairFile(rows, res);
+    } else {
+      return res.status(500).json({ error: "Invalid file" });
     }
   } catch (error) {
     logEvents(
@@ -688,6 +958,36 @@ const getColumnsName = async (req, res) => {
   }
 };
 
+const getTradeCreditData = async (req, res) => {
+  try {
+    // const [tradeCreditData] = await connect_SQL.query(
+    //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.zgoda_na_platnosci_opoznione = 'TAK'"
+    // );
+    // const [tradeCreditData] = await connect_SQL.query(
+    //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.sposob_zaplaty = 'PRZELEW'"
+    // );
+    // const [tradeCreditData] = await connect_SQL.query(
+    //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer LIMIT 10000"
+    // );
+    const [tradeCreditData] = await connect_SQL.query(
+      "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01' "
+    );
+
+    const [areaCreditData] = await connect_SQL.query(
+      "SELECT * FROM area_data_credit_trade"
+    );
+    console.log("finish");
+    res.json({ tradeCreditData, areaCreditData });
+  } catch (error) {
+    logEvents(
+      `documentsController, getTradeCreditData: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   getAllDocuments,
   documentsFromFile,
@@ -696,4 +996,6 @@ module.exports = {
   getDataDocuments,
   getSingleDocument,
   getColumnsName,
+  getTradeCreditData,
+  addDataToCreditTrade,
 };
