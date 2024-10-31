@@ -972,6 +972,9 @@ const getTradeCreditData = async (req, res) => {
     const [tradeCreditData] = await connect_SQL.query(
       "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01' "
     );
+    // const [tradeCreditData] = await connect_SQL.query(
+    //   "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01' AND segment='SAMOCHODY NOWE' AND kontrahent_nip = '5252800978'"
+    // );
 
     const [areaCreditData] = await connect_SQL.query(
       "SELECT * FROM area_data_credit_trade"
