@@ -63,6 +63,7 @@ const options = {
   cert: fs.readFileSync(path.join(__dirname, "cert", "krotoski.com.crt")),
 };
 
+
 // // connect to mongoDB
 connectMongoDB();
 
@@ -72,7 +73,7 @@ connectMongoDB();
 //     .listen(process.env.PORT, "0.0.0.0", function () {
 //       console.log(
 //         "Express server listening on port " +
-//           `${process.env.PORT ? process.env.PORT : 3000}`
+//         `${process.env.PORT ? process.env.PORT : 3000}`
 //       );
 //     });
 // });
