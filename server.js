@@ -14,6 +14,8 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 const compression = require("compression");
+//wywołuje cykleczne funkcje z pliku getDataFromMSSQL
+require('./controllers/getDataFromMSSQL');
 // const http = require("http");
 
 // limit to 10 MB
@@ -63,6 +65,16 @@ const options = {
   cert: fs.readFileSync(path.join(__dirname, "cert", "krotoski.com.crt")),
 };
 
+// cykliczne wywoływanie funkcji o określonej godzinie
+// W wyrażeniu cron.schedule('58 16 * * *', ...) każda część odpowiada określonemu elementowi daty i czasu. Oto pełne wyjaśnienie:
+// Minuta – 58: Minuta, w której zadanie ma się uruchomić (tutaj: 58 minuta każdej godziny).
+// Godzina – 16: Godzina, w której zadanie ma się uruchomić (tutaj: 16, czyli 16:58).
+// Dzień miesiąca – *: Gwiazdka oznacza każdy dzień miesiąca (od 1 do 31).
+// Miesiąc – *: Gwiazdka oznacza każdy miesiąc (od stycznia do grudnia).
+// Dzień tygodnia – *: Gwiazdka oznacza każdy dzień tygodnia (od poniedziałku do niedzieli).
+// cron.schedule('07 17 * * *', getData, {
+//   timezone: "Europe/Warsaw"
+// });
 
 // // connect to mongoDB
 connectMongoDB();
