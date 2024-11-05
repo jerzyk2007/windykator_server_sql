@@ -1,0 +1,5 @@
+20241105	14:41:24	loginController, handleLogin: Error
+20241105	14:42:30	loginController, handleLogin: Error
+20241105	14:43:59	loginController, handleLogin: Error
+20241105	14:44:16	loginController, handleLogin: Error: getaddrinfo ENOTFOUND 10.8.20.11:3306
+20241105	14:46:55	loginController, handleLogin: Error: getaddrinfo ENOTFOUND 10.8.20.11:3306

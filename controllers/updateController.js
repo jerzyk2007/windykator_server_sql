@@ -6,7 +6,6 @@ const getTime = async (req, res) => {
     const [getDate] = await connect_SQL.query(
       "SELECT settlements FROM updates"
     );
-
     res.json(getDate[0].settlements);
   } catch (error) {
     logEvents(`updateController, getTime: ${error}`, "reqServerErrors.txt");
