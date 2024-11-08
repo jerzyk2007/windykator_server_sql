@@ -1,0 +1,3 @@
+
+20241108	20:44:39	getDataFromMSSQL, uspdateSettlements: Error: [Microsoft][ODBC Driver 17 for SQL Server]TCP Provider: Pr�ba poBczenia nie powiodBa si, poniewa| poBczona strona nie odpowiedziaBa poprawnie po ustalonym okresie czasu lub utworzone poBczenie nie powiodBo si, poniewa| poBczony host nie odpowiedziaB.
+

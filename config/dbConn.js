@@ -24,7 +24,10 @@ const connect_SQL = mysql.createPool({
   //   Gdy opcja dateStrings: true jest ustawiona, wartości kolumn typu DATE, DATETIME i TIMESTAMP są zwracane jako ciągi znaków w formacie 'yyyy-mm-dd' lub 'yyyy-mm-dd hh:mm:ss' (dla DATETIME i TIMESTAMP), zamiast jako obiekty Date w JavaScript.
   dateStrings: true,
   //wymuszenie zwracania danych z mysql jako liczby jeśli sa zadeklorawane jako liczby
-  decimalNumbers: true,
+  decimalNumbers: true, // Liczby będą zwracane jako liczby
+  waitForConnections: true, // Czekanie na wolne połączenie
+  connectionLimit: 50, // Maksymalna liczba połączeń
+  connectTimeout: 30000 // Maksymalny czas oczekiwania na połączenie (ms)
 });
 
 const config = `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.MSSQL_DB_SERVER};Database=${process.env.MSSQL_DB_DATABASE};UID=${process.env.MSSQL_DB_USER};PWD=${process.env.MSSQL_DB_PASSWORD};`;
