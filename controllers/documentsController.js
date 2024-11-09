@@ -343,27 +343,41 @@ const settlementsFile = async (rows, res) => {
     // Zamiana obiektu na tablicę
     const result = Object.values(processedData);
 
+    // await connect_SQL.query(
+    //   "UPDATE settlements SET NALEZNOSC = 0, ZOBOWIAZANIA = 0"
+    // );
+
+    // for (const doc of result) {
+    //   const [checkDoc] = await connect_SQL.query(
+    //     "SELECT id_settlement FROM settlements WHERE NUMER_FV = ?",
+    //     [doc.NUMER_FV]
+    //   );
+
+    //   if (checkDoc?.length) {
+    //     await connect_SQL.query(
+    //       "UPDATE settlements SET TERMIN = ?, NALEZNOSC = ?, ZOBOWIAZANIA = ? WHERE NUMER_FV = ?",
+    //       [doc.TERMIN, doc.DO_ROZLICZENIA, doc.ZOBOWIAZANIA, doc.NUMER_FV]
+    //     );
+    //   } else {
+    //     await connect_SQL.query(
+    //       "INSERT INTO settlements (NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) VALUES(?, ?, ?, ?)",
+    //       [doc.NUMER_FV, doc.TERMIN, doc.DO_ROZLICZENIA, doc.ZOBOWIAZANIA]
+    //     );
+    //   }
+    // }
+
     await connect_SQL.query(
-      "UPDATE settlements SET NALEZNOSC = 0, ZOBOWIAZANIA = 0"
+      "UPDATE documents SET DO_ROZLICZENIA = 0"
     );
 
     for (const doc of result) {
-      const [checkDoc] = await connect_SQL.query(
-        "SELECT id_settlement FROM settlements WHERE NUMER_FV = ?",
-        [doc.NUMER_FV]
+      await connect_SQL.query(
+        "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
+        [
+          doc.DO_ROZLICZENIA,
+          doc.NUMER_FV
+        ]
       );
-
-      if (checkDoc?.length) {
-        await connect_SQL.query(
-          "UPDATE settlements SET TERMIN = ?, NALEZNOSC = ?, ZOBOWIAZANIA = ? WHERE NUMER_FV = ?",
-          [doc.TERMIN, doc.DO_ROZLICZENIA, doc.ZOBOWIAZANIA, doc.NUMER_FV]
-        );
-      } else {
-        await connect_SQL.query(
-          "INSERT INTO settlements (NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) VALUES(?, ?, ?, ?)",
-          [doc.NUMER_FV, doc.TERMIN, doc.DO_ROZLICZENIA, doc.ZOBOWIAZANIA]
-        );
-      }
     }
 
     await connect_SQL.query(
@@ -901,14 +915,23 @@ const getDataTable = async (req, res) => {
 const getSingleDocument = async (req, res) => {
   const { id_document } = req.params;
   try {
-    const [result] = await connect_SQL.query(
-      `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, DS.OPIS_ROZRACHUNKU, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA, JI.area FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN join_items AS JI ON D.DZIAL = JI.department WHERE D.id_document = ?`,
-      [id_document]
-    );
     // const [result] = await connect_SQL.query(
-    //   "SELECT documents.*, documents_actions.* FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id WHERE documents.id_document = ?",
+    //   `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, DS.OPIS_ROZRACHUNKU, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA, JI.area FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN join_items AS JI ON D.DZIAL = JI.department WHERE D.id_document = ?`,
     //   [id_document]
     // );
+    const [result] = await connect_SQL.query(
+      `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.DO_ROZLICZENIA, D.TERMIN, 
+D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
+D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
+D.VIN, DA.*, DS.OPIS_ROZRACHUNKU, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
+IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,   JI.area FROM documents AS D 
+LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
+LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
+LEFT JOIN join_items AS JI ON D.DZIAL = JI.department WHERE D.id_document = ?`,
+      [id_document]
+    );
+
     res.json(result[0]);
   } catch (error) {
     logEvents(

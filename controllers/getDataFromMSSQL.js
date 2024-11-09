@@ -11,33 +11,82 @@ today.setDate(today.getDate() - 2); // Odejmujemy 2 dni
 const twoDaysAgo = today.toISOString().split("T")[0];
 // const twoDaysAgo = "2024-10-01";
 
-
+// zamienia na krótki format daty
+const formatDate = (date) => {
+  if (date instanceof Date) {
+    return date.toISOString().split('T')[0]; // Wyciąga tylko część daty, np. "2024-11-08"
+  }
+  return date;
+};
 
 
 const addDocumentToDatabase = async () => {
-  const query = `SELECT
-       fv.[NUMER]
-   	, CONVERT(date, fv.[DATA_WYSTAWIENIA]) AS DATA_WYSTAWIENIA
-	, CONVERT(date, fv.[DATA_ZAPLATA]) AS DATA_ZAPLATA
-     , fv.[KONTR_NAZWA]
-     , fv.[KONTR_NIP]
-     , fv.[WARTOSC_NETTO]
-     , fv.[WARTOSC_BRUTTO]
-     , fv.[NR_SZKODY]
-     , fv.[NR_AUTORYZACJI]
-     , fv.[UWAGI]
-	 , fv.[KOREKTA_NUMER]
-	 , fv.[DATA_WYDANIA]
-	 , zap.[NAZWA] as TYP_PLATNOSCI
-	 , us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL
-	 , auto.[REJESTRACJA]
-	 , auto.[NR_NADWOZIA]
-   , tr.[WARTOSC_NAL]
+  //   const query = `SELECT
+  //        fv.[NUMER]
+  //    	, CONVERT(date, fv.[DATA_WYSTAWIENIA]) AS DATA_WYSTAWIENIA
+  // 	, CONVERT(date, fv.[DATA_ZAPLATA]) AS DATA_ZAPLATA
+  //      , fv.[KONTR_NAZWA]
+  //      , fv.[KONTR_NIP]
+  //      , fv.[WARTOSC_NETTO]
+  //      , fv.[WARTOSC_BRUTTO]
+  //      , fv.[NR_SZKODY]
+  //      , fv.[NR_AUTORYZACJI]
+  //      , fv.[UWAGI]
+  // 	 , fv.[KOREKTA_NUMER]
+  // 	 , fv.[DATA_WYDANIA]
+  // 	 , zap.[NAZWA] as TYP_PLATNOSCI
+  // 	 , us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL
+  // 	 , auto.[REJESTRACJA]
+  // 	 , auto.[NR_NADWOZIA]
+  //    , tr.[WARTOSC_NAL]
+  // FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
+  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
+  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
+  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] as auto ON fv.AUTO_ID = auto.AUTO_ID WHERE fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}' AND fv.[NUMER]!='POTEM' `;
+  const query = `SELECT 
+       fv.[NUMER],
+       CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA, 
+       CONVERT(VARCHAR(10), fv.[DATA_ZAPLATA], 23) AS DATA_ZAPLATA, 
+ 	   	        fv.[KONTR_NAZWA],
+       fv.[KONTR_NIP],
+             SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+			 SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
+            fv.[NR_SZKODY],
+       fv.[NR_AUTORYZACJI],
+       fv.[UWAGI],
+       fv.[KOREKTA_NUMER],
+          zap.[NAZWA] AS TYP_PLATNOSCI,
+       us.[IMIE] + ' ' + us.[NAZWA] AS PRZYGOTOWAL,
+       auto.[REJESTRACJA],
+       auto.[NR_NADWOZIA],
+       tr.[WARTOSC_NAL]
 FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
 LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
 LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
 LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
-LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] as auto ON fv.AUTO_ID = auto.AUTO_ID WHERE fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}' AND fv.[NUMER]!='POTEM' `;
+LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
+LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+WHERE fv.[NUMER] != 'POTEM' 
+  AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}' 
+GROUP BY 
+       fv.[NUMER],
+       fv.[DATA_WYSTAWIENIA],
+       fv.[DATA_ZAPLATA],
+       fv.[KONTR_NAZWA],
+       fv.[KONTR_NIP],
+       fv.[WARTOSC_NETTO],
+       fv.[WARTOSC_BRUTTO],
+       fv.[NR_SZKODY],
+       fv.[NR_AUTORYZACJI],
+       fv.[UWAGI],
+       fv.[KOREKTA_NUMER],
+             zap.[NAZWA],
+       us.[IMIE] + ' ' + us.[NAZWA],
+       auto.[REJESTRACJA],
+       auto.[NR_NADWOZIA],
+       tr.[WARTOSC_NAL]`;
+
   try {
     const documents = await msSqlQuery(query);
 
@@ -57,8 +106,12 @@ LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] as auto ON fv.AUTO_ID = auto.AUTO_ID
       .filter(Boolean);
 
 
-    for (const doc of addDepartment) {
+    addDepartment.forEach(row => {
+      row.DATA_WYSTAWIENIA = formatDate(row.DATA_WYSTAWIENIA);
+      row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
+    });
 
+    for (const doc of addDepartment) {
       const NIP = doc?.KONTR_NIP ? doc.KONTR_NIP : null;
       const NR_AUTORYZACJI = doc?.NR_AUTORYZACJI ? doc.NR_AUTORYZACJI : null;
       const NR_SZKODY = doc?.NR_SZKODY ? doc.NR_SZKODY : null;
@@ -121,7 +174,7 @@ const updateCarReleaseDates = async () => {
         const carDate = carReleaseDates.find(car => car.NUMER === doc.NUMER_FV);
         return {
           ...doc,
-          DATA_WYDANIA: carDate ? carDate.DATA_WYDANIA : null
+          DATA_WYDANIA: carDate?.DATA_WYDANIA ? formatDate(carDate.DATA_WYDANIA) : null
         };
       });
 
@@ -143,7 +196,7 @@ const updateCarReleaseDates = async () => {
   }
 };
 
-const uspdateSettlements = async () => {
+const updateSettlements = async () => {
   try {
     // const query = `SELECT 
     // fv.[NUMER],
@@ -157,16 +210,17 @@ const uspdateSettlements = async () => {
 
     const query = `SELECT TOP (1000)
     [NUMER],
-    [WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE] AS DO_ROZLICZENIA
-
+    SUM([WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE]) AS DO_ROZLICZENIA
 FROM 
     [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC]
-	WHERE [WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE] !=0
+WHERE 
+    [WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE] != 0
+GROUP BY 
+    [NUMER]
 `;
 
 
     const settlements = await msSqlQuery(query);
-    console.log(settlements[0]);
 
     await connect_SQL.query(
       "UPDATE documents SET DO_ROZLICZENIA = 0"
@@ -196,18 +250,16 @@ const updateData = async () => {
   try {
     console.log(new Date());
     // dodanie faktur do DB
-    // const documentsUpdate = await addDocumentToDatabase();
-    // console.log(documentsUpdate);
+    const documentsUpdate = await addDocumentToDatabase();
+    console.log(documentsUpdate);
 
     // dodanie dat wydania samochodów 
-    // const carDateUpdate = await updateCarReleaseDates();
-    // console.log(carDateUpdate);
+    const carDateUpdate = await updateCarReleaseDates();
+    console.log(carDateUpdate);
 
     // aktualizacja rozrachunków
-
-    const settlementsUpdate = await uspdateSettlements();
-
-    console.log(settlementsUpdate);
+    // const settlementsUpdate = await updateSettlements();
+    // console.log(settlementsUpdate);
 
     console.log(new Date());
     console.log('finish');
@@ -224,7 +276,7 @@ const updateData = async () => {
 // Dzień miesiąca – *: Gwiazdka oznacza każdy dzień miesiąca (od 1 do 31).
 // Miesiąc – *: Gwiazdka oznacza każdy miesiąc (od stycznia do grudnia).
 // Dzień tygodnia – *: Gwiazdka oznacza każdy dzień tygodnia (od poniedziałku do niedzieli).
-cron.schedule('02 17 * * *', updateData, {
+cron.schedule('17 09 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
 
