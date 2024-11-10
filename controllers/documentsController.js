@@ -380,9 +380,28 @@ const settlementsFile = async (rows, res) => {
       );
     }
 
-    await connect_SQL.query(
-      "UPDATE updates SET settlements = CURRENT_TIMESTAMP WHERE id_update = 1"
-    );
+    // Najpierw wyczyść tabelę settlements_description
+    await connect_SQL.query("DELETE FROM settlements");
+
+    // Teraz przygotuj dane do wstawienia
+    const values = result.map(item => [
+      item.NUMER_FV,
+      item.TERMIN,
+      item.DO_ROZLICZENIA,
+      item.ZOBOWIAZANIA
+    ]);
+
+    // Przygotowanie zapytania SQL z wieloma wartościami
+    const query = `
+          INSERT IGNORE INTO settlements
+            ( NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) 
+          VALUES 
+            ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+        `;
+
+    // Wykonanie zapytania INSERT
+    await connect_SQL.query(query, values.flat());
+
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
@@ -923,7 +942,7 @@ const getSingleDocument = async (req, res) => {
       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.DO_ROZLICZENIA, D.TERMIN, 
 D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
 D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
-D.VIN, DA.*, DS.OPIS_ROZRACHUNKU, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
 ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
 IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,   JI.area FROM documents AS D 
 LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 

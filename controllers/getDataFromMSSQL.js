@@ -208,35 +208,35 @@ const updateSettlements = async () => {
     // tr.WARTOSC_NAL !=0 AND tr.WARTOSC_NAL IS NOT NULL
     // AND tr.[IS_ROZLICZONY] != 1`;
 
-    const query = `SELECT TOP (1000)
-    [NUMER],
-    SUM([WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE]) AS DO_ROZLICZENIA
-FROM 
-    [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC]
-WHERE 
-    [WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE] != 0
-GROUP BY 
-    [NUMER]
-`;
+    //     const query = `SELECT TOP (1000)
+    //     [NUMER],
+    //     SUM([WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE]) AS DO_ROZLICZENIA
+    // FROM 
+    //     [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC]
+    // WHERE 
+    //     [WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE] != 0
+    // GROUP BY 
+    //     [NUMER]
+    // `;
 
 
-    const settlements = await msSqlQuery(query);
+    // const settlements = await msSqlQuery(query);
 
-    await connect_SQL.query(
-      "UPDATE documents SET DO_ROZLICZENIA = 0"
-    );
+    // await connect_SQL.query(
+    //   "UPDATE documents SET DO_ROZLICZENIA = 0"
+    // );
 
-    for (const item of settlements) {
-      await connect_SQL.query(
-        "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
-        [
-          item.DO_ROZLICZENIA,
-          item.NUMER
-        ]
-      );
-    }
+    // for (const item of settlements) {
+    //   await connect_SQL.query(
+    //     "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
+    //     [
+    //       item.DO_ROZLICZENIA,
+    //       item.NUMER
+    //     ]
+    //   );
+    // }
 
-    return true;
+    return false;
   }
 
   catch (error) {
@@ -246,22 +246,163 @@ GROUP BY
   }
 };
 
-const updateData = async () => {
+const updateSettlementDescription = async () => {
+
+  const queryMsSql = '  SELECT  fv.[NUMER] AS NUMER_FV, rozl.[OPIS] AS NUMER_OPIS,	CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr LEFT JOIN     [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv    ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID] LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] WHERE fv.[NUMER] IS NOT NULL';
+
+  const queryMySQL = 'SELECT id_document, NUMER_FV FROM documents';
   try {
-    console.log(new Date());
+    const settlementDescription = await msSqlQuery(queryMsSql);
+
+
+    const [documents] = await connect_SQL.query(queryMySQL);
+    console.log(documents.length);
+
+    const filteredSettlements = settlementDescription
+      .filter(item => {
+        // Filtrujemy tylko te obiekty, które mają pasujący NUMER_FV w documents
+        return documents.some(data => data.NUMER_FV === item.NUMER_FV);
+      })
+      .map(item => {
+        // Teraz już mamy tylko pasujące elementy, więc dodajemy id_document
+        const matchingDocument = documents.find(data => data.NUMER_FV === item.NUMER_FV);
+
+        // Jeśli znaleziono pasujący dokument, dodaj id_document do obiektu w settlementDescription
+        if (matchingDocument) {
+          return { ...item, id_document: matchingDocument.id_document };
+        }
+
+        return item;
+      });
+
+    const updatedSettlements = Object.values(
+      filteredSettlements.reduce((acc, item) => {
+        // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
+        const formattedAmount = (typeof item.WARTOSC_OPERACJI === 'number' && !isNaN(item.WARTOSC_OPERACJI))
+          ? item.WARTOSC_OPERACJI.toLocaleString('pl-PL', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+            useGrouping: true
+          })
+          : 'brak danych';
+
+        const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
+
+        if (!acc[item.NUMER_FV]) {
+          // Tworzymy nowy obiekt, jeśli nie istnieje jeszcze dla tego NUMER_FV
+          acc[item.NUMER_FV] = {
+            id_document: item.id_document,
+            NUMER_FV: item.NUMER_FV,
+            DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
+            OPIS_ROZRACHUNKU: [description]
+          };
+        } else {
+          // Jeśli obiekt z NUMER_FV już istnieje, dodajemy nowy opis
+          acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
+        }
+
+        return acc;
+      }, {})
+    );
+
+
+
+
+    // Najpierw wyczyść tabelę settlements_description
+    await connect_SQL.query("DELETE FROM settlements_description");
+
+    // Teraz przygotuj dane do wstawienia
+    const values = updatedSettlements.map(item => [
+      item.id_document,
+      item.NUMER_FV,
+      JSON.stringify(item.OPIS_ROZRACHUNKU),
+      item.DATA_ROZLICZENIA
+    ]);
+
+    // Przygotowanie zapytania SQL z wieloma wartościami
+    const query = `
+      INSERT IGNORE INTO settlements_description 
+        (document_id, NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) 
+      VALUES 
+        ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+    `;
+
+    // Wykonanie zapytania INSERT
+    await connect_SQL.query(query, values.flat());
+
+
+    return true;
+  }
+  catch (error) {
+    logEvents(`getDataFromMSSQL, updateSettlementDescription: ${error}`, "reqServerErrors.txt");
+    // console.error(error);
+    return false;
+  }
+};
+
+
+const updateData = async () => {
+  const checkDate = (data) => {
+    return data.toISOString().slice(0, 10);
+  };
+  const checkTime = (data) => {
+    return data.toISOString().slice(11, 16);
+  };
+  try {
+
+
     // dodanie faktur do DB
     const documentsUpdate = await addDocumentToDatabase();
     console.log(documentsUpdate);
+
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        documentsUpdate ? 'Zaktualizowano' : 'Błąd aktualizacji',
+        'Faktury'
+      ]
+    );
 
     // dodanie dat wydania samochodów 
     const carDateUpdate = await updateCarReleaseDates();
     console.log(carDateUpdate);
 
-    // aktualizacja rozrachunków
-    // const settlementsUpdate = await updateSettlements();
-    // console.log(settlementsUpdate);
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        carDateUpdate ? 'Zaktualizowano' : 'Błąd aktualizacji',
+        'Wydania samochodów'
+      ]);
 
-    console.log(new Date());
+    // aktualizacja rozrachunków
+    const settlementsUpdate = await updateSettlements();
+    console.log(settlementsUpdate);
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        settlementsUpdate ? 'Zaktualizowano' : 'Błąd aktualizacji',
+        'Rozrachunki'
+      ]);
+
+    // aktualizacja opisu rozrachunków
+    const settlementDescriptionUpdate = await updateSettlementDescription();
+    console.log(settlementDescriptionUpdate);
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        settlementDescriptionUpdate ? 'Zaktualizowano' : 'Błąd aktualizacji',
+        'Opisy rozrachunków'
+      ]);
+
+    // console.log(new Date());
     console.log('finish');
   } catch (error) {
     logEvents(`getDataFromMSSQL, getData: ${error}`, "reqServerErrors.txt");
