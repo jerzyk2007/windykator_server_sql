@@ -195,7 +195,7 @@ const saveItemsData = async (req, res) => {
 const getDepfromAccountancy = async (req, res) => {
   try {
     const [getDepartments] = await connect_SQL.query(
-      "SELECt distinct DZIAL from documents ORDER BY DZIAL"
+      "SELECT distinct DZIAL from documents ORDER BY DZIAL"
     );
 
     const departments = getDepartments.map((dep) => {

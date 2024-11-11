@@ -6,7 +6,7 @@ const getTime = async (req, res) => {
   try {
     // await updateData();
     const [getUpdatesData] = await connect_SQL.query(
-      "SELECT data_name, date,TIME_FORMAT(hour, '%H:%i') as hour, success FROM updates"
+      "SELECT data_name, date, TIME_FORMAT(hour, '%H:%i') as hour, success FROM updates"
     );
     res.json(getUpdatesData);
   } catch (error) {

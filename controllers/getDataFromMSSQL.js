@@ -21,29 +21,6 @@ const formatDate = (date) => {
 
 
 const addDocumentToDatabase = async () => {
-  //   const query = `SELECT
-  //        fv.[NUMER]
-  //    	, CONVERT(date, fv.[DATA_WYSTAWIENIA]) AS DATA_WYSTAWIENIA
-  // 	, CONVERT(date, fv.[DATA_ZAPLATA]) AS DATA_ZAPLATA
-  //      , fv.[KONTR_NAZWA]
-  //      , fv.[KONTR_NIP]
-  //      , fv.[WARTOSC_NETTO]
-  //      , fv.[WARTOSC_BRUTTO]
-  //      , fv.[NR_SZKODY]
-  //      , fv.[NR_AUTORYZACJI]
-  //      , fv.[UWAGI]
-  // 	 , fv.[KOREKTA_NUMER]
-  // 	 , fv.[DATA_WYDANIA]
-  // 	 , zap.[NAZWA] as TYP_PLATNOSCI
-  // 	 , us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL
-  // 	 , auto.[REJESTRACJA]
-  // 	 , auto.[NR_NADWOZIA]
-  //    , tr.[WARTOSC_NAL]
-  // FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] as auto ON fv.AUTO_ID = auto.AUTO_ID WHERE fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}' AND fv.[NUMER]!='POTEM' `;
   const query = `SELECT 
        fv.[NUMER],
        CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA, 
@@ -246,14 +223,106 @@ const updateSettlements = async () => {
   }
 };
 
-const updateSettlementDescription = async () => {
+// const updateSettlementDescription = async () => {
 
-  const queryMsSql = '  SELECT  fv.[NUMER] AS NUMER_FV, rozl.[OPIS] AS NUMER_OPIS,	CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr LEFT JOIN     [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv    ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID] LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] WHERE fv.[NUMER] IS NOT NULL';
+//   const queryMsSql = '  SELECT  fv.[NUMER] AS NUMER_FV, rozl.[OPIS] AS NUMER_OPIS,	CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr LEFT JOIN     [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv    ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID] LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] WHERE fv.[NUMER] IS NOT NULL';
+
+//   const queryMySQL = 'SELECT id_document, NUMER_FV FROM documents';
+//   try {
+//     const settlementDescription = await msSqlQuery(queryMsSql);
+
+
+//     const [documents] = await connect_SQL.query(queryMySQL);
+//     console.log(documents.length);
+
+//     const filteredSettlements = settlementDescription
+//       .filter(item => {
+//         // Filtrujemy tylko te obiekty, które mają pasujący NUMER_FV w documents
+//         return documents.some(data => data.NUMER_FV === item.NUMER_FV);
+//       })
+//       .map(item => {
+//         // Teraz już mamy tylko pasujące elementy, więc dodajemy id_document
+//         const matchingDocument = documents.find(data => data.NUMER_FV === item.NUMER_FV);
+
+//         // Jeśli znaleziono pasujący dokument, dodaj id_document do obiektu w settlementDescription
+//         if (matchingDocument) {
+//           return { ...item, id_document: matchingDocument.id_document };
+//         }
+
+//         return item;
+//       });
+
+//     const updatedSettlements = Object.values(
+//       filteredSettlements.reduce((acc, item) => {
+//         // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
+//         const formattedAmount = (typeof item.WARTOSC_OPERACJI === 'number' && !isNaN(item.WARTOSC_OPERACJI))
+//           ? item.WARTOSC_OPERACJI.toLocaleString('pl-PL', {
+//             minimumFractionDigits: 2,
+//             maximumFractionDigits: 2,
+//             useGrouping: true
+//           })
+//           : 'brak danych';
+
+//         const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
+
+//         if (!acc[item.NUMER_FV]) {
+//           // Tworzymy nowy obiekt, jeśli nie istnieje jeszcze dla tego NUMER_FV
+//           acc[item.NUMER_FV] = {
+//             id_document: item.id_document,
+//             NUMER_FV: item.NUMER_FV,
+//             DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
+//             OPIS_ROZRACHUNKU: [description]
+//           };
+//         } else {
+//           // Jeśli obiekt z NUMER_FV już istnieje, dodajemy nowy opis
+//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
+//         }
+
+//         return acc;
+//       }, {})
+//     );
+
+
+
+
+//     // Najpierw wyczyść tabelę settlements_description
+//     await connect_SQL.query("DELETE FROM settlements_description");
+
+//     // Teraz przygotuj dane do wstawienia
+//     const values = updatedSettlements.map(item => [
+//       item.id_document,
+//       item.NUMER_FV,
+//       JSON.stringify(item.OPIS_ROZRACHUNKU),
+//       item.DATA_ROZLICZENIA
+//     ]);
+
+//     // Przygotowanie zapytania SQL z wieloma wartościami
+//     const query = `
+//       INSERT IGNORE INTO settlements_description 
+//         (document_id, NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) 
+//       VALUES 
+//         ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+//     `;
+
+//     // Wykonanie zapytania INSERT
+//     await connect_SQL.query(query, values.flat());
+
+
+//     return true;
+//   }
+//   catch (error) {
+//     logEvents(`getDataFromMSSQL, updateSettlementDescription: ${error}`, "reqServerErrors.txt");
+//     // console.error(error);
+//     return false;
+//   }
+// };
+
+const updateSettlementDescription = async () => {
+  const queryMsSql = `SELECT  fv.[NUMER] AS NUMER_FV, rozl.[OPIS] AS NUMER_OPIS,	CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr LEFT JOIN     [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv    ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID] LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] WHERE fv.[NUMER] IS NOT NULL`;
 
   const queryMySQL = 'SELECT id_document, NUMER_FV FROM documents';
   try {
     const settlementDescription = await msSqlQuery(queryMsSql);
-
 
     const [documents] = await connect_SQL.query(queryMySQL);
     console.log(documents.length);
@@ -286,6 +355,11 @@ const updateSettlementDescription = async () => {
           })
           : 'brak danych';
 
+        // Warunek, aby pominąć wpisy z wartościami null lub "brak danych"
+        if (item.DATA_OPERACJI === null && item.NUMER_OPIS === null && formattedAmount === 'brak danych') {
+          return acc; // Pomijamy dodawanie do acc
+        }
+
         const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
 
         if (!acc[item.NUMER_FV]) {
@@ -304,8 +378,6 @@ const updateSettlementDescription = async () => {
         return acc;
       }, {})
     );
-
-
 
 
     // Najpierw wyczyść tabelę settlements_description
@@ -330,15 +402,14 @@ const updateSettlementDescription = async () => {
     // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
 
-
     return true;
   }
   catch (error) {
     logEvents(`getDataFromMSSQL, updateSettlementDescription: ${error}`, "reqServerErrors.txt");
-    // console.error(error);
     return false;
   }
 };
+
 
 
 const updateData = async () => {

@@ -1,4 +1,4 @@
-const { connect_SQL } = require("../config/dbConn");
+const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const User = require("../model/User");
 const Setting = require("../model/Setting");
 const Document = require("../model/Document");
@@ -300,6 +300,51 @@ const copyPreparedItems = async (req, res) => {
   }
 };
 
+// funkcja poprawi kwoty brutto i netto BLACHARNI tylko od fv po 2024-10-01, bez korekt
+const fullBruttoFullNetto = async (req, res) => {
+  console.log('start');
+  try {
+    const [documents] = await connect_SQL.query(`SELECT fv.NUMER_FV, fv.BRUTTO, fv.NETTO FROM documents as fv LEFT JOIN join_items as ji ON fv.DZIAL = ji.department WHERE ji.area = 'BLACHARNIA' AND fv.DATA_FV > '2024-09-01' AND fv.NUMER_FV NOT LIKE 'KF%' `);
+
+    for (const doc of documents) {
+      const checkDocuments = await msSqlQuery(`
+        SELECT 
+       fv.[NUMER],
+               SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+			 SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO   
+FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
+LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+WHERE fv.[NUMER] = '${doc.NUMER_FV}' AND fv.[NUMER] NOT LIKE 'KF%' 
+GROUP BY 
+       fv.[NUMER],
+       fv.[WARTOSC_NETTO],
+       fv.[WARTOSC_BRUTTO]
+        `);
+
+      if (doc.NUMER_FV === checkDocuments[0].NUMER && doc.BRUTTO !== checkDocuments[0].WARTOSC_BRUTTO) {
+        await connect_SQL.query(
+          "UPDATE documents SET BRUTTO = ?, NETTO = ? WHERE NUMER_FV = ?",
+          [
+            checkDocuments[0].WARTOSC_BRUTTO,
+            checkDocuments[0].WARTOSC_NETTO,
+            doc.NUMER_FV
+          ]
+        );
+        console.log(doc);
+        console.log(checkDocuments[0]);
+      }
+
+    }
+
+    console.log('finish');
+    res.end();
+
+  }
+  catch (err) {
+    console.error(err);
+  }
+};
+
 module.exports = {
   copyUsersToMySQL,
   copySettingsToMySQL,
@@ -308,4 +353,5 @@ module.exports = {
   repairDepartments,
   copyItemsDepartments,
   copyPreparedItems,
+  fullBruttoFullNetto
 };

@@ -17,5 +17,6 @@ router.get(
 router.get("/repair-departments", SQLController.repairDepartments);
 router.get("/copy-items-departments", SQLController.copyItemsDepartments);
 router.get("/copy-prepared-items", SQLController.copyPreparedItems);
+router.get("/change-fullBrutto-fullNetto", SQLController.fullBruttoFullNetto);
 
 module.exports = router;
