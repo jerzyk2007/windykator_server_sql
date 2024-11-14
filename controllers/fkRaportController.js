@@ -1,5 +1,8 @@
 // const FKRaport = require("../model/FKRaport");
 const { FKRaport, FKDataRaport } = require("../model/FKRaport");
+const { connect_SQL } = require("../config/dbConn");
+
+
 // const FKDataRaport = require("../model/FKRaportData");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
@@ -286,15 +289,18 @@ const getColumns = async (req, res) => {
 // pobieram daty  aktualizacji plików excel dla raportu FK
 const getDateCounter = async (req, res) => {
   try {
-    const result = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          updateDate: "$updateDate", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
-    res.json(result[0]);
+    const [result] = await connect_SQL.query('SELECT title, date, counter FROM fk_updates_date');
+
+    const jsonObject = result.reduce((acc, item) => {
+      acc[item.title] = {
+        hour: item.date,    // Przypisanie `date` jako `hour`
+        counter: item.counter
+      };
+      return acc;
+    }, {});
+
+    console.log(jsonObject);
+    res.json({ updateData: jsonObject });
   } catch (error) {
     logEvents(
       `fkRaportController, getDateCounter: ${error}`,
@@ -308,18 +314,23 @@ const getDateCounter = async (req, res) => {
 //funckja kasuje przygotwane dane do raportu, czas dodania pliki i ilość danych
 const deleteDataRaport = async (req, res) => {
   try {
-    await FKRaport.updateMany(
-      {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
-      {
-        $unset: {
-          raportData: 1,
-          updateDate: 1,
-        },
-      }, // Nowe dane, które mają zostać usunięte
-      {
-        upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
-      }
-    );
+    // await FKRaport.updateMany(
+    //   {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+    //   {
+    //     $unset: {
+    //       raportData: 1,
+    //       updateDate: 1,
+    //     },
+    //   }, // Nowe dane, które mają zostać usunięte
+    //   {
+    //     upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+    //   }
+    // );
+    await connect_SQL.query('TRUNCATE fk_raport');
+    await connect_SQL.query('TRUNCATE fk_updates_date');
+    console.log('finish');
+
+
     res.json({ result: "delete" });
   } catch (error) {
     logEvents(

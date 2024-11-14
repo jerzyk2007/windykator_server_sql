@@ -75,7 +75,7 @@ router
 // usuwam wszystkie dane wczytanych plików excel raportu FK
 router
   .route("/delete-data-raport")
-  .get(verifyRoles(ROLES_LIST.FK), fKRaport.deleteDataRaport);
+  .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.deleteDataRaport);
 
 router
   .route("/check-error-raport")
@@ -107,9 +107,9 @@ router
   .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.getPreparedItems);
 
 // zapis do DB po zmianach i wczytaniu kolejnych plików excel
-router
-  .route("/save-data")
-  .post(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.savePreparedData);
+// router
+//   .route("/save-data")
+//   .post(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.savePreparedData);
 
 // pobranie wstępnie przygotowanych danych do raportu, do dalszej obróbki
 router
@@ -128,5 +128,12 @@ router
 router
   .route("/save-raport-FK")
   .post(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.saveRaportFK);
+
+router
+  .route("/send-accountancy-fk")
+  .post(
+    verifyRoles(ROLES_LIST.FKAdmin),
+    fkDataFromFile.dataFkAccocuntancyFromExcel
+  );
 
 module.exports = router;

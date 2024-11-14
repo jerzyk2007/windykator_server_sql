@@ -5,7 +5,7 @@ const sql = require("msnodesqlv8");
 const connectMongoDB = async () => {
   try {
     await mongoose.connect(`${process.env.DATABASE_URI_ONLINE_MONGO}`, {
-      dbName: "Windykator",
+      dbName: "WINDYKATOR",
       // useNewUrlParser: true,
       // useUnifiedTopology: true
     });

@@ -4,7 +4,6 @@
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
-const { dzialMap } = require('./manageDocumentAddition');
 
 // const getAllDocumentsSQL =
 //   "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id  LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV";
@@ -193,17 +192,6 @@ const ASFile = async (documents, res) => {
     return res.status(500).json({ error: "Invalid file" });
   }
   try {
-    // const dzialMap = {
-    //   D048: "D048/D058",
-    //   D058: "D048/D058",
-    //   D068: "D068/D078",
-    //   D078: "D068/D078",
-    //   D118: "D118/D148",
-    //   D148: "D118/D148",
-    //   D168: "D118/D148",
-    //   D308: "D308/D318",
-    //   D318: "D308/D318",
-    // };
 
     const addDepartment = documents
       .map((document) => {
