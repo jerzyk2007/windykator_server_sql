@@ -407,7 +407,7 @@ const updateData = async () => {
 // Dzień miesiąca – *: Gwiazdka oznacza każdy dzień miesiąca (od 1 do 31).
 // Miesiąc – *: Gwiazdka oznacza każdy miesiąc (od stycznia do grudnia).
 // Dzień tygodnia – *: Gwiazdka oznacza każdy dzień tygodnia (od poniedziałku do niedzieli).
-cron.schedule('28 18 * * *', updateData, {
+cron.schedule('28 22 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
 
