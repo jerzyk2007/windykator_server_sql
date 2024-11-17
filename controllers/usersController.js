@@ -514,14 +514,17 @@ const getRaportAdviserSettings = async (req, res) => {
       "SELECT raportSettings FROM users WHERE id_user = ?",
       [id_user]
     );
+
     if (
       result[0]?.raportSettings?.raportAdvisers &&
       Object.keys(result[0].raportSettings.raportAdvisers).length > 0
     ) {
-      res.json(JSON.parse(result[0].raportSettings.raportAdvisers));
+      return res.json(JSON.parse(result[0].raportSettings.raportAdvisers));
+
     } else {
-      res.json({});
+      return res.json({});
     }
+
   } catch (error) {
     logEvents(
       `usersController, getRaportAdviserSettings: ${error}`,

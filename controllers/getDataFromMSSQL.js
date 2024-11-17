@@ -26,7 +26,7 @@ const addDocumentToDatabase = async () => {
        CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA, 
        CONVERT(VARCHAR(10), fv.[DATA_ZAPLATA], 23) AS DATA_ZAPLATA, 
  	   	        fv.[KONTR_NAZWA],
-       fv.[KONTR_NIP],
+              REPLACE(fv.[KONTR_NIP], '-', '') AS KONTR_NIP,
              SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
 			 SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
             fv.[NR_SZKODY],
@@ -407,7 +407,7 @@ const updateData = async () => {
 // Dzień miesiąca – *: Gwiazdka oznacza każdy dzień miesiąca (od 1 do 31).
 // Miesiąc – *: Gwiazdka oznacza każdy miesiąc (od stycznia do grudnia).
 // Dzień tygodnia – *: Gwiazdka oznacza każdy dzień tygodnia (od poniedziałku do niedzieli).
-cron.schedule('28 22 * * *', updateData, {
+cron.schedule('43 10 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
 
