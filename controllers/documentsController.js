@@ -50,7 +50,6 @@ const getDataDocuments = async (id_user, info) => {
       );
     }
 
-
     return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
     logEvents(
@@ -354,22 +353,22 @@ const settlementsFile = async (rows, res) => {
     //   }
     // }
 
-    await connect_SQL.query(
-      "UPDATE documents SET DO_ROZLICZENIA = 0"
-    );
+    // await connect_SQL.query(
+    //   "UPDATE documents SET DO_ROZLICZENIA = 0"
+    // );
 
-    for (const doc of result) {
-      await connect_SQL.query(
-        "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
-        [
-          doc.DO_ROZLICZENIA,
-          doc.NUMER_FV
-        ]
-      );
-    }
+    // for (const doc of result) {
+    //   await connect_SQL.query(
+    //     "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
+    //     [
+    //       doc.DO_ROZLICZENIA,
+    //       doc.NUMER_FV
+    //     ]
+    //   );
+    // }
 
     // Najpierw wyczyść tabelę settlements_description
-    await connect_SQL.query("DELETE FROM settlements");
+    await connect_SQL.query("TRUNCATE TABLE settlements");
 
     // Teraz przygotuj dane do wstawienia
     const values = result.map(item => [
@@ -660,100 +659,117 @@ const addDataToCreditTrade = async (rows, res) => {
 };
 
 // SQL dodaje opisy rozrachunków z pliku
-const settlementsDescriptionFile = async (rows, res) => {
+const rubiconDescriptionFile = async (rows, res) => {
+  console.log(rows[0]['Faktura nr']);
+  console.log(rows[0]['Status aktualny']);
+  console.log(rows[0]['Data faktury']);
+  console.log(rows[0]['Termin płatności']);
+  console.log(rows[0]['Typ<br>płatności']);
+  console.log(rows[0]['Wartość<br>do zapłaty']);
+  console.log(rows[0]['data przeniesienia<br>do WP']);
+  console.log(rows[0]['Firma zewnętrzna']);
+  console.log(rows[0]['Uwagi firma zew']);
+  console.log(rows[0]['data zakończenia WP']);
+  console.log(rows[0]['Rodzaj decyzji_1']);
+  console.log(rows[0]['Data decyzji_1']);
+  console.log(rows[0]['uwagi EPU']);
+  console.log(rows[0]['Uwagi Sąd']);
+  console.log(rows[0]['Rodzaj decyzji_2']);
+  console.log(rows[0]['Data decyzji_2']);
+
   try {
-    if (
-      !("NUMER" in rows[0]) ||
-      !("OPIS" in rows[0]) ||
-      !("DataRozlAutostacja" in rows[0]) ||
-      !("DATA_WYSTAWIENIA" in rows[0]) ||
-      !("DataOperacji" in rows[0])
-    ) {
-      return res.status(500).json({ error: "Error file" });
-    }
+    // if (
+    //   !("NUMER" in rows[0]) ||
+    //   !("OPIS" in rows[0]) ||
+    //   !("DataRozlAutostacja" in rows[0]) ||
+    //   !("DATA_WYSTAWIENIA" in rows[0]) ||
+    //   !("DataOperacji" in rows[0])
+    // ) {
+    //   return res.status(500).json({ error: "Error file" });
+    // }
 
-    const processedData = rows.reduce((acc, curr) => {
-      const { NUMER, DataOperacji, OPIS, DataRozlAutostacja } = curr;
-      const dataISO = isExcelDate(DataOperacji)
-        ? excelDateToISODate(DataOperacji)
-        : "Brak daty"; // Przekształcenie daty operacji
+    // const processedData = rows.reduce((acc, curr) => {
+    //   const { NUMER, DataOperacji, OPIS, DataRozlAutostacja } = curr;
+    //   const dataISO = isExcelDate(DataOperacji)
+    //     ? excelDateToISODate(DataOperacji)
+    //     : "Brak daty"; // Przekształcenie daty operacji
 
-      const opisEntry = `${dataISO} + ${OPIS}`; // Tworzenie wpisu DataOperacji + OPIS
-      // const opisEntry = `${dataISO} + ${OPIS}`; // Tworzenie wpisu DataOperacji + OPIS
+    //   const opisEntry = `${dataISO} + ${OPIS}`; // Tworzenie wpisu DataOperacji + OPIS
+    //   // const opisEntry = `${dataISO} + ${OPIS}`; // Tworzenie wpisu DataOperacji + OPIS
 
-      // Przekształcenie DataRozlAutostacja (jeśli nie null)
-      const rozlAutostacjaISO = isExcelDate(DataRozlAutostacja)
-        ? excelDateToISODate(DataRozlAutostacja)
-        : "";
+    //   // Przekształcenie DataRozlAutostacja (jeśli nie null)
+    //   const rozlAutostacjaISO = isExcelDate(DataRozlAutostacja)
+    //     ? excelDateToISODate(DataRozlAutostacja)
+    //     : "";
 
-      if (!acc[NUMER] && OPIS !== "NULL") {
-        // Jeśli NUMER nie istnieje w acc, tworzony jest nowy obiekt
-        acc[NUMER] = {
-          NUMER,
-          OPIS: [opisEntry],
-          DataRozlAutostacja: rozlAutostacjaISO, // Zapisz datę, jeśli istnieje
-        };
-      } else {
-        // Jeśli NUMER już istnieje, dodaj nowy wpis do tablicy OPIS
-        if (OPIS !== "NULL") {
-          acc[NUMER].OPIS.push(opisEntry);
-        }
+    //   if (!acc[NUMER] && OPIS !== "NULL") {
+    //     // Jeśli NUMER nie istnieje w acc, tworzony jest nowy obiekt
+    //     acc[NUMER] = {
+    //       NUMER,
+    //       OPIS: [opisEntry],
+    //       DataRozlAutostacja: rozlAutostacjaISO, // Zapisz datę, jeśli istnieje
+    //     };
+    //   } else {
+    //     // Jeśli NUMER już istnieje, dodaj nowy wpis do tablicy OPIS
+    //     if (OPIS !== "NULL") {
+    //       acc[NUMER].OPIS.push(opisEntry);
+    //     }
 
-        // Sprawdź, która data jest nowsza
-        if (
-          rozlAutostacjaISO &&
-          (!acc[NUMER].DataRozlAutostacja ||
-            new Date(rozlAutostacjaISO) >
-            new Date(acc[NUMER].DataRozlAutostacja))
-        ) {
-          acc[NUMER].DataRozlAutostacja = rozlAutostacjaISO; // Zapisz nowszą datę
-        }
-      }
+    //     // Sprawdź, która data jest nowsza
+    //     if (
+    //       rozlAutostacjaISO &&
+    //       (!acc[NUMER].DataRozlAutostacja ||
+    //         new Date(rozlAutostacjaISO) >
+    //         new Date(acc[NUMER].DataRozlAutostacja))
+    //     ) {
+    //       acc[NUMER].DataRozlAutostacja = rozlAutostacjaISO; // Zapisz nowszą datę
+    //     }
+    //   }
 
-      return acc;
-    }, {});
+    //   return acc;
+    // }, {});
 
-    // Zamiana obiektu na tablicę
-    const result = Object.values(processedData).map((item) => {
-      // Sortowanie tablicy OPIS na podstawie daty
-      item.OPIS.sort(
-        (a, b) => new Date(a.split(" + ")[0]) - new Date(b.split(" + ")[0])
-      );
+    // // Zamiana obiektu na tablicę
+    // const result = Object.values(processedData).map((item) => {
+    //   // Sortowanie tablicy OPIS na podstawie daty
+    //   item.OPIS.sort(
+    //     (a, b) => new Date(a.split(" + ")[0]) - new Date(b.split(" + ")[0])
+    //   );
 
-      return item;
-    });
+    //   return item;
+    // });
 
-    for (const item of result) {
-      const [duplicate] = await connect_SQL.query(
-        "SELECT NUMER FROM settlements_description WHERE NUMER = ?",
-        [item.NUMER]
-      );
-      if (duplicate.length) {
-        await connect_SQL.query(
-          "UPDATE settlements_description SET OPIS_ROZRACHUNKU = ?, DATA_ROZL_AS = ? WHERE NUMER = ?",
-          [
-            JSON.stringify(item.OPIS),
-            item.DataRozlAutostacja ? item.DataRozlAutostacja : null,
-            item.NUMER,
-          ]
-        );
-      } else {
-        // console.log(item);
-        await connect_SQL.query(
-          "INSERT INTO settlements_description (NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) VALUES (?, ?, ?)",
-          [
-            item.NUMER,
-            JSON.stringify(item.OPIS),
-            item.DataRozlAutostacja ? item.DataRozlAutostacja : null,
-          ]
-        );
-      }
-    }
+    // for (const item of result) {
+    //   const [duplicate] = await connect_SQL.query(
+    //     "SELECT NUMER FROM settlements_description WHERE NUMER = ?",
+    //     [item.NUMER]
+    //   );
+    //   if (duplicate.length) {
+    //     await connect_SQL.query(
+    //       "UPDATE settlements_description SET OPIS_ROZRACHUNKU = ?, DATA_ROZL_AS = ? WHERE NUMER = ?",
+    //       [
+    //         JSON.stringify(item.OPIS),
+    //         item.DataRozlAutostacja ? item.DataRozlAutostacja : null,
+    //         item.NUMER,
+    //       ]
+    //     );
+    //   } else {
+    //     // console.log(item);
+    //     await connect_SQL.query(
+    //       "INSERT INTO settlements_description (NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) VALUES (?, ?, ?)",
+    //       [
+    //         item.NUMER,
+    //         JSON.stringify(item.OPIS),
+    //         item.DataRozlAutostacja ? item.DataRozlAutostacja : null,
+    //       ]
+    //     );
+    //   }
+    // }
 
     res.end();
   } catch (error) {
     logEvents(
-      `documentsController, settlementsDescriptionFile: ${error}`,
+      `documentsController, rubiconDescriptionFile: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
@@ -806,9 +822,9 @@ const documentsFromFile = async (req, res) => {
       return dataFileCreditTrade(rows, res);
     } else if (type === "add_data_credit_trade") {
       return addDataToCreditTrade(rows, res);
-    } else if (type === "test") {
-    } else if (type === "settlements_description") {
-      return settlementsDescriptionFile(rows, res);
+    }
+    else if (type === "rubicon") {
+      return rubiconDescriptionFile(rows, res);
     } else if (type === "test") {
       return repairFile(rows, res);
     } else {
