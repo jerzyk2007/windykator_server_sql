@@ -311,10 +311,18 @@ const updateSettlementDescription = async () => {
 
 const updateData = async () => {
   const checkDate = (data) => {
-    return data.toISOString().slice(0, 10);
+    const year = data.getFullYear();
+    const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
+    const day = String(data.getDate()).padStart(2, '0');
+    const yearNow = `${year}-${month}-${day}`;
+    return yearNow;
   };
   const checkTime = (data) => {
-    return data.toISOString().slice(11, 16);
+    const hour = String(data.getHours()).padStart(2, '0');
+    const min = String(data.getMinutes()).padStart(2, '0');
+    const timeNow = `${hour}:${min}`;
+
+    return timeNow;
   };
   try {
     const [getUpdatesData] = await connect_SQL.query(
@@ -407,7 +415,7 @@ const updateData = async () => {
 // Dzień miesiąca – *: Gwiazdka oznacza każdy dzień miesiąca (od 1 do 31).
 // Miesiąc – *: Gwiazdka oznacza każdy miesiąc (od stycznia do grudnia).
 // Dzień tygodnia – *: Gwiazdka oznacza każdy dzień tygodnia (od poniedziałku do niedzieli).
-cron.schedule('29 17 * * *', updateData, {
+cron.schedule('11 14 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
 

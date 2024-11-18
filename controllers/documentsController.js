@@ -5,10 +5,8 @@ const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 
-// const getAllDocumentsSQL =
-//   "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id  LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV";
 const getAllDocumentsSQL =
-  "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id";
+  "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV";
 
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info) => {
@@ -32,11 +30,11 @@ const getDataDocuments = async (id_user, info) => {
 
     if (info === "actual") {
       [filteredData] = await connect_SQL.query(
-        `${getAllDocumentsSQL} WHERE IFNULL(D.DO_ROZLICZENIA, 0) <> 0`
+        `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0`
       );
     } else if (info === "archive") {
       [filteredData] = await connect_SQL.query(
-        `${getAllDocumentsSQL} WHERE IFNULL(D.DO_ROZLICZENIA, 0) = 0`
+        `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0`
       );
     } else if (info === "all") {
       [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL}`);
@@ -172,83 +170,83 @@ const becaredFile = async (rows, res) => {
 };
 
 // funkcja która dodaje dane z pliku excel - dokumenty autostacja
-const ASFile = async (documents, res) => {
-  if (
-    !("WYSTAWIONO" in documents[0]) ||
-    !("NUMER" in documents[0]) ||
-    !("KOREKTA" in documents[0]) ||
-    !("W. NETTO" in documents[0]) ||
-    !("W. BRUTTO" in documents[0]) ||
-    !("PŁATNOŚĆ" in documents[0]) ||
-    !("KONTRAHENT" in documents[0]) ||
-    !("UWAGI" in documents[0]) ||
-    !("NIP" in documents[0]) ||
-    !("PRZYGOTOWAŁ" in documents[0]) ||
-    !("NR NADWOZIA" in documents[0]) ||
-    !("NR REJESTRACYJNY" in documents[0]) ||
-    !("NR SZKODY" in documents[0])
-  ) {
-    return res.status(500).json({ error: "Invalid file" });
-  }
-  try {
+// const ASFile = async (documents, res) => {
+//   if (
+//     !("WYSTAWIONO" in documents[0]) ||
+//     !("NUMER" in documents[0]) ||
+//     !("KOREKTA" in documents[0]) ||
+//     !("W. NETTO" in documents[0]) ||
+//     !("W. BRUTTO" in documents[0]) ||
+//     !("PŁATNOŚĆ" in documents[0]) ||
+//     !("KONTRAHENT" in documents[0]) ||
+//     !("UWAGI" in documents[0]) ||
+//     !("NIP" in documents[0]) ||
+//     !("PRZYGOTOWAŁ" in documents[0]) ||
+//     !("NR NADWOZIA" in documents[0]) ||
+//     !("NR REJESTRACYJNY" in documents[0]) ||
+//     !("NR SZKODY" in documents[0])
+//   ) {
+//     return res.status(500).json({ error: "Invalid file" });
+//   }
+//   try {
 
-    const addDepartment = documents
-      .map((document) => {
-        const match = document.NUMER?.match(/D(\d+)/);
-        if (match) {
-          const dzialNumber = match[1].padStart(3, "0"); // Wypełnia do trzech cyfr
-          return {
-            ...document,
-            DZIAL: dzialMap[`D${dzialNumber}`]
-              ? dzialMap[`D${dzialNumber}`]
-              : `D${dzialNumber}`, // Tworzy nową wartość z "D" i trzema cyframi
-          };
-        }
-      })
-      .filter(Boolean);
+//     const addDepartment = documents
+//       .map((document) => {
+//         const match = document.NUMER?.match(/D(\d+)/);
+//         if (match) {
+//           const dzialNumber = match[1].padStart(3, "0"); // Wypełnia do trzech cyfr
+//           return {
+//             ...document,
+//             DZIAL: dzialMap[`D${dzialNumber}`]
+//               ? dzialMap[`D${dzialNumber}`]
+//               : `D${dzialNumber}`, // Tworzy nową wartość z "D" i trzema cyframi
+//           };
+//         }
+//       })
+//       .filter(Boolean);
 
-    for (const doc of addDepartment) {
-      const [duplicateFV] = await connect_SQL.query(
-        "SELECT id_document FROM documents WHERE NUMER_FV = ?",
-        [doc.NUMER]
-      );
-      const [settlement] = await connect_SQL.query(
-        "SELECT TERMIN, NALEZNOSC FROM settlements WHERE NUMER_FV = ?",
-        [doc.NUMER]
-      );
+//     for (const doc of addDepartment) {
+//       const [duplicateFV] = await connect_SQL.query(
+//         "SELECT id_document FROM documents WHERE NUMER_FV = ?",
+//         [doc.NUMER]
+//       );
+//       const [settlement] = await connect_SQL.query(
+//         "SELECT TERMIN, NALEZNOSC FROM settlements WHERE NUMER_FV = ?",
+//         [doc.NUMER]
+//       );
 
-      if (!duplicateFV[0]?.id_document && settlement[0]?.TERMIN) {
-        await connect_SQL.query(
-          "INSERT INTO documents (NUMER_FV, DZIAL, DATA_FV, TERMIN, BRUTTO, NETTO, DO_ROZLICZENIA, NR_REJESTRACYJNY, KONTRAHENT, DORADCA, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI,  NIP, VIN ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [
-            doc["NUMER"],
-            doc.DZIAL,
-            excelDateToISODate(doc["WYSTAWIONO"]),
-            settlement[0]["TERMIN"],
-            doc["W. BRUTTO"],
-            doc["W. NETTO"],
-            settlement[0]["NALEZNOSC"],
-            doc["NR REJESTRACYJNY"],
-            doc["KONTRAHENT"],
-            doc["PRZYGOTOWAŁ"],
-            doc["NR SZKODY"],
-            doc["UWAGI"],
-            doc["PŁATNOŚĆ"],
-            doc["NIP"],
-            doc["NR NADWOZIA"],
-          ]
-        );
-      }
-    }
+//       if (!duplicateFV[0]?.id_document && settlement[0]?.TERMIN) {
+//         await connect_SQL.query(
+//           "INSERT INTO documents (NUMER_FV, DZIAL, DATA_FV, TERMIN, BRUTTO, NETTO, DO_ROZLICZENIA, NR_REJESTRACYJNY, KONTRAHENT, DORADCA, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI,  NIP, VIN ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+//           [
+//             doc["NUMER"],
+//             doc.DZIAL,
+//             excelDateToISODate(doc["WYSTAWIONO"]),
+//             settlement[0]["TERMIN"],
+//             doc["W. BRUTTO"],
+//             doc["W. NETTO"],
+//             settlement[0]["NALEZNOSC"],
+//             doc["NR REJESTRACYJNY"],
+//             doc["KONTRAHENT"],
+//             doc["PRZYGOTOWAŁ"],
+//             doc["NR SZKODY"],
+//             doc["UWAGI"],
+//             doc["PŁATNOŚĆ"],
+//             doc["NIP"],
+//             doc["NR NADWOZIA"],
+//           ]
+//         );
+//       }
+//     }
 
 
-    res.status(201).json({ message: "Documents are updated" });
-  } catch (error) {
-    logEvents(`documentsController, ASFile: ${error}`, "reqServerErrors.txt");
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     logEvents(`documentsController, ASFile: ${error}`, "reqServerErrors.txt");
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //SQL funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
 const settlementsFile = async (rows, res) => {
@@ -331,29 +329,6 @@ const settlementsFile = async (rows, res) => {
     const result = Object.values(processedData);
 
     // await connect_SQL.query(
-    //   "UPDATE settlements SET NALEZNOSC = 0, ZOBOWIAZANIA = 0"
-    // );
-
-    // for (const doc of result) {
-    //   const [checkDoc] = await connect_SQL.query(
-    //     "SELECT id_settlement FROM settlements WHERE NUMER_FV = ?",
-    //     [doc.NUMER_FV]
-    //   );
-
-    //   if (checkDoc?.length) {
-    //     await connect_SQL.query(
-    //       "UPDATE settlements SET TERMIN = ?, NALEZNOSC = ?, ZOBOWIAZANIA = ? WHERE NUMER_FV = ?",
-    //       [doc.TERMIN, doc.DO_ROZLICZENIA, doc.ZOBOWIAZANIA, doc.NUMER_FV]
-    //     );
-    //   } else {
-    //     await connect_SQL.query(
-    //       "INSERT INTO settlements (NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) VALUES(?, ?, ?, ?)",
-    //       [doc.NUMER_FV, doc.TERMIN, doc.DO_ROZLICZENIA, doc.ZOBOWIAZANIA]
-    //     );
-    //   }
-    // }
-
-    // await connect_SQL.query(
     //   "UPDATE documents SET DO_ROZLICZENIA = 0"
     // );
 
@@ -388,6 +363,31 @@ const settlementsFile = async (rows, res) => {
 
     // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
+
+    // dodaje date aktualizacji rozrachunków
+    const checkDate = (data) => {
+      const year = data.getFullYear();
+      const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
+      const day = String(data.getDate()).padStart(2, '0');
+      const yearNow = `${year}-${month}-${day}`;
+      return yearNow;
+    };
+    const checkTime = (data) => {
+      const hour = String(data.getHours()).padStart(2, '0');
+      const min = String(data.getMinutes()).padStart(2, '0');
+      const timeNow = `${hour}:${min}`;
+
+      return timeNow;
+    };
+
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Zaktualizowano.",
+        'Rozrachunki'
+      ]);
 
 
     res.status(201).json({ message: "Documents are updated" });
@@ -812,9 +812,11 @@ const documentsFromFile = async (req, res) => {
 
     if (type === "becared") {
       return becaredFile(rows, res);
-    } else if (type === "AS") {
-      return ASFile(rows, res);
-    } else if (type === "settlements") {
+    }
+    // else if (type === "AS") {
+    //   return ASFile(rows, res);
+    // }
+    else if (type === "settlements") {
       return settlementsFile(rows, res);
     } else if (type === "settlements_credit_trade") {
       return settlementsFileCreditTrade(rows, res);
@@ -938,12 +940,8 @@ const getDataTable = async (req, res) => {
 const getSingleDocument = async (req, res) => {
   const { id_document } = req.params;
   try {
-    // const [result] = await connect_SQL.query(
-    //   `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, DS.OPIS_ROZRACHUNKU, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA, JI.area FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN join_items AS JI ON D.DZIAL = JI.department WHERE D.id_document = ?`,
-    //   [id_document]
-    // );
     const [result] = await connect_SQL.query(
-      `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.DO_ROZLICZENIA, D.TERMIN, 
+      `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
 D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
 D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
 D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
@@ -951,7 +949,8 @@ ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2)
 IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,   JI.area FROM documents AS D 
 LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
 LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
-LEFT JOIN join_items AS JI ON D.DZIAL = JI.department WHERE D.id_document = ?`,
+LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
+LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV WHERE D.id_document = ?`,
       [id_document]
     );
 
