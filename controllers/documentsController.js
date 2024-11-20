@@ -16,38 +16,62 @@ const getDataDocuments = async (id_user, info) => {
       "SELECT  permissions, username, usersurname, departments FROM users WHERE id_user = ?",
       [id_user]
     );
-
     const { permissions, username, usersurname, departments } = findUser[0];
 
 
     const truePermissions = Object.keys(permissions).filter(
       (permission) => permissions[permission]
     );
-    const trueDepartments = Object.keys(departments).filter(
-      (department) => departments[department]
-    );
+    // const trueDepartments = Object.keys(departments).filter(
+    //   (department) => departments[department]
+    // );
+
+    // console.log(departments);
+
+    // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
+    const sqlCondition = `(${departments.map(dep => `D.DZIAL = '${dep}'`).join(' OR ')})`;
+
+    // console.log(sqlCondition);
 
     const DORADCA = `${usersurname} ${username}`;
 
     if (info === "actual") {
-      [filteredData] = await connect_SQL.query(
-        `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0`
-      );
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0 AND ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0 AND D.DORADCA =  '${DORADCA}'`);
+      }
+
     } else if (info === "archive") {
-      [filteredData] = await connect_SQL.query(
-        `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0`
-      );
+      if (truePermissions[0] === "Standard") {
+
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0 AND ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0 AND D.DORADCA =  '${DORADCA}'`);
+      }
+
     } else if (info === "all") {
-      [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL}`);
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE ${sqlCondition}`);
+      }
+      else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
+      }
     }
 
-    if (truePermissions[0] === "Basic") {
-      filteredData = filteredData.filter((item) => item.DORADCA === DORADCA);
-    } else if (truePermissions[0] === "Standard") {
-      filteredData = filteredData.filter((item) =>
-        trueDepartments.includes(item.DZIAL)
-      );
-    }
+    // if (truePermissions[0] === "Basic") {
+    //   [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE D.DORADCA =  '${DORADCA}'`);
+    //   filteredData = filteredData.filter((item) => item.DORADCA === DORADCA);
+    // }
+    // else if (truePermissions[0] === "Standard") {
+    // filteredData = filteredData.filter((item) =>
+    //   departments.includes(item.DZIAL)
+    // );
+    // }
 
     return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
