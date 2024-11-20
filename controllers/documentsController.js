@@ -19,6 +19,7 @@ const getDataDocuments = async (id_user, info) => {
 
     const { permissions, username, usersurname, departments } = findUser[0];
 
+
     const truePermissions = Object.keys(permissions).filter(
       (permission) => permissions[permission]
     );
