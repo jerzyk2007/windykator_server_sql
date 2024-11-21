@@ -29,29 +29,74 @@ const changeColumns = async (req, res) => {
     await connect_SQL.query(query, values.flat());
 
 
-    // await connect_SQL.query(
-    //   "Update settings SET columns = ? WHERE id_setting = 1",
-    //   [JSON.stringify(columns)]
-    // );
+    // funkcja wyszukująca jakie kolumny sa przypisane do danego obszaru np area np 'SAMOCHODY NOWE"
+    const areaDep = columns.reduce((acc, column) => {
+      column.areas.forEach(area => {
+        if (area.available) {
+          const existingEntry = acc.find(entry => entry.hasOwnProperty(area.name));
+          if (existingEntry) {
+            existingEntry[area.name].push({
+              accessorKey: column.accessorKey,
+              header: column.header,
+              filterVariant: column.filterVariant,
+              type: column.type,
+              // hide: area.hide
+            });
+          } else {
+            acc.push({
+              [area.name]: [{
+                accessorKey: column.accessorKey,
+                header: column.header,
+                filterVariant: column.filterVariant,
+                type: column.type,
+                // hide: area.hide
+              }]
+            });
+          }
+        }
+      });
+      return acc;
+    }, []);
 
     const [userColumns] = await connect_SQL.query(
-      // "SELECT id_user, columns FROM users"
-      "SELECT id_user, columns, departments FROM users"
+      `SELECT id_user, columns, departments FROM users`
     );
 
-    // console.log(userColumns[0]);
-    console.log(columns[0]);
-
     for (const user of userColumns) {
+      const [getUserAreas] = await connect_SQL.query(`SELECT  DISTINCT ji.area FROM users AS u LEFT JOIN join_items AS ji   ON JSON_CONTAINS(u.departments, JSON_QUOTE(ji.department), '$') WHERE id_user = '${user.id_user}'`);
 
-      const repairColumn = user.columns.map(item => {
-        return {
-          accessorKey: item.accessorKey,
-          header: item.header,
-          type: item.type,
-          filterVariant: item.filterVariant
-        };
-      });
+      //  obszary(area) do jakich ma dostęp uzytkownik
+      const areaUsers = getUserAreas.map(item => item.area);
+      // console.log(areaUsers);
+
+      // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
+      const filteredAreas = areaDep
+        .filter(area =>
+          Object.keys(area).some(key => areaUsers.includes(key))
+        );
+
+      // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
+      const combinedObjects = filteredAreas.flatMap(area =>
+        Object.entries(area)
+          .filter(([key]) => areaUsers.includes(key))
+          .flatMap(([, values]) => values)
+      );
+
+      // 3. Usuń duplikaty na podstawie accessorKey.
+      const uniqueObjects = combinedObjects.reduce((acc, obj) => {
+        if (!acc.some(item => item.accessorKey === obj.accessorKey)) {
+          acc.push(obj);
+        }
+        return acc;
+      }, []);
+
+      // console.log(uniqueObjects);
+
+      await connect_SQL.query(
+        "Update users SET columns = ? WHERE id_user = ?",
+        [JSON.stringify(uniqueObjects), user.id_user]
+      );
+
 
 
 

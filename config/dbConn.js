@@ -30,9 +30,10 @@ const connect_SQL = mysql.createPool({
   connectTimeout: 30000 // Maksymalny czas oczekiwania na połączenie (ms)
 });
 
-const config = `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.MSSQL_DB_SERVER};Database=${process.env.MSSQL_DB_DATABASE};UID=${process.env.MSSQL_DB_USER};PWD=${process.env.MSSQL_DB_PASSWORD};`;
+// const config = `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.MSSQL_DB_SERVER};Database=${process.env.MSSQL_DB_DATABASE};UID=${process.env.MSSQL_DB_USER};PWD=${process.env.MSSQL_DB_PASSWORD};`;
 
 const msSqlQuery = (query) => {
+  const config = `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.MSSQL_DB_SERVER};Database=${process.env.MSSQL_DB_DATABASE};UID=${process.env.MSSQL_DB_USER};PWD=${process.env.MSSQL_DB_PASSWORD};`;
   return new Promise((resolve, reject) => {
     sql.query(config, query, (err, rows) => {
       if (err) {
