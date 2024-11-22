@@ -16,7 +16,6 @@ const changeColumns = async (req, res) => {
       JSON.stringify(item.areas)
     ]);
 
-    // console.log(values);
     // Przygotowanie zapytania SQL z wieloma wartościami
     const query = `
           INSERT IGNORE INTO table_columns
@@ -59,22 +58,20 @@ const changeColumns = async (req, res) => {
     }, []);
 
     const [userColumns] = await connect_SQL.query(
-      `SELECT id_user, columns, departments FROM users`
+      `SELECT id_user, columns, departments, tableSettings FROM users`
     );
 
     for (const user of userColumns) {
       const [getUserAreas] = await connect_SQL.query(`SELECT  DISTINCT ji.area FROM users AS u LEFT JOIN join_items AS ji   ON JSON_CONTAINS(u.departments, JSON_QUOTE(ji.department), '$') WHERE id_user = '${user.id_user}'`);
-
       //  obszary(area) do jakich ma dostęp uzytkownik
       const areaUsers = getUserAreas.map(item => item.area);
-      // console.log(areaUsers);
+
 
       // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
       const filteredAreas = areaDep
         .filter(area =>
           Object.keys(area).some(key => areaUsers.includes(key))
         );
-
       // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
       const combinedObjects = filteredAreas.flatMap(area =>
         Object.entries(area)
@@ -90,7 +87,6 @@ const changeColumns = async (req, res) => {
         return acc;
       }, []);
 
-      // console.log(uniqueObjects);
 
       await connect_SQL.query(
         "Update users SET columns = ? WHERE id_user = ?",
@@ -268,7 +264,6 @@ const getColumns = async (req, res) => {
       "SELECT * FROM table_columns"
     );
 
-    // console.log(columns);
     const [areas] = await connect_SQL.query(
       "SELECT area FROM area_items"
     );

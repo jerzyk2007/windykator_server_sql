@@ -162,45 +162,114 @@ const updateCarReleaseDates = async () => {
 
 const updateSettlements = async () => {
   try {
-    // const query = `SELECT 
-    // fv.[NUMER],
-    // tr.[WARTOSC_NAL] AS DO_ROZLICZENIA
-    // FROM     [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
-    // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr 
-    // ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-    // WHERE
-    // tr.WARTOSC_NAL !=0 AND tr.WARTOSC_NAL IS NOT NULL
-    // AND tr.[IS_ROZLICZONY] != 1`;
-
-    //     const query = `SELECT TOP (1000)
-    //     [NUMER],
-    //     SUM([WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE]) AS DO_ROZLICZENIA
-    // FROM 
-    //     [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC]
-    // WHERE 
-    //     [WARTOSC_BRUTTO] - [ZAPLATA_ROZLICZNIE] != 0
-    // GROUP BY 
-    //     [NUMER]
+    // const queryMsSql = `
+    // SELECT 
+    //      [FakturaNumer], 
+    //      [WartośćObecna Symfonia], 
+    //      [WartośćObecnaAS3]
+    //        FROM [WINDYKACJA].[dbo].[ZestawienieAllBINew]
     // `;
 
+    // const settlementsValue = await msSqlQuery(queryMsSql);
 
-    // const settlements = await msSqlQuery(query);
+    // await connect_SQL.query("TRUNCATE TABLE settlements");
 
-    // await connect_SQL.query(
-    //   "UPDATE documents SET DO_ROZLICZENIA = 0"
-    // );
+    // // Teraz przygotuj dane do wstawienia
+    // const values = settlementsValue.map(item => [
+    //   item.NUMER_FV,
+    //   "2024-01-01",
+    //   item['WartośćObecnaAS3'],
+    //   0
+    // ]);
 
-    // for (const item of settlements) {
-    //   await connect_SQL.query(
-    //     "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
-    //     [
-    //       item.DO_ROZLICZENIA,
-    //       item.NUMER
-    //     ]
-    //   );
-    // }
+    // // Przygotowanie zapytania SQL z wieloma wartościami
+    // const query = `
+    //      INSERT IGNORE INTO settlements
+    //        ( NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) 
+    //      VALUES 
+    //        ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+    //    `;
+    // await connect_SQL.query(query, values.flat());
+    const queryMsSql = `
+    SELECT 
+         [FakturaNumer], 
+         [WartośćObecna Symfonia], 
+         [WartośćObecnaAS3]
+           FROM [WINDYKACJA].[dbo].[ZestawienieAllBINew]
+    `;
 
-    return false;
+    const settlementsValue = await msSqlQuery(queryMsSql);
+
+
+    await connect_SQL.query("TRUNCATE TABLE settlements");
+
+    // Teraz przygotuj dane do wstawienia
+    const values = settlementsValue.map(item => [
+      item.FakturaNumer,
+      item['WartośćObecnaAS3'],
+    ]);
+
+    // Przygotowanie zapytania SQL z wieloma wartościami
+    const query = `
+         INSERT IGNORE INTO settlements
+           ( NUMER_FV,  NALEZNOSC) 
+         VALUES 
+           ${values.map(() => "(?, ?)").join(", ")}
+       `;
+    await connect_SQL.query(query, values.flat());
+
+
+
+    // wyszukuje faktury zaliczkowe
+    const queryMsSqlZAL = `
+    SELECT 
+        NUMER_FV,
+        NALEZNOSCI
+    FROM (
+        SELECT 
+            CASE 
+                WHEN fv.[NUMER] IS NULL THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS] + ' ') - 1)
+                ELSE fv.[NUMER]
+            END AS NUMER_FV,
+            CASE 
+                WHEN tr.[WARTOSC_PLN_SALDO] < 0 THEN -tr.[WARTOSC_PLN_SALDO]
+                ELSE NULL
+            END AS NALEZNOSCI,
+            CASE 
+                WHEN tr.[WARTOSC_PLN_SALDO] > 0 THEN tr.[WARTOSC_PLN_SALDO]
+                ELSE NULL
+            END AS ZOBOWIAZANIA,
+            rozl.*,
+            fv.[NUMER]
+        FROM 
+            [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr
+        LEFT JOIN 
+            [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+        LEFT JOIN 
+            [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID]
+    ) AS subquery
+    WHERE 
+        [NUMER] LIKE '%ZAL%' 
+        AND NALEZNOSCI != 0
+      `;
+
+    const settlementsZAL = await msSqlQuery(queryMsSqlZAL);
+
+    // Teraz przygotuj dane do wstawienia
+    const valuesZAL = settlementsZAL.map(item => [
+      item.NUMER_FV,
+      item.NALEZNOSCI,
+    ]);
+
+    const queryZal = `
+        INSERT IGNORE INTO settlements
+          ( NUMER_FV,  NALEZNOSC) 
+        VALUES 
+          ${valuesZAL.map(() => "( ?, ?)").join(", ")}
+      `;
+    await connect_SQL.query(queryZal, valuesZAL.flat());
+
+    return true;
   }
 
   catch (error) {
@@ -210,6 +279,8 @@ const updateSettlements = async () => {
   }
 };
 
+
+// aktualizacja opisów rozrachunków
 const updateSettlementDescription = async () => {
   const queryMsSql = `SELECT  fv.[NUMER] AS NUMER_FV, rozl.[OPIS] AS NUMER_OPIS,	CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr LEFT JOIN     [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv    ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID] LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] WHERE fv.[NUMER] IS NOT NULL`;
 
@@ -408,20 +479,10 @@ const updateData = async () => {
   }
 };
 
-const updateSettlementsTest = () => {
-
-};
-
-// cykliczne wywoływanie funkcji o określonej godzinie
-// W wyrażeniu cron.schedule('58 16 * * *', ...) każda część odpowiada określonemu elementowi daty i czasu. Oto pełne wyjaśnienie:
-// Minuta – 58: Minuta, w której zadanie ma się uruchomić (tutaj: 58 minuta każdej godziny).
-// Godzina – 16: Godzina, w której zadanie ma się uruchomić (tutaj: 16, czyli 16:58).
-// Dzień miesiąca – *: Gwiazdka oznacza każdy dzień miesiąca (od 1 do 31).
-// Miesiąc – *: Gwiazdka oznacza każdy miesiąc (od stycznia do grudnia).
-// Dzień tygodnia – *: Gwiazdka oznacza każdy dzień tygodnia (od poniedziałku do niedzieli).
-cron.schedule('10 10 * * *', updateData, {
+cron.schedule('38 07 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
+
 
 module.exports = {
   updateData,

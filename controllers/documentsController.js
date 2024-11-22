@@ -16,35 +16,57 @@ const getDataDocuments = async (id_user, info) => {
       "SELECT  permissions, username, usersurname, departments FROM users WHERE id_user = ?",
       [id_user]
     );
-    const { permissions, username, usersurname, departments } = findUser[0];
+    const { permissions = {}, username, usersurname, departments = [] } = findUser[0] || {};
 
+
+    // jeśli użytkownik nie ma nadanych dostępów i działów to zwraca puste dane
+    if (
+      !permissions || typeof permissions !== "object" ||
+      Object.keys(permissions).length === 0 &&
+      (!Array.isArray(departments) || departments.length === 0)
+    ) {
+      return { data: [], permission: [] };
+    }
 
     const truePermissions = Object.keys(permissions).filter(
       (permission) => permissions[permission]
     );
+
     // const trueDepartments = Object.keys(departments).filter(
     //   (department) => departments[department]
     // );
 
-    // console.log(departments);
 
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
-    const sqlCondition = `(${departments.map(dep => `D.DZIAL = '${dep}'`).join(' OR ')})`;
-
-    // console.log(sqlCondition);
+    const sqlCondition = departments?.length > 0 ? `(${departments.map(dep => `D.DZIAL = '${dep}'`).join(' OR ')})` : null;
 
     const DORADCA = `${usersurname} ${username}`;
 
     if (info === "actual") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0 AND ${sqlCondition}`
+          // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0 AND ${sqlCondition}`
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
         );
       } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0 AND D.DORADCA =  '${DORADCA}'`);
+
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND D.DORADCA =  '${DORADCA}'`);
+
       }
 
-    } else if (info === "archive") {
+    }
+    else if (info === "obligations") {
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) < 0 AND ${sqlCondition}`
+          // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) < 0 AND D.DORADCA =  '${DORADCA}'`);
+      }
+
+    }
+    else if (info === "archive") {
       if (truePermissions[0] === "Standard") {
 
         [filteredData] = await connect_SQL.query(
@@ -72,7 +94,6 @@ const getDataDocuments = async (id_user, info) => {
     //   departments.includes(item.DZIAL)
     // );
     // }
-
     return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
     logEvents(
@@ -374,7 +395,7 @@ const settlementsFile = async (rows, res) => {
     const values = result.map(item => [
       item.NUMER_FV,
       item.TERMIN,
-      item.DO_ROZLICZENIA,
+      item.DO_ROZLICZENIA !== 0 ? item.DO_ROZLICZENIA : -item.ZOBOWIAZANIA,
       item.ZOBOWIAZANIA
     ]);
 

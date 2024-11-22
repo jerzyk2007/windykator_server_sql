@@ -8,7 +8,6 @@ const getDataRaport = async (req, res) => {
   const { id_user } = req.params;
   try {
 
-
     const result = await getDataDocuments(id_user, "actual");
 
     res.json({ data: result.data, permission: result.permission });
