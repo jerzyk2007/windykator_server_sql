@@ -81,28 +81,32 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
       return acc;
     }, []);
 
-    if (getUserColumns[0]?.columns) {
+    // if (getUserColumns[0]?.columns) {
 
-      // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
-      const assignedUserNewColumns = uniqueObjects.map(column => column.accessorKey);
+    // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
+    const assignedUserNewColumns = uniqueObjects.map(column => column.accessorKey);
 
-      const newFilteredSize = () => {
-        const newSize = assignedUserNewColumns.reduce((acc, key) => {
-          if (checkDepartments[0]?.tableSettings?.size.hasOwnProperty(key)) {
-            // Dodaj istniejące klucze z checkDepartments
-            acc[key] = checkDepartments[0]?.tableSettings?.size[key];
-          } else {
-            // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-            acc[key] = 100;
-          }
-          return acc;
-        }, {});
-        return newSize;
-      };
+    const newFilteredSize = () => {
+      const newSize = assignedUserNewColumns.reduce((acc, key) => {
+        if (checkDepartments[0]?.tableSettings?.size.hasOwnProperty(key)) {
+          // Dodaj istniejące klucze z checkDepartments
+          acc[key] = checkDepartments[0]?.tableSettings?.size[key];
+        } else {
+          // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
+          acc[key] = 100;
+        }
+        return acc;
+      }, {});
+      return newSize;
+    };
 
 
-      const newFilteredeOrder = () => {
-        const filteredOrder = checkDepartments[0].tableSettings.order.filter(item =>
+    const newFilteredeOrder = () => {
+
+      const checkOrder = checkDepartments[0]?.tableSettings?.order ? checkDepartments[0].tableSettings.order : [];
+
+      if (checkOrder.length) {
+        const filteredOrder = checkOrder.filter(item =>
           assignedUserNewColumns.includes(item) || item === 'mrt-row-spacer'
         );
 
@@ -119,40 +123,46 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
           'mrt-row-spacer' // Zachowujemy 'mrt-row-spacer' na końcu
         ];
         return finalOrder;
-      };
+      }
+      else {
+        const finalOrder = [...assignedUserNewColumns, 'mrt-row-spacer'];
+        return finalOrder;
+      }
+    };
 
-      const newFilteredeVisible = () => {
-        const newVisible = assignedUserNewColumns.reduce((acc, key) => {
-          if (checkDepartments[0]?.tableSettings?.visible.hasOwnProperty(key)) {
-            // Dodaj istniejące klucze z checkDepartments
-            acc[key] = checkDepartments[0]?.tableSettings?.visible[key];
-          } else {
-            // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-            acc[key] = false;
-          }
-          return acc;
-        }, {});
-        return newVisible;
-      };
+    const newFilteredeVisible = () => {
+      const newVisible = assignedUserNewColumns.reduce((acc, key) => {
+        if (checkDepartments[0]?.tableSettings?.visible.hasOwnProperty(key)) {
+          // Dodaj istniejące klucze z checkDepartments
+          acc[key] = checkDepartments[0]?.tableSettings?.visible[key];
+        } else {
+          // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
+          acc[key] = false;
+        }
+        return acc;
+      }, {});
+      return newVisible;
+    };
 
-      const newTableSettings = {
-        size: checkDepartments[0]?.tableSettings?.size && Object.keys(checkDepartments[0]?.tableSettings?.size).length > 0 ? newFilteredSize() : {},
-        order: checkDepartments[0]?.tableSettings?.order.length ? newFilteredeOrder() : [],
-        visible: checkDepartments[0]?.tableSettings?.visible && Object.keys(checkDepartments[0]?.tableSettings?.visible).length > 0 ? newFilteredeVisible() : {},
-        pagination: checkDepartments[0]?.tableSettings?.pagination ? checkDepartments[0].tableSettings.pagination : {},
-      };
-      await connect_SQL.query(
-        "UPDATE users SET tableSettings = ? WHERE id_user = ?",
-        [JSON.stringify(newTableSettings), id_user]
-      );
-      await connect_SQL.query(
-        "Update users SET columns = ? WHERE id_user = ?",
-        [JSON.stringify(uniqueObjects), id_user]
-      );
+    const newTableSettings = {
+      size: checkDepartments[0]?.tableSettings?.size && Object.keys(checkDepartments[0]?.tableSettings?.size).length > 0 ? newFilteredSize() : {},
+      order: checkDepartments[0]?.tableSettings?.order?.length ? newFilteredeOrder() : [],
+      visible: checkDepartments[0]?.tableSettings?.visible && Object.keys(checkDepartments[0]?.tableSettings?.visible).length > 0 ? newFilteredeVisible() : {},
+      pagination: checkDepartments[0]?.tableSettings?.pagination ? checkDepartments[0].tableSettings.pagination : { pageIndex: 0, pageSize: 10 },
+    };
 
-    }
+    await connect_SQL.query(
+      "UPDATE users SET tableSettings = ? WHERE id_user = ?",
+      [JSON.stringify(newTableSettings), id_user]
+    );
+    await connect_SQL.query(
+      "Update users SET columns = ? WHERE id_user = ?",
+      [JSON.stringify(uniqueObjects), id_user]
+    );
+
   }
   catch (error) {
+    console.error(error);
     logEvents(
       `usersController, verifyUserTableConfig: ${error}`,
       "reqServerErrors.txt"
@@ -368,199 +378,12 @@ const changeUserDepartments = async (req, res) => {
   const { departments } = req.body;
   try {
 
-    const [checkDepartments] = await connect_SQL.query(
-      "SELECT columns, departments, tableSettings FROM users WHERE id_user = ?",
-      [id_user]
-    );
-
     // pobieram wszytskie kolumny dla tabel które sa opisane w programie
     const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
 
     if (departments?.length > 0) {
       await verifyUserTableConfig(id_user, departments, getColumns);
-      // console.log(testTeest);
-
-      // const [getUserColumns] = await connect_SQL.query('SELECT columns, tableSettings FROM users WHERE id_user = ?', [id_user]);
-
-      // const [getUserAreas] = await connect_SQL.query(
-      //   `SELECT DISTINCT ji.area 
-      //      FROM users AS u 
-      //      LEFT JOIN join_items AS ji 
-      //        ON JSON_CONTAINS(?, JSON_QUOTE(ji.department))
-      //      WHERE u.id_user = ?`,
-      //   [JSON.stringify(departments), id_user]
-      // );
-
-      // funkcja wyszukująca jakie kolumny sa przypisane do danego obszaru np area np 'SAMOCHODY NOWE"
-      // const areaDep = getColumns.reduce((acc, column) => {
-      //   column.areas.forEach(area => {
-      //     if (area.available) {
-      //       const existingEntry = acc.find(entry => entry.hasOwnProperty(area.name));
-      //       if (existingEntry) {
-      //         existingEntry[area.name].push({
-      //           accessorKey: column.accessorKey,
-      //           header: column.header,
-      //           filterVariant: column.filterVariant,
-      //           type: column.type,
-      //           // hide: area.hide
-      //         });
-      //       } else {
-      //         acc.push({
-      //           [area.name]: [{
-      //             accessorKey: column.accessorKey,
-      //             header: column.header,
-      //             filterVariant: column.filterVariant,
-      //             type: column.type,
-      //             // hide: area.hide
-      //           }]
-      //         });
-      //       }
-      //     }
-      //   });
-      //   return acc;
-      // }, []);
-
-      //  obszary(area) do jakich ma dostęp uzytkownik
-      // const areaUsers = getUserAreas.map(item => item.area);
-
-      // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
-      // const filteredAreas = areaDep
-      //   .filter(area =>
-      //     Object.keys(area).some(key => areaUsers.includes(key))
-      //   );
-
-      // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
-      // const combinedObjects = filteredAreas.flatMap(area =>
-      //   Object.entries(area)
-      //     .filter(([key]) => areaUsers.includes(key))
-      //     .flatMap(([, values]) => values)
-      // );
-
-      // 3. Usuń duplikaty na podstawie accessorKey.
-      // const uniqueObjects = combinedObjects.reduce((acc, obj) => {
-      //   if (!acc.some(item => item.accessorKey === obj.accessorKey)) {
-      //     acc.push(obj);
-      //   }
-      //   return acc;
-      // }, []);
-
-      // if (getUserColumns[0]?.columns) {
-
-      // const assignedUserOldColumns = getUserColumns[0]?.columns.map(column => column.accessorKey);
-      // const assignedUserNewColumns = uniqueObjects.map(column => column.accessorKey);
-
-      // let newSize = {};
-      // if (checkDepartments[0]?.tableSettings?.size && Object.keys(checkDepartments[0]?.tableSettings?.size).length > 0) {
-      //   // console.log(checkDepartments[0]?.tableSettings?.size);
-      //   const newObject = assignedUserNewColumns.reduce((acc, key) => {
-      //     if (checkDepartments[0]?.tableSettings?.size.hasOwnProperty(key)) {
-      //       // Dodaj istniejące klucze z checkDepartments
-      //       acc[key] = checkDepartments[0]?.tableSettings?.size[key];
-      //     } else {
-      //       // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-      //       acc[key] = 100;
-      //     }
-      //     return acc;
-      //   }, {});
-      //   // console.log(checkDepartments[0]?.tableSettings?.size);
-      //   // console.log(assignedUserNewColumns);
-      //   newSize = { ...newObject };
-      // }
-      // let newOrder = [];
-      // if (checkDepartments[0]?.tableSettings?.order.length) {
-      //   const filteredOrder = checkDepartments[0].tableSettings.order.filter(item =>
-      //     assignedUserNewColumns.includes(item) || item === 'mrt-row-spacer'
-      //   );
-
-      //   // Sprawdzamy, które elementy z `assignedUserNewColumns` są nowe (nie ma ich w `checkDepartments[0].tableSettings.order`)
-      //   const newColumns = assignedUserNewColumns.filter(item => !checkDepartments[0].tableSettings.order.includes(item));
-
-      //   // Znajdujemy indeks przedostatniego elementu (przed 'mrt-row-spacer')
-      //   const indexBeforeSpacer = filteredOrder.indexOf('mrt-row-spacer');
-
-      //   // Tworzymy nową tablicę, dodając nowe elementy przed ostatnim elementem ('mrt-row-spacer')
-      //   const finalOrder = [
-      //     ...filteredOrder.slice(0, indexBeforeSpacer), // Wszystkie elementy przed 'mrt-row-spacer'
-      //     ...newColumns, // Dodajemy nowe elementy
-      //     'mrt-row-spacer' // Zachowujemy 'mrt-row-spacer' na końcu
-      //   ];
-      //   newOrder = finalOrder;
-
-
-      // }
-      // const newFilteredSize = () => {
-      //   const newSize = assignedUserNewColumns.reduce((acc, key) => {
-      //     if (checkDepartments[0]?.tableSettings?.size.hasOwnProperty(key)) {
-      //       // Dodaj istniejące klucze z checkDepartments
-      //       acc[key] = checkDepartments[0]?.tableSettings?.size[key];
-      //     } else {
-      //       // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-      //       acc[key] = 100;
-      //     }
-      //     return acc;
-      //   }, {});
-      //   return newSize;
-      // };
-
-      // const newFilteredeOrder = () => {
-      //   const filteredOrder = checkDepartments[0].tableSettings.order.filter(item =>
-      //     assignedUserNewColumns.includes(item) || item === 'mrt-row-spacer'
-      //   );
-
-      //   // Sprawdzamy, które elementy z `assignedUserNewColumns` są nowe (nie ma ich w `checkDepartments[0].tableSettings.order`)
-      //   const newColumns = assignedUserNewColumns.filter(item => !checkDepartments[0].tableSettings.order.includes(item));
-
-      //   // Znajdujemy indeks przedostatniego elementu (przed 'mrt-row-spacer')
-      //   const indexBeforeSpacer = filteredOrder.indexOf('mrt-row-spacer');
-
-      //   // Tworzymy nową tablicę, dodając nowe elementy przed ostatnim elementem ('mrt-row-spacer')
-      //   const finalOrder = [
-      //     ...filteredOrder.slice(0, indexBeforeSpacer), // Wszystkie elementy przed 'mrt-row-spacer'
-      //     ...newColumns, // Dodajemy nowe elementy
-      //     'mrt-row-spacer' // Zachowujemy 'mrt-row-spacer' na końcu
-      //   ];
-      //   return finalOrder;
-      // };
-
-      // const newFilteredeVisible = () => {
-      //   const newVisible = assignedUserNewColumns.reduce((acc, key) => {
-      //     if (checkDepartments[0]?.tableSettings?.visible.hasOwnProperty(key)) {
-      //       // Dodaj istniejące klucze z checkDepartments
-      //       acc[key] = checkDepartments[0]?.tableSettings?.visible[key];
-      //     } else {
-      //       // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-      //       acc[key] = false;
-      //     }
-      //     return acc;
-      //   }, {});
-      //   return newVisible;
-      // };
-
-
-      // const newTableSettings = {
-      //   size: checkDepartments[0]?.tableSettings?.size && Object.keys(checkDepartments[0]?.tableSettings?.size).length > 0 ? newFilteredSize() : {},
-      //   order: checkDepartments[0]?.tableSettings?.order.length ? newFilteredeOrder() : [],
-      //   visible: checkDepartments[0]?.tableSettings?.visible && Object.keys(checkDepartments[0]?.tableSettings?.visible).length > 0 ? newFilteredeVisible() : {},
-      //   pagination: checkDepartments[0]?.tableSettings?.pagination ? checkDepartments[0].tableSettings.pagination : {},
-      // };
-      // console.log(newTableSettings);
-      // console.log(testTeest);
-
-      // await connect_SQL.query(
-      //   "UPDATE users SET tableSettings = ? WHERE id_user = ?",
-      //   [JSON.stringify(newTableSettings), id_user]
-      // );
-
-      // } else {
-      // }
-
-      // await connect_SQL.query(
-      //   "Update users SET columns = ? WHERE id_user = ?",
-      //   [JSON.stringify(uniqueObjects), id_user]
-      // );
-
     }
-
 
     const [result] = await connect_SQL.query(
       "UPDATE users SET departments = ? WHERE id_user = ?",
@@ -903,4 +726,5 @@ module.exports = {
   getRaportDepartmentSettings,
   saveRaporAdviserSettings,
   getRaportAdviserSettings,
+  verifyUserTableConfig
 };

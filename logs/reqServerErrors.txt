@@ -1,4 +1,0 @@
-20241122	15:17:21	usersController, verifyUserTableConfig: ReferenceError: conmsole is not defined
-20241122	15:17:22	usersController, changePasswordAnotherUser: ReferenceError: conmsole is not defined
-20241122	16:53:10	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
-20241122	16:53:12	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
