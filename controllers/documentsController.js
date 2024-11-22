@@ -969,6 +969,8 @@ const getDataTable = async (req, res) => {
       : {};
     const columns = findUser[0][0].columns ? findUser[0][0].columns : [];
 
+    console.log(columns.length);
+
     // console.log(result.data);
 
     res.json({ dataTable: result.data, tableSettings, columns });

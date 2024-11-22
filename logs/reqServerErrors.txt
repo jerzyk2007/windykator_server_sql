@@ -1,16 +1,4 @@
-20241122	09:28:43	usersController, changePasswordAnotherUser: ReferenceError: result is not defined
-20241122	09:39:51	usersController, changePasswordAnotherUser: TypeError: connect_SQL is not a function
-20241122	09:55:47	usersController, changePasswordAnotherUser: ReferenceError: columns is not defined
-20241122	10:04:45	usersController, changePasswordAnotherUser: Error: Invalid JSON text in argument 1 to function json_contains: "Invalid value." at position 0.
-20241122	10:04:47	usersController, changePasswordAnotherUser: Error: Invalid JSON text in argument 1 to function json_contains: "Invalid value." at position 0.
-20241122	10:05:28	usersController, changePasswordAnotherUser: Error: Incorrect parameter count in the call to native function 'JSON_CONTAINS'
-20241122	10:07:30	usersController, changePasswordAnotherUser: ReferenceError: areaDep is not defined
-20241122	10:16:01	usersController, changePasswordAnotherUser: TypeError: Cannot read properties of null (reading 'length')
-20241122	11:26:47	usersController, changePasswordAnotherUser: TypeError: getUserColumns[0].map is not a function
-20241122	11:32:20	usersController, changePasswordAnotherUser: TypeError: Cannot read properties of null (reading 'map')
-20241122	11:38:04	usersController, changePasswordAnotherUser: TypeError: checkDepartments[0].tableSettings.map is not a function
-20241122	11:51:19	usersController, changePasswordAnotherUser: ReferenceError: size is not defined
-20241122	12:10:30	usersController, changePasswordAnotherUser: TypeError: Assignment to constant variable.
-20241122	12:10:51	usersController, changePasswordAnotherUser: TypeError: Assignment to constant variable.
-20241122	12:32:54	usersController, changePasswordAnotherUser: ReferenceError: finalOrderr is not defined
-20241122	12:47:17	usersController, getUsersData: Error: connect ETIMEDOUT
+20241122	15:17:21	usersController, verifyUserTableConfig: ReferenceError: conmsole is not defined
+20241122	15:17:22	usersController, changePasswordAnotherUser: ReferenceError: conmsole is not defined
+20241122	16:53:10	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20241122	16:53:12	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
