@@ -9,7 +9,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
   try {
 
     // pobieram ustawienia kolumn tabeli danego użytkownika
-    const [getUserColumns] = await connect_SQL.query('SELECT columns, tableSettings FROM users WHERE id_user = ?', [id_user]);
+    // const [getUserColumns] = await connect_SQL.query('SELECT columns, tableSettings FROM users WHERE id_user = ?', [id_user]);
 
     // sprawdzim do jakich obszarów jest przypisany user na podstawie działó
     const [getUserAreas] = await connect_SQL.query(

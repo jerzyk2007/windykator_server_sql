@@ -18,7 +18,7 @@ const copyUsersToMySQL = async (req, res) => {
         tableSettings: item.tableSettings ? item.tableSettings : {},
         raportSettings: item.raportSettings ? item.raportSettings : {},
         permissions: item.permissions ? item.permissions : {},
-        departments: item.departments ? item.departments : {},
+        departments: item.departments ? item.departments : [],
         columns: item.columns ? item.columns : [],
         refreshToken: item.refreshToken ? item.refreshToken : "",
       };
