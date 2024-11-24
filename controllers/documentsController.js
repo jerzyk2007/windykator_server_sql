@@ -3,7 +3,8 @@
 // const UpdateDB = require("../model/UpdateDB");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
-const { connect_SQL } = require("../config/dbConn");
+const { connect_SQL, msSqlQuery } = require("../config/dbConn");
+const { addDepartment } = require('./manageDocumentAddition');
 
 const getAllDocumentsSQL =
   "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV";
@@ -216,6 +217,104 @@ const becaredFile = async (rows, res) => {
 };
 
 // funkcja która dodaje dane z pliku excel - dokumenty autostacja
+// const oldDataFromAs = async (documents, res) => {
+
+//   if (
+//     !("WYSTAWIONO" in documents[0]) ||
+//     !("NUMER" in documents[0]) ||
+//     !("KOREKTA" in documents[0]) ||
+//     !("W. NETTO" in documents[0]) ||
+//     !("W. BRUTTO" in documents[0]) ||
+//     !("PŁATNOŚĆ" in documents[0]) ||
+//     !("KONTRAHENT" in documents[0]) ||
+//     !("UWAGI" in documents[0]) ||
+//     !("NIP" in documents[0]) ||
+//     !("PRZYGOTOWAŁ" in documents[0]) ||
+//     !("NR NADWOZIA" in documents[0]) ||
+//     !("NR REJESTRACYJNY" in documents[0]) ||
+//     !("NR SZKODY" in documents[0])
+//   ) {
+//     return res.status(500).json({ error: "Invalid file" });
+//   }
+
+//   try {
+
+//     const addDep = addDepartment(documents);
+
+//     // console.log(addDep[0]);
+
+//     for (const doc of addDep) {
+//       const [duplicateFV] = await connect_SQL.query(
+//         "SELECT id_document FROM documents WHERE NUMER_FV = ?",
+//         [doc.NUMER]
+//       );
+//       if (!duplicateFV[0]?.id_document) {
+//         // console.log(doc);
+
+//         await connect_SQL.query(
+//           "INSERT IGNORE INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+//           [
+//             doc.NUMER,
+//             doc['W. BRUTTO'],
+//             doc['W. NETTO'],
+//             doc.DZIAL,
+//             0,
+//             doc.WYSTAWIONO,
+//             doc.TERMIN,
+//             doc.KONTRAHENT,
+//             doc['PRZYGOTOWAŁ'],
+//             doc['NR REJESTRACYJNY'],
+//             doc['NR SZKODY'],
+//             doc.UWAGI,
+//             doc['PŁATNOŚĆ'],
+//             doc.NIP || null,
+//             doc['NR NADWOZIA'],
+//             null,
+//             null
+//           ]
+//         );
+
+//       }
+
+//       // const [settlement] = await connect_SQL.query(
+//       //   "SELECT TERMIN, NALEZNOSC FROM settlements WHERE NUMER_FV = ?",
+//       //   [doc.NUMER]
+//       // );
+
+//       // if (!duplicateFV[0]?.id_document && settlement[0]?.TERMIN) {
+//       //   await connect_SQL.query(
+//       //     "INSERT INTO documents (NUMER_FV, DZIAL, DATA_FV, TERMIN, BRUTTO, NETTO, DO_ROZLICZENIA, NR_REJESTRACYJNY, KONTRAHENT, DORADCA, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI,  NIP, VIN ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+//       //     [
+//       //       doc["NUMER"],
+//       //       doc.DZIAL,
+//       //       excelDateToISODate(doc["WYSTAWIONO"]),
+//       //       settlement[0]["TERMIN"],
+//       //       doc["W. BRUTTO"],
+//       //       doc["W. NETTO"],
+//       //       settlement[0]["NALEZNOSC"],
+//       //       doc["NR REJESTRACYJNY"],
+//       //       doc["KONTRAHENT"],
+//       //       doc["PRZYGOTOWAŁ"],
+//       //       doc["NR SZKODY"],
+//       //       doc["UWAGI"],
+//       //       doc["PŁATNOŚĆ"],
+//       //       doc["NIP"],
+//       //       doc["NR NADWOZIA"],
+//       //     ]
+//       //   );
+//       // }
+//     }
+
+
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     logEvents(`documentsController, oldDataFromAs: ${error}`, "reqServerErrors.txt");
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+
 // const ASFile = async (documents, res) => {
 //   if (
 //     !("WYSTAWIONO" in documents[0]) ||
@@ -779,6 +878,9 @@ const documentsFromFile = async (req, res) => {
     if (type === "becared") {
       return becaredFile(rows, res);
     }
+    // else if (type === "AS") {
+    //   return oldDataFromAs(rows, res);
+    // }
     // else if (type === "AS") {
     //   return ASFile(rows, res);
     // }
