@@ -9,6 +9,13 @@ const copyUsersToMySQL = async (req, res) => {
     const usersData = await User.find().exec();
 
     const cleanedData = usersData.map((item) => {
+      const departmentsArray = item.departments ? Array.from(item.departments.keys()) : [];
+
+      // Zmień format kluczy na odpowiedni
+      const updatedDepartments = departmentsArray.map((dept) =>
+        dept.replace(/D(\d{1,2})(?=\/|$)/g, (match, num) => `D${num.padStart(3, '0')}`)
+      );
+
       return {
         username: item.username,
         usersurname: item.usersurname,
@@ -18,7 +25,7 @@ const copyUsersToMySQL = async (req, res) => {
         tableSettings: item.tableSettings ? item.tableSettings : {},
         raportSettings: item.raportSettings ? item.raportSettings : {},
         permissions: item.permissions ? item.permissions : {},
-        departments: item.departments ? item.departments : [],
+        departments: updatedDepartments,
         columns: item.columns ? item.columns : [],
         refreshToken: item.refreshToken ? item.refreshToken : "",
       };
@@ -29,8 +36,11 @@ const copyUsersToMySQL = async (req, res) => {
       return;
     }
 
+    await connect_SQL.query("TRUNCATE TABLE users");
     // Pobieramy nazwy kolumn z pierwszego obiektu
     const columns = Object.keys(cleanedData[0]);
+
+
 
     // Budujemy część zapytania SQL z nazwami kolumn
     const sql = `INSERT INTO users (${columns.join(", ")}) VALUES (${columns
@@ -118,8 +128,21 @@ const copyDocumentsToMySQL = async (req, res) => {
   try {
     const result = await Document.find({}).lean();
 
+    // await connect_SQL.query("DELETE FROM documents_actions");
+    // await connect_SQL.query("TRUNCATE TABLE documents");
+
+    const changeDepartments = result.map(item => {
+      // Modyfikacja wartości DZIAL
+      const updatedDZIAL = item.DZIAL.replace(/D(\d{1,2})(?=\/|$)/g, (match, num) => `D${num.padStart(3, '0')}`);
+
+      return {
+        ...item,
+        DZIAL: updatedDZIAL, // Aktualizujemy DZIAL
+      };
+    });
+
     const saveToDB = await Promise.all(
-      result.map(async (item) => {
+      changeDepartments.map(async (item) => {
         const [duplicate] = await connect_SQL.query(
           "SELECT NUMER_FV FROM documents WHERE NUMER_FV = ?",
           [item.NUMER_FV]
@@ -143,6 +166,7 @@ const copyDocumentsToMySQL = async (req, res) => {
             ]
           );
         } else {
+          console.log(duplicate);
           console.log("duplicate");
         }
       })
@@ -241,16 +265,17 @@ const copyItemsDepartments = async (req, res) => {
         },
       },
     ]);
-    // console.log(result[0].data.aging);
+    // console.log(result[0].data.localizations.length);
+    console.log(result[0].data.owners);
 
-    for (const dep of result[0].data.departments) {
-      console.log(dep);
+    for (const dep of result[0].data.owners) {
+      // console.log(dep);
       // const firstValue = dep.firstValue ? dep.firstValue : null;
       // const secondValue = dep.secondValue ? dep.secondValue : null;
-      // await connect_SQL.query(
-      //   "INSERT INTO department_items (department) VALUES(?)",
-      //   [dep]
-      // );
+      await connect_SQL.query(
+        "INSERT INTO owner_items (owner) VALUES(?)",
+        [dep]
+      );
       // const [duplicate] = await connect_SQL.query(
       //   "SELECT guardian from guardian_items WHERE guardian = ?",
       //   [dep]
@@ -281,6 +306,7 @@ const copyPreparedItems = async (req, res) => {
         },
       },
     ]);
+    console.log(result[0].preparedItemsData.length);
     for (const item of result[0].preparedItemsData) {
       await connect_SQL.query(
         "INSERT INTO join_items (department, localization, area, owner, guardian) VALUES (?, ?, ?, ?, ?)",

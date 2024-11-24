@@ -24,7 +24,7 @@ router
 router
   .route("/send-documents/:type")
   .post(
-    verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin, ROLES_LIST.AdminBL),
+    verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
     upload.single("excelFile"),
     Documents.documentsFromFile
   );

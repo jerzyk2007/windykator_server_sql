@@ -613,9 +613,12 @@ const getRaportDepartmentSettings = async (req, res) => {
       result[0]?.raportSettings?.raportDepartments &&
       Object.keys(result[0].raportSettings.raportDepartments).length > 0
     ) {
-      res.json(JSON.parse(result[0].raportSettings.raportDepartments));
+      // res.json(JSON.parse(result[0].raportSettings.raportDepartments));
+      return res.json(result[0].raportSettings.raportDepartments);
+      // res.json({});
+
     } else {
-      res.json({});
+      return res.json({});
     }
   } catch (error) {
     logEvents(
@@ -693,7 +696,8 @@ const getRaportAdviserSettings = async (req, res) => {
       result[0]?.raportSettings?.raportAdvisers &&
       Object.keys(result[0].raportSettings.raportAdvisers).length > 0
     ) {
-      return res.json(JSON.parse(result[0].raportSettings.raportAdvisers));
+      // return res.json(JSON.parse(result[0].raportSettings.raportAdvisers));
+      return res.json(result[0].raportSettings.raportAdvisers);
 
     } else {
       return res.json({});
