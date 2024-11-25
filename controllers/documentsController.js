@@ -6,8 +6,10 @@ const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { addDepartment } = require('./manageDocumentAddition');
 
+// const getAllDocumentsSQL =
+//   "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV";
 const getAllDocumentsSQL =
-  "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV";
+  "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA, R.DATA_PRZENIESIENIA_DO_WP, R.STATUS_AKTUALNY, DA.id_action, DA.document_id, DA.DZIALANIA, DA.KOMENTARZ_KANCELARIA_BECARED, DA.KWOTA_WINDYKOWANA_BECARED, DA.NUMER_SPRAWY_BECARED, DA.POBRANO_VAT, DA.STATUS_SPRAWY_KANCELARIA, DA.STATUS_SPRAWY_WINDYKACJA, DA.ZAZNACZ_KONTRAHENTA, DA.DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, DA.OSTATECZNA_DATA_ROZLICZENIA, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV";
 
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info) => {
@@ -826,7 +828,7 @@ const rubiconFile = async (rows, res) => {
 
     const query = `
          INSERT IGNORE INTO rubicon
-           ( NUMER_FV, STATUS_AKTUALNY, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNĘTRZNA ) 
+           ( NUMER_FV, STATUS_AKTUALNY, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA ) 
          VALUES 
            ${rubiconData.map(() => "(?, ?, ?, ?)").join(", ")}
        `;
@@ -931,10 +933,10 @@ const changeSingleDocument = async (req, res) => {
     );
     if (documents_ActionsExist[0]?.id_action) {
       await connect_SQL.query(
-        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?  WHERE document_id = ?",
+        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?  WHERE document_id = ?",
         [
           documentItem.DZIALANIA,
-          documentItem.JAKA_KANCELARIA,
+          documentItem.JAKA_KANCELARIA_TU,
           documentItem.POBRANO_VAT,
           documentItem.ZAZNACZ_KONTRAHENTA,
           JSON.stringify(documentItem.UWAGI_ASYSTENT),
@@ -946,11 +948,11 @@ const changeSingleDocument = async (req, res) => {
       );
     } else {
       await connect_SQL.query(
-        "INSERT INTO documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA_TU, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
           id_document,
           documentItem.DZIALANIA,
-          documentItem.JAKA_KANCELARIA,
+          documentItem.JAKA_KANCELARIA_TU,
           documentItem.POBRANO_VAT,
           documentItem.ZAZNACZ_KONTRAHENTA,
           JSON.stringify(documentItem.UWAGI_ASYSTENT),
@@ -1011,11 +1013,14 @@ D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY,
 D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
 D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
 ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
-IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,   JI.area FROM documents AS D 
+IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, R.DATA_PRZENIESIENIA_DO_WP,
+R.STATUS_AKTUALNY FROM documents AS D 
 LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
 LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
 LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
-LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV WHERE D.id_document = ?`,
+LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
+LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
+WHERE D.id_document = ?`,
       [id_document]
     );
 

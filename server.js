@@ -55,6 +55,7 @@ app.use("/raport", require("./routes/api/raports"));
 app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
 app.use("/sql", require("./routes/api/sql"));
+app.use("/repair", require("./routes/api/repair"));
 
 app.all("*", (req, res) => {
   res.status(404);
