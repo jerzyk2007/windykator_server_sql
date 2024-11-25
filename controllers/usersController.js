@@ -29,6 +29,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
       [id_user]
     );
 
+
     const areaDep = columnsFromSettings.reduce((acc, column) => {
       column.areas.forEach(area => {
         if (area.available) {
@@ -149,6 +150,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
       order: checkDepartments[0]?.tableSettings?.order?.length ? newFilteredeOrder() : [],
       visible: checkDepartments[0]?.tableSettings?.visible && Object.keys(checkDepartments[0]?.tableSettings?.visible).length > 0 ? newFilteredeVisible() : {},
       pagination: checkDepartments[0]?.tableSettings?.pagination ? checkDepartments[0].tableSettings.pagination : { pageIndex: 0, pageSize: 10 },
+      pinning: checkDepartments[0]?.tableSettings?.pinning ? checkDepartments[0].tableSettings.pinning : { "left": [], "right": [] },
     };
 
     await connect_SQL.query(
