@@ -23,18 +23,18 @@ const formatDate = (date) => {
 const addDocumentToDatabase = async () => {
   const query = `SELECT 
        fv.[NUMER],
-       CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA, 
-       CONVERT(VARCHAR(10), fv.[DATA_ZAPLATA], 23) AS DATA_ZAPLATA, 
- 	   	        fv.[KONTR_NAZWA],
-              REPLACE(fv.[KONTR_NIP], '-', '') AS KONTR_NIP,
-             SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
-			 SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
-            fv.[NR_SZKODY],
+	    CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+	CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+       fv.[KONTR_NAZWA],
+       fv.[KONTR_NIP],
+       SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+       SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
+       fv.[NR_SZKODY],
        fv.[NR_AUTORYZACJI],
        fv.[UWAGI],
        fv.[KOREKTA_NUMER],
-          zap.[NAZWA] AS TYP_PLATNOSCI,
-       us.[IMIE] + ' ' + us.[NAZWA] AS PRZYGOTOWAL,
+       zap.[NAZWA] AS TYP_PLATNOSCI,
+       us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
        auto.[REJESTRACJA],
        auto.[NR_NADWOZIA],
        tr.[WARTOSC_NAL]
@@ -45,28 +45,28 @@ LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID 
 LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
 LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
 WHERE fv.[NUMER] != 'POTEM' 
-  AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}' 
+  AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
 GROUP BY 
        fv.[NUMER],
-       fv.[DATA_WYSTAWIENIA],
-       fv.[DATA_ZAPLATA],
+	   CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
+	   CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
+       pos.[NAZWA],
        fv.[KONTR_NAZWA],
        fv.[KONTR_NIP],
-       fv.[WARTOSC_NETTO],
-       fv.[WARTOSC_BRUTTO],
        fv.[NR_SZKODY],
        fv.[NR_AUTORYZACJI],
        fv.[UWAGI],
        fv.[KOREKTA_NUMER],
-             zap.[NAZWA],
-       us.[IMIE] + ' ' + us.[NAZWA],
+       zap.[NAZWA],
+       us.[NAZWA] + ' ' + us.[IMIE],
        auto.[REJESTRACJA],
        auto.[NR_NADWOZIA],
-       tr.[WARTOSC_NAL]`;
+       tr.[WARTOSC_NAL];
+`;
 
   try {
     const documents = await msSqlQuery(query);
-
+    console.log(documents[0]);
     // dodaje nazwy działów
     const addDep = addDepartment(documents);
 
@@ -76,9 +76,10 @@ GROUP BY
     });
 
     for (const doc of addDep) {
-      // const NIP = doc?.KONTR_NIP ? doc.KONTR_NIP : null;
-      // const NR_AUTORYZACJI = doc?.NR_AUTORYZACJI ? doc.NR_AUTORYZACJI : null;
-      // const NR_SZKODY = doc?.NR_SZKODY ? doc.NR_SZKODY : null;
+
+      // const updateDoc = await connect_SQL.query('UPDATE documents SET DATA_FV = ?, TERMIN = ? WHERE NUMER_FV = ?', [doc.DATA_WYSTAWIENIA, doc.DATA_ZAPLATA, doc.NUMER]);
+
+      // console.log(updateDoc);
 
       await connect_SQL.query(
         "INSERT IGNORE INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -102,7 +103,6 @@ GROUP BY
           doc.KOREKTA_NUMER
         ]
       );
-
     }
     return true;
   }
@@ -412,15 +412,15 @@ const updateData = async () => {
 
     for (const item of updateProgress) {
       const queryUpdate = `
-  UPDATE updates 
-  SET 
-  data_name = '${item.data_name}',
-  date = '${item.date}',    
-    hour = '${item.hour}', 
-    update_success = '${item.update_success}'
-  WHERE 
-    data_name = '${item.data_name}'
-`;
+      UPDATE updates 
+      SET 
+      data_name = '${item.data_name}',
+      date = '${item.date}',    
+        hour = '${item.hour}', 
+        update_success = '${item.update_success}'
+      WHERE 
+        data_name = '${item.data_name}'
+    `;
       await connect_SQL.query(queryUpdate);
     }
 
@@ -437,7 +437,7 @@ const updateData = async () => {
       ]
     );
 
-    // // dodanie dat wydania samochodów 
+    // dodanie dat wydania samochodów 
     const carDateUpdate = await updateCarReleaseDates();
 
     await connect_SQL.query(
@@ -479,7 +479,7 @@ const updateData = async () => {
   }
 };
 
-cron.schedule('05 07 * * *', updateData, {
+cron.schedule('03 07 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
 

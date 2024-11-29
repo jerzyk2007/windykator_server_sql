@@ -9,7 +9,6 @@ const getDataRaport = async (req, res) => {
   try {
 
     const result = await getDataDocuments(id_user, "actual");
-
     res.json({ data: result.data, permission: result.permission });
   } catch (error) {
     logEvents(
