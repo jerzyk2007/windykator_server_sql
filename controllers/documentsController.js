@@ -1,13 +1,8 @@
-// const Document = require("../model/Document");
-// const User = require("../model/User");
-// const UpdateDB = require("../model/UpdateDB");
-const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
-const { addDepartment } = require('./manageDocumentAddition');
+// const { addDepartment } = require('./manageDocumentAddition');
 
-// const getAllDocumentsSQL =
-//   "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV";
+
 const getAllDocumentsSQL =
   "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA, R.DATA_PRZENIESIENIA_DO_WP, R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, DA.KOMENTARZ_KANCELARIA_BECARED, DA.KWOTA_WINDYKOWANA_BECARED, DA.NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, DA.STATUS_SPRAWY_KANCELARIA, DA.STATUS_SPRAWY_WINDYKACJA, DA.ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, DA.DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, DA.OSTATECZNA_DATA_ROZLICZENIA, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU   FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV";
 
@@ -396,522 +391,517 @@ const becaredFile = async (rows, res) => {
 // };
 
 //SQL funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
-const settlementsFile = async (rows, res) => {
-  if (
-    !("TYTUŁ" in rows[0]) ||
-    !("TERMIN" in rows[0]) ||
-    !("NALEŻNOŚĆ" in rows[0]) ||
-    !("WPROWADZONO" in rows[0]) ||
-    !("ZOBOWIĄZANIE" in rows[0])
-  ) {
-    return res.status(500).json({ error: "Invalid file" });
-  }
-  try {
-    const processedData = rows.reduce((acc, curr) => {
-      const cleanDoc = curr["TYTUŁ"].split(" ")[0];
+// const settlementsFile = async (rows, res) => {
+//   if (
+//     !("TYTUŁ" in rows[0]) ||
+//     !("TERMIN" in rows[0]) ||
+//     !("NALEŻNOŚĆ" in rows[0]) ||
+//     !("WPROWADZONO" in rows[0]) ||
+//     !("ZOBOWIĄZANIE" in rows[0])
+//   ) {
+//     return res.status(500).json({ error: "Invalid file" });
+//   }
+//   try {
+//     const processedData = rows.reduce((acc, curr) => {
+//       const cleanDoc = curr["TYTUŁ"].split(" ")[0];
 
-      let termin_fv = "";
-      let data_fv = "";
-      if (
-        curr["TERMIN"] &&
-        isExcelDate(curr["TERMIN"]) &&
-        curr["WPROWADZONO"] &&
-        isExcelDate(curr["WPROWADZONO"])
-      ) {
-        termin_fv = excelDateToISODate(curr["TERMIN"]).toString();
-        data_fv = excelDateToISODate(curr["WPROWADZONO"]).toString();
-      } else {
-        termin_fv = curr["TERMIN"] ? curr["TERMIN"] : null;
-        data_fv = curr["WPROWADZONO"] ? curr["WPROWADZONO"] : null;
-      }
+//       let termin_fv = "";
+//       let data_fv = "";
+//       if (
+//         curr["TERMIN"] &&
+//         isExcelDate(curr["TERMIN"]) &&
+//         curr["WPROWADZONO"] &&
+//         isExcelDate(curr["WPROWADZONO"])
+//       ) {
+//         termin_fv = excelDateToISODate(curr["TERMIN"]).toString();
+//         data_fv = excelDateToISODate(curr["WPROWADZONO"]).toString();
+//       } else {
+//         termin_fv = curr["TERMIN"] ? curr["TERMIN"] : null;
+//         data_fv = curr["WPROWADZONO"] ? curr["WPROWADZONO"] : null;
+//       }
 
-      const do_rozliczenia = curr["NALEŻNOŚĆ"]
-        ? isNaN(parseFloat(curr["NALEŻNOŚĆ"]))
-          ? 0
-          : parseFloat(curr["NALEŻNOŚĆ"])
-        : 0;
+//       const do_rozliczenia = curr["NALEŻNOŚĆ"]
+//         ? isNaN(parseFloat(curr["NALEŻNOŚĆ"]))
+//           ? 0
+//           : parseFloat(curr["NALEŻNOŚĆ"])
+//         : 0;
 
-      const zobowiazania =
-        curr["ZOBOWIĄZANIE"] && curr["ZOBOWIĄZANIE"] !== 0
-          ? isNaN(parseFloat(curr["ZOBOWIĄZANIE"]))
-            ? 0
-            : parseFloat(curr["ZOBOWIĄZANIE"])
-          : 0;
+//       const zobowiazania =
+//         curr["ZOBOWIĄZANIE"] && curr["ZOBOWIĄZANIE"] !== 0
+//           ? isNaN(parseFloat(curr["ZOBOWIĄZANIE"]))
+//             ? 0
+//             : parseFloat(curr["ZOBOWIĄZANIE"])
+//           : 0;
 
-      if (!acc[cleanDoc]) {
-        // Jeśli numer faktury nie istnieje jeszcze w accumulatorze, dodajemy nowy obiekt
-        acc[cleanDoc] = {
-          NUMER_FV: cleanDoc,
-          TERMIN: termin_fv,
-          DATA_WYSTAWIENIA_FV: data_fv,
-          DO_ROZLICZENIA: do_rozliczenia,
-          ZOBOWIAZANIA: zobowiazania,
-        };
-      } else {
-        // Jeśli numer faktury już istnieje, agregujemy dane:
+//       if (!acc[cleanDoc]) {
+//         // Jeśli numer faktury nie istnieje jeszcze w accumulatorze, dodajemy nowy obiekt
+//         acc[cleanDoc] = {
+//           NUMER_FV: cleanDoc,
+//           TERMIN: termin_fv,
+//           DATA_WYSTAWIENIA_FV: data_fv,
+//           DO_ROZLICZENIA: do_rozliczenia,
+//           ZOBOWIAZANIA: zobowiazania,
+//         };
+//       } else {
+//         // Jeśli numer faktury już istnieje, agregujemy dane:
 
-        // Wybór najstarszej daty TERMIN
-        if (isExcelDate(curr["TERMIN"])) {
-          const currentTermDate = excelDateToISODate(curr["TERMIN"]);
-          // const existingTermDate = excelDateToISODate(acc[cleanDoc].TERMIN);
-          const existingTermDate = acc[cleanDoc].TERMIN;
+//         // Wybór najstarszej daty TERMIN
+//         if (isExcelDate(curr["TERMIN"])) {
+//           const currentTermDate = excelDateToISODate(curr["TERMIN"]);
+//           // const existingTermDate = excelDateToISODate(acc[cleanDoc].TERMIN);
+//           const existingTermDate = acc[cleanDoc].TERMIN;
 
-          acc[cleanDoc].TERMIN =
-            currentTermDate < existingTermDate
-              ? currentTermDate
-              : existingTermDate;
-        }
+//           acc[cleanDoc].TERMIN =
+//             currentTermDate < existingTermDate
+//               ? currentTermDate
+//               : existingTermDate;
+//         }
 
-        // Sumowanie wartości DO_ROZLICZENIA
-        acc[cleanDoc].DO_ROZLICZENIA += do_rozliczenia;
+//         // Sumowanie wartości DO_ROZLICZENIA
+//         acc[cleanDoc].DO_ROZLICZENIA += do_rozliczenia;
 
-        // Sumowanie wartości ZOBOWIAZANIA
-        acc[cleanDoc].ZOBOWIAZANIA += zobowiazania;
-      }
+//         // Sumowanie wartości ZOBOWIAZANIA
+//         acc[cleanDoc].ZOBOWIAZANIA += zobowiazania;
+//       }
 
-      return acc;
-    }, {});
+//       return acc;
+//     }, {});
 
-    // Zamiana obiektu na tablicę
-    const result = Object.values(processedData);
+//     // Zamiana obiektu na tablicę
+//     const result = Object.values(processedData);
 
-    // await connect_SQL.query(
-    //   "UPDATE documents SET DO_ROZLICZENIA = 0"
-    // );
+//     // await connect_SQL.query(
+//     //   "UPDATE documents SET DO_ROZLICZENIA = 0"
+//     // );
 
-    // for (const doc of result) {
-    //   await connect_SQL.query(
-    //     "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
-    //     [
-    //       doc.DO_ROZLICZENIA,
-    //       doc.NUMER_FV
-    //     ]
-    //   );
-    // }
+//     // for (const doc of result) {
+//     //   await connect_SQL.query(
+//     //     "UPDATE documents SET DO_ROZLICZENIA = ? WHERE NUMER_FV = ?",
+//     //     [
+//     //       doc.DO_ROZLICZENIA,
+//     //       doc.NUMER_FV
+//     //     ]
+//     //   );
+//     // }
 
-    // Najpierw wyczyść tabelę settlements_description
-    await connect_SQL.query("TRUNCATE TABLE settlements");
+//     // Najpierw wyczyść tabelę settlements_description
+//     await connect_SQL.query("TRUNCATE TABLE settlements");
 
-    // Teraz przygotuj dane do wstawienia
-    const values = result.map(item => [
-      item.NUMER_FV,
-      item.TERMIN,
-      item.DO_ROZLICZENIA !== 0 ? item.DO_ROZLICZENIA : -item.ZOBOWIAZANIA,
-      item.ZOBOWIAZANIA
-    ]);
+//     // Teraz przygotuj dane do wstawienia
+//     const values = result.map(item => [
+//       item.NUMER_FV,
+//       item.TERMIN,
+//       item.DO_ROZLICZENIA !== 0 ? item.DO_ROZLICZENIA : -item.ZOBOWIAZANIA,
+//       item.ZOBOWIAZANIA
+//     ]);
 
-    // Przygotowanie zapytania SQL z wieloma wartościami
-    const query = `
-          INSERT IGNORE INTO settlements
-            ( NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) 
-          VALUES 
-            ${values.map(() => "(?, ?, ?, ?)").join(", ")}
-        `;
+//     // Przygotowanie zapytania SQL z wieloma wartościami
+//     const query = `
+//           INSERT IGNORE INTO settlements
+//             ( NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) 
+//           VALUES 
+//             ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+//         `;
 
-    // Wykonanie zapytania INSERT
-    await connect_SQL.query(query, values.flat());
+//     // Wykonanie zapytania INSERT
+//     await connect_SQL.query(query, values.flat());
 
-    // dodaje date aktualizacji rozrachunków
-    const checkDate = (data) => {
-      const year = data.getFullYear();
-      const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
-      const day = String(data.getDate()).padStart(2, '0');
-      const yearNow = `${year}-${month}-${day}`;
-      return yearNow;
-    };
-    const checkTime = (data) => {
-      const hour = String(data.getHours()).padStart(2, '0');
-      const min = String(data.getMinutes()).padStart(2, '0');
-      const timeNow = `${hour}:${min}`;
+//     // dodaje date aktualizacji rozrachunków
+//     const checkDate = (data) => {
+//       const year = data.getFullYear();
+//       const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
+//       const day = String(data.getDate()).padStart(2, '0');
+//       const yearNow = `${year}-${month}-${day}`;
+//       return yearNow;
+//     };
+//     const checkTime = (data) => {
+//       const hour = String(data.getHours()).padStart(2, '0');
+//       const min = String(data.getMinutes()).padStart(2, '0');
+//       const timeNow = `${hour}:${min}`;
 
-      return timeNow;
-    };
+//       return timeNow;
+//     };
 
-    await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-      [
-        checkDate(new Date()),
-        checkTime(new Date()),
-        "Zaktualizowano.",
-        'Rozrachunki'
-      ]);
+//     await connect_SQL.query(
+//       "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+//       [
+//         checkDate(new Date()),
+//         checkTime(new Date()),
+//         "Zaktualizowano.",
+//         'Rozrachunki'
+//       ]);
 
 
-    res.status(201).json({ message: "Documents are updated" });
-  } catch (error) {
-    logEvents(
-      `documentsController, settlementsFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, settlementsFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // funkcja chwilowa do skopiowania rozrachunków dla kredytów kupieckich
-const settlementsFileCreditTrade = async (rows, res) => {
-  if (
-    !("WPROWADZONO" in rows[0]) ||
-    !("TERMIN" in rows[0]) ||
-    !("TYTUŁ" in rows[0]) ||
-    !("WARTOŚĆ" in rows[0]) ||
-    !("NALEŻNOŚĆ" in rows[0]) ||
-    !("ZOBOWIĄZANIE" in rows[0]) ||
-    !("ROZLICZONO" in rows[0]) ||
-    !("PO TERMINIE" in rows[0]) ||
-    !("KONTRAHENT" in rows[0])
-  ) {
-    return res.status(500).json({ error: "Invalid file" });
-  }
-  try {
-    const processedData = rows.reduce((acc, curr) => {
-      const cleanDoc = curr["TYTUŁ"].split(" ")[0];
-      const termin_fv = isExcelDate(curr["TERMIN"])
-        ? excelDateToISODate(curr["TERMIN"])
-        : curr["TERMIN"]
-          ? curr["TERMIN"]
-          : null;
-      const data_fv = isExcelDate(curr["WPROWADZONO"])
-        ? excelDateToISODate(curr["WPROWADZONO"])
-        : curr["WPROWADZONO"]
-          ? curr["WPROWADZONO"]
-          : null;
+// const settlementsFileCreditTrade = async (rows, res) => {
+//   if (
+//     !("WPROWADZONO" in rows[0]) ||
+//     !("TERMIN" in rows[0]) ||
+//     !("TYTUŁ" in rows[0]) ||
+//     !("WARTOŚĆ" in rows[0]) ||
+//     !("NALEŻNOŚĆ" in rows[0]) ||
+//     !("ZOBOWIĄZANIE" in rows[0]) ||
+//     !("ROZLICZONO" in rows[0]) ||
+//     !("PO TERMINIE" in rows[0]) ||
+//     !("KONTRAHENT" in rows[0])
+//   ) {
+//     return res.status(500).json({ error: "Invalid file" });
+//   }
+//   try {
+//     const processedData = rows.reduce((acc, curr) => {
+//       const cleanDoc = curr["TYTUŁ"].split(" ")[0];
+//       const termin_fv = isExcelDate(curr["TERMIN"])
+//         ? excelDateToISODate(curr["TERMIN"])
+//         : curr["TERMIN"]
+//           ? curr["TERMIN"]
+//           : null;
+//       const data_fv = isExcelDate(curr["WPROWADZONO"])
+//         ? excelDateToISODate(curr["WPROWADZONO"])
+//         : curr["WPROWADZONO"]
+//           ? curr["WPROWADZONO"]
+//           : null;
 
-      const rozliczono = isExcelDate(curr["ROZLICZONO"])
-        ? excelDateToISODate(curr["ROZLICZONO"])
-        : curr["ROZLICZONO"]
-          ? curr["ROZLICZONO"]
-          : null;
+//       const rozliczono = isExcelDate(curr["ROZLICZONO"])
+//         ? excelDateToISODate(curr["ROZLICZONO"])
+//         : curr["ROZLICZONO"]
+//           ? curr["ROZLICZONO"]
+//           : null;
 
-      const wartosc = curr["WARTOŚĆ"]
-        ? isNaN(parseFloat(curr["WARTOŚĆ"]))
-          ? 0
-          : parseFloat(curr["WARTOŚĆ"])
-        : 0;
+//       const wartosc = curr["WARTOŚĆ"]
+//         ? isNaN(parseFloat(curr["WARTOŚĆ"]))
+//           ? 0
+//           : parseFloat(curr["WARTOŚĆ"])
+//         : 0;
 
-      const do_rozliczenia = curr["NALEŻNOŚĆ"]
-        ? isNaN(parseFloat(curr["NALEŻNOŚĆ"]))
-          ? 0
-          : parseFloat(curr["NALEŻNOŚĆ"])
-        : 0;
+//       const do_rozliczenia = curr["NALEŻNOŚĆ"]
+//         ? isNaN(parseFloat(curr["NALEŻNOŚĆ"]))
+//           ? 0
+//           : parseFloat(curr["NALEŻNOŚĆ"])
+//         : 0;
 
-      const zobowiazania =
-        curr["ZOBOWIĄZANIE"] && curr["ZOBOWIĄZANIE"] !== 0
-          ? isNaN(parseFloat(curr["ZOBOWIĄZANIE"]))
-            ? 0
-            : parseFloat(curr["ZOBOWIĄZANIE"])
-          : 0;
+//       const zobowiazania =
+//         curr["ZOBOWIĄZANIE"] && curr["ZOBOWIĄZANIE"] !== 0
+//           ? isNaN(parseFloat(curr["ZOBOWIĄZANIE"]))
+//             ? 0
+//             : parseFloat(curr["ZOBOWIĄZANIE"])
+//           : 0;
 
-      const po_terminie = curr["PO TERMINIE"] ? curr["PO TERMINIE"] : null;
-      const kontrahent = curr["KONTRAHENT"] ? curr["KONTRAHENT"] : null;
+//       const po_terminie = curr["PO TERMINIE"] ? curr["PO TERMINIE"] : null;
+//       const kontrahent = curr["KONTRAHENT"] ? curr["KONTRAHENT"] : null;
 
-      if (!acc[cleanDoc]) {
-        // Jeśli numer faktury nie istnieje jeszcze w accumulatorze, dodajemy nowy obiekt
-        acc[cleanDoc] = {
-          DATA_FV: data_fv,
-          TERMIN: termin_fv,
-          NUMER: cleanDoc,
-          WARTOSC: wartosc,
-          NALEZNOSC: do_rozliczenia,
-          ZOBOWIAZANIA: zobowiazania,
-          ROZLICZONO: rozliczono,
-          PO_TERMINIE: po_terminie,
-          KONTRAHENT: kontrahent,
-        };
-      } else {
-        // Jeśli numer faktury już istnieje, agregujemy dane:
+//       if (!acc[cleanDoc]) {
+//         // Jeśli numer faktury nie istnieje jeszcze w accumulatorze, dodajemy nowy obiekt
+//         acc[cleanDoc] = {
+//           DATA_FV: data_fv,
+//           TERMIN: termin_fv,
+//           NUMER: cleanDoc,
+//           WARTOSC: wartosc,
+//           NALEZNOSC: do_rozliczenia,
+//           ZOBOWIAZANIA: zobowiazania,
+//           ROZLICZONO: rozliczono,
+//           PO_TERMINIE: po_terminie,
+//           KONTRAHENT: kontrahent,
+//         };
+//       } else {
+//         // Jeśli numer faktury już istnieje, agregujemy dane:
 
-        // Wybór najstarszej daty TERMIN
-        if (isExcelDate(curr["TERMIN"])) {
-          const currentTermDate = excelDateToISODate(curr["TERMIN"]);
-          // const existingTermDate = excelDateToISODate(acc[cleanDoc].TERMIN);
-          const existingTermDate = acc[cleanDoc].TERMIN;
+//         // Wybór najstarszej daty TERMIN
+//         if (isExcelDate(curr["TERMIN"])) {
+//           const currentTermDate = excelDateToISODate(curr["TERMIN"]);
+//           // const existingTermDate = excelDateToISODate(acc[cleanDoc].TERMIN);
+//           const existingTermDate = acc[cleanDoc].TERMIN;
 
-          acc[cleanDoc].TERMIN =
-            currentTermDate < existingTermDate
-              ? currentTermDate
-              : existingTermDate;
-        }
+//           acc[cleanDoc].TERMIN =
+//             currentTermDate < existingTermDate
+//               ? currentTermDate
+//               : existingTermDate;
+//         }
 
-        // Sumowanie wartości DO_ROZLICZENIA
-        acc[cleanDoc].NALEZNOSC += do_rozliczenia;
+//         // Sumowanie wartości DO_ROZLICZENIA
+//         acc[cleanDoc].NALEZNOSC += do_rozliczenia;
 
-        // Sumowanie wartości ZOBOWIAZANIA
-        acc[cleanDoc].ZOBOWIAZANIA += zobowiazania;
-      }
+//         // Sumowanie wartości ZOBOWIAZANIA
+//         acc[cleanDoc].ZOBOWIAZANIA += zobowiazania;
+//       }
 
-      return acc;
-    }, {});
+//       return acc;
+//     }, {});
 
-    // Zamiana obiektu na tablicę
-    const result = Object.values(processedData);
+//     // Zamiana obiektu na tablicę
+//     const result = Object.values(processedData);
 
-    // await connect_SQL.query(
-    //   "UPDATE settlements SET NALEZNOSC = 0, ZOBOWIAZANIA = 0"
-    // );
+//     // await connect_SQL.query(
+//     //   "UPDATE settlements SET NALEZNOSC = 0, ZOBOWIAZANIA = 0"
+//     // );
 
-    for (const doc of result) {
-      await connect_SQL.query(
-        "INSERT INTO trade_credit_settlements (data_fv, termin, numer, wartosc, naleznosc, zobowiazanie, rozliczono, po_terminie, kontrahent) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          doc.DATA_FV,
-          doc.TERMIN,
-          doc.NUMER,
-          doc.WARTOSC,
-          doc.NALEZNOSC,
-          doc.ZOBOWIAZANIA,
-          doc.ROZLICZONO,
-          doc.PO_TERMINIE,
-          doc.KONTRAHENT,
-        ]
-      );
-    }
+//     for (const doc of result) {
+//       await connect_SQL.query(
+//         "INSERT INTO trade_credit_settlements (data_fv, termin, numer, wartosc, naleznosc, zobowiazanie, rozliczono, po_terminie, kontrahent) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+//         [
+//           doc.DATA_FV,
+//           doc.TERMIN,
+//           doc.NUMER,
+//           doc.WARTOSC,
+//           doc.NALEZNOSC,
+//           doc.ZOBOWIAZANIA,
+//           doc.ROZLICZONO,
+//           doc.PO_TERMINIE,
+//           doc.KONTRAHENT,
+//         ]
+//       );
+//     }
 
-    res.status(201).json({ message: "Documents are updated" });
-  } catch (error) {
-    logEvents(
-      `documentsController, settlementsFileCreditTrade: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, settlementsFileCreditTrade: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 // funkcja chwilowa do skopiowania danych dla kredytów kupieckich
-const dataFileCreditTrade = async (rows, res) => {
+// const dataFileCreditTrade = async (rows, res) => {
 
-  try {
-    for (const row of rows) {
-      const lokalizacja = row.Lokalizacja ? row.Lokalizacja : null;
-      const dzial = row["Dział"] ? row["Dział"] : null;
-      const segment = row["Segment"] ? row["Segment"] : null;
-      const numer = row["Numer"] ? row["Numer"] : null;
-      const data_wystawienia = isExcelDate(row["Data wystawienia"])
-        ? excelDateToISODate(row["Data wystawienia"])
-        : null;
-      const termin = isExcelDate(row["Termin"])
-        ? excelDateToISODate(row["Termin"])
-        : null;
-      const brutto = row["Wartość brutto faktury"]
-        ? row["Wartość brutto faktury"]
-        : 0;
-      const kontr_nazwa = row["KONTR NAZWA"] ? row["KONTR NAZWA"] : null;
-      const kontr_adres = row["KONTR ADRES"] ? row["KONTR ADRES"] : null;
-      const kontr_kraj = row["KONTR KRAJ"] ? row["KONTR KRAJ"] : null;
-      const kontr_NIP = row["KONTRNIP"] ? row["KONTRNIP"] : null;
-      const kontr_ID = row["KONTRAHENT_ID"] ? row["KONTRAHENT_ID"] : null;
-      const zgoda = row["Zgoda płatności opóźnione"]
-        ? row["Zgoda płatności opóźnione"]
-        : null;
-      const ile = row["Ilośc dni"] ? row["Ilośc dni"] : null;
-      const kredyt = row["Dopuszczalny kredyt"]
-        ? row["Dopuszczalny kredyt"]
-        : null;
-      const sposob_zaplaty = row["Sposób zapłaty"]
-        ? row["Sposób zapłaty"]
-        : null;
+//   try {
+//     for (const row of rows) {
+//       const lokalizacja = row.Lokalizacja ? row.Lokalizacja : null;
+//       const dzial = row["Dział"] ? row["Dział"] : null;
+//       const segment = row["Segment"] ? row["Segment"] : null;
+//       const numer = row["Numer"] ? row["Numer"] : null;
+//       const data_wystawienia = isExcelDate(row["Data wystawienia"])
+//         ? excelDateToISODate(row["Data wystawienia"])
+//         : null;
+//       const termin = isExcelDate(row["Termin"])
+//         ? excelDateToISODate(row["Termin"])
+//         : null;
+//       const brutto = row["Wartość brutto faktury"]
+//         ? row["Wartość brutto faktury"]
+//         : 0;
+//       const kontr_nazwa = row["KONTR NAZWA"] ? row["KONTR NAZWA"] : null;
+//       const kontr_adres = row["KONTR ADRES"] ? row["KONTR ADRES"] : null;
+//       const kontr_kraj = row["KONTR KRAJ"] ? row["KONTR KRAJ"] : null;
+//       const kontr_NIP = row["KONTRNIP"] ? row["KONTRNIP"] : null;
+//       const kontr_ID = row["KONTRAHENT_ID"] ? row["KONTRAHENT_ID"] : null;
+//       const zgoda = row["Zgoda płatności opóźnione"]
+//         ? row["Zgoda płatności opóźnione"]
+//         : null;
+//       const ile = row["Ilośc dni"] ? row["Ilośc dni"] : null;
+//       const kredyt = row["Dopuszczalny kredyt"]
+//         ? row["Dopuszczalny kredyt"]
+//         : null;
+//       const sposob_zaplaty = row["Sposób zapłaty"]
+//         ? row["Sposób zapłaty"]
+//         : null;
 
-      await connect_SQL.query(
-        "INSERT INTO trade_credit_data (lokalizacja, dzial, segment, numer, data_wystawienia, termin, brutto, kontrahent_nazwa, kontrahent_adres, kontrahent_kraj, kontrahent_nip, kontrahent_id, zgoda_na_platnosci_opoznione, ilosc_dni_przelew, dopuszczalny_kredyt, sposob_zaplaty) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          lokalizacja,
-          dzial,
-          segment,
-          numer,
-          data_wystawienia,
-          termin,
-          brutto,
-          kontr_nazwa,
-          kontr_adres,
-          kontr_kraj,
-          kontr_NIP,
-          kontr_ID,
-          zgoda,
-          ile,
-          kredyt,
-          sposob_zaplaty,
-        ]
-      );
-    }
+//       await connect_SQL.query(
+//         "INSERT INTO trade_credit_data (lokalizacja, dzial, segment, numer, data_wystawienia, termin, brutto, kontrahent_nazwa, kontrahent_adres, kontrahent_kraj, kontrahent_nip, kontrahent_id, zgoda_na_platnosci_opoznione, ilosc_dni_przelew, dopuszczalny_kredyt, sposob_zaplaty) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+//         [
+//           lokalizacja,
+//           dzial,
+//           segment,
+//           numer,
+//           data_wystawienia,
+//           termin,
+//           brutto,
+//           kontr_nazwa,
+//           kontr_adres,
+//           kontr_kraj,
+//           kontr_NIP,
+//           kontr_ID,
+//           zgoda,
+//           ile,
+//           kredyt,
+//           sposob_zaplaty,
+//         ]
+//       );
+//     }
 
-    console.log("finish");
-    res.status(201).json({ message: "Documents are updated" });
-  } catch (error) {
-    logEvents(
-      `documentsController, settlementsFileCreditTrade: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     console.log("finish");
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, settlementsFileCreditTrade: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // funkcja chwilowa do dodania uzuepłenionych do Kredytu Kupieckiego
-const addDataToCreditTrade = async (rows, res) => {
-  try {
-    if (
-      !("KONTRAHENT_ID" in rows[0]) ||
-      !("KONTR_NAZWA" in rows[0]) ||
-      !("KONTR_NIP" in rows[0]) ||
-      !("0BSZAR" in rows[0]) ||
-      !("FORMA PŁATNOŚCI (WSKAZUJE BIZNES)" in rows[0]) ||
-      !("TERMIN PŁATNOŚCI" in rows[0]) ||
-      !("CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)" in rows[0]) ||
-      !("ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI" in rows[0]) ||
-      !(" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) " in rows[0])
-    ) {
-      console.log("złe dane");
-      return res.status(500).json({ error: "Error file" });
-    }
-    for (const row of rows) {
-      if (
-        row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"] ||
-        row["TERMIN PŁATNOŚCI"] ||
-        row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"] ||
-        row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"] ||
-        row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "]
-      ) {
-        // console.log(
-        //   row["KONTRAHENT_ID"],
-        //   row["KONTR_NAZWA"],
-        //   row["KONTR_NIP"],
-        //   row["0BSZAR"],
-        //   row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"],
-        //   row["TERMIN PŁATNOŚCI"],
-        //   row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"],
-        //   row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"],
-        //   row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "]
-        // );
+// const addDataToCreditTrade = async (rows, res) => {
+//   try {
+//     if (
+//       !("KONTRAHENT_ID" in rows[0]) ||
+//       !("KONTR_NAZWA" in rows[0]) ||
+//       !("KONTR_NIP" in rows[0]) ||
+//       !("0BSZAR" in rows[0]) ||
+//       !("FORMA PŁATNOŚCI (WSKAZUJE BIZNES)" in rows[0]) ||
+//       !("TERMIN PŁATNOŚCI" in rows[0]) ||
+//       !("CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)" in rows[0]) ||
+//       !("ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI" in rows[0]) ||
+//       !(" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) " in rows[0])
+//     ) {
+//       console.log("złe dane");
+//       return res.status(500).json({ error: "Error file" });
+//     }
+//     for (const row of rows) {
+//       if (
+//         row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"] ||
+//         row["TERMIN PŁATNOŚCI"] ||
+//         row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"] ||
+//         row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"] ||
+//         row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "]
+//       ) {
+//         // console.log(
+//         //   row["KONTRAHENT_ID"],
+//         //   row["KONTR_NAZWA"],
+//         //   row["KONTR_NIP"],
+//         //   row["0BSZAR"],
+//         //   row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"],
+//         //   row["TERMIN PŁATNOŚCI"],
+//         //   row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"],
+//         //   row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"],
+//         //   row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "]
+//         // );
 
-        await connect_SQL.query(
-          "INSERT INTO area_data_credit_trade (kontr_id, kontr_nazwa, kontr_nip, area, forma_plat, termin_plat, biznes_zezwala, ile_dni, ile_kredyt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [
-            row["KONTRAHENT_ID"],
-            row["KONTR_NAZWA"],
-            row["KONTR_NIP"],
-            row["0BSZAR"],
-            row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"],
-            row["TERMIN PŁATNOŚCI"],
-            row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"],
-            row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"],
-            row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "],
-          ]
-        );
-      }
-    }
-    res.end();
-  } catch (err) {
-    console.error(err);
-  }
-};
+//         await connect_SQL.query(
+//           "INSERT INTO area_data_credit_trade (kontr_id, kontr_nazwa, kontr_nip, area, forma_plat, termin_plat, biznes_zezwala, ile_dni, ile_kredyt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+//           [
+//             row["KONTRAHENT_ID"],
+//             row["KONTR_NAZWA"],
+//             row["KONTR_NIP"],
+//             row["0BSZAR"],
+//             row["FORMA PŁATNOŚCI (WSKAZUJE BIZNES)"],
+//             row["TERMIN PŁATNOŚCI"],
+//             row["CZY BIZNES ZEZWALA NA PŁATNOŚCI OPÓŹNIONE (TAK /NIE)"],
+//             row["ILOŚC DNI OPÓŹNIONEJ PŁATNOŚCI"],
+//             row[" DOPUSZCZALNY KREDYT (KWOTĘ WSKAZUJE BIZNES) "],
+//           ]
+//         );
+//       }
+//     }
+//     res.end();
+//   } catch (err) {
+//     console.error(err);
+//   }
+// };
 
-// SQL dodaje opisy rozrachunków z pliku
-const rubiconFile = async (rows, res) => {
-  if (
-    !('Faktura nr' in rows[0]) ||
-    !('Status aktualny' in rows[0]) ||
-    !('data przeniesienia<br>do WP' in rows[0]) ||
-    !('Firma zewnętrzna' in rows[0])
-  ) {
-    return res.status(500).json({ error: "Error file" });
-  }
-  try {
-    const filteredFile = rows.filter(item => item['data przeniesienia<br>do WP']);
+// SQL dodaje dane z pliku rubicon
+// const rubiconFile = async (rows, res) => {
+//   if (
+//     !('Faktura nr' in rows[0]) ||
+//     !('Status aktualny' in rows[0]) ||
+//     !('data przeniesienia<br>do WP' in rows[0]) ||
+//     !('Firma zewnętrzna' in rows[0])
+//   ) {
+//     return res.status(500).json({ error: "Error file" });
+//   }
+//   try {
+//     const filteredFile = rows.filter(item => item['data przeniesienia<br>do WP']);
 
-    const rubiconData = filteredFile.map(item => [
-      item['Faktura nr'],
-      item['Status aktualny'],
-      item['data przeniesienia<br>do WP'],
-      item['Firma zewnętrzna']
-    ]);
-    await connect_SQL.query("TRUNCATE TABLE rubicon");
+//     const rubiconData = filteredFile.map(item => [
+//       item['Faktura nr'],
+//       item['Status aktualny'],
+//       item['data przeniesienia<br>do WP'],
+//       item['Firma zewnętrzna']
+//     ]);
+//     await connect_SQL.query("TRUNCATE TABLE rubicon");
 
-    const query = `
-         INSERT IGNORE INTO rubicon
-           ( NUMER_FV, STATUS_AKTUALNY, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA ) 
-         VALUES 
-           ${rubiconData.map(() => "(?, ?, ?, ?)").join(", ")}
-       `;
-    await connect_SQL.query(query, rubiconData.flat());
+//     const query = `
+//          INSERT IGNORE INTO rubicon
+//            ( NUMER_FV, STATUS_AKTUALNY, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA ) 
+//          VALUES 
+//            ${rubiconData.map(() => "(?, ?, ?, ?)").join(", ")}
+//        `;
+//     await connect_SQL.query(query, rubiconData.flat());
 
-    res.end();
-  } catch (error) {
-    logEvents(
-      `documentsController, rubiconFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.end();
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, rubiconFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //chwilowa funckja do naprawienia danych w DB
-const repairFile = async (rows, res) => {
-  try {
-    console.log("repair");
-  } catch (error) {
-    logEvents(
-      `documentsController, repairFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error("Error while updating the document", error);
-  }
+// const repairFile = async (rows, res) => {
+//   try {
+//     console.log("repair");
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, repairFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error("Error while updating the document", error);
+//   }
 
-  res.end();
-};
+//   res.end();
+// };
 
 // dodawnie danych do bazy z pliku excel
-const documentsFromFile = async (req, res) => {
-  const { type } = req.params;
-  if (!req.file) {
-    return res.status(400).json({ error: "Not delivered file" });
-  }
-  try {
-    const buffer = req.file.buffer;
-    const data = new Uint8Array(buffer);
+// const documentsFromFile = async (req, res) => {
+//   const { type } = req.params;
+//   if (!req.file) {
+//     return res.status(400).json({ error: "Not delivered file" });
+//   }
+//   try {
+//     const buffer = req.file.buffer;
+//     const data = new Uint8Array(buffer);
 
-    if (!isExcelFile(data)) {
-      return res.status(500).json({ error: "Invalid file" });
-    }
-    const workbook = read(buffer, { type: "buffer" });
-    const workSheetName = workbook.SheetNames[0];
-    const workSheet = workbook.Sheets[workSheetName];
-    const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
+//     if (!isExcelFile(data)) {
+//       return res.status(500).json({ error: "Invalid file" });
+//     }
+//     const workbook = read(buffer, { type: "buffer" });
+//     const workSheetName = workbook.SheetNames[0];
+//     const workSheet = workbook.Sheets[workSheetName];
+//     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
 
-    if (type === "becared") {
-      return becaredFile(rows, res);
-    }
-    // else if (type === "AS") {
-    //   return oldDataFromAs(rows, res);
-    // }
-    // else if (type === "AS") {
-    //   return ASFile(rows, res);
-    // }
-    else if (type === "settlements") {
-      return settlementsFile(rows, res);
-    } else if (type === "settlements_credit_trade") {
-      return settlementsFileCreditTrade(rows, res);
-    } else if (type === "data_credit_trade") {
-      return dataFileCreditTrade(rows, res);
-    } else if (type === "add_data_credit_trade") {
-      return addDataToCreditTrade(rows, res);
-    } else if (type === "rubicon") {
-      return rubiconFile(rows, res);
-    } else if (type === "test") {
-      return repairFile(rows, res);
-    } else {
-      return res.status(500).json({ error: "Invalid file" });
-    }
-  } catch (error) {
-    logEvents(
-      `documentsController, documentsFromFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     if (type === "becared") {
+//       return becaredFile(rows, res);
+//     } else if (type === "settlements") {
+//       return settlementsFile(rows, res);
+//     } else if (type === "settlements_credit_trade") {
+//       return settlementsFileCreditTrade(rows, res);
+//     } else if (type === "data_credit_trade") {
+//       return dataFileCreditTrade(rows, res);
+//     } else if (type === "add_data_credit_trade") {
+//       return addDataToCreditTrade(rows, res);
+//     } else if (type === "rubicon") {
+//       return rubiconFile(rows, res);
+//     } else if (type === "test") {
+//       return repairFile(rows, res);
+//     } else {
+//       return res.status(500).json({ error: "Invalid file" });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, documentsFromFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //SQL zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
+
+// funkcja zmieniająca dane w poszczególnym dokumncie (editRowTable)
 const changeSingleDocument = async (req, res) => {
   const { id_document, documentItem } = req.body;
   try {
@@ -1105,12 +1095,11 @@ const getTradeCreditData = async (req, res) => {
 
 module.exports = {
   getAllDocuments,
-  documentsFromFile,
+  // documentsFromFile,
   changeSingleDocument,
   getDataTable,
   getDataDocuments,
   getSingleDocument,
   getColumnsName,
   getTradeCreditData,
-  addDataToCreditTrade,
 };

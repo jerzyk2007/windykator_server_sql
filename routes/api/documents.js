@@ -5,8 +5,8 @@ const Documents = require("../../controllers/documentsController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
-const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
-const upload = multer({ storage: storage });
+// const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
+// const upload = multer({ storage: storage });
 
 // pobiera wszytskie faktury wg uprawnień oraz actula/archive/all
 router
@@ -21,13 +21,13 @@ router
 //   .route("/get-columns")
 //   .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL), Documents.getColumns);
 
-router
-  .route("/send-documents/:type")
-  .post(
-    verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    upload.single("excelFile"),
-    Documents.documentsFromFile
-  );
+// router
+//   .route("/send-documents/:type")
+//   .post(
+//     verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+//     upload.single("excelFile"),
+//     Documents.documentsFromFile
+//   );
 
 // pobiera wszytskie faktury wg uprawnień oraz actula/archive/all oraz ustawienia tabeli
 router
