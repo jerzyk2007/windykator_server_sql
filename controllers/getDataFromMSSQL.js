@@ -50,8 +50,7 @@ GROUP BY
        fv.[NUMER],
 	   CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
 	   CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
-       pos.[NAZWA],
-       fv.[KONTR_NAZWA],
+           fv.[KONTR_NAZWA],
        fv.[KONTR_NIP],
        fv.[NR_SZKODY],
        fv.[NR_AUTORYZACJI],
@@ -66,7 +65,6 @@ GROUP BY
 
   try {
     const documents = await msSqlQuery(query);
-    console.log(documents[0]);
     // dodaje nazwy działów
     const addDep = addDepartment(documents);
 
@@ -92,7 +90,7 @@ GROUP BY
           doc.DATA_WYSTAWIENIA,
           doc.DATA_ZAPLATA,
           doc.KONTR_NAZWA,
-          doc.PRZYGOTOWAL,
+          doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
           doc.REJESTRACJA,
           doc.NR_SZKODY || null,
           doc.UWAGI,
@@ -162,6 +160,7 @@ const updateCarReleaseDates = async () => {
 
 const updateSettlements = async () => {
   try {
+
     // const queryMsSql = `
     // SELECT 
     //      [FakturaNumer], 
@@ -172,102 +171,129 @@ const updateSettlements = async () => {
 
     // const settlementsValue = await msSqlQuery(queryMsSql);
 
+
     // await connect_SQL.query("TRUNCATE TABLE settlements");
 
     // // Teraz przygotuj dane do wstawienia
     // const values = settlementsValue.map(item => [
-    //   item.NUMER_FV,
-    //   "2024-01-01",
+    //   item.FakturaNumer,
     //   item['WartośćObecnaAS3'],
-    //   0
     // ]);
 
     // // Przygotowanie zapytania SQL z wieloma wartościami
     // const query = `
     //      INSERT IGNORE INTO settlements
-    //        ( NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) 
+    //        ( NUMER_FV,  NALEZNOSC) 
     //      VALUES 
-    //        ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+    //        ${values.map(() => "(?, ?)").join(", ")}
     //    `;
     // await connect_SQL.query(query, values.flat());
+
+
+
+    // // wyszukuje faktury zaliczkowe
+    // const queryMsSqlZAL = `
+    // SELECT 
+    //     NUMER_FV,
+    //     NALEZNOSCI
+    // FROM (
+    //     SELECT 
+    //         CASE 
+    //             WHEN fv.[NUMER] IS NULL THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS] + ' ') - 1)
+    //             ELSE fv.[NUMER]
+    //         END AS NUMER_FV,
+    //         CASE 
+    //             WHEN tr.[WARTOSC_PLN_SALDO] < 0 THEN -tr.[WARTOSC_PLN_SALDO]
+    //             ELSE NULL
+    //         END AS NALEZNOSCI,
+    //         CASE 
+    //             WHEN tr.[WARTOSC_PLN_SALDO] > 0 THEN tr.[WARTOSC_PLN_SALDO]
+    //             ELSE NULL
+    //         END AS ZOBOWIAZANIA,
+    //         rozl.*,
+    //         fv.[NUMER]
+    //     FROM 
+    //         [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr
+    //     LEFT JOIN 
+    //         [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+    //     LEFT JOIN 
+    //         [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID]
+    // ) AS subquery
+    // WHERE 
+    //     [NUMER] LIKE '%ZAL%' 
+    //     AND NALEZNOSCI != 0
+    //   `;
+
+    // const settlementsZAL = await msSqlQuery(queryMsSqlZAL);
+
+    // // Teraz przygotuj dane do wstawienia
+    // const valuesZAL = settlementsZAL.map(item => [
+    //   item.NUMER_FV,
+    //   item.NALEZNOSCI,
+    // ]);
+
+    // const queryZal = `
+    //     INSERT IGNORE INTO settlements
+    //       ( NUMER_FV,  NALEZNOSC) 
+    //     VALUES 
+    //       ${valuesZAL.map(() => "( ?, ?)").join(", ")}
+    //   `;
+    // await connect_SQL.query(queryZal, valuesZAL.flat());
+
     const queryMsSql = `
-    SELECT 
-         [FakturaNumer], 
-         [WartośćObecna Symfonia], 
-         [WartośćObecnaAS3]
-           FROM [WINDYKACJA].[dbo].[ZestawienieAllBINew]
-    `;
+    DECLARE @Termin DATETIME = '2012-11-29'; -- Przykładowe wartości
+DECLARE @IS_BILANS BIT = 1;
+DECLARE @IS_ROZLICZONY BIT = 0;
+DECLARE @DATA_KONIEC DATETIME = GETDATE();
+
+SELECT 
+   T.OPIS,
+ T.WARTOSC_SALDO
+FROM [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] T WITH(NOLOCK)
+WHERE T.IS_BILANS = @IS_BILANS
+ AND T.IS_ROZLICZONY = @IS_ROZLICZONY
+ AND T.DATA <= @DATA_KONIEC
+ AND T.WARTOSC_SALDO IS NOT NULL
+ AND T.TERMIN IS NOT NULL
+       `;
 
     const settlementsValue = await msSqlQuery(queryMsSql);
 
+    const filteredData = settlementsValue.map(item => {
+      const cleanDoc = item.OPIS.split(" ")[0];
+      return {
+        NUMER_FV: cleanDoc,
+        DO_ROZLICZENIA: -(item.WARTOSC_SALDO)
+      };
+    });
 
+    const checkDuplicate = Object.values(filteredData.reduce((acc, item) => {
+      // Jeśli numer FV już istnieje w akumulatorze, dodaj DO_ROZLICZENIA
+      if (acc[item.NUMER_FV]) {
+        acc[item.NUMER_FV].DO_ROZLICZENIA += item.DO_ROZLICZENIA;
+      } else {
+        // Jeśli nie, dodaj nowy rekord
+        acc[item.NUMER_FV] = { NUMER_FV: item.NUMER_FV, DO_ROZLICZENIA: item.DO_ROZLICZENIA };
+      }
+      return acc;
+    }, {}));
+    // Najpierw wyczyść tabelę settlements_description
     await connect_SQL.query("TRUNCATE TABLE settlements");
 
     // Teraz przygotuj dane do wstawienia
-    const values = settlementsValue.map(item => [
-      item.FakturaNumer,
-      item['WartośćObecnaAS3'],
-    ]);
-
-    // Przygotowanie zapytania SQL z wieloma wartościami
-    const query = `
-         INSERT IGNORE INTO settlements
-           ( NUMER_FV,  NALEZNOSC) 
-         VALUES 
-           ${values.map(() => "(?, ?)").join(", ")}
-       `;
-    await connect_SQL.query(query, values.flat());
-
-
-
-    // wyszukuje faktury zaliczkowe
-    const queryMsSqlZAL = `
-    SELECT 
-        NUMER_FV,
-        NALEZNOSCI
-    FROM (
-        SELECT 
-            CASE 
-                WHEN fv.[NUMER] IS NULL THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS] + ' ') - 1)
-                ELSE fv.[NUMER]
-            END AS NUMER_FV,
-            CASE 
-                WHEN tr.[WARTOSC_PLN_SALDO] < 0 THEN -tr.[WARTOSC_PLN_SALDO]
-                ELSE NULL
-            END AS NALEZNOSCI,
-            CASE 
-                WHEN tr.[WARTOSC_PLN_SALDO] > 0 THEN tr.[WARTOSC_PLN_SALDO]
-                ELSE NULL
-            END AS ZOBOWIAZANIA,
-            rozl.*,
-            fv.[NUMER]
-        FROM 
-            [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr
-        LEFT JOIN 
-            [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-        LEFT JOIN 
-            [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID]
-    ) AS subquery
-    WHERE 
-        [NUMER] LIKE '%ZAL%' 
-        AND NALEZNOSCI != 0
-      `;
-
-    const settlementsZAL = await msSqlQuery(queryMsSqlZAL);
-
-    // Teraz przygotuj dane do wstawienia
-    const valuesZAL = settlementsZAL.map(item => [
+    const values = checkDuplicate.map(item => [
       item.NUMER_FV,
-      item.NALEZNOSCI,
+      item.DO_ROZLICZENIA
     ]);
 
-    const queryZal = `
-        INSERT IGNORE INTO settlements
-          ( NUMER_FV,  NALEZNOSC) 
-        VALUES 
-          ${valuesZAL.map(() => "( ?, ?)").join(", ")}
-      `;
-    await connect_SQL.query(queryZal, valuesZAL.flat());
+    const query = `
+     INSERT IGNORE INTO settlements
+       ( NUMER_FV,  NALEZNOSC) 
+     VALUES 
+       ${values.map(() => "(?, ?)").join(", ")}
+   `;
+    // Wykonanie zapytania INSERT
+    await connect_SQL.query(query, values.flat());
 
     return true;
   }
