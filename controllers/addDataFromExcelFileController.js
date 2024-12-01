@@ -1,6 +1,7 @@
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
+const { checkDate, checkTime } = require('./manageDocumentAddition');
 
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
@@ -132,22 +133,6 @@ const settlementsFile = async (rows, res) => {
     // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
 
-    // dodaje date aktualizacji rozrachunków
-    const checkDate = (data) => {
-      const year = data.getFullYear();
-      const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
-      const day = String(data.getDate()).padStart(2, '0');
-      const yearNow = `${year}-${month}-${day}`;
-      return yearNow;
-    };
-    const checkTime = (data) => {
-      const hour = String(data.getHours()).padStart(2, '0');
-      const min = String(data.getMinutes()).padStart(2, '0');
-      const timeNow = `${hour}:${min}`;
-
-      return timeNow;
-    };
-
     await connect_SQL.query(
       "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
       [
@@ -160,6 +145,15 @@ const settlementsFile = async (rows, res) => {
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Błąd aktualizacji",
+        'Rozrachunki'
+      ]);
+
     logEvents(
       `addDataFromExcelFileController, settlementsFile: ${error}`,
       "reqServerErrors.txt"
@@ -226,8 +220,25 @@ const becaredFile = async (rows, res) => {
       }
     }
 
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Zaktualizowano.",
+        'BeCared'
+      ]);
+
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Błąd aktualizacji",
+        'BeCared'
+      ]);
     logEvents(
       `documentsController, becaredFile: ${error}`,
       "reqServerErrors.txt"
@@ -291,6 +302,16 @@ const rubiconFile = async (rows, res) => {
        `;
     await connect_SQL.query(query, rubiconData.flat());
 
+
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Zaktualizowano.",
+        'Rubicon'
+      ]);
+
     // const filteredFile = rows.filter(item => item['data przeniesienia<br>do WP']);
 
     // const rubiconData = filteredFile.map(item => [
@@ -311,6 +332,15 @@ const rubiconFile = async (rows, res) => {
 
     res.end();
   } catch (error) {
+
+    await connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Błąd aktualizacji",
+        'Rubicon'
+      ]);
     logEvents(
       `documentsController, rubiconFile: ${error}`,
       "reqServerErrors.txt"

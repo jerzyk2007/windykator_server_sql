@@ -2,9 +2,7 @@ const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const cron = require('node-cron');
 const { logEvents } = require("../middleware/logEvents");
 const { addDepartment } = require('./manageDocumentAddition');
-
-
-// const query = `SELECT fv.[NUMER], fv.[KOREKTA_NUMER], fv.[DATA_WYSTAWIENIA], fv.[DATA_ZAPLATA], fv.[KONTR_NAZWA], fv.[KONTR_NIP], fv.[WARTOSC_NETTO], fv.[WARTOSC_BRUTTO], fv.[NR_SZKODY], fv.[NR_AUTORYZACJI], fv.[UWAGI],fv.[DATA_WYDANIA], u.[NAZWA], u.[IMIE] FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS u ON fv.[MYUSER_PRZYGOTOWAL_ID] = u.[MYUSER_ID] WHERE fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}' AND fv.[NUMER]!='POTEM' `;
+const { checkDate, checkTime } = require('./manageDocumentAddition');
 
 const today = new Date();
 today.setDate(today.getDate() - 2); // Odejmujemy 2 dni
@@ -407,33 +405,36 @@ const updateSettlementDescription = async () => {
 
 
 const updateData = async () => {
-  const checkDate = (data) => {
-    const year = data.getFullYear();
-    const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
-    const day = String(data.getDate()).padStart(2, '0');
-    const yearNow = `${year}-${month}-${day}`;
-    return yearNow;
-  };
-  const checkTime = (data) => {
-    const hour = String(data.getHours()).padStart(2, '0');
-    const min = String(data.getMinutes()).padStart(2, '0');
-    const timeNow = `${hour}:${min}`;
+  // const checkDate = (data) => {
+  //   const year = data.getFullYear();
+  //   const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
+  //   const day = String(data.getDate()).padStart(2, '0');
+  //   const yearNow = `${year}-${month}-${day}`;
+  //   return yearNow;
+  // };
+  // const checkTime = (data) => {
+  //   const hour = String(data.getHours()).padStart(2, '0');
+  //   const min = String(data.getMinutes()).padStart(2, '0');
+  //   const timeNow = `${hour}:${min}`;
 
-    return timeNow;
-  };
+  //   return timeNow;
+  // };
   try {
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT data_name, date,  hour, update_success FROM updates"
     );
 
+    const filteredUpdatesData = getUpdatesData.filter(item => item.data_name !== 'Rubicon' && item.data_name !== 'BeCared');
 
-    const updateProgress = getUpdatesData.map(item => {
+
+    const updateProgress = filteredUpdatesData.map(item => {
       return {
         ...item,
         date: '',
         hour: '',
         update_success: "Trwa aktualizacja ..."
       };
+
     });
 
     for (const item of updateProgress) {

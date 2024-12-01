@@ -32,6 +32,26 @@ const addDepartment = (documents) => {
         .filter(Boolean); // Usuwa undefined z tablicy
 };
 
+// zamiana daty na format yyyy-mm-dd
+const checkDate = (data) => {
+    const year = data.getFullYear();
+    const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
+    const day = String(data.getDate()).padStart(2, '0');
+    const yearNow = `${year}-${month}-${day}`;
+    return yearNow;
+};
+
+// zamiana godziny na format hh-mm
+const checkTime = (data) => {
+    const hour = String(data.getHours()).padStart(2, '0');
+    const min = String(data.getMinutes()).padStart(2, '0');
+    const timeNow = `${hour}:${min}`;
+
+    return timeNow;
+};
+
 module.exports = {
-    addDepartment
+    addDepartment,
+    checkDate,
+    checkTime
 };
