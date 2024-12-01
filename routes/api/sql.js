@@ -8,41 +8,41 @@ const SQLController = require("../../controllers/sqlController");
 const router = express.Router();
 
 // copy users from mongo t omysql
-router
-  .route("/copyUsers")
-  .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyUsersToMySQL);
+// router
+//   .route("/copyUsers")
+//   .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyUsersToMySQL);
 
-router
-  .route("/copySettings")
-  .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copySettingsToMySQL);
-
-
-router
-  .route("/copyDocuments")
-  .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyDocumentsToMySQL);
+// router
+//   .route("/copySettings")
+//   .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copySettingsToMySQL);
 
 
-router
-  .route("/copyDocuments_Actions")
-  .get(
-    verifyRoles(ROLES_LIST.SuperAdmin),
-    SQLController.copyDocuments_ActionsToMySQL
-  );
+// router
+//   .route("/copyDocuments")
+//   .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyDocumentsToMySQL);
 
-router
-  .route("/repair-departments")
-  .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.repairDepartments);
 
-router
-  .route("/copy-items-departments")
-  .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyItemsDepartments);
+// router
+//   .route("/copyDocuments_Actions")
+//   .get(
+//     verifyRoles(ROLES_LIST.SuperAdmin),
+//     SQLController.copyDocuments_ActionsToMySQL
+//   );
 
-router
-  .route("/copy-prepared-items")
-  .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyPreparedItems);
+// router
+//   .route("/repair-departments")
+//   .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.repairDepartments);
 
-router
-  .route("/change-fullBrutto-fullNetto")
-  .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.fullBruttoFullNetto);
+// router
+//   .route("/copy-items-departments")
+//   .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyItemsDepartments);
+
+// router
+//   .route("/copy-prepared-items")
+//   .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.copyPreparedItems);
+
+// router
+//   .route("/change-fullBrutto-fullNetto")
+//   .get(verifyRoles(ROLES_LIST.SuperAdmin), SQLController.fullBruttoFullNetto);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-const Contact = require('../model/Contact');
+// const Contact = require('../model/Contact');
 const { read, utils } = require('xlsx');
 const { logEvents } = require('../middleware/logEvents');
 
@@ -26,12 +26,12 @@ const addNewPhones = (file, db) => {
 // funkcja uzupełnia maile i numery telefonów w już istniejącym kontakcie w bazie
 const addMailAndPhoneToExistingData = async (data, info) => {
     let result = null;
-    if (info === "NIP") {
-        result = await Contact.findOne({ NIP: data.NIP });
-    }
-    else if (info === "nameWithoutNIP") {
-        result = await Contact.findOne({ name: data.name });
-    }
+    // if (info === "NIP") {
+    //     result = await Contact.findOne({ NIP: data.NIP });
+    // }
+    // else if (info === "nameWithoutNIP") {
+    //     result = await Contact.findOne({ name: data.name });
+    // }
     const newEmailsFromFile = data.emails.length ? data.emails.split(';').map((email) => email.trim()) : [];
     const emailsFromDB = result.emails.map(mail => { return mail.email; });
     const id = result._id;
@@ -46,10 +46,10 @@ const addMailAndPhoneToExistingData = async (data, info) => {
                         verify: data.verify ? true : false
                     };
                 });
-                await Contact.updateOne(
-                    { _id: id },
-                    { $push: { emails: { $each: completeEmails } } }
-                );
+                // await Contact.updateOne(
+                //     { _id: id },
+                //     { $push: { emails: { $each: completeEmails } } }
+                // );
             }
         }
         const newPhonesFromFile = data.phones.length ? data.phones.split(';').map((phone) => phone.trim()) : [];
@@ -66,10 +66,10 @@ const addMailAndPhoneToExistingData = async (data, info) => {
                         verify: data.verify ? true : false
                     };
                 });
-                await Contact.updateOne(
-                    { _id: id },
-                    { $push: { phones: { $each: completePhones } } }
-                );
+                // await Contact.updateOne(
+                //     { _id: id },
+                //     { $push: { phones: { $each: completePhones } } }
+                // );
             }
         }
     }
@@ -106,7 +106,7 @@ const addNewDataToDataBase = async (data) => {
         }
 
         delete data.verify;
-        await Contact.create(data);
+        // await Contact.create(data);
     } catch (error) {
         logEvents(`contactsFileController, addNewDataToDataBase: ${error}`, 'reqServerErrors.txt');
         console.error(error);
@@ -144,27 +144,27 @@ const addManyContactsFromExcel = async (req, res) => {
             };
 
             let checkNewContact = false;
-            if (processedContact.NIP) {
-                const resultEmail = await Contact.findOne({ NIP: processedContact.NIP });
-                if (!resultEmail) {
-                    checkNewContact = true;
-                } else {
-                    await addMailAndPhoneToExistingData(processedContact, "NIP");
-                }
-            }
+            // if (processedContact.NIP) {
+            //     const resultEmail = await Contact.findOne({ NIP: processedContact.NIP });
+            //     if (!resultEmail) {
+            //         checkNewContact = true;
+            //     } else {
+            //         await addMailAndPhoneToExistingData(processedContact, "NIP");
+            //     }
+            // }
 
             if (processedContact.name && !processedContact.NIP) {
-                const resultEmail = await Contact.findOne({ name: processedContact.name });
-                if (!resultEmail) {
-                    checkNewContact = true;
-                } else {
-                    await addMailAndPhoneToExistingData(processedContact, "nameWithoutNIP");
-                }
+                // const resultEmail = await Contact.findOne({ name: processedContact.name });
+                // if (!resultEmail) {
+                //     checkNewContact = true;
+                // } else {
+                //     await addMailAndPhoneToExistingData(processedContact, "nameWithoutNIP");
+                // }
             }
 
-            if (checkNewContact) {
-                await addNewDataToDataBase(processedContact);
-            }
+            // if (checkNewContact) {
+            //     await addNewDataToDataBase(processedContact);
+            // }
         }
         res.status(200).json({ message: `Kontakty zostały zaktualizowane.` });
 

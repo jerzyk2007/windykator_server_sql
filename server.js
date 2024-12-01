@@ -54,7 +54,7 @@ app.use("/user", require("./routes/api/users"));
 app.use("/raport", require("./routes/api/raports"));
 app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
-app.use("/sql", require("./routes/api/sql"));
+// app.use("/sql", require("./routes/api/sql"));
 app.use("/repair", require("./routes/api/repair"));
 app.use("/add-data", require("./routes/api/addDataFromExcelFile"));
 
@@ -79,8 +79,9 @@ const options = {
 // });
 
 // // connect to mongoDB
-connectMongoDB();
+// connectMongoDB();
 
+//połączenie z mongo
 // mongoose.connection.once("open", () => {
 //   const server = https
 //     .createServer(options, app)
@@ -92,9 +93,27 @@ connectMongoDB();
 //     });
 // });
 
-mongoose.connection.once("open", () => {
-  console.log("Connected to mongoDB");
-  app.listen(3500, () => {
-    console.log(`Server is listenig on port 3500`);
-  });
+//połączenie z mongo
+// mongoose.connection.once("open", () => {
+//   console.log("Connected to mongoDB");
+//   app.listen(3500, () => {
+//     console.log(`Server is listenig on port 3500`);
+//   });
+// });
+
+
+//połączenie bez mongo
+// https
+//   .createServer(options, app)
+//   .listen(process.env.PORT, "0.0.0.0", function () {
+//     console.log(
+//       "Express server listening on port " +
+//       `${process.env.PORT ? process.env.PORT : 3000}`
+//     );
+//   });
+
+// połaczenie bez mongo
+app.listen(3500, () => {
+  console.log(`Server is listenig on port 3500`);
 });
+

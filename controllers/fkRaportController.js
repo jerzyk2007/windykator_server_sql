@@ -1,5 +1,5 @@
 // const FKRaport = require("../model/FKRaport");
-const { FKRaport, FKDataRaport } = require("../model/FKRaport");
+// const { FKRaport, FKDataRaport } = require("../model/FKRaport");
 const { connect_SQL } = require("../config/dbConn");
 
 
@@ -142,61 +142,62 @@ const getData = async (req, res) => {
   try {
     // const result = await FKRaport.find({});
 
-    const result = await FKDataRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          data: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
+    // const result = await FKDataRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0, // Wyłączamy pole _id z wyniku
+    //       data: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
+    //     },
+    //   },
+    // ]);
 
-    const preparedDataWithoutId = result[0].data.map(
-      ({ _id, ...rest }) => rest
-    );
-    let dataRaport = [...preparedDataWithoutId];
+    // const preparedDataWithoutId = result[0].data.map(
+    //   ({ _id, ...rest }) => rest
+    // );
+    // let dataRaport = [...preparedDataWithoutId];
 
-    if (filter.business !== "201203") {
-      dataRaport = dataRaport.filter(
-        (item) => item.RODZAJ_KONTA === Number(filter.business)
-      );
-    }
+    // if (filter.business !== "201203") {
+    //   dataRaport = dataRaport.filter(
+    //     (item) => item.RODZAJ_KONTA === Number(filter.business)
+    //   );
+    // }
 
-    if (filter.payment !== "Wszystko") {
-      if (
-        filter.payment === "Przeterminowane" ||
-        filter.payment === "Przeterminowane > 8"
-      ) {
+    // if (filter.payment !== "Wszystko") {
+    //   if (
+    //     filter.payment === "Przeterminowane" ||
+    //     filter.payment === "Przeterminowane > 8"
+    //   ) {
 
-        dataRaport = dataRaport.filter(
-          (item) => item.PRZETER_NIEPRZETER === "Przeterminowane"
+    //     dataRaport = dataRaport.filter(
+    //       (item) => item.PRZETER_NIEPRZETER === "Przeterminowane"
 
-        );
+    //     );
 
-      } else if (filter.payment === "Nieprzeterminowane") {
-        dataRaport = dataRaport.filter(
-          (item) => item.PRZETER_NIEPRZETER === "Nieprzeterminowane"
-        );
-      }
-    }
+    //   } else if (filter.payment === "Nieprzeterminowane") {
+    //     dataRaport = dataRaport.filter(
+    //       (item) => item.PRZETER_NIEPRZETER === "Nieprzeterminowane"
+    //     );
+    //   }
+    // }
 
-    if (filter.actions !== "All") {
-      if (filter.actions === "Tak") {
-        dataRaport = dataRaport.filter(
-          (item) => item.CZY_W_KANCELARI === "TAK"
-        );
-      }
+    // if (filter.actions !== "All") {
+    //   if (filter.actions === "Tak") {
+    //     dataRaport = dataRaport.filter(
+    //       (item) => item.CZY_W_KANCELARI === "TAK"
+    //     );
+    //   }
 
-      if (filter.actions === "Nie") {
-        dataRaport = dataRaport.filter(
-          (item) => item.CZY_W_KANCELARI === "NIE"
-        );
-      }
-    } else if (filter.actions === "All" && filter.raport === "lawyerRaport") {
-      dataRaport = dataRaport.filter((item) => item.CZY_W_KANCELARI === "TAK");
-    }
+    //   if (filter.actions === "Nie") {
+    //     dataRaport = dataRaport.filter(
+    //       (item) => item.CZY_W_KANCELARI === "NIE"
+    //     );
+    //   }
+    // } else if (filter.actions === "All" && filter.raport === "lawyerRaport") {
+    //   dataRaport = dataRaport.filter((item) => item.CZY_W_KANCELARI === "TAK");
+    // }
 
-    res.json(dataRaport);
+    // res.json(dataRaport);
+    res.end();
   } catch (error) {
     logEvents(`fkRaportController, getData: ${error}`, "reqServerErrors.txt");
     console.error(error);
@@ -207,30 +208,31 @@ const getData = async (req, res) => {
 // pobiera wszystkie klucze z pierwszego documentu żeby mozna było nazwy, filtry i ustawienia kolumn edytować, głównie chodzi o nowo dodane kolumny
 const getNewColumns = async (req, res) => {
   try {
-    // const result = await FKRaport.findOne();
-    const result = await FKDataRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          FKDataRaports: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
+    // // const result = await FKRaport.findOne();
+    // const result = await FKDataRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0, // Wyłączamy pole _id z wyniku
+    //       FKDataRaports: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
+    //     },
+    //   },
+    // ]);
 
-    const firstDocument = result[0].FKDataRaports[0];
+    // const firstDocument = result[0].FKDataRaports[0];
 
-    if (firstDocument) {
-      // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
-      const keysArray = Object.keys(firstDocument);
+    // if (firstDocument) {
+    //   // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
+    //   const keysArray = Object.keys(firstDocument);
 
-      const newArray = keysArray.filter(
-        (item) => item !== "_id" && item !== "__v"
-      );
+    //   const newArray = keysArray.filter(
+    //     (item) => item !== "_id" && item !== "__v"
+    //   );
 
-      res.json(newArray);
-    } else {
-      return res.status(400).json({ error: "Empty collection." });
-    }
+    //   res.json(newArray);
+    // } else {
+    //   return res.status(400).json({ error: "Empty collection." });
+    // }
+    res.end();
   } catch (error) {
     logEvents(
       `fkRaportController, getNewColumns: ${error}`,
@@ -246,11 +248,11 @@ const changeColumns = async (req, res) => {
   const { columns } = req.body;
   const updateColumns = { tableColumns: columns };
   try {
-    await FKRaport.updateOne(
-      {},
-      { $set: updateColumns },
-      { new: true, upsert: true }
-    );
+    // await FKRaport.updateOne(
+    //   {},
+    //   { $set: updateColumns },
+    //   { new: true, upsert: true }
+    // );
 
     res.end();
   } catch (error) {
@@ -266,16 +268,17 @@ const changeColumns = async (req, res) => {
 //funkcja która pobiera kolumny które już zostały zapisane i zmodyfikowane
 const getColumns = async (req, res) => {
   try {
-    const result = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          columns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
+    // const result = await FKRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0, // Wyłączamy pole _id z wyniku
+    //       columns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
+    //     },
+    //   },
+    // ]);
 
-    res.json(result[0].columns);
+    // res.json(result[0].columns);
+    res.end();
   } catch (error) {
     logEvents(
       `fkRaportController, getColumns: ${error}`,
@@ -346,11 +349,11 @@ const deleteDataRaport = async (req, res) => {
 const saveTableSettings = async (req, res) => {
   try {
     const { tableSettings } = req.body;
-    await FKRaport.updateOne(
-      {},
-      { $set: { tableSettings } },
-      { new: true, upsert: true }
-    );
+    // await FKRaport.updateOne(
+    //   {},
+    //   { $set: { tableSettings } },
+    //   { new: true, upsert: true }
+    // );
 
     res.end();
   } catch (error) {
@@ -366,15 +369,16 @@ const saveTableSettings = async (req, res) => {
 // pobieram wcześniejsze ustawienia tabeli FK
 const getTableSettings = async (req, res) => {
   try {
-    const result = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
-    res.json(result[0].tableSettings);
+    // const result = await FKRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0, // Wyłączamy pole _id z wyniku
+    //       tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
+    //     },
+    //   },
+    // ]);
+    // res.json(result[0].tableSettings);
+    res.end();
   } catch (error) {
     logEvents(
       `fkRaportController, getTableSettings: ${error}`,
@@ -388,40 +392,41 @@ const getTableSettings = async (req, res) => {
 // funkcja zapisująca kolejnosc kolumn wyświetlanych w tabeli FK i raportach EXCEL
 const getColumnsOrder = async (req, res) => {
   try {
-    const resultTableSettings = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
+    // const resultTableSettings = await FKRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0, // Wyłączamy pole _id z wyniku
+    //       tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
+    //     },
+    //   },
+    // ]);
 
-    const resultColumnsSettings = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          tableColumns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
-        },
-      },
-    ]);
-    const tableColumns = [...resultColumnsSettings[0].tableColumns];
-    const modifiedTableColumns = tableColumns.map(
-      ({ accessorKey, header }) => ({ accessorKey, header })
-    );
-    const tableOrder = [...resultTableSettings[0].tableSettings.order];
+    // const resultColumnsSettings = await FKRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0, // Wyłączamy pole _id z wyniku
+    //       tableColumns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
+    //     },
+    //   },
+    // ]);
+    // const tableColumns = [...resultColumnsSettings[0].tableColumns];
+    // const modifiedTableColumns = tableColumns.map(
+    //   ({ accessorKey, header }) => ({ accessorKey, header })
+    // );
+    // const tableOrder = [...resultTableSettings[0].tableSettings.order];
 
-    const order = tableOrder.map((item) => {
-      const matching = modifiedTableColumns.find(
-        (match) => match.accessorKey === item
-      );
-      if (matching) {
-        return matching.header;
-      }
-      return item;
-    });
+    // const order = tableOrder.map((item) => {
+    //   const matching = modifiedTableColumns.find(
+    //     (match) => match.accessorKey === item
+    //   );
+    //   if (matching) {
+    //     return matching.header;
+    //   }
+    //   return item;
+    // });
 
-    res.json({ order, columns: modifiedTableColumns });
+    // res.json({ order, columns: modifiedTableColumns });
+    res.end();
   } catch (error) {
     logEvents(
       `fkRaportController, getColumnsOrder: ${error}`,

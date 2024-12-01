@@ -1,5 +1,5 @@
 const { connect_SQL } = require("../config/dbConn");
-const { FKRaport } = require("../model/FKRaport");
+// const { FKRaport } = require("../model/FKRaport");
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 
@@ -63,14 +63,14 @@ const getDataItems = async (req, res) => {
 // funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
 const getFKSettingsItems = async (req, res) => {
   try {
-    const result = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0,
-          data: "$items",
-        },
-      },
-    ]);
+    // const result = await FKRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0,
+    //       data: "$items",
+    //     },
+    //   },
+    // ]);
     // console.log(result);
 
     const [depResult] = await connect_SQL.query(
@@ -286,14 +286,14 @@ const savePreparedItems = async (req, res) => {
 // funkcja pobierająca kpl owner, dział, lokalizacja dla "Dopasuj dane"
 const getPreparedItems = async (req, res) => {
   try {
-    const result = await FKRaport.aggregate([
-      {
-        $project: {
-          _id: 0, // Wyłączamy pole _id z wyniku
-          preparedItemsData: 1, // Włączamy tylko pole preparedItemsData
-        },
-      },
-    ]);
+    // const result = await FKRaport.aggregate([
+    //   {
+    //     $project: {
+    //       _id: 0, // Wyłączamy pole _id z wyniku
+    //       preparedItemsData: 1, // Włączamy tylko pole preparedItemsData
+    //     },
+    //   },
+    // ]);
 
     const [preparedItems] = await connect_SQL.query(
       "SELECT department, localization, area, owner, guardian FROM join_items ORDER BY department"
@@ -336,71 +336,71 @@ const saveItem = async (req, res) => {
   };
   try {
     if (info !== "aging") {
-      const result = await FKRaport.aggregate([
-        {
-          $project: {
-            _id: 0,
-            data: "$items",
-          },
-        },
-      ]);
+      // const result = await FKRaport.aggregate([
+      //   {
+      //     $project: {
+      //       _id: 0,
+      //       data: "$items",
+      //     },
+      //   },
+      // ]);
 
-      const itemsData = result[0].data[info];
-      const updatedItemsData = itemsData.map((item) => {
-        if (item === dataMap[info].oldName) {
-          return dataMap[info].newName;
-        }
-        return item;
-      });
+      // const itemsData = result[0].data[info];
+      // const updatedItemsData = itemsData.map((item) => {
+      //   if (item === dataMap[info].oldName) {
+      //     return dataMap[info].newName;
+      //   }
+      //   return item;
+      // });
 
-      await FKRaport.updateOne(
-        {},
-        { $set: { [`items.${info}`]: updatedItemsData } },
-        { new: true, upsert: true }
-      );
+      // await FKRaport.updateOne(
+      //   {},
+      //   { $set: { [`items.${info}`]: updatedItemsData } },
+      //   { new: true, upsert: true }
+      // );
 
-      const resultItems = await FKRaport.aggregate([
-        {
-          $project: {
-            _id: 0, // Wyłączamy pole _id z wyniku
-            preparedItemsData: "$preparedItemsData", // Wybieramy tylko pole FKData z pola data
-          },
-        },
-      ]);
+      // const resultItems = await FKRaport.aggregate([
+      //   {
+      //     $project: {
+      //       _id: 0, // Wyłączamy pole _id z wyniku
+      //       preparedItemsData: "$preparedItemsData", // Wybieramy tylko pole FKData z pola data
+      //     },
+      //   },
+      // ]);
 
-      const preparedItemsData = [...resultItems[0].preparedItemsData];
-      const updateItems = preparedItemsData.map((item) => {
-        if (info === "owners" || info === "guardians") {
-          // Jeśli tak, przeiteruj przez każdy element tablicy
-          item[variableItem[info]].forEach((value, index) => {
-            // Sprawdź, czy wartość jest równa dataMap[info].oldName
-            if (value === dataMap[info].oldName) {
-              // Jeśli tak, zaktualizuj wartość na dataMap[info].newName
-              item[variableItem[info]][index] = dataMap[info].newName;
-            }
-          });
-        } else {
-          if (item[variableItem[info]] === dataMap[info].oldName) {
-            return {
-              ...item,
-              [variableItem[info]]: dataMap[info].newName,
-            };
-          }
-        }
-        return item;
-      });
+      // const preparedItemsData = [...resultItems[0].preparedItemsData];
+      // const updateItems = preparedItemsData.map((item) => {
+      //   if (info === "owners" || info === "guardians") {
+      //     // Jeśli tak, przeiteruj przez każdy element tablicy
+      //     item[variableItem[info]].forEach((value, index) => {
+      //       // Sprawdź, czy wartość jest równa dataMap[info].oldName
+      //       if (value === dataMap[info].oldName) {
+      //         // Jeśli tak, zaktualizuj wartość na dataMap[info].newName
+      //         item[variableItem[info]][index] = dataMap[info].newName;
+      //       }
+      //     });
+      //   } else {
+      //     if (item[variableItem[info]] === dataMap[info].oldName) {
+      //       return {
+      //         ...item,
+      //         [variableItem[info]]: dataMap[info].newName,
+      //       };
+      //     }
+      //   }
+      //   return item;
+      // });
 
-      await FKRaport.updateOne(
-        {},
-        { $set: { preparedItemsData: updateItems } },
-        { new: true, upsert: true }
-      );
+      // await FKRaport.updateOne(
+      //   {},
+      //   { $set: { preparedItemsData: updateItems } },
+      //   { new: true, upsert: true }
+      // );
     } else {
-      await FKRaport.updateOne(
-        {},
-        { $set: { "items.aging": aging } },
-        { new: true, upsert: true }
-      );
+      // await FKRaport.updateOne(
+      //   {},
+      //   { $set: { "items.aging": aging } },
+      //   { new: true, upsert: true }
+      // );
     }
 
     res.end();
