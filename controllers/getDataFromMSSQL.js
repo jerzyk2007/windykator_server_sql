@@ -246,7 +246,8 @@ DECLARE @DATA_KONIEC DATETIME = GETDATE();
 
 SELECT 
    T.OPIS,
- T.WARTOSC_SALDO
+ T.WARTOSC_SALDO,
+CONVERT(VARCHAR(10),  T.DATA, 23) AS DATA_FV
 FROM [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] T WITH(NOLOCK)
 WHERE T.IS_BILANS = @IS_BILANS
  AND T.IS_ROZLICZONY = @IS_ROZLICZONY
@@ -261,34 +262,53 @@ WHERE T.IS_BILANS = @IS_BILANS
       const cleanDoc = item.OPIS.split(" ")[0];
       return {
         NUMER_FV: cleanDoc,
+        DATA_FV: item.DATA_FV,
         DO_ROZLICZENIA: -(item.WARTOSC_SALDO)
       };
     });
 
-    const checkDuplicate = Object.values(filteredData.reduce((acc, item) => {
-      // Jeśli numer FV już istnieje w akumulatorze, dodaj DO_ROZLICZENIA
-      if (acc[item.NUMER_FV]) {
-        acc[item.NUMER_FV].DO_ROZLICZENIA += item.DO_ROZLICZENIA;
-      } else {
-        // Jeśli nie, dodaj nowy rekord
-        acc[item.NUMER_FV] = { NUMER_FV: item.NUMER_FV, DO_ROZLICZENIA: item.DO_ROZLICZENIA };
-      }
-      return acc;
-    }, {}));
+    // const checkDuplicate = Object.values(filteredData.reduce((acc, item) => {
+    //   // Jeśli numer FV już istnieje w akumulatorze, dodaj DO_ROZLICZENIA
+    //   if (acc[item.NUMER_FV]) {
+    //     acc[item.NUMER_FV].DO_ROZLICZENIA += item.DO_ROZLICZENIA;
+    //   } else {
+    //     // Jeśli nie, dodaj nowy rekord
+    //     acc[item.NUMER_FV] = { NUMER_FV: item.NUMER_FV, DO_ROZLICZENIA: item.DO_ROZLICZENIA };
+    //   }
+    //   return acc;
+    // }, {}));
+    const checkDuplicate = Object.values(
+      filteredData.reduce((acc, item) => {
+        if (acc[item.NUMER_FV]) {
+          // Jeśli NUMER_FV już istnieje, dodaj wartość DO_ROZLICZENIA
+          acc[item.NUMER_FV].DO_ROZLICZENIA += item.DO_ROZLICZENIA;
+        } else {
+          // Jeśli NUMER_FV nie istnieje, dodaj nowy rekord z zachowaniem DATA_FV
+          acc[item.NUMER_FV] = {
+            NUMER_FV: item.NUMER_FV,
+            DATA_FV: item.DATA_FV,
+            DO_ROZLICZENIA: item.DO_ROZLICZENIA
+          };
+        }
+        return acc;
+      }, {})
+    );
+
     // Najpierw wyczyść tabelę settlements_description
     await connect_SQL.query("TRUNCATE TABLE settlements");
 
     // Teraz przygotuj dane do wstawienia
     const values = checkDuplicate.map(item => [
       item.NUMER_FV,
+      item.DATA_FV,
       item.DO_ROZLICZENIA
     ]);
 
     const query = `
      INSERT IGNORE INTO settlements
-       ( NUMER_FV,  NALEZNOSC) 
+       ( NUMER_FV, DATA_FV, NALEZNOSC) 
      VALUES 
-       ${values.map(() => "(?, ?)").join(", ")}
+       ${values.map(() => "(?, ?, ?)").join(", ")}
    `;
     // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
@@ -512,5 +532,5 @@ cron.schedule('03 07 * * *', updateData, {
 
 
 module.exports = {
-  updateData,
+  updateData
 };

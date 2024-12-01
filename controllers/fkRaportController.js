@@ -289,20 +289,20 @@ const getColumns = async (req, res) => {
   }
 };
 
-// pobieram daty  aktualizacji plików excel dla raportu FK
+// pobieram daty  aktualizacji plików excel dla raportu FK !!!
 const getDateCounter = async (req, res) => {
   try {
     const [result] = await connect_SQL.query('SELECT title, date, counter FROM fk_updates_date');
 
     const jsonObject = result.reduce((acc, item) => {
       acc[item.title] = {
-        hour: item.date,    // Przypisanie `date` jako `hour`
+        date: item.date,    // Przypisanie `date` jako `hour`
         counter: item.counter
       };
       return acc;
     }, {});
 
-    console.log(jsonObject);
+    // console.log(jsonObject);
     res.json({ updateData: jsonObject });
   } catch (error) {
     logEvents(
@@ -317,22 +317,8 @@ const getDateCounter = async (req, res) => {
 //funckja kasuje przygotwane dane do raportu, czas dodania pliki i ilość danych
 const deleteDataRaport = async (req, res) => {
   try {
-    // await FKRaport.updateMany(
-    //   {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
-    //   {
-    //     $unset: {
-    //       raportData: 1,
-    //       updateDate: 1,
-    //     },
-    //   }, // Nowe dane, które mają zostać usunięte
-    //   {
-    //     upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
-    //   }
-    // );
-    await connect_SQL.query('TRUNCATE fk_raport');
     await connect_SQL.query('TRUNCATE fk_updates_date');
-    console.log('finish');
-
+    await connect_SQL.query('TRUNCATE raportFK_accountancy');
 
     res.json({ result: "delete" });
   } catch (error) {
@@ -340,9 +326,23 @@ const deleteDataRaport = async (req, res) => {
       `fkRaportController, deleteDataRaport: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
+};
+
+const generateRaport = async (req, res) => {
+  try {
+    console.log('generate raport');
+    res.end();
+  }
+  catch (error) {
+    logEvents(
+      `fkRaportController, generateRaport: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+
 };
 
 // zapis ustawień tabeli raportu FK
@@ -448,4 +448,5 @@ module.exports = {
   saveTableSettings,
   getTableSettings,
   getColumnsOrder,
+  generateRaport
 };

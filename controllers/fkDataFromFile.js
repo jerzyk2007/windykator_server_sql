@@ -64,7 +64,7 @@ const savePreparedData = async (docsData, type) => {
 
     await connect_SQL.query(query, values.flat());
 
-    console.log(docsData.length);
+    // console.log(docsData.length);
 
     //zapis do db
     // await FKRaport.updateOne(
@@ -88,7 +88,7 @@ const savePreparedData = async (docsData, type) => {
       counter: docsData.length ? docsData.length : 0,
     };
 
-    console.log(updateDate, type);
+    // console.log(updateDate, type);
     return true;
 
   } catch (error) {
@@ -536,7 +536,7 @@ const dataFkAccocuntancyFromExcel = async (req, res) => {
     if (!resultDep) {
       return res.status(500).json({ error: "Server error" });
     }
-    console.log(resultDep.length);
+    // console.log(resultDep.length);
 
     const addItems = generateItems(preparedItems, resultDep);
 
@@ -546,21 +546,21 @@ const dataFkAccocuntancyFromExcel = async (req, res) => {
       return res.json({ errorDepartments: addItems.errorDepartments });
     }
 
-    console.log(addItems.generateData.length);
+    // console.log(addItems.generateData.length);
 
     const addDocDate = await docDateUpdate(addItems.generateData);
     if (!addDocDate) {
       return res.status(500).json({ error: "Server error" });
     }
 
-    console.log(addDocDate.length);
+    // console.log(addDocDate.length);
 
 
     const updateSettlements = await updateSettlementDescription(addDocDate);
     if (!updateSettlements) {
       return res.status(500).json({ error: "Server error" });
     }
-    console.log(updateSettlements.length);
+    // console.log(updateSettlements.length);
 
     await savePreparedData(updateSettlements, 'accountancy');
 

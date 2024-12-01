@@ -2,6 +2,8 @@ const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 const { checkDate, checkTime } = require('./manageDocumentAddition');
+const { addDepartment } = require('./manageDocumentAddition');
+
 
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
@@ -117,17 +119,16 @@ const settlementsFile = async (rows, res) => {
     // Teraz przygotuj dane do wstawienia
     const values = result.map(item => [
       item.NUMER_FV,
-      item.TERMIN,
+      item.DATA_WYSTAWIENIA_FV,
       item.DO_ROZLICZENIA !== 0 ? item.DO_ROZLICZENIA : -item.ZOBOWIAZANIA,
-      item.ZOBOWIAZANIA
     ]);
 
     // Przygotowanie zapytania SQL z wieloma wartościami
     const query = `
           INSERT IGNORE INTO settlements
-            ( NUMER_FV, TERMIN, NALEZNOSC, ZOBOWIAZANIA) 
+            ( NUMER_FV, DATA_FV, NALEZNOSC) 
           VALUES 
-            ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+            ${values.map(() => "(?, ?, ?)").join(", ")}
         `;
 
     // Wykonanie zapytania INSERT
@@ -240,7 +241,7 @@ const becaredFile = async (rows, res) => {
         'BeCared'
       ]);
     logEvents(
-      `documentsController, becaredFile: ${error}`,
+      `addDataFromExcelFileController, becaredFile: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
@@ -342,7 +343,119 @@ const rubiconFile = async (rows, res) => {
         'Rubicon'
       ]);
     logEvents(
-      `documentsController, rubiconFile: ${error}`,
+      `addDataFromExcelFileController, rubiconFile: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const accountancyFile = async (rows, res) => {
+  try {
+    if (
+      !("Nr. dokumentu" in rows[0]) ||
+      !("Kontrahent" in rows[0]) ||
+      !("Płatność" in rows[0]) ||
+      !("Data płatn." in rows[0]) ||
+      !("Nr kontrahenta" in rows[0]) ||
+      !("Synt." in rows[0])
+    ) {
+      return res.json({ info: "Plik musi zawierać kolumny: 'Nr. dokumentu', 'Kontrahent', 'Płatność', 'Data płatn.', 'Nr kontrahenta', 'Synt.'" });
+    }
+
+    const changeNameColumns = rows.map(item => {
+      // nadaję typ dokumentu np korekta
+      let TYP_DOKUMENTU = "";
+      if (item["Nr. dokumentu"].includes("KF/ZAL")) {
+        TYP_DOKUMENTU = "Korekta zaliczki";
+      } else if (item["Nr. dokumentu"].includes("KF/")) {
+        TYP_DOKUMENTU = "Korekta";
+      } else if (item["Nr. dokumentu"].includes("KP/")) {
+        TYP_DOKUMENTU = "KP";
+      } else if (item["Nr. dokumentu"].includes("NO/")) {
+        TYP_DOKUMENTU = "Nota";
+      } else if (item["Nr. dokumentu"].includes("PP/")) {
+        TYP_DOKUMENTU = "Paragon";
+      } else if (item["Nr. dokumentu"].includes("PK")) {
+        TYP_DOKUMENTU = "PK";
+      } else if (item["Nr. dokumentu"].includes("IP/")) {
+        TYP_DOKUMENTU = "Karta Płatnicza";
+      } else if (item["Nr. dokumentu"].includes("FV/ZAL")) {
+        TYP_DOKUMENTU = "Faktura zaliczkowa";
+      } else if (item["Nr. dokumentu"].includes("FV/")) {
+        TYP_DOKUMENTU = "Faktura";
+      } else {
+        TYP_DOKUMENTU = "Inne";
+      }
+
+      return {
+        NUMER: item["Nr. dokumentu"],
+        KONTRAHENT: item["Kontrahent"],
+        NR_KONTRAHENTA: item["Nr kontrahenta"],
+        DO_ROZLICZENIA: item["Płatność"],
+        DATA_ROZLICZENIA: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
+        KONTO: item["Synt."],
+        TYP_DOKUMENTU
+      };
+    });
+
+
+
+    const addDep = addDepartment(changeNameColumns);
+
+    const [findItems] = await connect_SQL.query('SELECT department FROM join_items');
+
+    // console.log(addDep[0]);
+    // console.log(findItems[0]);
+
+
+    // jeśli nie będzie możliwe dopasowanie ownerów, lokalizacji to wyskoczy bład we froncie
+    let errorDepartments = [];
+    addDep.forEach(item => {
+      if (!findItems.some(findItem => findItem.department === item.DZIAL)) {
+        // Jeśli DZIAL nie ma odpowiednika, dodaj do errorDepartments
+        if (!errorDepartments.includes(item.DZIAL)) {
+          errorDepartments.push(item.DZIAL);
+        }
+      }
+    });
+
+    if (errorDepartments.length > 0) {
+      return res.json({ info: `Brak danych o działach: ${errorDepartments}` });
+    }
+
+    await connect_SQL.query("TRUNCATE TABLE raportFK_accountancy");
+
+    const values = addDep.map(item => [
+      item.NUMER,
+      item.KONTRAHENT,
+      item.NR_KONTRAHENTA,
+      item.DO_ROZLICZENIA,
+      item.DATA_ROZLICZENIA,
+      item.KONTO,
+      item.TYP_DOKUMENTU,
+      item.DZIAL,
+    ]);
+
+    const query = `
+      INSERT IGNORE INTO raportFK_accountancy
+        ( NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, DATA_ROZLICZENIA, KONTO, TYP_DOKUMENTU, DZIAL) 
+      VALUES 
+        ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+    `;
+
+    await connect_SQL.query(query, values.flat());
+    // console.log(addDep);
+
+    const sql = `INSERT INTO fk_updates_date (title, date, counter) VALUES (?, ?, ?)`;
+    const params = ["accountancy", checkDate(new Date()), addDep.length || 0];
+    await connect_SQL.query(sql, params);
+
+    res.json({ info: 'Dane zaktualizowane.' });
+  }
+  catch (error) {
+    logEvents(
+      `addDataFromExcelFileController, accountancyFile: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
@@ -359,6 +472,7 @@ const documentsFromFile = async (req, res) => {
     const data = new Uint8Array(buffer);
 
     if (!isExcelFile(data)) {
+      console.log('error');
       return res.status(500).json({ error: "Invalid file" });
     }
 
@@ -372,6 +486,8 @@ const documentsFromFile = async (req, res) => {
       return becaredFile(rows, res);
     } else if (type === "rubicon") {
       return rubiconFile(rows, res);
+    } else if (type === "accountancy") {
+      return accountancyFile(rows, res);
     }
     else {
       return res.status(500).json({ error: "Invalid file" });

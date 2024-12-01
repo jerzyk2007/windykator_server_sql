@@ -121,9 +121,14 @@ router
   .route("/get-documents-BL")
   .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.getDocumentsBL);
 
+// router
+//   .route("/generate-raport-front")
+//   .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.dataToGenerateRaport);
+
+// wywołanie generowania raportu FK
 router
-  .route("/generate-raport-front")
-  .get(verifyRoles(ROLES_LIST.FKAdmin), fkDataFromFile.dataToGenerateRaport);
+  .route("/generate-raport")
+  .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.generateRaport);
 
 router
   .route("/save-raport-FK")
