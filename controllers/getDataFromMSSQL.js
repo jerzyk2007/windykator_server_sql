@@ -526,7 +526,7 @@ const updateData = async () => {
   }
 };
 
-cron.schedule('03 07 * * *', updateData, {
+cron.schedule('15 07 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
 
