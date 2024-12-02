@@ -191,18 +191,18 @@ const becaredFile = async (rows, res) => {
         if (checkDoc[0]?.document_id) {
           const STATUS_SPRAWY_KANCELARIA = row["Etap Sprawy"]
             ? row["Etap Sprawy"]
-            : "-";
+            : null;
           const KOMENTARZ_KANCELARIA_BECARED = row["Ostatni komentarz"]
             ? row["Ostatni komentarz"]
-            : "-";
+            : null;
           const DATA_KOMENTARZA_BECARED = isExcelDate(
             row["Data ostatniego komentarza"]
           )
             ? excelDateToISODate(row["Data ostatniego komentarza"])
-            : "-";
+            : null;
           const NUMER_SPRAWY_BECARED = row["Numer sprawy"]
             ? row["Numer sprawy"]
-            : "-";
+            : null;
           const KWOTA_WINDYKOWANA_BECARED = row["Suma roszczeń"]
             ? row["Suma roszczeń"]
             : 0;
