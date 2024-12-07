@@ -78,31 +78,8 @@ const options = {
 //   timezone: "Europe/Warsaw"
 // });
 
-// // connect to mongoDB
-// connectMongoDB();
 
-//połączenie z mongo
-// mongoose.connection.once("open", () => {
-//   const server = https
-//     .createServer(options, app)
-//     .listen(process.env.PORT, "0.0.0.0", function () {
-//       console.log(
-//         "Express server listening on port " +
-//         `${process.env.PORT ? process.env.PORT : 3000}`
-//       );
-//     });
-// });
-
-//połączenie z mongo
-// mongoose.connection.once("open", () => {
-//   console.log("Connected to mongoDB");
-//   app.listen(3500, () => {
-//     console.log(`Server is listenig on port 3500`);
-//   });
-// });
-
-
-//połączenie bez mongo
+//ustawienie servera linux
 // https
 //   .createServer(options, app)
 //   .listen(process.env.PORT, "0.0.0.0", function () {
@@ -112,7 +89,7 @@ const options = {
 //     );
 //   });
 
-// połaczenie bez mongo
+// ustawienie servera lokalnego
 app.listen(3500, () => {
   console.log(`Server is listenig on port 3500`);
 });

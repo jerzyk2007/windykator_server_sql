@@ -393,7 +393,7 @@ const accountancyFile = async (rows, res) => {
         KONTRAHENT: item["Kontrahent"],
         NR_KONTRAHENTA: item["Nr kontrahenta"],
         DO_ROZLICZENIA: item["Płatność"],
-        DATA_ROZLICZENIA: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
+        TERMIN: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
         KONTO: item["Synt."],
         TYP_DOKUMENTU
       };
@@ -431,7 +431,7 @@ const accountancyFile = async (rows, res) => {
       item.KONTRAHENT,
       item.NR_KONTRAHENTA,
       item.DO_ROZLICZENIA,
-      item.DATA_ROZLICZENIA,
+      item.TERMIN,
       item.KONTO,
       item.TYP_DOKUMENTU,
       item.DZIAL,
@@ -439,7 +439,7 @@ const accountancyFile = async (rows, res) => {
 
     const query = `
       INSERT IGNORE INTO raportFK_accountancy
-        ( NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, DATA_ROZLICZENIA, KONTO, TYP_DOKUMENTU, DZIAL) 
+        ( NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL) 
       VALUES 
         ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
     `;
