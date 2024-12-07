@@ -498,7 +498,6 @@ const getDepfromDocuments = async (req, res) => {
       return dep.DZIAL;
     });
 
-    console.log(departments);
     res.json(departments);
   } catch (error) {
     logEvents(
