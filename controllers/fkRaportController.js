@@ -491,12 +491,14 @@ const savePreparedItems = async (req, res) => {
 const getDepfromDocuments = async (req, res) => {
   try {
     const [getDepartments] = await connect_SQL.query(
-      "SELECT distinct DZIAL from documents ORDER BY DZIAL"
+      "SELECT distinct DZIAL from documents"
     );
 
     const departments = getDepartments.map((dep) => {
       return dep.DZIAL;
     });
+
+    console.log(departments);
     res.json(departments);
   } catch (error) {
     logEvents(
