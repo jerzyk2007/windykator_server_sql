@@ -2,7 +2,7 @@
 // const UpdateDB = require("../model/UpdateDB");
 // const Document = require("../model/Document");
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
-const { addDepartment } = require('./manageDocumentAddition');
+const { addDepartment } = require('../controllers/manageDocumentAddition');
 
 
 const { logEvents } = require("../middleware/logEvents");

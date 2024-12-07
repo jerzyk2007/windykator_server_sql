@@ -1,20 +1,7 @@
-const mongoose = require("mongoose");
 const mysql = require("mysql2/promise");
 const sql = require("msnodesqlv8");
 
-// const connectMongoDB = async () => {
-//   try {
-//     await mongoose.connect(`${process.env.DATABASE_URI_ONLINE_MONGO}`, {
-//       dbName: "WINDYKATOR",
-//       // useNewUrlParser: true,
-//       // useUnifiedTopology: true
-//     });
-//     console.log("Connected to MongoDB");
-//   } catch (err) {
-//     console.error(err);
-//   }
-// };
-
+// połączenie z mysql
 const connect_SQL = mysql.createPool({
   host: process.env.HOST_MYSQL,
   port: process.env.PORT_MYSQL,
@@ -30,8 +17,7 @@ const connect_SQL = mysql.createPool({
   connectTimeout: 30000, // Maksymalny czas oczekiwania na połączenie (ms)
 });
 
-// const config = `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.MSSQL_DB_SERVER};Database=${process.env.MSSQL_DB_DATABASE};UID=${process.env.MSSQL_DB_USER};PWD=${process.env.MSSQL_DB_PASSWORD};`;
-
+// połączenie z mssql
 const msSqlQuery = (query) => {
   const config = `Driver={ODBC Driver 17 for SQL Server};Server=${process.env.MSSQL_DB_SERVER};Database=${process.env.MSSQL_DB_DATABASE};UID=${process.env.MSSQL_DB_USER};PWD=${process.env.MSSQL_DB_PASSWORD};`;
   return new Promise((resolve, reject) => {
@@ -44,5 +30,4 @@ const msSqlQuery = (query) => {
   });
 };
 
-// module.exports = { connectMongoDB, connect_SQL, msSqlQuery };
 module.exports = { connect_SQL, msSqlQuery };

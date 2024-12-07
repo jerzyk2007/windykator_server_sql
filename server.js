@@ -1,9 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-const { connectMongoDB } = require("./config/dbConn");
 const corsOptions = require("./config/corsOptions");
 const credentials = require("./middleware/credentials");
 const verifyJWT = require("./middleware/verifyJWT");
@@ -55,7 +53,7 @@ app.use("/raport", require("./routes/api/raports"));
 app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
 // app.use("/sql", require("./routes/api/sql"));
-app.use("/repair", require("./routes/api/repair"));
+// app.use("/repair", require("./routes/api/repair"));
 app.use("/add-data", require("./routes/api/addDataFromExcelFile"));
 
 app.all("*", (req, res) => {
