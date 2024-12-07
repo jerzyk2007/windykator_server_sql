@@ -192,57 +192,57 @@ const dataToGenerateRaport = async (req, res) => {
   }
 };
 
-const saveRaportFK = async (req, res) => {
-  try {
-    const { dataRaport } = req.body;
+// const saveRaportFK = async (req, res) => {
+//   try {
+//     const { dataRaport } = req.body;
 
-    // zapis do DB po zmianach
-    // await FKDataRaport.findOneAndUpdate(
-    //   {},
-    //   {
-    //     $set: {
-    //       FKDataRaports: dataRaport,
-    //     },
-    //   },
-    //   {
-    //     returnOriginal: false,
-    //     upsert: true,
-    //   }
-    // );
+//     // zapis do DB po zmianach
+//     // await FKDataRaport.findOneAndUpdate(
+//     //   {},
+//     //   {
+//     //     $set: {
+//     //       FKDataRaports: dataRaport,
+//     //     },
+//     //   },
+//     //   {
+//     //     returnOriginal: false,
+//     //     upsert: true,
+//     //   }
+//     // );
 
-    // const dateObj = new Date();
-    // // Pobieramy poszczególne elementy daty i czasu
-    // const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
-    // const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
-    // const year = dateObj.getFullYear(); // Rok
+//     // const dateObj = new Date();
+//     // // Pobieramy poszczególne elementy daty i czasu
+//     // const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
+//     // const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
+//     // const year = dateObj.getFullYear(); // Rok
 
-    // // Formatujemy datę i czas według wymagań
-    // const actualDate = `${day}-${month}-${year}`;
+//     // // Formatujemy datę i czas według wymagań
+//     // const actualDate = `${day}-${month}-${year}`;
 
-    // const updateDate = {
-    //   date: actualDate,
-    //   counter: dataRaport.length,
-    // };
+//     // const updateDate = {
+//     //   date: actualDate,
+//     //   counter: dataRaport.length,
+//     // };
 
-    // await FKRaport.findOneAndUpdate(
-    //   {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
-    //   {
-    //     $set: {
-    //       "updateDate.genrateRaport": updateDate,
-    //     },
-    //   }, // Nowe dane, które mają zostać ustawione
-    //   {
-    //     upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
-    //     returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
-    //   }
-    // );
-    res.end();
-  } catch (error) {
-    logEvents(`dataFkFromFile, saveRaportFK: ${error}`, "reqServerErrors.txt");
-    console.error(error);
-    return res.status(500).json({ error: "Server error" });
-  }
-};
+//     // await FKRaport.findOneAndUpdate(
+//     //   {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
+//     //   {
+//     //     $set: {
+//     //       "updateDate.genrateRaport": updateDate,
+//     //     },
+//     //   }, // Nowe dane, które mają zostać ustawione
+//     //   {
+//     //     upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
+//     //     returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
+//     //   }
+//     // );
+//     res.end();
+//   } catch (error) {
+//     logEvents(`dataFkFromFile, saveRaportFK: ${error}`, "reqServerErrors.txt");
+//     console.error(error);
+//     return res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // dodawana jest nazwa działu na podstawie numeru faktury
 const prepareDepartments = (data) => {
@@ -582,6 +582,6 @@ module.exports = {
   getPreparedData,
   getDocumentsBL,
   dataToGenerateRaport,
-  saveRaportFK,
+  // saveRaportFK,
   dataFkAccocuntancyFromExcel
 };

@@ -254,64 +254,64 @@ const getData = async (req, res) => {
 };
 
 // pobiera wszystkie klucze z pierwszego documentu żeby mozna było nazwy, filtry i ustawienia kolumn edytować, głównie chodzi o nowo dodane kolumny
-const getNewColumns = async (req, res) => {
-  try {
-    // // const result = await FKRaport.findOne();
-    // const result = await FKDataRaport.aggregate([
-    //   {
-    //     $project: {
-    //       _id: 0, // Wyłączamy pole _id z wyniku
-    //       FKDataRaports: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
-    //     },
-    //   },
-    // ]);
+// const getNewColumns = async (req, res) => {
+//   try {
+//     // // const result = await FKRaport.findOne();
+//     // const result = await FKDataRaport.aggregate([
+//     //   {
+//     //     $project: {
+//     //       _id: 0, // Wyłączamy pole _id z wyniku
+//     //       FKDataRaports: "$FKDataRaports", // Wybieramy tylko pole FKData z pola data
+//     //     },
+//     //   },
+//     // ]);
 
-    // const firstDocument = result[0].FKDataRaports[0];
+//     // const firstDocument = result[0].FKDataRaports[0];
 
-    // if (firstDocument) {
-    //   // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
-    //   const keysArray = Object.keys(firstDocument);
+//     // if (firstDocument) {
+//     //   // Pobierz klucze z pierwszego dokumentu i umieść je w tablicy
+//     //   const keysArray = Object.keys(firstDocument);
 
-    //   const newArray = keysArray.filter(
-    //     (item) => item !== "_id" && item !== "__v"
-    //   );
+//     //   const newArray = keysArray.filter(
+//     //     (item) => item !== "_id" && item !== "__v"
+//     //   );
 
-    //   res.json(newArray);
-    // } else {
-    //   return res.status(400).json({ error: "Empty collection." });
-    // }
-    res.end();
-  } catch (error) {
-    logEvents(
-      `fkRaportController, getNewColumns: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     //   res.json(newArray);
+//     // } else {
+//     //   return res.status(400).json({ error: "Empty collection." });
+//     // }
+//     res.end();
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, getNewColumns: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny
-const changeColumns = async (req, res) => {
-  const { columns } = req.body;
-  const updateColumns = { tableColumns: columns };
-  try {
-    // await FKRaport.updateOne(
-    //   {},
-    //   { $set: updateColumns },
-    //   { new: true, upsert: true }
-    // );
+// const changeColumns = async (req, res) => {
+//   const { columns } = req.body;
+//   const updateColumns = { tableColumns: columns };
+//   try {
+//     // await FKRaport.updateOne(
+//     //   {},
+//     //   { $set: updateColumns },
+//     //   { new: true, upsert: true }
+//     // );
 
-    res.end();
-  } catch (error) {
-    logEvents(
-      `fkRaportController, changeColumns: ${error}`,
-      "reqServerErrors.txt"
-    );
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.end();
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, changeColumns: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //funkcja która pobiera kolumny które już zostały zapisane i zmodyfikowane
 const getColumns = async (req, res) => {
@@ -573,20 +573,215 @@ const generateRaport = async (req, res) => {
 
 };
 
-// zapis ustawień tabeli raportu FK
-const saveTableSettings = async (req, res) => {
-  try {
-    const { tableSettings } = req.body;
-    // await FKRaport.updateOne(
-    //   {},
-    //   { $set: { tableSettings } },
-    //   { new: true, upsert: true }
-    // );
+// // zapis ustawień tabeli raportu FK
+// const saveTableSettings = async (req, res) => {
+//   try {
+//     const { tableSettings } = req.body;
+//     // await FKRaport.updateOne(
+//     //   {},
+//     //   { $set: { tableSettings } },
+//     //   { new: true, upsert: true }
+//     // );
 
-    res.end();
+//     res.end();
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, saveTableSettings: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+// pobieram wcześniejsze ustawienia tabeli FK
+// const getTableSettings = async (req, res) => {
+//   try {
+//     // const result = await FKRaport.aggregate([
+//     //   {
+//     //     $project: {
+//     //       _id: 0, // Wyłączamy pole _id z wyniku
+//     //       tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
+//     //     },
+//     //   },
+//     // ]);
+//     // res.json(result[0].tableSettings);
+//     res.end();
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, getTableSettings: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+// funkcja zapisująca kolejnosc kolumn wyświetlanych w tabeli FK i raportach EXCEL
+// const getColumnsOrder = async (req, res) => {
+//   try {
+//     // const resultTableSettings = await FKRaport.aggregate([
+//     //   {
+//     //     $project: {
+//     //       _id: 0, // Wyłączamy pole _id z wyniku
+//     //       tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
+//     //     },
+//     //   },
+//     // ]);
+
+//     // const resultColumnsSettings = await FKRaport.aggregate([
+//     //   {
+//     //     $project: {
+//     //       _id: 0, // Wyłączamy pole _id z wyniku
+//     //       tableColumns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
+//     //     },
+//     //   },
+//     // ]);
+//     // const tableColumns = [...resultColumnsSettings[0].tableColumns];
+//     // const modifiedTableColumns = tableColumns.map(
+//     //   ({ accessorKey, header }) => ({ accessorKey, header })
+//     // );
+//     // const tableOrder = [...resultTableSettings[0].tableSettings.order];
+
+//     // const order = tableOrder.map((item) => {
+//     //   const matching = modifiedTableColumns.find(
+//     //     (match) => match.accessorKey === item
+//     //   );
+//     //   if (matching) {
+//     //     return matching.header;
+//     //   }
+//     //   return item;
+//     // });
+
+//     // res.json({ order, columns: modifiedTableColumns });
+//     res.end();
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, getColumnsOrder: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+const getDataItems = async (req, res) => {
+  try {
+    const [depResult] = await connect_SQL.query(
+      "SELECT department from department_items"
+    );
+    const departments = depResult.map((dep) => {
+      return dep.department;
+    });
+
+    const [locResult] = await connect_SQL.query(
+      "SELECT localization from localization_items"
+    );
+    const localizations = locResult.map((loc) => {
+      return loc.localization;
+    });
+
+    const [areaResult] = await connect_SQL.query("SELECT area from area_items");
+    const areas = areaResult.map((area) => {
+      return area.area;
+    });
+
+    const [ownerResult] = await connect_SQL.query(
+      "SELECT owner from owner_items"
+    );
+    const owners = ownerResult.map((owner) => {
+      return owner.owner;
+    });
+
+    const [guardianResult] = await connect_SQL.query(
+      "SELECT guardian from guardian_items"
+    );
+    const guardians = guardianResult.map((guardian) => {
+      return guardian.guardian;
+    });
+
+    const [aging] = await connect_SQL.query(
+      "SELECT firstValue, secondValue, title, type from aging_items"
+    );
+
+    res.json({
+      data: {
+        departments,
+        localizations,
+        areas,
+        owners,
+        guardians,
+        aging,
+      },
+    });
+  } catch (error) {
+    logEvents(`fkRaportController, getDataItems: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
+const getFKSettingsItems = async (req, res) => {
+  try {
+    const [uniqeDepFromJI] = await connect_SQL.query(
+      "SELECT distinct department FROM join_items"
+    );
+
+    const uniqueDepartments = uniqeDepFromJI.map((dep) => {
+      return dep.department;
+    });
+
+    const [depResult] = await connect_SQL.query(
+      "SELECT department from department_items"
+    );
+    const departments = depResult.map((dep) => {
+      return dep.department;
+    });
+
+    const [locResult] = await connect_SQL.query(
+      "SELECT localization from localization_items"
+    );
+    const localizations = locResult.map((loc) => {
+      return loc.localization;
+    });
+
+    const [areaResult] = await connect_SQL.query("SELECT area from area_items");
+    const areas = areaResult.map((area) => {
+      return area.area;
+    });
+
+    const [ownerResult] = await connect_SQL.query(
+      "SELECT owner from owner_items"
+    );
+    const owners = ownerResult.map((owner) => {
+      return owner.owner;
+    });
+
+    const [guardianResult] = await connect_SQL.query(
+      "SELECT guardian from guardian_items"
+    );
+    const guardians = guardianResult.map((guardian) => {
+      return guardian.guardian;
+    });
+    res.json({
+      uniqueDepartments,
+      departments,
+      areas,
+      localizations,
+      owners,
+      guardians,
+    });
+    // res.json({
+    //   departments: result[0].data.departments,
+    //   areas: result[0].data.areas,
+    //   localizations: result[0].data.localizations,
+    //   owners: result[0].data.owners,
+    //   guardians: result[0].data.guardians,
+    // });
   } catch (error) {
     logEvents(
-      `fkRaportController, saveTableSettings: ${error}`,
+      `fkRaportController, getFKSettingsItems: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
@@ -594,70 +789,151 @@ const saveTableSettings = async (req, res) => {
   }
 };
 
-// pobieram wcześniejsze ustawienia tabeli FK
-const getTableSettings = async (req, res) => {
+//funckja zapisujaca działy, ownerów, lokalizacje
+const saveItemsData = async (req, res) => {
+  const { info } = req.params;
+  const { departments, localizations, areas, owners, guardians, aging } =
+    req.body;
+
+  // Mapowanie nazw na odpowiadające im klucze
+  const dataMap = {
+    departments,
+    localizations,
+    areas,
+    owners,
+    guardians,
+    aging,
+  };
+  const type = info.slice(0, -1);
+  try {
+    if (info !== "aging") {
+      await connect_SQL.query(`TRUNCATE TABLE ${type}_items`);
+      for (const item of dataMap[info]) {
+        const [checkDuplicate] = await connect_SQL.query(
+          `SELECT ${type} FROM ${type}_items WHERE ${type} = ?`,
+          [item]
+        );
+        if (!checkDuplicate[0]) {
+          await connect_SQL.query(
+            `INSERT IGNORE INTO ${type}_items (${type}) VALUES (?)`,
+            [item]
+          );
+        }
+      }
+    } else {
+      await connect_SQL.query("TRUNCATE TABLE aging_items");
+      for (const item of dataMap[info]) {
+        const [checkDuplicate] = await connect_SQL.query(
+          `SELECT title FROM aging_items WHERE title = ?`,
+          [item.title]
+        );
+
+        if (!checkDuplicate[0]) {
+          await connect_SQL.query(
+            "INSERT IGNORE INTO aging_items (firstValue, secondValue, title, type ) VALUES (?, ?, ?, ?)",
+            [item.firstValue, item.secondValue, item.title, item.type]
+          );
+        }
+      }
+      // await FKRaport.updateOne(
+      //   {},
+      //   { $set: { "items.aging": aging } },
+      //   { new: true, upsert: true }
+      // );
+    }
+
+    res.end();
+  } catch (error) {
+    logEvents(`fkRaportController, saveItemsData: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// funkcja pobierająca kpl owner, dział, lokalizacja dla "Dopasuj dane"
+const getPreparedItems = async (req, res) => {
   try {
     // const result = await FKRaport.aggregate([
     //   {
     //     $project: {
     //       _id: 0, // Wyłączamy pole _id z wyniku
-    //       tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
+    //       preparedItemsData: 1, // Włączamy tylko pole preparedItemsData
     //     },
     //   },
     // ]);
-    // res.json(result[0].tableSettings);
-    res.end();
-  } catch (error) {
-    logEvents(
-      `fkRaportController, getTableSettings: ${error}`,
-      "reqServerErrors.txt"
+
+    const [preparedItems] = await connect_SQL.query(
+      "SELECT department, localization, area, owner, guardian FROM join_items ORDER BY department"
     );
+
+    // console.log(preparedItems);
+    res.json(preparedItems);
+    // res.json(result);
+  } catch (error) {
+    logEvents(`fkRaportController, savePrepareItems: ${error}`, "reqServerErrors.txt");
     console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-// funkcja zapisująca kolejnosc kolumn wyświetlanych w tabeli FK i raportach EXCEL
-const getColumnsOrder = async (req, res) => {
+// funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
+const savePreparedItems = async (req, res) => {
+  const { department, localization, area, owner, guardian } = req.body;
   try {
-    // const resultTableSettings = await FKRaport.aggregate([
-    //   {
-    //     $project: {
-    //       _id: 0, // Wyłączamy pole _id z wyniku
-    //       tableSettings: "$tableSettings", // Wybieramy tylko pole FKData z pola data
-    //     },
-    //   },
-    // ]);
-
-    // const resultColumnsSettings = await FKRaport.aggregate([
-    //   {
-    //     $project: {
-    //       _id: 0, // Wyłączamy pole _id z wyniku
-    //       tableColumns: "$tableColumns", // Wybieramy tylko pole FKData z pola data
-    //     },
-    //   },
-    // ]);
-    // const tableColumns = [...resultColumnsSettings[0].tableColumns];
-    // const modifiedTableColumns = tableColumns.map(
-    //   ({ accessorKey, header }) => ({ accessorKey, header })
+    const [duplicate] = await connect_SQL.query(
+      "SELECT department FROM join_items WHERE department = ?",
+      [department]
+    );
+    if (duplicate[0]?.department) {
+      await connect_SQL.query(
+        "UPDATE join_items SET localization = ?, area = ?, owner = ?, guardian = ? WHERE department = ?",
+        [
+          localization,
+          area,
+          JSON.stringify(owner),
+          JSON.stringify(guardian),
+          department,
+        ]
+      );
+    } else {
+      await connect_SQL.query(
+        "INSERT INTO join_items (department, localization, area, owner, guardian) VALUES (?, ?, ?, ?, ?)",
+        [
+          department,
+          localization,
+          area,
+          JSON.stringify(owner),
+          JSON.stringify(guardian),
+        ]
+      );
+    }
+    // await FKRaport.updateOne(
+    //   {},
+    //   { $set: { preparedItemsData: dataItems } },
+    //   { new: true, upsert: true }
     // );
-    // const tableOrder = [...resultTableSettings[0].tableSettings.order];
-
-    // const order = tableOrder.map((item) => {
-    //   const matching = modifiedTableColumns.find(
-    //     (match) => match.accessorKey === item
-    //   );
-    //   if (matching) {
-    //     return matching.header;
-    //   }
-    //   return item;
-    // });
-
-    // res.json({ order, columns: modifiedTableColumns });
     res.end();
   } catch (error) {
+    logEvents(`fkRaportController, savePrepareItems: ${error}`, "reqServerErrors.txt");
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// funkcja pobiera unikalne nazwy działów z pliku księgowego
+const getDepfromDocuments = async (req, res) => {
+  try {
+    const [getDepartments] = await connect_SQL.query(
+      "SELECT distinct DZIAL from documents ORDER BY DZIAL"
+    );
+
+    const departments = getDepartments.map((dep) => {
+      return dep.DZIAL;
+    });
+    res.json(departments);
+  } catch (error) {
     logEvents(
-      `fkRaportController, getColumnsOrder: ${error}`,
+      `fkRaportController, getDepfromAccountancy: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
@@ -668,13 +944,19 @@ const getColumnsOrder = async (req, res) => {
 module.exports = {
   // documentsFromFile,
   getData,
-  getNewColumns,
-  changeColumns,
+  // getNewColumns,
+  // changeColumns,
   getColumns,
   getDateCounter,
   deleteDataRaport,
-  saveTableSettings,
-  getTableSettings,
-  getColumnsOrder,
-  generateRaport
+  // saveTableSettings,
+  // getTableSettings,
+  // getColumnsOrder,
+  generateRaport,
+  getDataItems,
+  getFKSettingsItems,
+  saveItemsData,
+  savePreparedItems,
+  getPreparedItems,
+  getDepfromDocuments
 };
