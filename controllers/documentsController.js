@@ -923,7 +923,7 @@ const changeSingleDocument = async (req, res) => {
     );
     if (documents_ActionsExist[0]?.id_action) {
       await connect_SQL.query(
-        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?  WHERE document_id = ?",
+        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ?, INFORMACJA_ZARZAD = ?  WHERE document_id = ?",
         [
           documentItem.DZIALANIA,
           documentItem.JAKA_KANCELARIA_TU,
@@ -933,6 +933,8 @@ const changeSingleDocument = async (req, res) => {
           documentItem.BLAD_DORADCY,
           documentItem.DATA_WYDANIA_AUTA ? documentItem.DATA_WYDANIA_AUTA : null,
           documentItem.OSTATECZNA_DATA_ROZLICZENIA ? documentItem.OSTATECZNA_DATA_ROZLICZENIA : null,
+          JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA),
+          JSON.stringify(documentItem.INFORMACJA_ZARZAD),
           id_document,
         ]
       );
