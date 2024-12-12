@@ -325,34 +325,127 @@ WHERE T.IS_BILANS = @IS_BILANS
 
 
 // aktualizacja opisów rozrachunków
-const updateSettlementDescription = async () => {
-  const queryMsSql = `SELECT  fv.[NUMER] AS NUMER_FV, rozl.[OPIS] AS NUMER_OPIS,	CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr LEFT JOIN     [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv    ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID] LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] WHERE fv.[NUMER] IS NOT NULL`;
+// const updateSettlementDescription = async () => {
+//   const queryMsSql = `SELECT  fv.[NUMER] AS NUMER_FV, rozl.[OPIS] AS NUMER_OPIS,	CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr LEFT JOIN     [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv    ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID] LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] WHERE fv.[NUMER] IS NOT NULL`;
 
-  const queryMySQL = 'SELECT id_document, NUMER_FV FROM documents';
+//   const queryMySQL = 'SELECT id_document, NUMER_FV FROM documents';
+//   try {
+//     console.log('start');
+//     const settlementDescription = await msSqlQuery(queryMsSql);
+
+//     const [documents] = await connect_SQL.query(queryMySQL);
+
+//     const filteredSettlements = settlementDescription
+//       .filter(item => {
+//         // Filtrujemy tylko te obiekty, które mają pasujący NUMER_FV w documents
+//         return documents.some(data => data.NUMER_FV === item.NUMER_FV);
+//       })
+//       .map(item => {
+//         // Teraz już mamy tylko pasujące elementy, więc dodajemy id_document
+//         const matchingDocument = documents.find(data => data.NUMER_FV === item.NUMER_FV);
+
+//         // Jeśli znaleziono pasujący dokument, dodaj id_document do obiektu w settlementDescription
+//         if (matchingDocument) {
+//           return { ...item, id_document: matchingDocument.id_document };
+//         }
+
+//         return item;
+//       });
+
+//     const updatedSettlements = Object.values(
+//       filteredSettlements.reduce((acc, item) => {
+//         // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
+//         const formattedAmount = (typeof item.WARTOSC_OPERACJI === 'number' && !isNaN(item.WARTOSC_OPERACJI))
+//           ? item.WARTOSC_OPERACJI.toLocaleString('pl-PL', {
+//             minimumFractionDigits: 2,
+//             maximumFractionDigits: 2,
+//             useGrouping: true
+//           })
+//           : 'brak danych';
+
+//         // Warunek, aby pominąć wpisy z wartościami null lub "brak danych"
+//         if (item.DATA_OPERACJI === null && item.NUMER_OPIS === null && formattedAmount === 'brak danych') {
+//           return acc; // Pomijamy dodawanie do acc
+//         }
+
+//         const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
+
+//         if (!acc[item.NUMER_FV]) {
+//           // Tworzymy nowy obiekt, jeśli nie istnieje jeszcze dla tego NUMER_FV
+//           acc[item.NUMER_FV] = {
+//             id_document: item.id_document,
+//             NUMER_FV: item.NUMER_FV,
+//             DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
+//             OPIS_ROZRACHUNKU: [description]
+//           };
+//         } else {
+//           // Jeśli obiekt z NUMER_FV już istnieje, dodajemy nowy opis
+//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
+//           // Sortowanie opisów według daty
+//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
+//             const dateA = new Date(a.split(' - ')[0]);
+//             const dateB = new Date(b.split(' - ')[0]);
+//             return dateA - dateB;
+//           });
+//         }
+
+//         return acc;
+//       }, {})
+//     );
+//     console.log(updatedSettlements[0]);
+//     // Najpierw wyczyść tabelę settlements_description
+//     // await connect_SQL.query("TRUNCATE TABLE settlements_description");
+
+//     // // Teraz przygotuj dane do wstawienia
+//     // const values = updatedSettlements.map(item => [
+//     //   item.id_document,
+//     //   item.NUMER_FV,
+//     //   JSON.stringify(item.OPIS_ROZRACHUNKU),
+//     //   item.DATA_ROZLICZENIA
+//     // ]);
+
+//     // // Przygotowanie zapytania SQL z wieloma wartościami
+//     // const query = `
+//     //   INSERT IGNORE INTO settlements_description 
+//     //     (document_id, NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) 
+//     //   VALUES 
+//     //     ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+//     // `;
+
+//     // // Wykonanie zapytania INSERT
+//     // await connect_SQL.query(query, values.flat());
+
+//     return true;
+//   }
+//   catch (error) {
+//     logEvents(`getDataFromMSSQL, updateSettlementDescription: ${error}`, "reqServerErrors.txt");
+//     return false;
+//   }
+// };
+const updateSettlementDescription = async () => {
+  const queryMsSql = `SELECT 
+     CASE 
+          WHEN CHARINDEX(' ', tr.[OPIS]) > 0 THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS]) - 1) 
+          ELSE tr.[OPIS] 
+      END AS NUMER_FV,
+  rozl.[OPIS] AS NUMER_OPIS,
+  CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], 
+  CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, 
+  rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI
+  FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr 
+  LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] 
+  WHERE rozl.[WARTOSC_SALDO] IS NOT NULL`;
+
+  // const queryMySQL = 'SELECT id_document, NUMER_FV FROM documents';
   try {
     const settlementDescription = await msSqlQuery(queryMsSql);
 
-    const [documents] = await connect_SQL.query(queryMySQL);
 
-    const filteredSettlements = settlementDescription
-      .filter(item => {
-        // Filtrujemy tylko te obiekty, które mają pasujący NUMER_FV w documents
-        return documents.some(data => data.NUMER_FV === item.NUMER_FV);
-      })
-      .map(item => {
-        // Teraz już mamy tylko pasujące elementy, więc dodajemy id_document
-        const matchingDocument = documents.find(data => data.NUMER_FV === item.NUMER_FV);
+    // const [documents] = await connect_SQL.query(queryMySQL);
 
-        // Jeśli znaleziono pasujący dokument, dodaj id_document do obiektu w settlementDescription
-        if (matchingDocument) {
-          return { ...item, id_document: matchingDocument.id_document };
-        }
-
-        return item;
-      });
 
     const updatedSettlements = Object.values(
-      filteredSettlements.reduce((acc, item) => {
+      settlementDescription.reduce((acc, item) => {
         // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
         const formattedAmount = (typeof item.WARTOSC_OPERACJI === 'number' && !isNaN(item.WARTOSC_OPERACJI))
           ? item.WARTOSC_OPERACJI.toLocaleString('pl-PL', {
@@ -362,58 +455,64 @@ const updateSettlementDescription = async () => {
           })
           : 'brak danych';
 
-        // Warunek, aby pominąć wpisy z wartościami null lub "brak danych"
+        // Pomijanie wpisów, jeśli wszystkie dane są null lub brak danych
         if (item.DATA_OPERACJI === null && item.NUMER_OPIS === null && formattedAmount === 'brak danych') {
-          return acc; // Pomijamy dodawanie do acc
+          return acc;
         }
 
         const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
+        const newDataRozliczenia = new Date(item.DATA_ROZLICZENIA);
 
         if (!acc[item.NUMER_FV]) {
-          // Tworzymy nowy obiekt, jeśli nie istnieje jeszcze dla tego NUMER_FV
+          // Jeśli jeszcze nie ma wpisu dla tego NUMER_FV, tworzymy nowy obiekt
           acc[item.NUMER_FV] = {
-            id_document: item.id_document,
             NUMER_FV: item.NUMER_FV,
             DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
             OPIS_ROZRACHUNKU: [description]
           };
         } else {
-          // Jeśli obiekt z NUMER_FV już istnieje, dodajemy nowy opis
+          // Jeśli już istnieje obiekt, dodajemy opis
           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
-          // Sortowanie opisów według daty
-          acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
-            const dateA = new Date(a.split(' - ')[0]);
-            const dateB = new Date(b.split(' - ')[0]);
-            return dateA - dateB;
-          });
+
+          // Porównujemy daty i aktualizujemy na najnowszą (najbliższą dzisiejszej)
+          const currentDataRozliczenia = new Date(acc[item.NUMER_FV].DATA_ROZLICZENIA);
+          if (newDataRozliczenia > currentDataRozliczenia) {
+            acc[item.NUMER_FV].DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
+          }
         }
 
         return acc;
       }, {})
     );
 
-    // Najpierw wyczyść tabelę settlements_description
-    await connect_SQL.query("TRUNCATE TABLE settlements_description");
+    //dodawanie do mysql dużych pakietów danych, podzielonych na części
+    const batchInsert = async (connection, data, batchSize = 100000) => {
+      for (let i = 0; i < data.length; i += batchSize) {
+        const batch = data.slice(i, i + batchSize);
 
-    // Teraz przygotuj dane do wstawienia
-    const values = updatedSettlements.map(item => [
-      item.id_document,
-      item.NUMER_FV,
-      JSON.stringify(item.OPIS_ROZRACHUNKU),
-      item.DATA_ROZLICZENIA
-    ]);
+        const values = batch.map(item => [
+          item.NUMER_FV,
+          JSON.stringify(item.OPIS_ROZRACHUNKU),
+          item.DATA_ROZLICZENIA
+        ]);
 
-    // Przygotowanie zapytania SQL z wieloma wartościami
-    const query = `
-      INSERT IGNORE INTO settlements_description 
-        (document_id, NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) 
-      VALUES 
-        ${values.map(() => "(?, ?, ?, ?)").join(", ")}
-    `;
+        const query = `
+          INSERT IGNORE INTO settlements_description 
+            (NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) 
+          VALUES 
+            ${values.map(() => "(?, ?, ?)").join(", ")}
+        `;
 
-    // Wykonanie zapytania INSERT
-    await connect_SQL.query(query, values.flat());
+        await connection.query(query, values.flat());
+      }
+    };
 
+    try {
+      await connect_SQL.query("TRUNCATE TABLE settlements_description");
+      await batchInsert(connect_SQL, updatedSettlements);
+    } catch (error) {
+      logEvents(`getDataFromMSSQL, updateSettlementDescription, addMany settlements description: ${error}`, "reqServerErrors.txt");
+    }
     return true;
   }
   catch (error) {
@@ -425,20 +524,6 @@ const updateSettlementDescription = async () => {
 
 
 const updateData = async () => {
-  // const checkDate = (data) => {
-  //   const year = data.getFullYear();
-  //   const month = String(data.getMonth() + 1).padStart(2, '0'); // Dodajemy +1, bo miesiące są liczone od 0
-  //   const day = String(data.getDate()).padStart(2, '0');
-  //   const yearNow = `${year}-${month}-${day}`;
-  //   return yearNow;
-  // };
-  // const checkTime = (data) => {
-  //   const hour = String(data.getHours()).padStart(2, '0');
-  //   const min = String(data.getMinutes()).padStart(2, '0');
-  //   const timeNow = `${hour}:${min}`;
-
-  //   return timeNow;
-  // };
   try {
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT data_name, date,  hour, update_success FROM updates"
@@ -532,5 +617,6 @@ cron.schedule('05 07 * * *', updateData, {
 
 
 module.exports = {
-  updateData
+  updateData,
+  updateSettlementDescription
 };
