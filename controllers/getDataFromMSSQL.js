@@ -422,6 +422,8 @@ WHERE T.IS_BILANS = @IS_BILANS
 //     return false;
 //   }
 // };
+
+// aktualizacja opisów rozrachunków
 const updateSettlementDescription = async () => {
   const queryMsSql = `SELECT 
      CASE 
@@ -436,13 +438,8 @@ const updateSettlementDescription = async () => {
   LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] 
   WHERE rozl.[WARTOSC_SALDO] IS NOT NULL`;
 
-  // const queryMySQL = 'SELECT id_document, NUMER_FV FROM documents';
   try {
     const settlementDescription = await msSqlQuery(queryMsSql);
-
-
-    // const [documents] = await connect_SQL.query(queryMySQL);
-
 
     const updatedSettlements = Object.values(
       settlementDescription.reduce((acc, item) => {
@@ -462,6 +459,7 @@ const updateSettlementDescription = async () => {
 
         const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
         const newDataRozliczenia = new Date(item.DATA_ROZLICZENIA);
+        const DATA_OPERACJI = item.DATA_OPERACJI;
 
         if (!acc[item.NUMER_FV]) {
           // Jeśli jeszcze nie ma wpisu dla tego NUMER_FV, tworzymy nowy obiekt
@@ -476,9 +474,18 @@ const updateSettlementDescription = async () => {
 
           // Porównujemy daty i aktualizujemy na najnowszą (najbliższą dzisiejszej)
           const currentDataRozliczenia = new Date(acc[item.NUMER_FV].DATA_ROZLICZENIA);
-          if (newDataRozliczenia > currentDataRozliczenia) {
+          if (new Date(DATA_OPERACJI) > newDataRozliczenia && !item.DATA_ROZLICZENIA) {
+            acc[item.NUMER_FV].DATA_ROZLICZENIA = null;
+          } else if (newDataRozliczenia > currentDataRozliczenia) {
             acc[item.NUMER_FV].DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
           }
+
+          // Sortowanie opisów według daty
+          acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
+            const dateA = new Date(a.split(' - ')[0]);
+            const dateB = new Date(b.split(' - ')[0]);
+            return dateA - dateB;
+          });
         }
 
         return acc;
@@ -486,7 +493,7 @@ const updateSettlementDescription = async () => {
     );
 
     //dodawanie do mysql dużych pakietów danych, podzielonych na części
-    const batchInsert = async (connection, data, batchSize = 100000) => {
+    const batchInsert = async (connection, data, batchSize = 50000) => {
       for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize);
 
