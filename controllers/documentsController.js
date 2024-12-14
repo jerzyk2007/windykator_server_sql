@@ -999,6 +999,23 @@ const getDataTable = async (req, res) => {
 const getSingleDocument = async (req, res) => {
   const { id_document } = req.params;
   try {
+    // const [result] = await connect_SQL.query(
+    //       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
+    // D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
+    // D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
+    // D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+    // ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
+    // IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, R.DATA_PRZENIESIENIA_DO_WP,
+    // R.STATUS_AKTUALNY FROM documents AS D 
+    // LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
+    // LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
+    // LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
+    // LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
+    // LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
+    // WHERE D.id_document = ?`,
+    //       [id_document]
+    //     );
+
     const [result] = await connect_SQL.query(
       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
 D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
@@ -1006,12 +1023,14 @@ D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP,
 D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
 ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
 IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, R.DATA_PRZENIESIENIA_DO_WP,
-R.STATUS_AKTUALNY FROM documents AS D 
+R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL
+FROM documents AS D 
 LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
 LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
 LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
 LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
 LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
+LEFT JOIN fv_zaliczkowe AS FZAL ON D.NUMER_FV = FZAL.NUMER_FV 
 WHERE D.id_document = ?`,
       [id_document]
     );

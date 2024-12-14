@@ -109,6 +109,61 @@ GROUP BY
   }
 };
 
+// pobieram fv zaliczkowe, nazwy i kwoty
+const updateDocZal = async () => {
+  try {
+    const queryMsSql = `SELECT 
+    fv.[NUMER] AS NUMER_FV,
+	    CASE 
+        WHEN pos.[NAZWA] LIKE '%FV/ZAL%' THEN 
+            SUBSTRING(
+                pos.[NAZWA], 
+                CHARINDEX('FV/ZAL', pos.[NAZWA]), 
+                CHARINDEX('''', pos.[NAZWA] + '''', CHARINDEX('FV/ZAL', pos.[NAZWA])) - CHARINDEX('FV/ZAL', pos.[NAZWA])
+            )
+        ELSE NULL
+    END AS FV_ZALICZKOWA,
+	    SUM(CASE WHEN pos.[NAZWA] LIKE '%Faktura zaliczkowa%' THEN -pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO
+ --   pos.[NAZWA]
+FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
+LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+WHERE fv.[NUMER] != 'POTEM' 
+  AND pos.[NAZWA] LIKE '%FV/ZAL%'
+GROUP BY 
+    fv.[NUMER],
+    pos.[NAZWA]`;
+
+    const documents = await msSqlQuery(queryMsSql);
+
+
+    await connect_SQL.query("TRUNCATE TABLE fv_zaliczkowe");
+
+    //     // // Teraz przygotuj dane do wstawienia
+    const values = documents.map(item => [
+      item.NUMER_FV,
+      item.FV_ZALICZKOWA,
+      item.WARTOSC_BRUTTO
+    ]);
+
+    // Przygotowanie zapytania SQL z wieloma wartościami
+    const query = `
+      INSERT IGNORE INTO fv_zaliczkowe 
+        ( NUMER_FV, FV_ZALICZKOWA, KWOTA_BRUTTO) 
+      VALUES 
+        ${values.map(() => "(?, ?,  ?)").join(", ")}
+    `;
+
+    //     // // Wykonanie zapytania INSERT
+    await connect_SQL.query(query, values.flat());
+    return true;
+  }
+  catch (error) {
+    // console.error(error);
+    logEvents(`getDataFromMSSQL, updateDocZal: ${error}`, "reqServerErrors.txt");
+    return false;
+  }
+};
+
 const updateCarReleaseDates = async () => {
   const twoDaysAgo = '2024-01-01';
   const queryMsSql = `
@@ -576,6 +631,9 @@ const updateData = async () => {
       ]
     );
 
+    //dodawanie fv zaliczkowych
+    await updateDocZal();
+
     // dodanie dat wydania samochodów 
     const carDateUpdate = await updateCarReleaseDates();
 
@@ -625,5 +683,6 @@ cron.schedule('05 07 * * *', updateData, {
 
 module.exports = {
   updateData,
-  updateSettlementDescription
+  updateSettlementDescription,
+  updateDocZal
 };
