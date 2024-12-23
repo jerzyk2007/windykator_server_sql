@@ -313,23 +313,49 @@ const rubiconFile = async (rows, res) => {
         'Rubicon'
       ]);
 
-    // const filteredFile = rows.filter(item => item['data przeniesienia<br>do WP']);
+    // przypisuję wersję z pewnymi zmianami dla raportu FK
+    const filteredDataV2 = rows.map(row => {
+      const status =
+        row["Status aktualny"] !== "Brak działań" &&
+          row["Status aktualny"] !== "Rozliczona" &&
+          row["Status aktualny"] !== "sms/mail +3" &&
+          row["Status aktualny"] !== "sms/mail -2" &&
+          row["Status aktualny"] !== "Zablokowana" &&
+          row["Status aktualny"] !== "Zablokowana BL" &&
+          row["Status aktualny"] !== "Zablokowana KF" &&
+          row["Status aktualny"] !== "Zablokowana KF BL" &&
+          row["Status aktualny"] !== "Do decyzji"
+          ? row["Status aktualny"]
+          : "BRAK";
+      if (status !== "BRAK") {
+        return {
+          NUMER_FV: row['Faktura nr'],
+          STATUS_AKTUALNY: status !== "BRAK" ? status : row.ETAP_SPRAWY,
+          JAKA_KANCELARIA: status !== "BRAK"
+            ? row["Firma zewnętrzna"]
+            : null,
+          CZY_W_KANCELARI: status !== "BRAK" ? "TAK" : "NIE",
+        };
+      }
 
-    // const rubiconData = filteredFile.map(item => [
-    //   item['Faktura nr'],
-    //   item['Status aktualny'],
-    //   item['data przeniesienia<br>do WP'],
-    //   item['Firma zewnętrzna']
-    // ]);
-    // await connect_SQL.query("TRUNCATE TABLE rubicon");
+    }).filter(Boolean);
 
-    // const query = `
-    //      INSERT IGNORE INTO rubicon
-    //        ( NUMER_FV, STATUS_AKTUALNY, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA ) 
-    //      VALUES 
-    //        ${rubiconData.map(() => "(?, ?, ?, ?)").join(", ")}
-    //    `;
-    // await connect_SQL.query(query, rubiconData.flat());
+    await connect_SQL.query("TRUNCATE TABLE rubicon_raport_fk");
+
+    const rubiconDataV2 = filteredDataV2.map(item => [
+      item.NUMER_FV,
+      item.STATUS_AKTUALNY,
+      item.JAKA_KANCELARIA
+    ]);
+
+    const queryV2 = `
+  INSERT IGNORE INTO rubicon_raport_fk
+    ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA ) 
+  VALUES 
+    ${rubiconDataV2.map(() => "(?, ?,  ?)").join(", ")}
+`;
+    await connect_SQL.query(queryV2, rubiconDataV2.flat());
+
 
     res.end();
   } catch (error) {
