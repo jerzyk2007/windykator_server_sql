@@ -236,9 +236,34 @@ WHERE T.IS_BILANS = @IS_BILANS
     }
 };
 
+const changeUserSettings = async () => {
+    try {
+        const [users] = await connect_SQL.query(`SELECT id_user, roles FROM users`);
+
+        for (const user of users) {
+            const { EditorPlus, ...filteredObject } = user.roles;
+            console.log(user.id_user);
+            console.log(filteredObject);
+
+            await connect_SQL.query(
+                "UPDATE users SET roles = ? WHERE id_user = ?",
+                [
+                    JSON.stringify(filteredObject),
+                    user.id_user
+                ]
+            );
+        }
+        console.log('finish');
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairKanc,
     repairAdvisersName,
     repairDocumentDB,
-    updateSettlementsTest
+    updateSettlementsTest,
+    changeUserSettings
 };

@@ -11,7 +11,7 @@ const upload = multer({ storage: storage });
 router
     .route("/send-documents/:type")
     .post(
-        verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin, ROLES_LIST.SuperAdmin, ROLES_LIST.FKAdmin),
+        verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin, ROLES_LIST.FKAdmin),
         upload.single("excelFile"),
         AddData.documentsFromFile
     );

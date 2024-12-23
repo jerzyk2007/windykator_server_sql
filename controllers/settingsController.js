@@ -96,7 +96,6 @@ const getSettings = async (req, res) => {
     const rolesOrder = [
       "User",
       "Editor",
-      "EditorPlus",
       "AdminBL",
       "FK",
       "FKAdmin",

@@ -2,7 +2,6 @@ const ROLES_LIST = {
   Start: 1,
   User: 100,
   Editor: 110,
-  EditorPlus: 120,
   Admin: 150,
   FK: 200,
   FKAdmin: 250,
