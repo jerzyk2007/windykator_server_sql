@@ -8,7 +8,12 @@ const verifyRoles = require("../../middleware/verifyRoles");
 // pobieranie danych do raportu FK wg wstępnego filtrowania
 router
   .route("/get-raport-data")
-  .post(verifyRoles(ROLES_LIST.FK), fKRaport.getData);
+  .post(verifyRoles(ROLES_LIST.FK), fKRaport.getRaportData);
+
+// pobieranie danych do raportu FK v2 wg wstępnego filtrowania
+router
+  .route("/get-raport-data-v2")
+  .post(verifyRoles(ROLES_LIST.FK), fKRaport.getRaportDataV2);
 
 //funckja odczytująca działy, ownerów, lokalizacje
 router
@@ -50,9 +55,15 @@ router
   .route("/delete-data-raport")
   .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.deleteDataRaport);
 
+// generowanie raportu FK i zapisanie w tabeli
 router
   .route("/generate-raport")
   .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.generateRaport);
+
+// generowanie raportu FK wersja 2 i zapisanie w tabeli
+router
+  .route("/generate-raport-v2")
+  .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.generateRaportV2);
 
 //sprawdza czy w pliku wiekowanie znajdują się dokumentu do których jest przygotowany dział (lokalizacja, owner itp) jeśli nie ma zwraca ionformacje o brakach
 router
