@@ -486,7 +486,6 @@ const getDataItems = async (req, res) => {
     const departments = depResult.map((dep) => {
       return dep.department;
     });
-
     const [locResult] = await connect_SQL.query(
       "SELECT localization from localization_items"
     );
@@ -516,6 +515,7 @@ const getDataItems = async (req, res) => {
     const [aging] = await connect_SQL.query(
       "SELECT firstValue, secondValue, title, type from aging_items"
     );
+
 
     res.json({
       data: {
