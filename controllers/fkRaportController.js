@@ -276,7 +276,7 @@ const generateRaportV2 = async (req, res) => {
   try {
     const [getData] = await connect_SQL.query(`SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
 RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, 
-DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
+DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
 S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
 FROM raportFK_accountancy AS RA 
 LEFT JOIN join_items AS JI ON RA.DZIAL = JI.department 
@@ -285,7 +285,8 @@ LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id
 LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV 
 LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV 
 LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
-WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL`);
+WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota')`);
+    // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL`);
 
     const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
 
@@ -357,7 +358,6 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
       }
       return title;
     };
-
     const cleanData = getData.map(doc => {
       const ROZNICA_FK_AS = doc.NALEZNOSC_FK - doc.NALEZNOSC_AS != 0 ? doc.NALEZNOSC_FK - doc.NALEZNOSC_AS : "NULL";
       const DATA_FV = doc.DATA_FV ? doc.DATA_FV : changeDate(doc.TERMIN_FV);
@@ -368,6 +368,7 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
       const PRZEDZIAL_WIEKOWANIE = checkAging(doc.TERMIN_FV);
       const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA ? doc.FIRMA_ZEWNETRZNA : doc.JAKA_KANCELARIA_TU ? doc.JAKA_KANCELARIA_TU : null;
       const CZY_W_KANCELARI = JAKA_KANCELARIA ? "TAK" : "NIE";
+      const HISTORIA_ZMIANY_DATY_ROZLICZENIA = doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length : null;
       let KWOTA_WPS = CZY_W_KANCELARI === "TAK" ? doc.NALEZNOSC_AS : null;
       KWOTA_WPS = doc.area === "BLACHARNIA" && doc.JAKA_KANCELARIA_TU ? doc.KWOTA_WINDYKOWANA_BECARED : null;
 
@@ -382,7 +383,9 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
         DO_ROZLICZENIA_AS: doc.NALEZNOSC_AS,
         DZIAL: doc.DZIAL,
         ETAP_SPRAWY: doc.STATUS_AKTUALNY,
+        HISTORIA_ZMIANY_DATY_ROZLICZENIA,
         ILE_DNI_NA_PLATNOSC_FV,
+        INFORMACJA_ZARZAD: doc.INFORMACJA_ZARZAD,
         JAKA_KANCELARIA,
         KONTRAHENT: doc.KONTRAHENT,
         KWOTA_DO_ROZLICZENIA_FK: doc.NALEZNOSC_FK,
@@ -393,6 +396,7 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
         OBSZAR: doc.area,
         OPIEKUN_OBSZARU_CENTRALI: doc.guardian,
         OPIS_ROZRACHUNKU: doc.OPIS_ROZRACHUNKU,
+        OSTATECZNA_DATA_ROZLICZENIA: doc.OSTATECZNA_DATA_ROZLICZENIA,
         OWNER: doc.owner,
         PRZEDZIAL_WIEKOWANIE,
         PRZETER_NIEPRZETER,
@@ -400,20 +404,19 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
         ROZNICA: ROZNICA_FK_AS,
         TERMIN_PLATNOSCI_FV: doc.TERMIN_FV,
         TYP_DOKUMENTU: doc.TYP_DOKUMENTU,
-
       };
     });
 
 
-    const filteredData = cleanData.filter(item => item.PRZEDZIAL_WIEKOWANIE !== "1-7" && item.PRZEDZIAL_WIEKOWANIE !== "<0");
+    // const filteredData = cleanData.filter(item => item.PRZEDZIAL_WIEKOWANIE !== "1-7" && item.PRZEDZIAL_WIEKOWANIE !== "<0");
 
-    console.log(filteredData);
+    // console.log(filteredData);
 
 
     await connect_SQL.query("TRUNCATE TABLE fk_raport_v2");
 
     // Teraz przygotuj dane do wstawienia
-    const values = filteredData.map(item => [
+    const values = cleanData.map(item => [
       item.BRAK_DATY_WYSTAWIENIA_FV ?? null,
       item.CZY_SAMOCHOD_WYDANY_AS ?? null,
       item.CZY_W_KANCELARI ?? null,
@@ -423,7 +426,9 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
       item.DO_ROZLICZENIA_AS ?? null,
       item.DZIAL ?? null,
       item.ETAP_SPRAWY ?? null,
+      item.HISTORIA_ZMIANY_DATY_ROZLICZENIA ?? null,
       item.ILE_DNI_NA_PLATNOSC_FV ?? null,
+      JSON.stringify(item.INFORMACJA_ZARZAD) ?? null,
       item.JAKA_KANCELARIA ?? null,
       item.KONTRAHENT ?? null,
       item.KWOTA_DO_ROZLICZENIA_FK ?? null,
@@ -432,6 +437,7 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
       item.NR_DOKUMENTU ?? null,
       item.NR_KLIENTA ?? null,
       item.OBSZAR ?? null,
+      item.OSTATECZNA_DATA_ROZLICZENIA ?? null,
       JSON.stringify(item.OPIEKUN_OBSZARU_CENTRALI) ?? null,
       JSON.stringify(item.OPIS_ROZRACHUNKU) ?? null,
       JSON.stringify(item.OWNER) ?? null,
@@ -445,9 +451,9 @@ WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA
 
     const query = `
 INSERT IGNORE INTO fk_raport_v2
-  (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DZIAL, ETAP_SPRAWY, ILE_DNI_NA_PLATNOSC_FV, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU) 
+  (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DZIAL, ETAP_SPRAWY, HISTORIA_ZMIANY_DATY_ROZLICZENIA, ILE_DNI_NA_PLATNOSC_FV, INFORMACJA_ZARZAD, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OSTATECZNA_DATA_ROZLICZENIA, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU) 
 VALUES 
-  ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+  ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
 `;
 
     // Wykonanie zapytania INSERT
