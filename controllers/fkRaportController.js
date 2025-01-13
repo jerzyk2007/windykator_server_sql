@@ -468,7 +468,7 @@ VALUES
       );
     } else {
       const sql = `INSERT INTO fk_updates_date (title, date, counter) VALUES (?, ?, ?)`;
-      const params = ["raport_v2", checkDate(new Date()), filteredData.length || 0];
+      const params = ["raport_v2", checkDate(new Date()), cleanData.length || 0];
       await connect_SQL.query(sql, params);
     }
 
