@@ -262,7 +262,7 @@ const changeSingleDocument = async (req, res) => {
   }
 };
 
-// SQL pobieram dane do tabeli, ustawienia tabeli(order, visiblility itd), kolumny
+// SQL pobieram dane do tabeli
 const getDataTable = async (req, res) => {
   const { id_user, info } = req.params;
   if (!id_user || !info) {
@@ -271,6 +271,24 @@ const getDataTable = async (req, res) => {
   try {
 
     const result = await getDataDocuments(id_user, info);
+
+    res.json(result.data);
+  } catch (error) {
+    logEvents(
+      `documentsController, getDataTable: ${error}`,
+      "reqServerErrors.txt"
+    );
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+// SQL pobieram  ustawienia tabeli(order, visiblility itd), kolumny
+const getSettingsColumnsTable = async (req, res) => {
+  const { id_user } = req.params;
+  if (!id_user) {
+    return res.status(400).json({ message: "Id and info are required." });
+  }
+  try {
 
     const findUser = await connect_SQL.query(
       "SELECT  tableSettings, columns  FROM users WHERE id_user = ?",
@@ -282,10 +300,10 @@ const getDataTable = async (req, res) => {
       : {};
     const columns = findUser[0][0].columns ? findUser[0][0].columns : [];
 
-    res.json({ dataTable: result.data, tableSettings, columns });
+    res.json({ tableSettings, columns });
   } catch (error) {
     logEvents(
-      `documentsController, getDataTable: ${error}`,
+      `documentsController, getSettingsColumnsTable: ${error}`,
       "reqServerErrors.txt"
     );
     console.error(error);
@@ -399,6 +417,7 @@ module.exports = {
   // documentsFromFile,
   changeSingleDocument,
   getDataTable,
+  getSettingsColumnsTable,
   getDataDocuments,
   getSingleDocument,
   getColumnsName,

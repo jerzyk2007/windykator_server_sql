@@ -29,10 +29,15 @@ router
 //     Documents.documentsFromFile
 //   );
 
-// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all oraz ustawienia tabeli
+// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all 
 router
   .route("/get-data-table/:id_user/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getDataTable);
+
+// pobiera wszytskie  ustawienia tabeli
+router
+  .route("/get-settings-colums-table/:id_user/")
+  .get(verifyRoles(ROLES_LIST.User), Documents.getSettingsColumnsTable);
 
 //pobiera pojedyńczy dokument
 router
