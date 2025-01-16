@@ -285,7 +285,8 @@ LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id
 LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV 
 LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV 
 LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
-WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota')`);
+`);
+    // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota')`);
     // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL`);
 
     const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
