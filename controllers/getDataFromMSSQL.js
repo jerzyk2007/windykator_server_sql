@@ -99,7 +99,6 @@ GROUP BY
     return true;
   }
   catch (error) {
-    // console.error(error);
     logEvents(`getDataFromMSSQL, addDocumentToDatabase: ${error}`, "reqServerErrors.txt");
     return false;
   }
@@ -153,7 +152,6 @@ GROUP BY
     return true;
   }
   catch (error) {
-    // console.error(error);
     logEvents(`getDataFromMSSQL, updateDocZal: ${error}`, "reqServerErrors.txt");
     return false;
   }
@@ -201,7 +199,6 @@ const updateCarReleaseDates = async () => {
   }
   catch (error) {
     logEvents(`getDataFromMSSQL, updateCarReleaseDates: ${error}`, "reqServerErrors.txt");
-    // console.error(error);
     return false;
   }
 };
@@ -279,7 +276,6 @@ WHERE T.IS_BILANS = @IS_BILANS
 
   catch (error) {
     logEvents(`getDataFromMSSQL, uspdateSettlements: ${error}`, "reqServerErrors.txt");
-    // console.error(error);
     return false;
   }
 };
@@ -424,60 +420,69 @@ const updateData = async () => {
     }
 
     // dodanie faktur do DB
-    const documentsUpdate = await addDocumentToDatabase();
-
-    await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-      [
-        checkDate(new Date()),
-        checkTime(new Date()),
-        documentsUpdate ? "Zaktualizowano." : "Błąd aktualizacji",
-        'Faktury'
-      ]
-    );
+    addDocumentToDatabase().then((result) => {
+      connect_SQL.query(
+        "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+        [
+          checkDate(new Date()),
+          checkTime(new Date()),
+          result ? "Zaktualizowano." : "Błąd aktualizacji",
+          'Faktury'
+        ]
+      );
+    }).catch((error) => {
+      logEvents(`getDataFromMSSQL - updateCarReleaseDates, getData: ${error}`, "reqServerErrors.txt");
+    });
 
     //dodawanie fv zaliczkowych
-    await updateDocZal();
+    updateDocZal();
 
     // dodanie dat wydania samochodów 
-    const carDateUpdate = await updateCarReleaseDates();
+    updateCarReleaseDates().then((result) => {
+      connect_SQL.query(
+        "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+        [
+          checkDate(new Date()),
+          checkTime(new Date()),
+          result ? "Zaktualizowano." : "Błąd aktualizacji",
+          'Wydania samochodów'
+        ]);
+    }).catch((error) => {
+      logEvents(`getDataFromMSSQL - updateCarReleaseDates, getData: ${error}`, "reqServerErrors.txt");
+    });
 
-    await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-      [
-        checkDate(new Date()),
-        checkTime(new Date()),
-        carDateUpdate ? "Zaktualizowano." : "Błąd aktualizacji",
-        'Wydania samochodów'
-      ]);
 
     // // aktualizacja rozrachunków
-    const settlementsUpdate = await updateSettlements();
-
-    await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-      [
-        checkDate(new Date()),
-        checkTime(new Date()),
-        settlementsUpdate ? "Zaktualizowano." : "Błąd aktualizacji",
-        'Rozrachunki'
-      ]);
+    updateSettlements().then((result) => {
+      connect_SQL.query(
+        "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+        [
+          checkDate(new Date()),
+          checkTime(new Date()),
+          result ? "Zaktualizowano." : "Błąd aktualizacji",
+          'Rozrachunki'
+        ]);
+    }).catch((error) => {
+      logEvents(`getDataFromMSSQL - updateSettlements, getData: ${error}`, "reqServerErrors.txt");
+    });
 
     // // aktualizacja opisu rozrachunków
-    const settlementDescriptionUpdate = await updateSettlementDescription();
+    updateSettlementDescription().then((result) => {
+      connect_SQL.query(
+        "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+        [
+          checkDate(new Date()),
+          checkTime(new Date()),
+          result ? "Zaktualizowano." : "Błąd aktualizacji",
+          'Opisy rozrachunków'
+        ]);
+    }).catch((error) => {
+      logEvents(`getDataFromMSSQL - updateSettlementDescription, getData: ${error}`, "reqServerErrors.txt");
+    });
 
-    await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-      [
-        checkDate(new Date()),
-        checkTime(new Date()),
-        settlementDescriptionUpdate ? "Zaktualizowano." : "Błąd aktualizacji",
-        'Opisy rozrachunków'
-      ]);
 
   } catch (error) {
-    logEvents(`getDataFromMSSQL, getData: ${error}`, "reqServerErrors.txt");
-    // console.error(error);
+    logEvents(`getDataFromMSSQL , getData: ${error}`, "reqServerErrors.txt");
   }
 };
 

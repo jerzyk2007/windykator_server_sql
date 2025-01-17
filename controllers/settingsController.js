@@ -46,14 +46,11 @@ const changeColumns = async (req, res) => {
       `settingsController, changeColumns: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
 
 //pobieranie unikalnych nazw Działów z documentów, dzięki temu jesli jakiś przybędzie/ubędzie to na Front będzie to widac w ustawieniach użytkonika
-
-
 const getFilteredDepartments = async (res) => {
   try {
     const [mappedDepartments] = await connect_SQL.query(
@@ -70,7 +67,6 @@ const getFilteredDepartments = async (res) => {
       `settingsController, getFilteredDepartments: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -82,8 +78,8 @@ const getSettings = async (req, res) => {
       "SELECT roles, permissions, columns FROM settings WHERE id_setting = 1"
     );
 
-    const roles = Object.entries(userSettings[0].roles).map(([role]) => role);
-
+    //zamieniam obiekt json na tablice ze stringami, kazdy klucz to wartość string w tablicy
+    const roles = Object.entries(userSettings[0].roles[0]).map(([role]) => role);
     const rolesToRemove = ["Root", "Start"];
 
     rolesToRemove.forEach((roleToRemove) => {
@@ -96,11 +92,12 @@ const getSettings = async (req, res) => {
     const rolesOrder = [
       "User",
       "Editor",
-      "AdminBL",
+      "Controller",
       "FK",
       "FKAdmin",
       "Nora",
       "Admin",
+      "SuperAdmin",
     ];
 
     roles.sort((a, b) => {
@@ -135,7 +132,6 @@ const getSettings = async (req, res) => {
       `settingsController, getSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -158,7 +154,6 @@ const getDepartments = async (req, res) => {
       `settingsController, getDepartments: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -178,7 +173,6 @@ const saveTargetPercent = async (req, res) => {
       `settingsController, saveTargetPercent: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -186,30 +180,19 @@ const saveTargetPercent = async (req, res) => {
 // pobiera kolumny tabeli dla Ustawienia kolumn tabeli sql
 const getColumns = async (req, res) => {
   try {
-    // const [columns] = await connect_SQL.query(
-    //   "Select columns FROM settings WHERE id_setting = 1"
-    // );
-    // res.json(columns[0].columns);
     const [columns] = await connect_SQL.query(
       "SELECT * FROM table_columns"
     );
-
     const [areas] = await connect_SQL.query(
       "SELECT area FROM area_items"
     );
-
     const filteredAreas = areas.map(item => item.area);
-
     res.json({ columns, areas: filteredAreas.sort() });
-    // res.json({ columns: columns[0].columns, areas: filteredAreas.sort() });
-    // res.json({ columns, areas: filteredAreas.sort() });
-
   } catch (error) {
     logEvents(
       `settingsController, getColumns: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };

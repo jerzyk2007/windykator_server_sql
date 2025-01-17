@@ -98,7 +98,6 @@ const getAllDocuments = async (req, res) => {
       `documentsController, getAllDocuments: ${error}`,
       "reqServerErrors.txt"
     );
-    // console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -193,7 +192,6 @@ const becaredFile = async (rows, res) => {
       `documentsController, becaredFile: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -262,7 +260,6 @@ const changeSingleDocument = async (req, res) => {
       `documentsController, changeSingleDocument: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -283,7 +280,6 @@ const getDataTable = async (req, res) => {
       `documentsController, getDataTable: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -311,7 +307,6 @@ const getSettingsColumnsTable = async (req, res) => {
       `documentsController, getSettingsColumnsTable: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -345,7 +340,6 @@ WHERE D.id_document = ?`,
       `documentsController, getSingleDocument: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -379,7 +373,6 @@ const getColumnsName = async (req, res) => {
       `documentsController, getColumnsName: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -412,7 +405,6 @@ const getTradeCreditData = async (req, res) => {
       `documentsController, getTradeCreditData: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };

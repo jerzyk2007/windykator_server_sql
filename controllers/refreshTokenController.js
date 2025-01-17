@@ -60,7 +60,6 @@ const handleRefreshToken = async (req, res) => {
       `refreshTokenController, handleRefreshToken: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };

@@ -159,7 +159,6 @@ const settlementsFile = async (rows, res) => {
       `addDataFromExcelFileController, settlementsFile: ${error}`,
       "reqServerErrors.txt"
     );
-    // console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -244,7 +243,6 @@ const becaredFile = async (rows, res) => {
       `addDataFromExcelFileController, becaredFile: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -524,7 +522,6 @@ const documentsFromFile = async (req, res) => {
       `addDataFromExcelFileController, documentsFromFile: ${error}`,
       "reqServerErrors.txt"
     );
-    // console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };

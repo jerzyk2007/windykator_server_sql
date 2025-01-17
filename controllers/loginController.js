@@ -57,7 +57,6 @@ const handleLogin = async (req, res) => {
     }
   } catch (error) {
     logEvents(`loginController, handleLogin: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };

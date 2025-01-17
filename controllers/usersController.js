@@ -164,7 +164,6 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
 
   }
   catch (error) {
-    console.error(error);
     logEvents(
       `usersController, verifyUserTableConfig: ${error}`,
       "reqServerErrors.txt"
@@ -275,7 +274,6 @@ const changeLogin = async (req, res) => {
     }
   } catch (error) {
     logEvents(`usersController, changeLogin: ${error}`, "reqServerErrors.txt");
-    // console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -306,7 +304,6 @@ const changeName = async (req, res) => {
     }
   } catch (error) {
     logEvents(`usersController, changeName: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -341,7 +338,6 @@ const changePassword = async (req, res) => {
       `usersController, changePassword: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -374,7 +370,6 @@ const changePasswordAnotherUser = async (req, res) => {
       `usersController, changePasswordAnotherUser: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -400,7 +395,6 @@ const changeUserPermissions = async (req, res) => {
       `usersController, changeUserPermissions: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -435,7 +429,6 @@ const changeUserDepartments = async (req, res) => {
       `usersController, changePasswordAnotherUser: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -459,7 +452,6 @@ const deleteUser = async (req, res) => {
     }
   } catch (error) {
     logEvents(`usersController, deleteUser: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -489,7 +481,6 @@ const saveTableSettings = async (req, res) => {
       `usersController, saveTableSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -518,7 +509,6 @@ const getUsersData = async (req, res) => {
     }
   } catch (error) {
     logEvents(`usersController, getUsersData: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -548,7 +538,6 @@ const changeRoles = async (req, res) => {
     }
   } catch (error) {
     logEvents(`usersController, changeRoles: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -575,7 +564,6 @@ const changeColumns = async (req, res) => {
       `usersController, changeColumns: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -625,7 +613,6 @@ const saveRaporDepartmentSettings = async (req, res) => {
       `usersController, saveRaporDepartmentSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -661,7 +648,6 @@ const getRaportDepartmentSettings = async (req, res) => {
       `usersController, getRaportDepartmentSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -711,7 +697,6 @@ const saveRaporAdviserSettings = async (req, res) => {
       `usersController, saveRaporAdviserSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -744,7 +729,6 @@ const getRaportAdviserSettings = async (req, res) => {
       `usersController, getRaportAdviserSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };

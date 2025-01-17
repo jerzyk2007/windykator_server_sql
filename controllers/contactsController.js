@@ -9,7 +9,6 @@ const getAllContacts = async (req, res) => {
         res.end();
     } catch (error) {
         logEvents(`contactsController, getAllContacts: ${error}`, 'reqServerErrors.txt');
-        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -27,7 +26,6 @@ const getSearchContacts = async (req, res) => {
         res.end();
     } catch (error) {
         logEvents(`contactsController, getSearchContacts: ${error}`, 'reqServerErrors.txt');
-        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -47,7 +45,6 @@ const getUpdateContacts = async (req, res) => {
     }
     catch (error) {
         logEvents(`contactsController, getUpdateContacts: ${error}`, 'reqServerErrors.txt');
-        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };

@@ -15,7 +15,6 @@ const getRaportData = async (req, res) => {
     res.json(dataRaport);
   } catch (error) {
     logEvents(`fkRaportController, getRaportData: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -32,7 +31,6 @@ const getRaportDataV2 = async (req, res) => {
     res.json(dataRaport);
   } catch (error) {
     logEvents(`fkRaportController, getRaportDataV2: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -57,7 +55,6 @@ const getDateCounter = async (req, res) => {
       `fkRaportController, getDateCounter: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -262,7 +259,6 @@ const generateRaport = async (req, res) => {
     res.end();
   }
   catch (error) {
-    console.error(error);
     logEvents(
       `fkRaportController, generateRaport: ${error}`,
       "reqServerErrors.txt"
@@ -478,7 +474,6 @@ VALUES
     res.end();
   }
   catch (error) {
-    console.error(error);
     logEvents(
       `fkRaportController, generateRaportV2: ${error}`,
       "reqServerErrors.txt"
@@ -538,7 +533,6 @@ const getDataItems = async (req, res) => {
     });
   } catch (error) {
     logEvents(`fkRaportController, getDataItems: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -599,7 +593,6 @@ const getFKSettingsItems = async (req, res) => {
       `fkRaportController, getFKSettingsItems: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -660,7 +653,6 @@ const saveItemsData = async (req, res) => {
     res.end();
   } catch (error) {
     logEvents(`fkRaportController, saveItemsData: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -674,7 +666,6 @@ const getPreparedItems = async (req, res) => {
     res.json(preparedItems);
   } catch (error) {
     logEvents(`fkRaportController, savePrepareItems: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -713,7 +704,6 @@ const savePreparedItems = async (req, res) => {
     res.end();
   } catch (error) {
     logEvents(`fkRaportController, savePrepareItems: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -735,7 +725,6 @@ const getDepfromDocuments = async (req, res) => {
       `fkRaportController, getDepfromAccountancy: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 };

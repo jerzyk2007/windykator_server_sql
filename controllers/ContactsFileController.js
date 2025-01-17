@@ -75,7 +75,6 @@ const addMailAndPhoneToExistingData = async (data, info) => {
     }
     catch (error) {
         logEvents(`contactsFileController, addMailAndPhoneToExistingData: ${error}`, 'reqServerErrors.txt');
-        console.error(error);
     }
 };
 
@@ -109,7 +108,6 @@ const addNewDataToDataBase = async (data) => {
         // await Contact.create(data);
     } catch (error) {
         logEvents(`contactsFileController, addNewDataToDataBase: ${error}`, 'reqServerErrors.txt');
-        console.error(error);
     }
 };
 
@@ -170,7 +168,6 @@ const addManyContactsFromExcel = async (req, res) => {
 
     } catch (error) {
         logEvents(`contactsFileController, addManyContactsFromExcel: ${error}`, 'reqServerErrors.txt');
-        console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 };

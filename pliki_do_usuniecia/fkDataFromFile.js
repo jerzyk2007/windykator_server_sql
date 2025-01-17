@@ -24,7 +24,6 @@ const getPreparedItems = async (req, res) => {
     res.json({});
   } catch (error) {
     logEvents(`dataFkFromFile, getPreparedItems: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     return res.status(500).json({ error: "Server error" });
   }
 };
@@ -93,7 +92,6 @@ const savePreparedData = async (docsData, type) => {
 
   } catch (error) {
     logEvents(`dataFkFromFile, savePreparedData: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     return false;
   }
 };
@@ -115,7 +113,6 @@ const getPreparedData = async (req, res) => {
   } catch (error) {
     logEvents(`dataFkFromFile, getPreparedData: ${error}`, "reqServerErrors.txt");
 
-    console.error(error);
     return res.status(500).json({ error: "Server error" });
   }
 };
@@ -128,7 +125,6 @@ const getDocumentsBL = async (req, res) => {
     res.json({});
   } catch (error) {
     logEvents(`dataFkFromFile, getPreparedData: ${error}`, "reqServerErrors.txt");
-    console.error(error);
     return res.status(500).json({ error: "Server error" });
   }
 };
@@ -191,58 +187,6 @@ const dataToGenerateRaport = async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
-
-// const saveRaportFK = async (req, res) => {
-//   try {
-//     const { dataRaport } = req.body;
-
-//     // zapis do DB po zmianach
-//     // await FKDataRaport.findOneAndUpdate(
-//     //   {},
-//     //   {
-//     //     $set: {
-//     //       FKDataRaports: dataRaport,
-//     //     },
-//     //   },
-//     //   {
-//     //     returnOriginal: false,
-//     //     upsert: true,
-//     //   }
-//     // );
-
-//     // const dateObj = new Date();
-//     // // Pobieramy poszczególne elementy daty i czasu
-//     // const day = dateObj.getDate().toString().padStart(2, "0"); // Dzień
-//     // const month = (dateObj.getMonth() + 1).toString().padStart(2, "0"); // Miesiąc (numerowany od 0)
-//     // const year = dateObj.getFullYear(); // Rok
-
-//     // // Formatujemy datę i czas według wymagań
-//     // const actualDate = `${day}-${month}-${year}`;
-
-//     // const updateDate = {
-//     //   date: actualDate,
-//     //   counter: dataRaport.length,
-//     // };
-
-//     // await FKRaport.findOneAndUpdate(
-//     //   {}, // Warunek wyszukiwania (pusty obiekt oznacza wszystkie dokumenty)
-//     //   {
-//     //     $set: {
-//     //       "updateDate.genrateRaport": updateDate,
-//     //     },
-//     //   }, // Nowe dane, które mają zostać ustawione
-//     //   {
-//     //     upsert: true, // Opcja upsert: true pozwala na automatyczne dodanie nowego dokumentu, jeśli nie zostanie znaleziony pasujący dokument
-//     //     returnOriginal: false, // Opcja returnOriginal: false powoduje zwrócenie zaktualizowanego dokumentu, a nie oryginalnego dokumentu
-//     //   }
-//     // );
-//     res.end();
-//   } catch (error) {
-//     logEvents(`dataFkFromFile, saveRaportFK: ${error}`, "reqServerErrors.txt");
-//     console.error(error);
-//     return res.status(500).json({ error: "Server error" });
-//   }
-// };
 
 // dodawana jest nazwa działu na podstawie numeru faktury
 const prepareDepartments = (data) => {
@@ -419,7 +363,6 @@ const docDateUpdate = async (docsData) => {
 
 
   } catch (error) {
-    console.error(error);
     logEvents(`dataFkFromFile, carDateUpdate: ${error}`, "reqServerErrors.txt");
 
     return false;  // Zwracamy false w przypadku błędu
@@ -571,7 +514,6 @@ const dataFkAccocuntancyFromExcel = async (req, res) => {
       `dataFkFromFile, dataFkFromExcel: ${error}`,
       "reqServerErrors.txt"
     );
-    console.error(error);
     return res.status(500).json({ error: "Server error" });
   }
 };
