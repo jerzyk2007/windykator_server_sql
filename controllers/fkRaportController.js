@@ -1,9 +1,9 @@
 const { connect_SQL } = require("../config/dbConn");
-const { checkDate } = require('./manageDocumentAddition');
+const { checkDate, checkTime } = require('./manageDocumentAddition');
 
 const { logEvents } = require("../middleware/logEvents");
 
-//funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika
+//funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika - wersja 1 - będzie niebawem usuwana
 const getRaportData = async (req, res) => {
   try {
     const [dataRaport] = await connect_SQL.query('SELECT * FROM fk_raport');
@@ -19,7 +19,7 @@ const getRaportData = async (req, res) => {
   }
 };
 
-//funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika
+//funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika, wersja poprawiona
 const getRaportDataV2 = async (req, res) => {
   try {
     const [dataRaport] = await connect_SQL.query('SELECT * FROM fk_raport_v2');
@@ -75,6 +75,7 @@ const deleteDataRaport = async (req, res) => {
   }
 };
 
+// generowanie raportu wersji 1 i zapisanie do bazy danych
 const generateRaport = async (req, res) => {
   try {
     const [getData] = await connect_SQL.query('SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS FROM raportFK_accountancy AS RA LEFT JOIN join_items AS JI ON RA.DZIAL = JI.department LEFT JOIN documents AS D ON RA.NUMER_FV = D.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER ');
@@ -268,6 +269,7 @@ const generateRaport = async (req, res) => {
 
 };
 
+// generowanie raportu w wersji poprawionej 
 const generateRaportV2 = async (req, res) => {
   try {
     const [getData] = await connect_SQL.query(`SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
@@ -482,6 +484,7 @@ VALUES
   }
 };
 
+//funckja odczytująca działy, ownerów, lokalizacje
 const getDataItems = async (req, res) => {
   try {
     const [depResult] = await connect_SQL.query(
@@ -729,6 +732,7 @@ const getDepfromDocuments = async (req, res) => {
   }
 };
 
+//funkcja dodaje dane z pliku wiekowania i sprawdza czy w pliku wiekowanie znajdują się dokumentu do których jest przygotowany dział (lokalizacja, owner itp) jeśli nie ma zwraca ionformacje o brakach
 const dataFkAccocuntancyFromExcel = async (req, res) => {
   const { documents_data } = req.body;
   try {
@@ -773,6 +777,60 @@ const dataFkAccocuntancyFromExcel = async (req, res) => {
   }
 };
 
+// funkcja która robi znaczniki przy dokumentach,m zgodnych z dokumentami z fkraport, żeby user mógł mieć dostęp tylko do dokumentów omawianych w fkraport
+const saveMark = async (req, res) => {
+  const documents = req.body;
+  try {
+    const excludedNames = ['ALL', 'KSIĘGOWOŚĆ', 'WYDANE - NIEZAPŁACONE'];
+
+    const result = documents
+      .filter(doc => !excludedNames.includes(doc.name)) // Filtruj obiekty o nazwach do wykluczenia
+      .flatMap(doc => doc.data) // Rozbij tablice data na jedną tablicę
+      .map(item => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU
+
+    await connect_SQL.query(`UPDATE mark_documents SET RAPORT_FK = 0`);
+
+    for (const doc of result) {
+
+
+      const [checkDoc] = await connect_SQL.query(`SELECT NUMER_FV FROM mark_documents WHERE NUMER_FV = ?`, [doc]);
+
+      if (checkDoc[0]?.NUMER_FV) {
+        await connect_SQL.query(
+          `UPDATE mark_documents SET RAPORT_FK = 1 WHERE NUMER_FV = ?`,
+          [doc]
+        );
+      } else {
+        await connect_SQL.query(
+          `INSERT IGNORE INTO mark_documents (NUMER_FV, RAPORT_FK) VALUES (?, 1)`,
+          [doc]
+        );
+      }
+    }
+    connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Zaktualizowano.",
+        'Dokumenty Raportu FK'
+      ]);
+    res.end();
+
+  }
+  catch (error) {
+    logEvents(`fkRaportController, saveMark: ${error}`, "reqServerErrors.txt");
+    connect_SQL.query(
+      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Błąd aktualizacji",
+        'Dokumenty Raportu FK'
+      ]);
+  }
+};
+
 module.exports = {
   getRaportData,
   getRaportDataV2,
@@ -786,5 +844,6 @@ module.exports = {
   savePreparedItems,
   getPreparedItems,
   getDepfromDocuments,
-  dataFkAccocuntancyFromExcel
+  dataFkAccocuntancyFromExcel,
+  saveMark
 };

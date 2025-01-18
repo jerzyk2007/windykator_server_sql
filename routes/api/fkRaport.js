@@ -73,4 +73,12 @@ router
     fKRaport.dataFkAccocuntancyFromExcel
   );
 
+// pobierane dane z front po wygenerowaniu raportu fk dla dodania znacznika
+router
+  .route("/send-document-mark-fk")
+  .post(
+    verifyRoles(ROLES_LIST.FKAdmin),
+    fKRaport.saveMark
+  );
+
 module.exports = router;
