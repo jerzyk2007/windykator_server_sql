@@ -94,10 +94,8 @@ const getSettings = async (req, res) => {
       "Editor",
       "Controller",
       "FK",
-      "FKAdmin",
       "Nora",
       "Admin",
-      "SuperAdmin",
     ];
 
     roles.sort((a, b) => {

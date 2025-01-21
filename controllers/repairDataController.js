@@ -137,8 +137,47 @@ const checkFKDocuments = async () => {
     }
 };
 
+const repairRoles = async () => {
+    try {
+        // const [users] = await connect_SQL.query(`SELECT id_user, roles FROM users`);
+        const [users] = await connect_SQL.query(`SELECT id_user, roles FROM users`);
+
+        const updatedUsers = users.map(item => {
+            if (item.roles.Editor) {
+                // console.log(item);
+                // Usunięcie kluczy SuperAdmin i AdminBL, jeśli istnieją
+                // delete item.roles.SuperAdmin;
+                // delete item.roles.FKAdmin;
+
+                // // Zmiana wartości klucza Admin na 1000, jeśli istnieje
+                if ('Editor' in item.roles) {
+                    item.roles.Editor = 110;
+                }
+            }
+            return item;
+        });
+        // console.log(updatedUsers);
+        // console.log(users);
+        // for (item of updatedUsers) {
+        //     // console.log(item.id_user);
+        //     console.log(item.roles);
+
+        //     connect_SQL.query(
+        //         "UPDATE users SET  roles = ? WHERE id_user = ?",
+        //         [
+        //             JSON.stringify(item.roles),
+        //             item.id_user
+        //         ]);
+        // }
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
-    checkFKDocuments
+    checkFKDocuments,
+    repairRoles
 };

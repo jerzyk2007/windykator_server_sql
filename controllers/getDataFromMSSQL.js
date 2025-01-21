@@ -392,7 +392,7 @@ const updateData = async () => {
       "SELECT data_name, date,  hour, update_success FROM updates"
     );
 
-    const filteredUpdatesData = getUpdatesData.filter(item => item.data_name !== 'Rubicon' && item.data_name !== 'BeCared');
+    const filteredUpdatesData = getUpdatesData.filter(item => item.data_name !== 'Rubicon' && item.data_name !== 'BeCared' && item.data_name !== "Dokumenty Raportu FK");
 
 
     const updateProgress = filteredUpdatesData.map(item => {

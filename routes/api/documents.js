@@ -17,18 +17,6 @@ router
   .route("/change-single-document/:id_document")
   .patch(verifyRoles(ROLES_LIST.User), Documents.changeSingleDocument);
 
-// router
-//   .route("/get-columns")
-//   .get(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.AdminBL), Documents.getColumns);
-
-// router
-//   .route("/send-documents/:type")
-//   .post(
-//     verifyRoles(ROLES_LIST.EditorPlus, ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-//     upload.single("excelFile"),
-//     Documents.documentsFromFile
-//   );
-
 // pobiera wszytskie faktury wg uprawnień oraz actula/archive/all 
 router
   .route("/get-data-table/:id_user/:info")

@@ -28,7 +28,7 @@ router
 //funckja zapisujaca działy, ownerów, lokalizacje
 router
   .route("/save-items-data/:info")
-  .patch(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.saveItemsData);
+  .patch(verifyRoles(ROLES_LIST.FK), fKRaport.saveItemsData);
 
 // funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
 router
@@ -53,23 +53,23 @@ router
 // usuwam wszystkie dane wczytanych plików excel raportu FK
 router
   .route("/delete-data-raport")
-  .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.deleteDataRaport);
+  .get(verifyRoles(ROLES_LIST.FK), fKRaport.deleteDataRaport);
 
 // generowanie raportu FK i zapisanie w tabeli
 router
   .route("/generate-raport")
-  .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.generateRaport);
+  .get(verifyRoles(ROLES_LIST.FK), fKRaport.generateRaport);
 
 // generowanie raportu FK wersja 2 i zapisanie w tabeli
 router
   .route("/generate-raport-v2")
-  .get(verifyRoles(ROLES_LIST.FKAdmin), fKRaport.generateRaportV2);
+  .get(verifyRoles(ROLES_LIST.FK), fKRaport.generateRaportV2);
 
 //sprawdza czy w pliku wiekowanie znajdują się dokumentu do których jest przygotowany dział (lokalizacja, owner itp) jeśli nie ma zwraca ionformacje o brakach
 router
   .route("/send-accountancy-fk")
   .post(
-    verifyRoles(ROLES_LIST.FKAdmin),
+    verifyRoles(ROLES_LIST.FK),
     fKRaport.dataFkAccocuntancyFromExcel
   );
 
@@ -77,7 +77,7 @@ router
 router
   .route("/send-document-mark-fk")
   .post(
-    verifyRoles(ROLES_LIST.FKAdmin),
+    verifyRoles(ROLES_LIST.FK),
     fKRaport.saveMark
   );
 

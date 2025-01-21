@@ -6,7 +6,7 @@ const verifyRoles = require("../../middleware/verifyRoles");
 
 router
     .route('/advisers-name')
-    .get(verifyRoles(ROLES_LIST.SuperAdmin), Repair.repairAdvisersName);
+    .get(verifyRoles(ROLES_LIST.Admin), Repair.repairAdvisersName);
 
 
 module.exports = router;

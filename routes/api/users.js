@@ -12,70 +12,70 @@ router.route("/change-pass/:id_user").patch(
 router
   .route("/another-user-change-pass/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.changePasswordAnotherUser
   );
 
 router
   .route("/change-login/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.changeLogin
   );
 
 router
   .route("/change-name/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.changeName
   );
 
 router
   .route("/change-roles/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.changeRoles
   );
 
 router
   .route("/change-columns/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.changeColumns
   );
 
 router
   .route("/change-permissions/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.changeUserPermissions
   );
 
 router
   .route("/change-departments/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.changeUserDepartments
   );
 
 router
   .route("/register")
   .post(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.createNewUser
   );
 
 router
   .route("/delete-user/:id_user")
   .delete(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.deleteUser
   );
 
 router
   .route("/get-userdata")
   .get(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin),
     usersController.getUsersData
   );
 

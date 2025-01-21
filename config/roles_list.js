@@ -3,11 +3,9 @@ const ROLES_LIST = {
   User: 100,
   Editor: 110,
   Controller: 120,
-  Admin: 150,
   FK: 200,
-  FKAdmin: 250,
   Nora: 300,
-  SuperAdmin: 1000,
+  Admin: 1000,
   Root: 5000,
 };
 
