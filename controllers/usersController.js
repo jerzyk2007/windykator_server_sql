@@ -2,6 +2,7 @@ const { connect_SQL } = require("../config/dbConn");
 const bcryptjs = require("bcryptjs");
 const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
+const { newUserTableSettings, raportSettings } = require('./manageDocumentAddition');
 
 
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
@@ -198,40 +199,11 @@ const createNewUser = async (req, res) => {
     const hashedPwd = await bcryptjs.hash(password, 10);
     const roles = { Start: 1 };
 
-    const newUserTableSettings = {
-      "size": {},
-      "order": [
-        "NUMER_FV",
-        "DATA_FV",
-        "TERMIN",
-        "ILE_DNI_PO_TERMINIE",
-        "BRUTTO",
-        "DO_ROZLICZENIA",
-        "UWAGI_ASYSTENT",
-        "mrt-row-spacer"
-      ],
-      "pinning": {
-        "left": [],
-        "right": []
-      },
-      "visible": {
-        "NUMER_FV": true,
-        "DATA_FV": true,
-        "TERMIN": true,
-        "ILE_DNI_PO_TERMINIE": true,
-        "BRUTTO": true,
-        "DO_ROZLICZENIA": true,
-        "UWAGI_ASYSTENT": true,
-      },
-      "pagination": {
-        "pageSize": 10,
-        "pageIndex": 0
-      }
-    };
+
 
     await connect_SQL.query(
-      "INSERT INTO users (username, usersurname, userlogin, password, roles, tableSettings) VALUES (?, ?, ?, ?, ?, ?)",
-      [username, usersurname, userlogin, hashedPwd, JSON.stringify(roles), JSON.stringify(newUserTableSettings)]
+      "INSERT INTO users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [username, usersurname, userlogin, hashedPwd, JSON.stringify(roles), JSON.stringify(newUserTableSettings), JSON.stringify(raportSettings)]
     );
     res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
   } catch (error) {

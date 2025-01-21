@@ -1,6 +1,6 @@
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
-const { checkFKDocuments, repairRoles } = require("./repairDataController");
+const { checkFKDocuments, repairRoles, repairColumnsRaports } = require("./repairDataController");
 const { updateData, updateSettlements, updateSettlementDescription, updateDocZal, updateCarReleaseDates } = require("./getDataFromMSSQL");
 
 const getTime = async (req, res) => {
@@ -12,6 +12,7 @@ const getTime = async (req, res) => {
     // await updateCarReleaseDates();
     // await checkFKDocuments();
     // await repairRoles();
+    await repairColumnsRaports();
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT data_name, date,  hour, update_success FROM updates"
     );
