@@ -165,6 +165,7 @@ const settlementsFile = async (rows, res) => {
 
 // SQL funkcja która dodaje dane z becared
 const becaredFile = async (rows, res) => {
+  console.log('bec');
   if (
     !("Numery Faktur" in rows[0]) ||
     !("Etap Sprawy" in rows[0]) ||

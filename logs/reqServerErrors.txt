@@ -1,0 +1,40 @@
+20250123	09:08:07	documentsController, getDataDocuments: Error: read ECONNRESET
+20250123	09:08:07	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20250123	09:16:12	documentsController, getDataDocuments: Error: read ECONNRESET
+20250123	09:16:12	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20250123	09:20:18	fkRaportController, getFKSettingsItems: Error: read ECONNRESET
+20250123	10:05:05	documentsController, changeSingleDocument: Error: read ECONNRESET
+20250123	10:18:54	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:19:05	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:19:07	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:20:14	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:20:27	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:20:39	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:20:47	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:21:13	documentsController, getTradeCreditData: Error: Column count doesn't match value count at row 1
+20250123	10:30:50	documentsController, getTradeCreditData: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''23-01-2025 - Komorowski - sdddd', '23-01-2025 - Komorowski - ddddd' WHERE NUMER' at line 1
+20250123	10:31:26	documentsController, getTradeCreditData: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''23-01-2025 - Komorowski - sdddd', '23-01-2025 - Komorowski - ddddd', '23-01-202' at line 1
+20250123	10:31:56	documentsController, getTradeCreditData: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''23-01-2025 - Komorowski - sdddd', '23-01-2025 - Komorowski - ddddd', '23-01-202' at line 1
+20250123	11:07:28	fkRaportController, saveMark: Error: read ECONNRESET
+20250123	11:07:56	fkRaportController, saveMark: Error: read ECONNRESET
+20250123	11:19:36	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	11:19:58	documentsController, getDataDocuments: Error: read ECONNRESET
+20250123	11:19:58	documentsController, getDataTable: TypeError: Cannot read properties of undefined (reading 'data')
+20250123	11:25:36	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	11:25:55	logoutController, handleLogout: Error: read ECONNRESET
+20250123	11:31:33	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	11:31:43	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	11:32:07	fkRaportController, saveMark: Error: read ECONNRESET
+20250123	11:37:59	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	11:38:19	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	11:38:23	fkRaportController, getDateCounter: Error: read ECONNRESET
+20250123	11:40:48	fkRaportController, getRaportDataV2: Error: read ECONNRESET
+20250123	12:09:06	fkRaportController, getRaportDataV2: Error: read ECONNRESET
+20250123	12:09:26	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	12:12:01	fkRaportController, saveMark: Error: read ECONNRESET
+20250123	12:17:22	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	12:17:41	logoutController, handleLogout: Error: read ECONNRESET
+20250123	12:49:26	fkRaportController, saveMark: Error: read ECONNRESET
+20250123	13:08:32	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	13:08:45	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250123	13:09:26	fkRaportController, saveMark: Error: read ECONNRESET

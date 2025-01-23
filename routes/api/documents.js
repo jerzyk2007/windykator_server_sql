@@ -13,9 +13,13 @@ router
   .route("/get-all/:id_user/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getAllDocuments);
 
+// zmienia dane pojedyńczego dokumenty - edit row table
 router
-  .route("/change-single-document/:id_document")
+  .route("/change-single-document")
   .patch(verifyRoles(ROLES_LIST.User), Documents.changeSingleDocument);
+// router
+//   .route("/change-single-document/:id_document")
+//   .patch(verifyRoles(ROLES_LIST.User), Documents.changeSingleDocument);
 
 // pobiera wszytskie faktury wg uprawnień oraz actula/archive/all 
 router
@@ -41,5 +45,9 @@ router
 router
   .route("/get-data-credit-trade")
   .get(verifyRoles(ROLES_LIST.User), Documents.getTradeCreditData);
+
+router
+  .route("/change-control-chat")
+  .patch(verifyRoles(ROLES_LIST.Controller), Documents.changeControlChat);
 
 module.exports = router;
