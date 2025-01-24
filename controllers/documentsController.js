@@ -419,9 +419,9 @@ const getTradeCreditData = async (req, res) => {
   }
 };
 
+// zapis chatu z kontroli dokumentacji
 const changeControlChat = async (req, res) => {
   const { NUMER_FV, chat } = req.body;
-  console.log(chat);
   try {
     const [findDoc] = await connect_SQL.query(
       "SELECT NUMER_FV FROM control_documents WHERE NUMER_FV = ?", [NUMER_FV]
@@ -442,15 +442,82 @@ const changeControlChat = async (req, res) => {
           JSON.stringify(chat)
         ]
       );
-      console.log('nie ma');
-
     }
-    console.log(findDoc);
     res.end();
   }
   catch (error) {
     logEvents(
-      `documentsController, getTradeCreditData: ${error}`,
+      `documentsController, changeControlChat: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+// pobiera dane  kontroli dokumentacji
+const getDataDocumentsControl = async (req, res) => {
+  try {
+    const { doc_nr } = req.params;
+    const [doc_control] = await connect_SQL.query(
+      "SELECT * FROM control_documents WHERE NUMER_FV = ?", [doc_nr]
+    );
+    if (doc_control.length) {
+      res.json(doc_control[0]);
+    } else {
+      res.json(doc_control);
+    }
+  }
+  catch (error) {
+    logEvents(
+      `documentsController, getControlChat: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+
+// zapis chatu z kontroli dokumentacji
+const changeDocumentControl = async (req, res) => {
+  const { NUMER_FV, documentControlBL } = req.body;
+  try {
+    const [findDoc] = await connect_SQL.query(
+      "SELECT NUMER_FV FROM control_documents WHERE NUMER_FV = ?", [NUMER_FV]
+    );
+    if (findDoc[0]?.NUMER_FV) {
+      await connect_SQL.query(
+        "UPDATE control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?  WHERE NUMER_FV = ?",
+        [
+          documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
+          documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
+          documentControlBL.prawoJazdy ? documentControlBL.prawoJazdy : null,
+          documentControlBL.dowodRejestr ? documentControlBL.dowodRejestr : null,
+          documentControlBL.polisaAC ? documentControlBL.polisaAC : null,
+          documentControlBL.faktura ? documentControlBL.faktura : null,
+          documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
+          documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
+          NUMER_FV
+        ]
+      );
+
+    } else {
+      await connect_SQL.query(
+        "INSERT INTO control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [NUMER_FV,
+          documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
+          documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
+          documentControlBL.prawoJazdy ? documentControlBL.prawoJazdy : null,
+          documentControlBL.dowodRejestr ? documentControlBL.dowodRejestr : null,
+          documentControlBL.polisaAC ? documentControlBL.polisaAC : null,
+          documentControlBL.faktura ? documentControlBL.faktura : null,
+          documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
+          documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
+        ]
+      );
+    }
+    res.end();
+  }
+  catch (error) {
+    logEvents(
+      `documentsController, changeControlChat: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -465,5 +532,7 @@ module.exports = {
   getSingleDocument,
   getColumnsName,
   getTradeCreditData,
-  changeControlChat
+  changeControlChat,
+  getDataDocumentsControl,
+  changeDocumentControl
 };

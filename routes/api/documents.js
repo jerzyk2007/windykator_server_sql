@@ -46,8 +46,19 @@ router
   .route("/get-data-credit-trade")
   .get(verifyRoles(ROLES_LIST.User), Documents.getTradeCreditData);
 
+// zapisuje zmiany w chat kontroli dokuemntacji
 router
   .route("/change-control-chat")
   .patch(verifyRoles(ROLES_LIST.Controller), Documents.changeControlChat);
+
+// pobieram dane z chata kontroli dokumentacji
+router
+  .route("/get-control-document/:doc_nr")
+  .get(verifyRoles(ROLES_LIST.Controller), Documents.getDataDocumentsControl);
+
+// zapisuje zmiany w  kontroli dokuemntu
+router
+  .route("/change-document-control")
+  .patch(verifyRoles(ROLES_LIST.Controller), Documents.changeDocumentControl);
 
 module.exports = router;
