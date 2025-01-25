@@ -831,6 +831,26 @@ const saveMark = async (req, res) => {
   }
 };
 
+// pobiera dane do raportu kontroli dokuemntów BL
+const getRaportDocumentsControlBL = async (req, res) => {
+  try {
+    const [dataReport] = await connect_SQL.query(
+      "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND FKR.CZY_W_KANCELARI = 'NIE' AND FKR.PRZEDZIAL_WIEKOWANIE !='<0' AND FKR.PRZEDZIAL_WIEKOWANIE !='1-7' AND FKR.DO_ROZLICZENIA_AS > 0"
+    );
+    if (dataReport.length) {
+      const cleanedData = dataReport.map(({ id_control_documents, NUMER_FV, ...rest }) => rest);
+      res.json(cleanedData);
+    } else {
+      res.json([]);
+    }
+
+  }
+  catch (error) {
+    logEvents(`fkRaportController, getRaportDocumentsControlBL: ${error}`, "reqServerErrors.txt");
+    ;
+  }
+};
+
 module.exports = {
   getRaportData,
   getRaportDataV2,
@@ -845,5 +865,6 @@ module.exports = {
   getPreparedItems,
   getDepfromDocuments,
   dataFkAccocuntancyFromExcel,
-  saveMark
+  saveMark,
+  getRaportDocumentsControlBL
 };
