@@ -42,7 +42,7 @@ const handleRefreshToken = async (req, res) => {
             },
           },
           process.env.ACCESS_TOKEN_SECRET,
-          { expiresIn: "3m" }
+          { expiresIn: "1h" }
         );
         res.json({
           accessToken,
