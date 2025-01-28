@@ -86,4 +86,9 @@ router
   .route("/get-data-raports-control-BL")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Controller, ROLES_LIST.Admin), fKRaport.getRaportDocumentsControlBL);
 
+// dane struktury orgaznizacji
+router
+  .route("/get-organization-structure")
+  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getStructureOrganization);
+
 module.exports = router;

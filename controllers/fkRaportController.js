@@ -48,7 +48,6 @@ const getDateCounter = async (req, res) => {
       return acc;
     }, {});
 
-    // console.log(jsonObject);
     res.json({ updateData: jsonObject });
   } catch (error) {
     logEvents(
@@ -81,7 +80,6 @@ const generateRaport = async (req, res) => {
     const [getData] = await connect_SQL.query('SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS FROM raportFK_accountancy AS RA LEFT JOIN join_items AS JI ON RA.DZIAL = JI.department LEFT JOIN documents AS D ON RA.NUMER_FV = D.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER ');
 
     const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
-    // console.log(getAging);
 
     // jeśli nie ma DATA_FV to od TERMIN_FV jest odejmowane 14 dni
     const changeDate = (dateStr) => {
@@ -287,6 +285,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
     // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota')`);
     // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL`);
 
+
     const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
 
     // jeśli nie ma DATA_FV to od TERMIN_FV jest odejmowane 14 dni
@@ -365,7 +364,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
       const PRZETER_NIEPRZETER = isOlderThanToday(doc.TERMIN_FV) ? "Przeterminowane" : "Nieprzeterminowane";
       const CZY_SAMOCHOD_WYDANY = doc.DATA_WYDANIA_AUTA && (doc.area === "SAMOCHODY NOWE" || doc.area === "SAMOCHODY UŻYWANE") ? "TAK" : null;
       const PRZEDZIAL_WIEKOWANIE = checkAging(doc.TERMIN_FV);
-      const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA ? doc.FIRMA_ZEWNETRZNA : doc.JAKA_KANCELARIA_TU ? doc.JAKA_KANCELARIA_TU : null;
+      const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA ? doc.FIRMA_ZEWNETRZNA : doc.JAKA_KANCELARIA_TU && doc.area === 'BLACHARNIA' ? doc.JAKA_KANCELARIA_TU : null;
       const CZY_W_KANCELARI = JAKA_KANCELARIA ? "TAK" : "NIE";
       const HISTORIA_ZMIANY_DATY_ROZLICZENIA = doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length : null;
       let KWOTA_WPS = CZY_W_KANCELARI === "TAK" ? doc.NALEZNOSC_AS : null;
@@ -410,7 +409,6 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
 
     // const filteredData = cleanData.filter(item => item.PRZEDZIAL_WIEKOWANIE !== "1-7" && item.PRZEDZIAL_WIEKOWANIE !== "<0");
 
-    // console.log(filteredData);
 
 
     await connect_SQL.query("TRUNCATE TABLE fk_raport_v2");
@@ -788,10 +786,10 @@ const saveMark = async (req, res) => {
       .flatMap(doc => doc.data) // Rozbij tablice data na jedną tablicę
       .map(item => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU
 
+
     await connect_SQL.query(`UPDATE mark_documents SET RAPORT_FK = 0`);
 
     for (const doc of result) {
-
 
       const [checkDoc] = await connect_SQL.query(`SELECT NUMER_FV FROM mark_documents WHERE NUMER_FV = ?`, [doc]);
 
@@ -851,6 +849,25 @@ const getRaportDocumentsControlBL = async (req, res) => {
   }
 };
 
+// pobiera dane struktury orgaznizacji
+const getStructureOrganization = async (req, res) => {
+  try {
+    const [data] = await connect_SQL.query(
+      "SELECT * FROM join_items ORDER BY department"
+    );
+    if (data.length) {
+      const cleanedData = data.map(({ id_join_items, ...rest }) => rest);
+      res.json(cleanedData);
+    } else {
+      res.json([]);
+    }
+  }
+  catch (error) {
+    logEvents(`fkRaportController, getStructureOrganization: ${error}`, "reqServerErrors.txt");
+    ;
+  }
+};
+
 module.exports = {
   getRaportData,
   getRaportDataV2,
@@ -866,5 +883,6 @@ module.exports = {
   getDepfromDocuments,
   dataFkAccocuntancyFromExcel,
   saveMark,
-  getRaportDocumentsControlBL
+  getRaportDocumentsControlBL,
+  getStructureOrganization
 };

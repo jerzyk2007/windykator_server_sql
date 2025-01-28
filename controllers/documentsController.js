@@ -211,17 +211,17 @@ const becaredFile = async (rows, res) => {
 const changeSingleDocument = async (req, res) => {
   const { id_document, documentItem } = req.body;
   try {
-    const [documentsExist] = await connect_SQL.query(
-      "SELECT id_document from documents WHERE id_document = ?",
-      [id_document]
-    );
+    // const [documentsExist] = await connect_SQL.query(
+    //   "SELECT id_document from documents WHERE id_document = ?",
+    //   [id_document]
+    // );
 
-    if (documentsExist[0]?.id_document) {
-      await connect_SQL.query(
-        "UPDATE documents SET BRUTTO = ?, NETTO = ? WHERE id_document = ?",
-        [documentItem.BRUTTO, documentItem.NETTO, id_document]
-      );
-    }
+    // if (documentsExist[0]?.id_document) {
+    //   await connect_SQL.query(
+    //     "UPDATE documents SET BRUTTO = ?, NETTO = ? WHERE id_document = ?",
+    //     [documentItem.BRUTTO, documentItem.NETTO, id_document]
+    //   );
+    // }
 
     const [documents_ActionsExist] = await connect_SQL.query(
       "SELECT id_action from documents_actions WHERE document_id = ?",
@@ -232,6 +232,7 @@ const changeSingleDocument = async (req, res) => {
       await connect_SQL.query(
         "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ?, INFORMACJA_ZARZAD = ?  WHERE document_id = ?",
         [
+          // documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK" ? documentItem.DZIALANIA : null,
           documentItem.DZIALANIA ? documentItem.DZIALANIA : null,
           documentItem.JAKA_KANCELARIA_TU,
           documentItem.POBRANO_VAT,
@@ -239,7 +240,7 @@ const changeSingleDocument = async (req, res) => {
           JSON.stringify(documentItem.UWAGI_ASYSTENT),
           documentItem.BLAD_DORADCY,
           documentItem.DATA_WYDANIA_AUTA ? documentItem.DATA_WYDANIA_AUTA : null,
-          documentItem.OSTATECZNA_DATA_ROZLICZENIA ? documentItem.OSTATECZNA_DATA_ROZLICZENIA : null,
+          documentItem?.OSTATECZNA_DATA_ROZLICZENIA && documentItem.OSTATECZNA_DATA_ROZLICZENIA !== "BRAK" ? documentItem.OSTATECZNA_DATA_ROZLICZENIA : null,
           documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA) : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
           documentItem.INFORMACJA_ZARZAD ? JSON.stringify(documentItem.INFORMACJA_ZARZAD) : documentItem.INFORMACJA_ZARZAD,
           id_document,
@@ -327,42 +328,22 @@ const getSingleDocument = async (req, res) => {
   try {
     const [result] = await connect_SQL.query(
       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
-D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
-D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
-D.VIN, 
-DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, DA.OSTATECZNA_DATA_ROZLICZENIA, DA.INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU,
-DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
-ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
-IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area AS AREA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA, 
-IFNULL(R.STATUS_AKTUALNY, 'BRAK') AS STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL
-FROM documents AS D 
-LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
-LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
-LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
-LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
-LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
-LEFT JOIN fv_zaliczkowe AS FZAL ON D.NUMER_FV = FZAL.NUMER_FV 
-WHERE D.id_document = ?`,
+    D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
+    D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
+    D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+    ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
+    IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area AS AREA, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, 
+    R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL
+    FROM documents AS D 
+    LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
+    LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
+    LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
+    LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
+    LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
+    LEFT JOIN fv_zaliczkowe AS FZAL ON D.NUMER_FV = FZAL.NUMER_FV 
+    WHERE D.id_document = ?`,
       [id_document]
     );
-    //     const [result] = await connect_SQL.query(
-    //       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
-    // D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
-    // D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
-    // D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
-    // ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
-    // IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area AS AREA, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, 
-    // R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL
-    // FROM documents AS D 
-    // LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
-    // LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
-    // LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
-    // LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
-    // LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
-    // LEFT JOIN fv_zaliczkowe AS FZAL ON D.NUMER_FV = FZAL.NUMER_FV 
-    // WHERE D.id_document = ?`,
-    //       [id_document]
-    //     );
 
     res.json(result[0]);
   } catch (error) {
