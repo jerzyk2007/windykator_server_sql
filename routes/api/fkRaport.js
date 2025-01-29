@@ -73,12 +73,20 @@ router
     fKRaport.dataFkAccocuntancyFromExcel
   );
 
-// pobierane dane z front po wygenerowaniu raportu fk dla dodania znacznika
+// znacznik na dokumentach dla raportu fk 
 router
   .route("/send-document-mark-fk")
   .post(
     verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin),
     fKRaport.saveMark
+  );
+
+// usuwanie znacznika na wybranym dokumencie dla raportu fk 
+router
+  .route("/change-mark-document")
+  .patch(
+    verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin),
+    fKRaport.changeMark
   );
 
 // dane do raportu kontroli dokumentów BL

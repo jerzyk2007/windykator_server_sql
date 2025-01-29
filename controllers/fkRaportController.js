@@ -776,25 +776,25 @@ const dataFkAccocuntancyFromExcel = async (req, res) => {
 const saveMark = async (req, res) => {
   const documents = req.body;
   try {
+    // // await connect_SQL.query(`UPDATE mark_documents SET RAPORT_FK = 0`);
+    await connect_SQL.query('TRUNCATE mark_documents');
 
-    await connect_SQL.query(`UPDATE mark_documents SET RAPORT_FK = 0`);
 
-    for (const doc of documents) {
+    // // Teraz przygotuj dane do wstawienia
+    const values = documents.map(item => [
+      item
+    ]);
 
-      const [checkDoc] = await connect_SQL.query(`SELECT NUMER_FV FROM mark_documents WHERE NUMER_FV = ?`, [doc]);
+    const query = `
+       INSERT IGNORE INTO mark_documents
+         (NUMER_FV, RAPORT_FK) 
+       VALUES 
+         ${values.map(() => "(?, 1)").join(", ")}
+     `;
 
-      if (checkDoc[0]?.NUMER_FV) {
-        await connect_SQL.query(
-          `UPDATE mark_documents SET RAPORT_FK = 1 WHERE NUMER_FV = ?`,
-          [doc]
-        );
-      } else {
-        await connect_SQL.query(
-          `INSERT IGNORE INTO mark_documents (NUMER_FV, RAPORT_FK) VALUES (?, 1)`,
-          [doc]
-        );
-      }
-    }
+    // // Wykonanie zapytania INSERT
+    await connect_SQL.query(query, values.flat());
+
     connect_SQL.query(
       "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
       [
@@ -817,6 +817,27 @@ const saveMark = async (req, res) => {
       ]);
   }
 };
+
+// usunięcie danego dokumentu z wyświetlania w tabeli dla danego działu
+const changeMark = async (req, res) => {
+  const { NUMER_FV, MARK_FK } = req.body;
+  try {
+
+    await connect_SQL.query(
+      "UPDATE mark_documents SET RAPORT_FK = ? WHERE NUMER_FV = ?",
+      [
+        MARK_FK,
+        NUMER_FV
+      ]
+    );
+    res.end();
+  }
+  catch (error) {
+    logEvents(`fkRaportController, changeMark: ${error}`, "reqServerErrors.txt");
+
+  }
+};
+
 
 // pobiera dane do raportu kontroli dokuemntów BL
 const getRaportDocumentsControlBL = async (req, res) => {
@@ -872,6 +893,7 @@ module.exports = {
   getDepfromDocuments,
   dataFkAccocuntancyFromExcel,
   saveMark,
+  changeMark,
   getRaportDocumentsControlBL,
   getStructureOrganization
 };

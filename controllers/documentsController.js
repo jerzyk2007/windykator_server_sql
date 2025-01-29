@@ -332,7 +332,7 @@ const getSingleDocument = async (req, res) => {
     D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  DS.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
     ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
     IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area AS AREA, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, 
-    R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL
+    R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL, MD.NUMER_FV AS MARK_FV, MD.RAPORT_FK AS MARK_FK
     FROM documents AS D 
     LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
     LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
@@ -340,6 +340,7 @@ const getSingleDocument = async (req, res) => {
     LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
     LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
     LEFT JOIN fv_zaliczkowe AS FZAL ON D.NUMER_FV = FZAL.NUMER_FV 
+    LEFT JOIN mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV
     WHERE D.id_document = ?`,
       [id_document]
     );
