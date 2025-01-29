@@ -241,7 +241,7 @@ const changeSingleDocument = async (req, res) => {
           documentItem.DATA_WYDANIA_AUTA && documentItem.DATA_WYDANIA_AUTA !== "BRAK" ? documentItem.DATA_WYDANIA_AUTA : null,
           documentItem?.OSTATECZNA_DATA_ROZLICZENIA && documentItem.OSTATECZNA_DATA_ROZLICZENIA !== "BRAK" ? documentItem.OSTATECZNA_DATA_ROZLICZENIA : null,
           documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA) : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-          documentItem.INFORMACJA_ZARZAD ? JSON.stringify(documentItem.INFORMACJA_ZARZAD) : documentItem.INFORMACJA_ZARZAD,
+          documentItem.INFORMACJA_ZARZAD ? JSON.stringify(documentItem.INFORMACJA_ZARZAD) : null,
           id_document,
         ]
       );
@@ -258,7 +258,7 @@ const changeSingleDocument = async (req, res) => {
           documentItem.DATA_WYDANIA_AUTA && documentItem.DATA_WYDANIA_AUTA !== "BRAK" ? documentItem.DATA_WYDANIA_AUTA : null,
           documentItem?.OSTATECZNA_DATA_ROZLICZENIA && documentItem.OSTATECZNA_DATA_ROZLICZENIA !== "BRAK" ? documentItem.OSTATECZNA_DATA_ROZLICZENIA : null,
           documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA) : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-          documentItem.INFORMACJA_ZARZAD ? JSON.stringify(documentItem.INFORMACJA_ZARZAD) : documentItem.INFORMACJA_ZARZAD,
+          documentItem.INFORMACJA_ZARZAD ? JSON.stringify(documentItem.INFORMACJA_ZARZAD) : null,
 
         ]
       );

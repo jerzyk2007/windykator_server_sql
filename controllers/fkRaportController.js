@@ -27,7 +27,6 @@ const getRaportDataV2 = async (req, res) => {
     dataRaport.forEach(item => {
       delete item.id_fk_raport;
     });
-
     res.json(dataRaport);
   } catch (error) {
     logEvents(`fkRaportController, getRaportDataV2: ${error}`, "reqServerErrors.txt");
@@ -409,8 +408,6 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
 
     // const filteredData = cleanData.filter(item => item.PRZEDZIAL_WIEKOWANIE !== "1-7" && item.PRZEDZIAL_WIEKOWANIE !== "<0");
 
-
-
     await connect_SQL.query("TRUNCATE TABLE fk_raport_v2");
 
     // Teraz przygotuj dane do wstawienia
@@ -779,17 +776,10 @@ const dataFkAccocuntancyFromExcel = async (req, res) => {
 const saveMark = async (req, res) => {
   const documents = req.body;
   try {
-    const excludedNames = ['ALL', 'KSIĘGOWOŚĆ', 'WYDANE - NIEZAPŁACONE'];
-
-    const result = documents
-      .filter(doc => !excludedNames.includes(doc.name)) // Filtruj obiekty o nazwach do wykluczenia
-      .flatMap(doc => doc.data) // Rozbij tablice data na jedną tablicę
-      .map(item => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU
-
 
     await connect_SQL.query(`UPDATE mark_documents SET RAPORT_FK = 0`);
 
-    for (const doc of result) {
+    for (const doc of documents) {
 
       const [checkDoc] = await connect_SQL.query(`SELECT NUMER_FV FROM mark_documents WHERE NUMER_FV = ?`, [doc]);
 
@@ -814,7 +804,6 @@ const saveMark = async (req, res) => {
         'Dokumenty Raportu FK'
       ]);
     res.end();
-
   }
   catch (error) {
     logEvents(`fkRaportController, saveMark: ${error}`, "reqServerErrors.txt");
