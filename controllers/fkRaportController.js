@@ -878,6 +878,178 @@ const getStructureOrganization = async (req, res) => {
   }
 };
 
+const generateHistoryDocuments = async (req, res) => {
+  try {
+    const [dataFK] = await connect_SQL.query(
+      "SELECT MD.NUMER_FV, DA.OSTATECZNA_DATA_ROZLICZENIA, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, DA.INFORMACJA_ZARZAD FROM mark_documents as MD LEFT JOIN documents AS D ON MD.NUMER_FV = D.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id WHERE MD.RAPORT_FK = 1");
+
+    const [accounancyDate] = await connect_SQL.query(`SELECT date FROM fk_updates_date WHERE title = 'accountancy'`);
+
+    if (!accounancyDate[0]?.date) {
+      return res.end();
+    }
+    const raportDate = accounancyDate[0].date;
+
+    for (const doc of dataFK) {
+
+
+      const [searchDoc] = await connect_SQL.query(`SELECT * FROM history_fk_documents WHERE NUMER_FV = ?`, [doc.NUMER_FV]);
+
+      if (searchDoc.length) {
+        const COUNTER_DATE = searchDoc[0].COUNTER_DATE;
+
+        // jeśli raport jest wygenerowany tego samego dnia, a były już wpisy, to je aktualizaujemy
+        if (COUNTER_DATE.includes(raportDate)) {
+          const historyDoc = searchDoc[0].HISTORY_DOC.map(item => {
+            if (item.date === raportDate) {
+              //aktualizuję historię daty rozliczenia
+              let historyDate = doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
+              const historyDateItem = searchDoc[0].HISTORY_DOC[0].history.historyDate;
+
+              // Znalezienie ostatniego wspólnego indeksu
+              const lastDateIndex = historyDate
+                .map((el, index) => historyDateItem.includes(el) ? index : -1)
+                .filter(index => index !== -1)
+                .pop(); // Pobieramy ostatni indeks
+
+              if (lastDateIndex !== undefined && lastDateIndex + 1 < historyDate.length) {
+                historyDate = historyDate.slice(lastDateIndex + 1);
+              } else {
+                historyDate = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+              }
+
+              // Dodanie tylko jeśli historyText nie jest puste
+              const updateHistoryDate = historyDate.length > 0
+                ? [...historyDateItem, ...historyDate]
+                : historyDateItem;
+
+              // aktualizauję historię decyzji biznesu
+              let historyText = doc.INFORMACJA_ZARZAD;
+              const historyTextItem = searchDoc[0].HISTORY_DOC[0].history.historyText;
+
+              // Znalezienie ostatniego wspólnego indeksu
+              const lastTextIndex = historyText
+                .map((el, index) => historyTextItem.includes(el) ? index : -1)
+                .filter(index => index !== -1)
+                .pop(); // Pobieramy ostatni indeks
+              if (lastTextIndex !== undefined && lastTextIndex + 1 < historyText.length) {
+                historyText = historyText.slice(lastTextIndex + 1);
+              } else {
+                historyText = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+              }
+
+              // Dodanie tylko jeśli historyText nie jest puste
+              const updateHistoryText = historyText.length > 0
+                ? [...historyTextItem, ...historyText]
+                : historyTextItem;
+
+              return {
+                ...item,
+                history: {
+                  ...item.history,
+                  historyDate: updateHistoryDate,
+                  historyText: updateHistoryText
+                },
+                historyCounter: {
+                  date: updateHistoryDate?.length ? updateHistoryDate.length : 0,
+                  text: updateHistoryText?.length ? updateHistoryText.length : 0
+                }
+              };
+            }
+            return item;
+          });
+          await connect_SQL.query(`UPDATE history_fk_documents SET HISTORY_DOC = ? WHERE NUMER_FV = ?`, [
+            JSON.stringify(historyDoc),
+            searchDoc[0].NUMER_FV
+          ]);
+
+        } else {
+          const counterDate = [...searchDoc[0].COUNTER_DATE, raportDate];
+          const info = `${searchDoc[0].HISTORY_DOC.length + 1} raport utworzono ${raportDate}`;
+
+          //aktualizuję historię daty rozliczenia
+          let historyDate = doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
+          const historyDateItem = searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyDate;
+
+          // Znalezienie ostatniego wspólnego indeksu
+          const lastDateIndex = historyDate
+            .map((el, index) => historyDateItem.includes(el) ? index : -1)
+            .filter(index => index !== -1)
+            .pop(); // Pobieramy ostatni indeks
+
+          if (lastDateIndex !== undefined && lastDateIndex + 1 < historyDate.length) {
+            historyDate = historyDate.slice(lastDateIndex + 1);
+          } else {
+            historyDate = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+          }
+
+          // aktualizauję historię decyzji biznesu
+          let historyText = doc.INFORMACJA_ZARZAD;
+          const historyTextItem = searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyText;
+
+          // Znalezienie ostatniego wspólnego indeksu
+          const lastTextIndex = historyText
+            .map((el, index) => historyTextItem.includes(el) ? index : -1)
+            .filter(index => index !== -1)
+            .pop(); // Pobieramy ostatni indeks
+          if (lastTextIndex !== undefined && lastTextIndex + 1 < historyText.length) {
+            historyText = historyText.slice(lastTextIndex + 1);
+          } else {
+            historyText = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+          }
+
+          const historyDoc = {
+            date: raportDate,
+            history: {
+              info,
+              historyDate,
+              historyText
+            },
+            historyCounter: {
+              date: historyDate?.length ? historyDate.length : 0,
+              text: historyText?.length ? historyText.length : 0
+            }
+          };
+
+
+          const updateDoc = [...searchDoc[0].HISTORY_DOC, historyDoc];
+
+          await connect_SQL.query(`UPDATE history_fk_documents SET COUNTER_DATE = ?, HISTORY_DOC = ? WHERE NUMER_FV = ?`, [
+            JSON.stringify(counterDate),
+            JSON.stringify(updateDoc),
+            searchDoc[0].NUMER_FV
+          ]);
+        }
+      } else {
+        const history = [{
+          date: raportDate,
+          historyCounter: {
+            date: doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length : 0,
+            text: doc?.INFORMACJA_ZARZAD?.length ? doc.INFORMACJA_ZARZAD.length : 0
+          },
+          history: {
+            info: `1 raport utworzono ${raportDate}`,
+            historyDate: doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [],
+            historyText: doc?.INFORMACJA_ZARZAD ? doc.INFORMACJA_ZARZAD : []
+          }
+        }];
+
+
+        await connect_SQL.query(`INSERT INTO history_fk_documents (NUMER_FV, COUNTER_DATE, HISTORY_DOC) VALUES (?, ?, ?)`, [
+          doc.NUMER_FV,
+          JSON.stringify([raportDate]),
+          JSON.stringify(history)
+        ]);
+      }
+    }
+    res.end();
+  }
+  catch (error) {
+    logEvents(`fkRaportController, generateHistoryDocuments: ${error}`, "reqServerErrors.txt");
+    ;
+  }
+};
+
 module.exports = {
   getRaportData,
   getRaportDataV2,
@@ -895,5 +1067,6 @@ module.exports = {
   saveMark,
   changeMark,
   getRaportDocumentsControlBL,
-  getStructureOrganization
+  getStructureOrganization,
+  generateHistoryDocuments
 };

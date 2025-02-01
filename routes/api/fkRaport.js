@@ -99,4 +99,8 @@ router
   .route("/get-organization-structure")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getStructureOrganization);
 
+router
+  .route("/generate-history-documents")
+  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateHistoryDocuments);
+
 module.exports = router;
