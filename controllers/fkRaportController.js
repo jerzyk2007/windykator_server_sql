@@ -22,7 +22,8 @@ const getRaportData = async (req, res) => {
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika, wersja poprawiona
 const getRaportDataV2 = async (req, res) => {
   try {
-    const [dataRaport] = await connect_SQL.query('SELECT * FROM fk_raport_v2');
+    // const [dataRaport] = await connect_SQL.query('SELECT * FROM fk_raport_v2');
+    const [dataRaport] = await connect_SQL.query('SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK_V2.* FROM fk_raport_v2 AS FK_V2 LEFT JOIN history_fk_documents AS HFD ON FK_V2.NR_DOKUMENTU = HFD.NUMER_FV');
     //usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach(item => {
       delete item.id_fk_raport;
@@ -900,12 +901,12 @@ const generateHistoryDocuments = async (req, res) => {
 
         // jeśli raport jest wygenerowany tego samego dnia, a były już wpisy, to je aktualizaujemy
         if (COUNTER_DATE.includes(raportDate)) {
+
           const historyDoc = searchDoc[0].HISTORY_DOC.map(item => {
             if (item.date === raportDate) {
               //aktualizuję historię daty rozliczenia
-              let historyDate = doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
-              const historyDateItem = searchDoc[0].HISTORY_DOC[0].history.historyDate;
-
+              let historyDate = Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [];
+              const historyDateItem = Array.isArray(searchDoc[0].HISTORY_DOC[0].history.historyDate) ? searchDoc[0].HISTORY_DOC[0].history.historyDate : [];
               // Znalezienie ostatniego wspólnego indeksu
               const lastDateIndex = historyDate
                 .map((el, index) => historyDateItem.includes(el) ? index : -1)
@@ -924,8 +925,8 @@ const generateHistoryDocuments = async (req, res) => {
                 : historyDateItem;
 
               // aktualizauję historię decyzji biznesu
-              let historyText = doc.INFORMACJA_ZARZAD;
-              const historyTextItem = searchDoc[0].HISTORY_DOC[0].history.historyText;
+              let historyText = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
+              const historyTextItem = Array.isArray(searchDoc[0].HISTORY_DOC[0].history.historyText) ? searchDoc[0].HISTORY_DOC[0].history.historyText : [];
 
               // Znalezienie ostatniego wspólnego indeksu
               const lastTextIndex = historyText
@@ -958,18 +959,20 @@ const generateHistoryDocuments = async (req, res) => {
             }
             return item;
           });
+
           await connect_SQL.query(`UPDATE history_fk_documents SET HISTORY_DOC = ? WHERE NUMER_FV = ?`, [
             JSON.stringify(historyDoc),
             searchDoc[0].NUMER_FV
           ]);
 
         } else {
+
           const counterDate = [...searchDoc[0].COUNTER_DATE, raportDate];
           const info = `${searchDoc[0].HISTORY_DOC.length + 1} raport utworzono ${raportDate}`;
 
           //aktualizuję historię daty rozliczenia
-          let historyDate = doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
-          const historyDateItem = searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyDate;
+          let historyDate = Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [];
+          const historyDateItem = Array.isArray(searchDoc[0].HISTORY_DOC) ? searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyDate : [];
 
           // Znalezienie ostatniego wspólnego indeksu
           const lastDateIndex = historyDate
@@ -984,8 +987,8 @@ const generateHistoryDocuments = async (req, res) => {
           }
 
           // aktualizauję historię decyzji biznesu
-          let historyText = doc.INFORMACJA_ZARZAD;
-          const historyTextItem = searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyText;
+          let historyText = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
+          const historyTextItem = Array.isArray(searchDoc[0].HISTORY_DOC) ? searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyText : [];
 
           // Znalezienie ostatniego wspólnego indeksu
           const lastTextIndex = historyText
@@ -1046,7 +1049,8 @@ const generateHistoryDocuments = async (req, res) => {
   }
   catch (error) {
     logEvents(`fkRaportController, generateHistoryDocuments: ${error}`, "reqServerErrors.txt");
-    ;
+
+    console.error(error);
   }
 };
 
