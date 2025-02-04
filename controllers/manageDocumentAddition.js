@@ -86,10 +86,39 @@ const checkTime = (data) => {
     return timeNow;
 };
 
+// nadaje nazwę dla typu dokumentów np. faktura, korekta, inne ...
+const documentsType = (data) => {
+    let documentsType = "";
+    if (data.includes("KF/ZAL")) {
+        documentsType = "Korekta zaliczki";
+    } else if (data.includes("KF/")) {
+        documentsType = "Korekta";
+    } else if (data.includes("KP/")) {
+        documentsType = "KP";
+    } else if (data.includes("NO/")) {
+        documentsType = "Nota";
+    } else if (data.includes("PP/")) {
+        documentsType = "Paragon";
+    } else if (data.includes("PK")) {
+        documentsType = "PK";
+    } else if (data.includes("IP/")) {
+        documentsType = "Karta Płatnicza";
+    } else if (data.includes("FV/ZAL")) {
+        documentsType = "Faktura zaliczkowa";
+    } else if (data.includes("FV/")) {
+        documentsType = "Faktura";
+    } else {
+        documentsType = "Inne";
+    }
+
+    return documentsType;
+};
+
 module.exports = {
     addDepartment,
     checkDate,
     checkTime,
     raportSettings,
-    newUserTableSettings
+    newUserTableSettings,
+    documentsType
 };
