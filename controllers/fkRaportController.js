@@ -558,11 +558,13 @@ const getDataItems = async (req, res) => {
     });
 
     const [ownerResult] = await connect_SQL.query(
-      "SELECT owner from owner_items"
+      "SELECT owner, owner_mail from owner_items"
     );
-    const owners = ownerResult.map((owner) => {
-      return owner.owner;
-    });
+    // const owners = ownerResult.map((owner) => {
+
+    //   return owner.owner;
+    // });
+
 
     const [guardianResult] = await connect_SQL.query(
       "SELECT guardian from guardian_items"
@@ -581,7 +583,8 @@ const getDataItems = async (req, res) => {
         departments,
         localizations,
         areas,
-        owners,
+        owners: ownerResult,
+
         guardians,
         aging,
       },
@@ -669,34 +672,45 @@ const saveItemsData = async (req, res) => {
   };
   const type = info.slice(0, -1);
   try {
-    if (info !== "aging") {
+    if (info !== "aging" && info !== "owners") {
+
       await connect_SQL.query(`TRUNCATE TABLE ${type}_items`);
       for (const item of dataMap[info]) {
-        const [checkDuplicate] = await connect_SQL.query(
-          `SELECT ${type} FROM ${type}_items WHERE ${type} = ?`,
+        await connect_SQL.query(
+          `INSERT IGNORE INTO ${type}_items (${type}) VALUES (?)`,
           [item]
         );
-        if (!checkDuplicate[0]) {
-          await connect_SQL.query(
-            `INSERT IGNORE INTO ${type}_items (${type}) VALUES (?)`,
-            [item]
-          );
-        }
       }
-    } else {
+    } else if (info === 'owners') {
+
+      await connect_SQL.query(`TRUNCATE TABLE owner_items`);
+      for (const owner of owners) {
+        await connect_SQL.query(
+          `INSERT IGNORE INTO owner_items (owner, owner_mail) VALUES (?, ?)`,
+          [owner.newName,
+          owner.newMail
+          ]
+        );
+      }
+    }
+    else {
       await connect_SQL.query("TRUNCATE TABLE aging_items");
       for (const item of dataMap[info]) {
-        const [checkDuplicate] = await connect_SQL.query(
-          `SELECT title FROM aging_items WHERE title = ?`,
-          [item.title]
-        );
+        // const [checkDuplicate] = await connect_SQL.query(
+        //   `SELECT title FROM aging_items WHERE title = ?`,
+        //   [item.title]
+        // );
 
-        if (!checkDuplicate[0]) {
-          await connect_SQL.query(
-            "INSERT IGNORE INTO aging_items (firstValue, secondValue, title, type ) VALUES (?, ?, ?, ?)",
-            [item.firstValue, item.secondValue, item.title, item.type]
-          );
-        }
+        // if (!checkDuplicate[0]) {
+        //   await connect_SQL.query(
+        //     "INSERT IGNORE INTO aging_items (firstValue, secondValue, title, type ) VALUES (?, ?, ?, ?)",
+        //     [item.firstValue, item.secondValue, item.title, item.type]
+        //   );
+        // }
+        await connect_SQL.query(
+          "INSERT IGNORE INTO aging_items (firstValue, secondValue, title, type ) VALUES (?, ?, ?, ?)",
+          [item.firstValue, item.secondValue, item.title, item.type]
+        );
       }
       // await FKRaport.updateOne(
       //   {},
@@ -922,8 +936,30 @@ const getStructureOrganization = async (req, res) => {
     const [data] = await connect_SQL.query(
       "SELECT * FROM join_items ORDER BY department"
     );
+
+    const findMail = await Promise.all(
+      data.map(async (item) => {
+        const ownerMail = await Promise.all(
+          item.owner.map(async (own) => {
+            const [mail] = await connect_SQL.query(
+              `SELECT owner_mail FROM owner_items WHERE owner = ?`, [own]
+            );
+
+            // Zamiana null na "Brak danych"
+            return mail.map(row => row.owner_mail || "Brak danych");
+          })
+        );
+
+        return {
+          ...item,
+          mail: ownerMail.flat() // Spłaszczamy tablicę wyników
+        };
+      })
+    );
+
+
     if (data.length) {
-      const cleanedData = data.map(({ id_join_items, ...rest }) => rest);
+      const cleanedData = findMail.map(({ id_join_items, ...rest }) => rest);
       res.json(cleanedData);
     } else {
       res.json([]);
