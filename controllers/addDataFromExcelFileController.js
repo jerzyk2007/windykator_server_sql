@@ -2,7 +2,7 @@ const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 const { checkDate, checkTime } = require('./manageDocumentAddition');
-const { addDepartment } = require('./manageDocumentAddition');
+const { addDepartment, documentsType } = require('./manageDocumentAddition');
 const { add } = require("date-fns");
 
 
@@ -390,30 +390,6 @@ const accountancyFile = async (rows, res) => {
     }
 
     const changeNameColumns = rows.map(item => {
-      // nadaję typ dokumentu np korekta
-      let TYP_DOKUMENTU = "";
-      if (item["Nr. dokumentu"].includes("KF/ZAL")) {
-        TYP_DOKUMENTU = "Korekta zaliczki";
-      } else if (item["Nr. dokumentu"].includes("KF/")) {
-        TYP_DOKUMENTU = "Korekta";
-      } else if (item["Nr. dokumentu"].includes("KP/")) {
-        TYP_DOKUMENTU = "KP";
-      } else if (item["Nr. dokumentu"].includes("NO/")) {
-        TYP_DOKUMENTU = "Nota";
-      } else if (item["Nr. dokumentu"].includes("PP/")) {
-        TYP_DOKUMENTU = "Paragon";
-      } else if (item["Nr. dokumentu"].includes("PK")) {
-        TYP_DOKUMENTU = "PK";
-      } else if (item["Nr. dokumentu"].includes("IP/")) {
-        TYP_DOKUMENTU = "Karta Płatnicza";
-      } else if (item["Nr. dokumentu"].includes("FV/ZAL")) {
-        TYP_DOKUMENTU = "Faktura zaliczkowa";
-      } else if (item["Nr. dokumentu"].includes("FV/")) {
-        TYP_DOKUMENTU = "Faktura";
-      } else {
-        TYP_DOKUMENTU = "Inne";
-      }
-
       return {
         NUMER: item["Nr. dokumentu"],
         KONTRAHENT: item["Kontrahent"],
@@ -421,7 +397,7 @@ const accountancyFile = async (rows, res) => {
         DO_ROZLICZENIA: item["Płatność"],
         TERMIN: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
         KONTO: item["Synt."],
-        TYP_DOKUMENTU
+        TYP_DOKUMENTU: documentsType(item["Nr. dokumentu"])
       };
     });
 
