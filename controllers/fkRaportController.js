@@ -1,5 +1,7 @@
 const { connect_SQL } = require("../config/dbConn");
 const { checkDate, checkTime } = require('./manageDocumentAddition');
+const { documentsType } = require('./manageDocumentAddition');
+
 
 const { logEvents } = require("../middleware/logEvents");
 
@@ -19,16 +21,70 @@ const getRaportData = async (req, res) => {
   }
 };
 
+// do wyszukiwania różnic pomiędzy FK a AS
+const differencesAS_FK = async () => {
+  try {
+    //pobieram wszytskie numery faktur z programu
+    const [docAS] = await connect_SQL.query(`SELECT D.NUMER_FV FROM documents AS D LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV WHERE S.NALEZNOSC !=0`);
+    const fvAS = docAS.map(item => item.NUMER_FV);
+
+    const [docFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU FROM fk_raport_v2`);
+    const fvFK = docFK.map(item => item.NR_DOKUMENTU);
+
+    const filteredFvAS = fvAS.filter(fv => !fvFK.includes(fv));
+
+    const sqlCondition = filteredFvAS?.length > 0 ? `(${filteredFvAS.map(dep => `D.NUMER_FV = '${dep}'`).join(' OR ')})` : null;
+
+    const [getDoc] = await connect_SQL.query(
+      `SELECT D.NUMER_FV AS NR_DOKUMENTU, D.DZIAL, IFNULL(JI.localization, 'BRAK DANYCH') AS LOKALIZACJA, D.KONTRAHENT, S.NALEZNOSC AS DO_ROZLICZENIA_AS, 
+      D.DATA_FV AS DATA_WYSTAWIENIA_FV, D.TERMIN AS TERMIN_PLATNOSCI_FV,
+      IFNULL(JI.area, 'BRAK DANYCH') AS OBSZAR, IFNULL(JI.guardian, 'BRAK DANY') AS OPIEKUN_OBSZARU_CENTRALI, 
+      IFNULL(JI.owner,  'BRAK DANY') AS OWNER
+      FROM documents AS D 
+      LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
+      LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
+      WHERE S.NALEZNOSC !=0 AND ${sqlCondition}`
+    );
+
+    const safeParseJSON = (data) => {
+      try {
+        return data ? JSON.parse(data) : data;
+      } catch (error) {
+        return data; // Zwraca oryginalną wartość, jeśli parsowanie się nie powiodło
+      }
+    };
+
+    const addDocType = getDoc.map(item => {
+      return {
+        ...item,
+        TYP_DOKUMENTU: documentsType(item.NR_DOKUMENTU),
+        OWNER: safeParseJSON(item.OWNER),
+        OPIEKUN_OBSZARU_CENTRALI: safeParseJSON(item.OPIEKUN_OBSZARU_CENTRALI)
+      };
+    });
+
+    return addDocType;
+  }
+  catch (error) {
+    logEvents(`fkRaportController, differencesAS_FK: ${error}`, "reqServerErrors.txt");
+    return [];
+  }
+};
+
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika, wersja poprawiona
 const getRaportDataV2 = async (req, res) => {
   try {
-    // const [dataRaport] = await connect_SQL.query('SELECT * FROM fk_raport_v2');
     const [dataRaport] = await connect_SQL.query('SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK_V2.* FROM fk_raport_v2 AS FK_V2 LEFT JOIN history_fk_documents AS HFD ON FK_V2.NR_DOKUMENTU = HFD.NUMER_FV');
     //usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach(item => {
       delete item.id_fk_raport;
     });
-    res.json(dataRaport);
+
+
+    const getDifferencesFK_AS = await differencesAS_FK();
+
+    res.json({ dataRaport, differences: getDifferencesFK_AS });
+    // res.json([]);
   } catch (error) {
     logEvents(`fkRaportController, getRaportDataV2: ${error}`, "reqServerErrors.txt");
     res.status(500).json({ error: "Server error" });
