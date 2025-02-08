@@ -343,7 +343,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
 
 
     // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
-    const [getAging] = await connect_SQL.query('SELECT \`FIRST_VALUE\`, SECOND_VALUE, TITLE, TYPE FROM aging_items');
+    const [getAging] = await connect_SQL.query('SELECT \`FROM_TIME\`, TO_TIME, TITLE, TYPE FROM aging_items');
 
     console.log(getAging);
 
@@ -395,19 +395,19 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
       let title = "";
 
       for (const age of getAging) {
-        if (age.TYPE === "first" && Number(age.FIRST_VALUE) >= differenceInDays) {
+        if (age.TYPE === "first" && Number(age.FROM_TIME) >= differenceInDays) {
           title = age.TITLE;
           break;
         } else if (
           age.TYPE === "last" &&
-          Number(age.SECOND_VALUE) <= differenceInDays
+          Number(age.TO_TIME) <= differenceInDays
         ) {
           title = age.TITLE;
           break;
         } else if (
           age.TYPE === "some" &&
-          Number(age.FIRST_VALUE) <= differenceInDays &&
-          Number(age.SECOND_VALUE) >= differenceInDays
+          Number(age.FROM_TIME) <= differenceInDays &&
+          Number(age.TO_TIME) >= differenceInDays
         ) {
           title = age.TITLE;
           break;
