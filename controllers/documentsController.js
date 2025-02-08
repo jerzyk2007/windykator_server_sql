@@ -86,6 +86,15 @@ const getDataDocuments = async (id_user, info) => {
         filteredData = [];
       }
     }
+    else if (info === "disabled_fk") {
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 0 AND ${sqlCondition}`);
+      }
+      else if (truePermissions[0] === "Basic") {
+        // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
+        filteredData = [];
+      }
+    }
     return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
     logEvents(

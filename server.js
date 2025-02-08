@@ -52,7 +52,7 @@ app.use("/user", require("./routes/api/users"));
 app.use("/raport", require("./routes/api/raports"));
 app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
-// app.use("/repair", require("./routes/api/repair"));
+app.use("/items", require("./routes/api/items"));
 app.use("/add-data", require("./routes/api/addDataFromExcelFile"));
 
 app.all("*", (req, res) => {
