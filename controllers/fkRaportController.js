@@ -1,5 +1,7 @@
 const { connect_SQL } = require("../config/dbConn");
 const { checkDate, checkTime } = require('./manageDocumentAddition');
+const { documentsType } = require('./manageDocumentAddition');
+
 
 const { logEvents } = require("../middleware/logEvents");
 
@@ -19,15 +21,70 @@ const getRaportData = async (req, res) => {
   }
 };
 
+// do wyszukiwania różnic pomiędzy FK a AS
+const differencesAS_FK = async () => {
+  try {
+    //pobieram wszytskie numery faktur z programu
+    const [docAS] = await connect_SQL.query(`SELECT D.NUMER_FV FROM documents AS D LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV WHERE S.NALEZNOSC !=0`);
+    const fvAS = docAS.map(item => item.NUMER_FV);
+
+    const [docFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU FROM fk_raport_v2`);
+    const fvFK = docFK.map(item => item.NR_DOKUMENTU);
+
+    const filteredFvAS = fvAS.filter(fv => !fvFK.includes(fv));
+
+    const sqlCondition = filteredFvAS?.length > 0 ? `(${filteredFvAS.map(dep => `D.NUMER_FV = '${dep}'`).join(' OR ')})` : null;
+
+    const [getDoc] = await connect_SQL.query(
+      `SELECT D.NUMER_FV AS NR_DOKUMENTU, D.DZIAL, IFNULL(JI.localization, 'BRAK DANYCH') AS LOKALIZACJA, D.KONTRAHENT, S.NALEZNOSC AS DO_ROZLICZENIA_AS, 
+      D.DATA_FV AS DATA_WYSTAWIENIA_FV, D.TERMIN AS TERMIN_PLATNOSCI_FV,
+      IFNULL(JI.area, 'BRAK DANYCH') AS OBSZAR, IFNULL(JI.guardian, 'BRAK DANY') AS OPIEKUN_OBSZARU_CENTRALI, 
+      IFNULL(JI.owner,  'BRAK DANY') AS OWNER
+      FROM documents AS D 
+      LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
+      LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
+      WHERE S.NALEZNOSC !=0 AND ${sqlCondition}`
+    );
+
+    const safeParseJSON = (data) => {
+      try {
+        return data ? JSON.parse(data) : data;
+      } catch (error) {
+        return data; // Zwraca oryginalną wartość, jeśli parsowanie się nie powiodło
+      }
+    };
+
+    const addDocType = getDoc.map(item => {
+      return {
+        ...item,
+        TYP_DOKUMENTU: documentsType(item.NR_DOKUMENTU),
+        OWNER: safeParseJSON(item.OWNER),
+        OPIEKUN_OBSZARU_CENTRALI: safeParseJSON(item.OPIEKUN_OBSZARU_CENTRALI)
+      };
+    });
+
+    return addDocType;
+  }
+  catch (error) {
+    logEvents(`fkRaportController, differencesAS_FK: ${error}`, "reqServerErrors.txt");
+    return [];
+  }
+};
+
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika, wersja poprawiona
 const getRaportDataV2 = async (req, res) => {
   try {
-    const [dataRaport] = await connect_SQL.query('SELECT * FROM fk_raport_v2');
+    const [dataRaport] = await connect_SQL.query('SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK_V2.* FROM fk_raport_v2 AS FK_V2 LEFT JOIN history_fk_documents AS HFD ON FK_V2.NR_DOKUMENTU = HFD.NUMER_FV');
     //usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach(item => {
       delete item.id_fk_raport;
     });
-    res.json(dataRaport);
+
+
+    const getDifferencesFK_AS = await differencesAS_FK();
+
+    res.json({ dataRaport, differences: getDifferencesFK_AS });
+    // res.json([]);
   } catch (error) {
     logEvents(`fkRaportController, getRaportDataV2: ${error}`, "reqServerErrors.txt");
     res.status(500).json({ error: "Server error" });
@@ -285,7 +342,10 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
     // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL`);
 
 
-    const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
+    // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
+    const [getAging] = await connect_SQL.query('SELECT \`FIRST_VALUE\`, SECOND_VALUE, TITLE, TYPE FROM aging_items');
+
+    console.log(getAging);
 
     // jeśli nie ma DATA_FV to od TERMIN_FV jest odejmowane 14 dni
     const changeDate = (dateStr) => {
@@ -335,21 +395,21 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
       let title = "";
 
       for (const age of getAging) {
-        if (age.type === "first" && Number(age.firstValue) >= differenceInDays) {
-          title = age.title;
+        if (age.TYPE === "first" && Number(age.FIRST_VALUE) >= differenceInDays) {
+          title = age.TITLE;
           break;
         } else if (
-          age.type === "last" &&
-          Number(age.secondValue) <= differenceInDays
+          age.TYPE === "last" &&
+          Number(age.SECOND_VALUE) <= differenceInDays
         ) {
-          title = age.title;
+          title = age.TITLE;
           break;
         } else if (
-          age.type === "some" &&
-          Number(age.firstValue) <= differenceInDays &&
-          Number(age.secondValue) >= differenceInDays
+          age.TYPE === "some" &&
+          Number(age.FIRST_VALUE) <= differenceInDays &&
+          Number(age.SECOND_VALUE) >= differenceInDays
         ) {
-          title = age.title;
+          title = age.TITLE;
           break;
         }
       }
@@ -471,259 +531,13 @@ VALUES
     res.end();
   }
   catch (error) {
+    console.error(error);
     logEvents(
       `fkRaportController, generateRaportV2: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
-  }
-};
 
-//funckja odczytująca działy, ownerów, lokalizacje
-const getDataItems = async (req, res) => {
-  try {
-    const [depResult] = await connect_SQL.query(
-      "SELECT department from department_items"
-    );
-    const departments = depResult.map((dep) => {
-      return dep.department;
-    });
-    const [locResult] = await connect_SQL.query(
-      "SELECT localization from localization_items"
-    );
-    const localizations = locResult.map((loc) => {
-      return loc.localization;
-    });
-
-    const [areaResult] = await connect_SQL.query("SELECT area from area_items");
-    const areas = areaResult.map((area) => {
-      return area.area;
-    });
-
-    const [ownerResult] = await connect_SQL.query(
-      "SELECT owner from owner_items"
-    );
-    const owners = ownerResult.map((owner) => {
-      return owner.owner;
-    });
-
-    const [guardianResult] = await connect_SQL.query(
-      "SELECT guardian from guardian_items"
-    );
-    const guardians = guardianResult.map((guardian) => {
-      return guardian.guardian;
-    });
-
-    const [aging] = await connect_SQL.query(
-      "SELECT firstValue, secondValue, title, type from aging_items"
-    );
-
-
-    res.json({
-      data: {
-        departments,
-        localizations,
-        areas,
-        owners,
-        guardians,
-        aging,
-      },
-    });
-  } catch (error) {
-    logEvents(`fkRaportController, getDataItems: ${error}`, "reqServerErrors.txt");
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-// funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
-const getFKSettingsItems = async (req, res) => {
-  try {
-    const [uniqeDepFromJI] = await connect_SQL.query(
-      "SELECT distinct department FROM join_items"
-    );
-
-    const uniqueDepartments = uniqeDepFromJI.map((dep) => {
-      return dep.department;
-    });
-
-    const [depResult] = await connect_SQL.query(
-      "SELECT department from department_items"
-    );
-    const departments = depResult.map((dep) => {
-      return dep.department;
-    });
-
-    const [locResult] = await connect_SQL.query(
-      "SELECT localization from localization_items"
-    );
-    const localizations = locResult.map((loc) => {
-      return loc.localization;
-    });
-
-    const [areaResult] = await connect_SQL.query("SELECT area from area_items");
-    const areas = areaResult.map((area) => {
-      return area.area;
-    });
-
-    const [ownerResult] = await connect_SQL.query(
-      "SELECT owner from owner_items"
-    );
-    const owners = ownerResult.map((owner) => {
-      return owner.owner;
-    });
-
-    const [guardianResult] = await connect_SQL.query(
-      "SELECT guardian from guardian_items"
-    );
-    const guardians = guardianResult.map((guardian) => {
-      return guardian.guardian;
-    });
-    res.json({
-      uniqueDepartments,
-      departments,
-      areas,
-      localizations,
-      owners,
-      guardians,
-    });
-  } catch (error) {
-    logEvents(
-      `fkRaportController, getFKSettingsItems: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-//funckja zapisujaca działy, ownerów, lokalizacje
-const saveItemsData = async (req, res) => {
-  const { info } = req.params;
-  const { departments, localizations, areas, owners, guardians, aging } =
-    req.body;
-
-  // Mapowanie nazw na odpowiadające im klucze
-  const dataMap = {
-    departments,
-    localizations,
-    areas,
-    owners,
-    guardians,
-    aging,
-  };
-  const type = info.slice(0, -1);
-  try {
-    if (info !== "aging") {
-      await connect_SQL.query(`TRUNCATE TABLE ${type}_items`);
-      for (const item of dataMap[info]) {
-        const [checkDuplicate] = await connect_SQL.query(
-          `SELECT ${type} FROM ${type}_items WHERE ${type} = ?`,
-          [item]
-        );
-        if (!checkDuplicate[0]) {
-          await connect_SQL.query(
-            `INSERT IGNORE INTO ${type}_items (${type}) VALUES (?)`,
-            [item]
-          );
-        }
-      }
-    } else {
-      await connect_SQL.query("TRUNCATE TABLE aging_items");
-      for (const item of dataMap[info]) {
-        const [checkDuplicate] = await connect_SQL.query(
-          `SELECT title FROM aging_items WHERE title = ?`,
-          [item.title]
-        );
-
-        if (!checkDuplicate[0]) {
-          await connect_SQL.query(
-            "INSERT IGNORE INTO aging_items (firstValue, secondValue, title, type ) VALUES (?, ?, ?, ?)",
-            [item.firstValue, item.secondValue, item.title, item.type]
-          );
-        }
-      }
-      // await FKRaport.updateOne(
-      //   {},
-      //   { $set: { "items.aging": aging } },
-      //   { new: true, upsert: true }
-      // );
-    }
-
-    res.end();
-  } catch (error) {
-    logEvents(`fkRaportController, saveItemsData: ${error}`, "reqServerErrors.txt");
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-// funkcja pobierająca kpl owner, dział, lokalizacja dla "Dopasuj dane"
-const getPreparedItems = async (req, res) => {
-  try {
-    const [preparedItems] = await connect_SQL.query(
-      "SELECT department, localization, area, owner, guardian FROM join_items ORDER BY department"
-    );
-    res.json(preparedItems);
-  } catch (error) {
-    logEvents(`fkRaportController, savePrepareItems: ${error}`, "reqServerErrors.txt");
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-// funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
-const savePreparedItems = async (req, res) => {
-  const { department, localization, area, owner, guardian } = req.body;
-  try {
-    const [duplicate] = await connect_SQL.query(
-      "SELECT department FROM join_items WHERE department = ?",
-      [department]
-    );
-    if (duplicate[0]?.department) {
-      await connect_SQL.query(
-        "UPDATE join_items SET localization = ?, area = ?, owner = ?, guardian = ? WHERE department = ?",
-        [
-          localization,
-          area,
-          JSON.stringify(owner),
-          JSON.stringify(guardian),
-          department,
-        ]
-      );
-    } else {
-      await connect_SQL.query(
-        "INSERT INTO join_items (department, localization, area, owner, guardian) VALUES (?, ?, ?, ?, ?)",
-        [
-          department,
-          localization,
-          area,
-          JSON.stringify(owner),
-          JSON.stringify(guardian),
-        ]
-      );
-    }
-    res.end();
-  } catch (error) {
-    logEvents(`fkRaportController, savePrepareItems: ${error}`, "reqServerErrors.txt");
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
-// funkcja pobiera unikalne nazwy działów z pliku księgowego
-const getDepfromDocuments = async (req, res) => {
-  try {
-    const [getDepartments] = await connect_SQL.query(
-      "SELECT distinct DZIAL from documents"
-    );
-
-    const departments = getDepartments.map((dep) => {
-      return dep.DZIAL;
-    });
-
-    res.json(departments);
-  } catch (error) {
-    logEvents(
-      `fkRaportController, getDepfromAccountancy: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -865,8 +679,30 @@ const getStructureOrganization = async (req, res) => {
     const [data] = await connect_SQL.query(
       "SELECT * FROM join_items ORDER BY department"
     );
+
+    const findMail = await Promise.all(
+      data.map(async (item) => {
+        const ownerMail = await Promise.all(
+          item.owner.map(async (own) => {
+            const [mail] = await connect_SQL.query(
+              `SELECT owner_mail FROM owner_items WHERE owner = ?`, [own]
+            );
+
+            // Zamiana null na "Brak danych"
+            return mail.map(row => row.owner_mail || "Brak danych");
+          })
+        );
+
+        return {
+          ...item,
+          mail: ownerMail.flat() // Spłaszczamy tablicę wyników
+        };
+      })
+    );
+
+
     if (data.length) {
-      const cleanedData = data.map(({ id_join_items, ...rest }) => rest);
+      const cleanedData = findMail.map(({ id_join_items, ...rest }) => rest);
       res.json(cleanedData);
     } else {
       res.json([]);
@@ -878,6 +714,181 @@ const getStructureOrganization = async (req, res) => {
   }
 };
 
+const generateHistoryDocuments = async (req, res) => {
+  try {
+    const [dataFK] = await connect_SQL.query(
+      "SELECT MD.NUMER_FV, DA.OSTATECZNA_DATA_ROZLICZENIA, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, DA.INFORMACJA_ZARZAD FROM mark_documents as MD LEFT JOIN documents AS D ON MD.NUMER_FV = D.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id WHERE MD.RAPORT_FK = 1");
+
+    const [accounancyDate] = await connect_SQL.query(`SELECT date FROM fk_updates_date WHERE title = 'accountancy'`);
+
+    if (!accounancyDate[0]?.date) {
+      return res.end();
+    }
+    const raportDate = accounancyDate[0].date;
+
+    for (const doc of dataFK) {
+
+
+      const [searchDoc] = await connect_SQL.query(`SELECT * FROM history_fk_documents WHERE NUMER_FV = ?`, [doc.NUMER_FV]);
+
+      if (searchDoc.length) {
+        const COUNTER_DATE = searchDoc[0].COUNTER_DATE;
+
+        // jeśli raport jest wygenerowany tego samego dnia, a były już wpisy, to je aktualizaujemy
+        if (COUNTER_DATE.includes(raportDate)) {
+
+          const historyDoc = searchDoc[0].HISTORY_DOC.map(item => {
+            if (item.date === raportDate) {
+              //aktualizuję historię daty rozliczenia
+              let historyDate = Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [];
+              const historyDateItem = Array.isArray(searchDoc[0].HISTORY_DOC[0].history.historyDate) ? searchDoc[0].HISTORY_DOC[0].history.historyDate : [];
+              // Znalezienie ostatniego wspólnego indeksu
+              const lastDateIndex = historyDate
+                .map((el, index) => historyDateItem.includes(el) ? index : -1)
+                .filter(index => index !== -1)
+                .pop(); // Pobieramy ostatni indeks
+
+              if (lastDateIndex !== undefined && lastDateIndex + 1 < historyDate.length) {
+                historyDate = historyDate.slice(lastDateIndex + 1);
+              } else {
+                historyDate = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+              }
+
+              // Dodanie tylko jeśli historyText nie jest puste
+              const updateHistoryDate = historyDate.length > 0
+                ? [...historyDateItem, ...historyDate]
+                : historyDateItem;
+
+              // aktualizauję historię decyzji biznesu
+              let historyText = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
+              const historyTextItem = Array.isArray(searchDoc[0].HISTORY_DOC[0].history.historyText) ? searchDoc[0].HISTORY_DOC[0].history.historyText : [];
+
+              // Znalezienie ostatniego wspólnego indeksu
+              const lastTextIndex = historyText
+                .map((el, index) => historyTextItem.includes(el) ? index : -1)
+                .filter(index => index !== -1)
+                .pop(); // Pobieramy ostatni indeks
+              if (lastTextIndex !== undefined && lastTextIndex + 1 < historyText.length) {
+                historyText = historyText.slice(lastTextIndex + 1);
+              } else {
+                historyText = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+              }
+
+              // Dodanie tylko jeśli historyText nie jest puste
+              const updateHistoryText = historyText.length > 0
+                ? [...historyTextItem, ...historyText]
+                : historyTextItem;
+
+              return {
+                ...item,
+                history: {
+                  ...item.history,
+                  historyDate: updateHistoryDate,
+                  historyText: updateHistoryText
+                },
+                historyCounter: {
+                  date: updateHistoryDate?.length ? updateHistoryDate.length : 0,
+                  text: updateHistoryText?.length ? updateHistoryText.length : 0
+                }
+              };
+            }
+            return item;
+          });
+
+          await connect_SQL.query(`UPDATE history_fk_documents SET HISTORY_DOC = ? WHERE NUMER_FV = ?`, [
+            JSON.stringify(historyDoc),
+            searchDoc[0].NUMER_FV
+          ]);
+
+        } else {
+
+          const counterDate = [...searchDoc[0].COUNTER_DATE, raportDate];
+          const info = `${searchDoc[0].HISTORY_DOC.length + 1} raport utworzono ${raportDate}`;
+
+          //aktualizuję historię daty rozliczenia
+          let historyDate = Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [];
+          const historyDateItem = Array.isArray(searchDoc[0].HISTORY_DOC) ? searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyDate : [];
+
+          // Znalezienie ostatniego wspólnego indeksu
+          const lastDateIndex = historyDate
+            .map((el, index) => historyDateItem.includes(el) ? index : -1)
+            .filter(index => index !== -1)
+            .pop(); // Pobieramy ostatni indeks
+
+          if (lastDateIndex !== undefined && lastDateIndex + 1 < historyDate.length) {
+            historyDate = historyDate.slice(lastDateIndex + 1);
+          } else {
+            historyDate = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+          }
+
+          // aktualizauję historię decyzji biznesu
+          let historyText = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
+          const historyTextItem = Array.isArray(searchDoc[0].HISTORY_DOC) ? searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyText : [];
+
+          // Znalezienie ostatniego wspólnego indeksu
+          const lastTextIndex = historyText
+            .map((el, index) => historyTextItem.includes(el) ? index : -1)
+            .filter(index => index !== -1)
+            .pop(); // Pobieramy ostatni indeks
+          if (lastTextIndex !== undefined && lastTextIndex + 1 < historyText.length) {
+            historyText = historyText.slice(lastTextIndex + 1);
+          } else {
+            historyText = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+          }
+
+          const historyDoc = {
+            date: raportDate,
+            history: {
+              info,
+              historyDate,
+              historyText
+            },
+            historyCounter: {
+              date: historyDate?.length ? historyDate.length : 0,
+              text: historyText?.length ? historyText.length : 0
+            }
+          };
+
+
+          const updateDoc = [...searchDoc[0].HISTORY_DOC, historyDoc];
+
+          await connect_SQL.query(`UPDATE history_fk_documents SET COUNTER_DATE = ?, HISTORY_DOC = ? WHERE NUMER_FV = ?`, [
+            JSON.stringify(counterDate),
+            JSON.stringify(updateDoc),
+            searchDoc[0].NUMER_FV
+          ]);
+        }
+      } else {
+        const history = [{
+          date: raportDate,
+          historyCounter: {
+            date: doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length : 0,
+            text: doc?.INFORMACJA_ZARZAD?.length ? doc.INFORMACJA_ZARZAD.length : 0
+          },
+          history: {
+            info: `1 raport utworzono ${raportDate}`,
+            historyDate: doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [],
+            historyText: doc?.INFORMACJA_ZARZAD ? doc.INFORMACJA_ZARZAD : []
+          }
+        }];
+
+
+        await connect_SQL.query(`INSERT INTO history_fk_documents (NUMER_FV, COUNTER_DATE, HISTORY_DOC) VALUES (?, ?, ?)`, [
+          doc.NUMER_FV,
+          JSON.stringify([raportDate]),
+          JSON.stringify(history)
+        ]);
+      }
+    }
+    res.end();
+  }
+  catch (error) {
+    logEvents(`fkRaportController, generateHistoryDocuments: ${error}`, "reqServerErrors.txt");
+
+    console.error(error);
+  }
+};
+
 module.exports = {
   getRaportData,
   getRaportDataV2,
@@ -885,15 +896,10 @@ module.exports = {
   deleteDataRaport,
   generateRaport,
   generateRaportV2,
-  getDataItems,
-  getFKSettingsItems,
-  saveItemsData,
-  savePreparedItems,
-  getPreparedItems,
-  getDepfromDocuments,
   dataFkAccocuntancyFromExcel,
   saveMark,
   changeMark,
   getRaportDocumentsControlBL,
-  getStructureOrganization
+  getStructureOrganization,
+  generateHistoryDocuments
 };

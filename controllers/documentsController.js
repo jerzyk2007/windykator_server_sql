@@ -39,7 +39,6 @@ const getDataDocuments = async (id_user, info) => {
     if (info === "actual") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(
-          // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) <> 0 AND ${sqlCondition}`
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
         );
       } else if (truePermissions[0] === "Basic") {
@@ -81,6 +80,15 @@ const getDataDocuments = async (id_user, info) => {
     else if (info === "raport_fk") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 1 AND ${sqlCondition}`);
+      }
+      else if (truePermissions[0] === "Basic") {
+        // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
+        filteredData = [];
+      }
+    }
+    else if (info === "disabled_fk") {
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 0 AND ${sqlCondition}`);
       }
       else if (truePermissions[0] === "Basic") {
         // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);

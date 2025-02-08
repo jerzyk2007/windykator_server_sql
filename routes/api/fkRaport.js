@@ -15,35 +15,6 @@ router
   .route("/get-raport-data-v2")
   .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getRaportDataV2);
 
-//funckja odczytująca działy, ownerów, lokalizacje
-router
-  .route("/get-items-data")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getDataItems);
-
-// funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
-router
-  .route("/get-fksettings-data")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getFKSettingsItems);
-
-//funckja zapisujaca działy, ownerów, lokalizacje
-router
-  .route("/save-items-data/:info")
-  .patch(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.saveItemsData);
-
-// funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
-router
-  .route("/save-prepared-items")
-  .patch(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.savePreparedItems);
-
-// funkcja pobierająca kpl owner, dział, lokalizacja
-router
-  .route("/get-prepared-items")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getPreparedItems);
-
-// funkcja pobiera unikalne nazwy działów z pliku księgowego
-router
-  .route("/get-uniques-dep")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getDepfromDocuments);
 
 // pobieram daty  aktualizacji plików excel dla raportu FK
 router
@@ -98,5 +69,9 @@ router
 router
   .route("/get-organization-structure")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getStructureOrganization);
+
+router
+  .route("/generate-history-documents")
+  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateHistoryDocuments);
 
 module.exports = router;
