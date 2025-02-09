@@ -74,4 +74,9 @@ router
   .route("/generate-history-documents")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateHistoryDocuments);
 
+//dodaje ostateczną decyzję i datę do osobnej tabeli, dla wygenerowania historii w raporcie FK
+router
+  .route("/add-decision-date-fk")
+  .post(verifyRoles(ROLES_LIST.User), fKRaport.addDecisionDate);
+
 module.exports = router;

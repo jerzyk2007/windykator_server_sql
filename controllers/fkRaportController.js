@@ -119,6 +119,8 @@ const deleteDataRaport = async (req, res) => {
   try {
     await connect_SQL.query('TRUNCATE fk_updates_date');
     await connect_SQL.query('TRUNCATE raportFK_accountancy');
+    await connect_SQL.query('TRUNCATE mark_documents');
+    await connect_SQL.query("TRUNCATE TABLE fk_raport_v2");
 
     res.json({ result: "delete" });
   } catch (error) {
@@ -344,8 +346,6 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
 
     // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
     const [getAging] = await connect_SQL.query('SELECT \`FROM_TIME\`, TO_TIME, TITLE, TYPE FROM aging_items');
-
-    console.log(getAging);
 
     // jeśli nie ma DATA_FV to od TERMIN_FV jest odejmowane 14 dni
     const changeDate = (dateStr) => {
@@ -716,176 +716,107 @@ const getStructureOrganization = async (req, res) => {
 
 const generateHistoryDocuments = async (req, res) => {
   try {
-    const [dataFK] = await connect_SQL.query(
-      "SELECT MD.NUMER_FV, DA.OSTATECZNA_DATA_ROZLICZENIA, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, DA.INFORMACJA_ZARZAD FROM mark_documents as MD LEFT JOIN documents AS D ON MD.NUMER_FV = D.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id WHERE MD.RAPORT_FK = 1");
 
-    const [accounancyDate] = await connect_SQL.query(`SELECT date FROM fk_updates_date WHERE title = 'accountancy'`);
+    const [raportDate] = await connect_SQL.query(`SELECT date FROM  fk_updates_date WHERE title = 'accountancy'`);
 
-    if (!accounancyDate[0]?.date) {
-      return res.end();
-    }
-    const raportDate = accounancyDate[0].date;
-
-    for (const doc of dataFK) {
+    const [markDocuments] = await connect_SQL.query(`SELECT NUMER_FV FROM mark_documents WHERE RAPORT_FK = 1`);
 
 
-      const [searchDoc] = await connect_SQL.query(`SELECT * FROM history_fk_documents WHERE NUMER_FV = ?`, [doc.NUMER_FV]);
 
-      if (searchDoc.length) {
-        const COUNTER_DATE = searchDoc[0].COUNTER_DATE;
+    //mapuje wszytskie dokumenty oznaczone znacznikiem wsytępowania i dodaję do nich opisy, daty
+    // const addDesc = markDocuments.map(async (item) => {
+    for (const item of markDocuments) {
+      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+      const [getDoc] = await connect_SQL.query(`SELECT * FROM management_decision_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ?`, [item.NUMER_FV, raportDate[0].date]);
 
-        // jeśli raport jest wygenerowany tego samego dnia, a były już wpisy, to je aktualizaujemy
-        if (COUNTER_DATE.includes(raportDate)) {
+      //szukam czy jest wpis histori w tabeli history_fk_documents
+      const [getDocHist] = await connect_SQL.query(`SELECT HISTORY_DOC FROM history_fk_documents WHERE NUMER_FV = ?`, [item.NUMER_FV]);
 
-          const historyDoc = searchDoc[0].HISTORY_DOC.map(item => {
-            if (item.date === raportDate) {
-              //aktualizuję historię daty rozliczenia
-              let historyDate = Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [];
-              const historyDateItem = Array.isArray(searchDoc[0].HISTORY_DOC[0].history.historyDate) ? searchDoc[0].HISTORY_DOC[0].history.historyDate : [];
-              // Znalezienie ostatniego wspólnego indeksu
-              const lastDateIndex = historyDate
-                .map((el, index) => historyDateItem.includes(el) ? index : -1)
-                .filter(index => index !== -1)
-                .pop(); // Pobieramy ostatni indeks
 
-              if (lastDateIndex !== undefined && lastDateIndex + 1 < historyDate.length) {
-                historyDate = historyDate.slice(lastDateIndex + 1);
-              } else {
-                historyDate = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
-              }
+      if (!getDocHist.length) {
 
-              // Dodanie tylko jeśli historyText nie jest puste
-              const updateHistoryDate = historyDate.length > 0
-                ? [...historyDateItem, ...historyDate]
-                : historyDateItem;
+        const newHistory = {
+          info: `1 raport utworzono ${raportDate[0].date}`,
+          historyDate: [],
+          historyText: []
+        };
 
-              // aktualizauję historię decyzji biznesu
-              let historyText = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
-              const historyTextItem = Array.isArray(searchDoc[0].HISTORY_DOC[0].history.historyText) ? searchDoc[0].HISTORY_DOC[0].history.historyText : [];
-
-              // Znalezienie ostatniego wspólnego indeksu
-              const lastTextIndex = historyText
-                .map((el, index) => historyTextItem.includes(el) ? index : -1)
-                .filter(index => index !== -1)
-                .pop(); // Pobieramy ostatni indeks
-              if (lastTextIndex !== undefined && lastTextIndex + 1 < historyText.length) {
-                historyText = historyText.slice(lastTextIndex + 1);
-              } else {
-                historyText = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
-              }
-
-              // Dodanie tylko jeśli historyText nie jest puste
-              const updateHistoryText = historyText.length > 0
-                ? [...historyTextItem, ...historyText]
-                : historyTextItem;
-
-              return {
-                ...item,
-                history: {
-                  ...item.history,
-                  historyDate: updateHistoryDate,
-                  historyText: updateHistoryText
-                },
-                historyCounter: {
-                  date: updateHistoryDate?.length ? updateHistoryDate.length : 0,
-                  text: updateHistoryText?.length ? updateHistoryText.length : 0
-                }
-              };
-            }
-            return item;
-          });
-
-          await connect_SQL.query(`UPDATE history_fk_documents SET HISTORY_DOC = ? WHERE NUMER_FV = ?`, [
-            JSON.stringify(historyDoc),
-            searchDoc[0].NUMER_FV
-          ]);
-
-        } else {
-
-          const counterDate = [...searchDoc[0].COUNTER_DATE, raportDate];
-          const info = `${searchDoc[0].HISTORY_DOC.length + 1} raport utworzono ${raportDate}`;
-
-          //aktualizuję historię daty rozliczenia
-          let historyDate = Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [];
-          const historyDateItem = Array.isArray(searchDoc[0].HISTORY_DOC) ? searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyDate : [];
-
-          // Znalezienie ostatniego wspólnego indeksu
-          const lastDateIndex = historyDate
-            .map((el, index) => historyDateItem.includes(el) ? index : -1)
-            .filter(index => index !== -1)
-            .pop(); // Pobieramy ostatni indeks
-
-          if (lastDateIndex !== undefined && lastDateIndex + 1 < historyDate.length) {
-            historyDate = historyDate.slice(lastDateIndex + 1);
-          } else {
-            historyDate = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+        getDoc.forEach(doc => {
+          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+            newHistory.historyDate.push(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
           }
-
-          // aktualizauję historię decyzji biznesu
-          let historyText = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
-          const historyTextItem = Array.isArray(searchDoc[0].HISTORY_DOC) ? searchDoc[0].HISTORY_DOC[searchDoc[0].HISTORY_DOC.length - 1].history.historyText : [];
-
-          // Znalezienie ostatniego wspólnego indeksu
-          const lastTextIndex = historyText
-            .map((el, index) => historyTextItem.includes(el) ? index : -1)
-            .filter(index => index !== -1)
-            .pop(); // Pobieramy ostatni indeks
-          if (lastTextIndex !== undefined && lastTextIndex + 1 < historyText.length) {
-            historyText = historyText.slice(lastTextIndex + 1);
-          } else {
-            historyText = []; // Jeśli tablice są identyczne, ustawiamy pustą tablicę
+          if (doc.INFORMACJA_ZARZAD) {
+            newHistory.historyText.push(doc.INFORMACJA_ZARZAD);
           }
+        });
 
-          const historyDoc = {
-            date: raportDate,
-            history: {
-              info,
-              historyDate,
-              historyText
-            },
-            historyCounter: {
-              date: historyDate?.length ? historyDate.length : 0,
-              text: historyText?.length ? historyText.length : 0
-            }
-          };
-
-
-          const updateDoc = [...searchDoc[0].HISTORY_DOC, historyDoc];
-
-          await connect_SQL.query(`UPDATE history_fk_documents SET COUNTER_DATE = ?, HISTORY_DOC = ? WHERE NUMER_FV = ?`, [
-            JSON.stringify(counterDate),
-            JSON.stringify(updateDoc),
-            searchDoc[0].NUMER_FV
-          ]);
-        }
+        await connect_SQL.query(`INSERT INTO history_fk_documents (NUMER_FV, HISTORY_DOC) VALUES (?, ?)`,
+          [item.NUMER_FV, JSON.stringify([newHistory])]);
       } else {
-        const history = [{
-          date: raportDate,
-          historyCounter: {
-            date: doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length : 0,
-            text: doc?.INFORMACJA_ZARZAD?.length ? doc.INFORMACJA_ZARZAD.length : 0
-          },
-          history: {
-            info: `1 raport utworzono ${raportDate}`,
-            historyDate: doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : [],
-            historyText: doc?.INFORMACJA_ZARZAD ? doc.INFORMACJA_ZARZAD : []
+
+        const newHistory = {
+          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${raportDate[0].date}`,
+          historyDate: [],
+          historyText: []
+        };
+        getDoc.forEach(doc => {
+          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+            newHistory.historyDate.push(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
           }
-        }];
-
-
-        await connect_SQL.query(`INSERT INTO history_fk_documents (NUMER_FV, COUNTER_DATE, HISTORY_DOC) VALUES (?, ?, ?)`, [
-          doc.NUMER_FV,
-          JSON.stringify([raportDate]),
-          JSON.stringify(history)
-        ]);
+          if (doc.INFORMACJA_ZARZAD) {
+            newHistory.historyText.push(doc.INFORMACJA_ZARZAD);
+          }
+        });
+        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
+        await connect_SQL.query(`UPDATE  history_fk_documents SET HISTORY_DOC = ? WHERE NUMER_FV = ?`,
+          [JSON.stringify(prepareArray), item.NUMER_FV]);
       }
-    }
+    };
+
     res.end();
   }
   catch (error) {
     logEvents(`fkRaportController, generateHistoryDocuments: ${error}`, "reqServerErrors.txt");
 
-    console.error(error);
+  }
+};
+
+const addDecisionDate = async (req, res) => {
+  const { NUMER_FV, data } = req.body;
+  try {
+    const [raportDate] = await connect_SQL.query(`SELECT date FROM  fk_updates_date WHERE title = 'accountancy'`);
+    // console.log(data);
+    if (data.INFORMACJA_ZARZAD.length && raportDate[0].date) {
+      for (item of data.INFORMACJA_ZARZAD) {
+        await connect_SQL.query(`INSERT INTO management_decision_FK (NUMER_FV, INFORMACJA_ZARZAD, WYKORZYSTANO_RAPORT_FK) VALUES (?, ?, ?)`, [
+          NUMER_FV,
+          item,
+          raportDate[0].date
+        ]);
+      }
+    }
+    if (data.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length && raportDate[0].date) {
+
+      for (item of data.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+
+        await connect_SQL.query(`INSERT INTO management_decision_FK (NUMER_FV, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK) VALUES (?, ?, ?)`, [
+          NUMER_FV,
+          item,
+          raportDate[0].date
+        ]);
+      }
+    }
+
+    // const [result] = await connect_SQL.query(`SELECT * FROM management_decision_description_FK WHERE NUMER_FV = 'FV/UP/326/25/A/D86' AND WYKORZYSTANO_RAPORT_FK IS NULL ORDER BY id_management_decision_description_FK `);
+
+    // console.log(result);
+
+    res.end();
+  }
+  catch (error) {
+    logEvents(`fkRaportController, addDecision: ${error}`, "reqServerErrors.txt");
+
   }
 };
 
@@ -901,5 +832,6 @@ module.exports = {
   changeMark,
   getRaportDocumentsControlBL,
   getStructureOrganization,
-  generateHistoryDocuments
+  generateHistoryDocuments,
+  addDecisionDate
 };
