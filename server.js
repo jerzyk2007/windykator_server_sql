@@ -54,6 +54,7 @@ app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
 app.use("/items", require("./routes/api/items"));
 app.use("/add-data", require("./routes/api/addDataFromExcelFile"));
+app.use("/repair", require("./routes/api/repair"));
 
 app.all("*", (req, res) => {
   res.status(404);

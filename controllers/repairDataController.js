@@ -1,5 +1,6 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
-
+const { verifyUserTableConfig } = require('./usersController');
+const bcryptjs = require("bcryptjs");
 
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
@@ -177,23 +178,22 @@ const repairRoles = async () => {
 
 const repairColumnsRaports = async () => {
     try {
-        const [users] = await connect_SQL.query(`
-                SELECT raportSettings
-                FROM users
-                WHERE usersurname = 'Kowalski'`);
+        // const [users] = await connect_SQL.query(`
+        //         SELECT raportSettings
+        //         FROM users
+        //         WHERE usersurname = 'Kowalski'`);
 
-        const raportSettings = {
-            raportAdvisers: '{"size":{},"visible":{"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DORADCA","DZIAL","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","CEL_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}',
-            raportDepartments: '{"size":{},"visible":{"CEL_BEZ_PZU_LINK4":false,"PRZETERMINOWANE_BEZ_PZU_LINK4":false,"ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4":false,"NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4":false,"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DZIALY","CEL","CEL_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","CEL_CALOSC","PRZETERMINOWANE_FV","ILOSC_PRZETERMINOWANYCH_FV","NIEPRZETERMINOWANE_FV","CEL_BEZ_KANCELARII","PRZETERMINOWANE_BEZ_KANCELARII","ILOSC_PRZETERMINOWANYCH_FV_BEZ_KANCELARII","NIEPRZETERMINOWANE_FV_BEZ_KANCELARII","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}'
-        };
+        // const raportSettings = {
+        //     raportAdvisers: '{"size":{},"visible":{"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DORADCA","DZIAL","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","CEL_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}',
+        //     raportDepartments: '{"size":{},"visible":{"CEL_BEZ_PZU_LINK4":false,"PRZETERMINOWANE_BEZ_PZU_LINK4":false,"ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4":false,"NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4":false,"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DZIALY","CEL","CEL_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","CEL_CALOSC","PRZETERMINOWANE_FV","ILOSC_PRZETERMINOWANYCH_FV","NIEPRZETERMINOWANE_FV","CEL_BEZ_KANCELARII","PRZETERMINOWANE_BEZ_KANCELARII","ILOSC_PRZETERMINOWANYCH_FV_BEZ_KANCELARII","NIEPRZETERMINOWANE_FV_BEZ_KANCELARII","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}'
+        // };
 
-        await connect_SQL.query(`UPDATE users SET raportSettings = ? WHERE usersurname = ?`,
-            [
-                JSON.stringify(raportSettings),
-                'Kowalski'
-            ]);
-        // console.log(JSON.stringify(raportSettings));
-
+        // await connect_SQL.query(`UPDATE users SET raportSettings = ? WHERE usersurname = ?`,
+        //     [
+        //         JSON.stringify(raportSettings),
+        //         'Kowalski'
+        //     ]);
+        console.log('test');
 
     }
     catch (error) {
@@ -201,10 +201,186 @@ const repairColumnsRaports = async () => {
     }
 };
 
+const hashedPwd = async () => {
+    const password = await bcryptjs.hash("Start123!", 10);
+    return password;
+};
+
+// pobiera dane struktury orgaznizacji
+const createAccounts = async (req, res) => {
+    try {
+        const [data] = await connect_SQL.query(
+            "SELECT * FROM join_items ORDER BY department"
+        );
+
+        const findMail = await Promise.all(
+            data.map(async (item) => {
+                const ownerMail = await Promise.all(
+                    item.owner.map(async (own) => {
+                        const [mail] = await connect_SQL.query(
+                            `SELECT owner_mail FROM owner_items WHERE owner = ?`, [own]
+                        );
+
+                        // Zamiana null na "Brak danych"
+                        return mail.map(row => row.owner_mail || "Brak danych");
+                    })
+                );
+
+                return {
+                    ...item,
+                    mail: ownerMail.flat() // Spłaszczamy tablicę wyników
+                };
+            })
+        );
+
+        // Pobranie unikalnych wartości z owner, usunięcie "Brak danych" i sortowanie
+        const uniqueOwners = [...new Set(findMail.flatMap(item => item.owner))]
+            .filter(name => name !== 'Brak danych') // Usuwa "Brak danych"
+            .sort(); // Sortuje alfabetycznie
+
+        // console.log(uniqueOwners);
+
+
+        // const hashedPwd = await bcryptjs.hash("Start123!", 10);
+        const roles = { Start: 1, User: 100, Editor: 110 };
+        const permissions = {
+            "Basic": false,
+            "Standard": true
+        };
+        const raportSettings = {
+            raportAdvisers: '{"size":{},"visible":{"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DORADCA","DZIAL","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","CEL_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}',
+            raportDepartments: '{"size":{},"visible":{"CEL_BEZ_PZU_LINK4":false,"PRZETERMINOWANE_BEZ_PZU_LINK4":false,"ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4":false,"NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4":false,"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DZIALY","CEL","CEL_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","CEL_CALOSC","PRZETERMINOWANE_FV","ILOSC_PRZETERMINOWANYCH_FV","NIEPRZETERMINOWANE_FV","CEL_BEZ_KANCELARII","PRZETERMINOWANE_BEZ_KANCELARII","ILOSC_PRZETERMINOWANYCH_FV_BEZ_KANCELARII","NIEPRZETERMINOWANE_FV_BEZ_KANCELARII","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}'
+        };
+        const tableSettings = {
+            "size": {},
+            "order": [
+                "NUMER_FV",
+                "DATA_FV",
+                "TERMIN",
+                "ILE_DNI_PO_TERMINIE",
+                "BRUTTO",
+                "DO_ROZLICZENIA",
+                "UWAGI_ASYSTENT",
+                "mrt-row-spacer"
+            ],
+            "pinning": {
+                "left": [],
+                "right": []
+            },
+            "visible": {
+                "BRUTTO": true,
+                "TERMIN": true,
+                "DATA_FV": true,
+                "NUMER_FV": true,
+                "DO_ROZLICZENIA": true,
+                "UWAGI_ASYSTENT": true,
+                "ILE_DNI_PO_TERMINIE": true
+            },
+            "pagination": {
+                "pageSize": 10,
+                "pageIndex": 0
+            }
+        };
+
+        // const result = await Promise.all(uniqueOwners.map(async user => {
+        //     const [surname, name] = user.split(' '); // Podział na imię i nazwisko
+        //     let userMail = '';
+        //     let departments = new Set();
+
+        //     findMail.forEach(({ owner, mail, department }) => {
+        //         const index = owner.indexOf(user);
+        //         if (index !== -1) {
+        //             if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
+        //             departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
+        //         }
+        //     });
+
+        //     return {
+        //         userlogin: userMail || null,
+        //         username: name,
+        //         usersurname: surname,
+        //         dzial: [...departments] // Konwersja z Set na tablicę
+        //     };
+        // }));
+
+        const result = await Promise.all(uniqueOwners.map(async user => {
+            const [surname, name] = user.split(' '); // Podział na imię i nazwisko
+            let userMail = '';
+            let departments = new Set();
+
+            findMail.forEach(({ owner, mail, department }) => {
+                const index = owner.indexOf(user);
+                if (index !== -1) {
+                    if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
+                    departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
+                }
+            });
+
+            return {
+                userlogin: userMail || null,
+                username: name,
+                usersurname: surname,
+                password: await hashedPwd(), // Teraz czekamy na wygenerowanie hasła
+                dzial: [...departments] // Konwersja z Set na tablicę
+            };
+        }));
+        let existUser = [];
+
+
+        for (const user of result) {
+            const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ? `,
+                [user.userlogin]
+            );
+            if (!checkDuplicate.length) {
+
+                existUser.push({ ...user, haslo: "Start123!" });
+                // console.log(user);
+                await connect_SQL.query(
+                    `INSERT INTO users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [user.username,
+                    user.usersurname,
+                    user.userlogin,
+                    user.password,
+                    JSON.stringify(user.dzial),
+                    JSON.stringify(roles),
+                    JSON.stringify(permissions),
+                    JSON.stringify(tableSettings),
+                    JSON.stringify(raportSettings),
+                    ]);
+
+                const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
+
+                const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM users WHERE userlogin = ?',
+                    [user.userlogin]
+                );
+
+                // console.log(checkIdUser[0].id_user);
+                // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
+                await verifyUserTableConfig(checkIdUser[0].id_user, user.dzial, getColumns);
+                // console.log(result.length);
+
+            }
+            else {
+                // console.log(user.userlogin);
+                // existUser.push({ ...user, haslo: "Już ma konto" });
+            }
+
+        }
+        console.log(existUser);
+        // res.json({ existUser });
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
+
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
     checkFKDocuments,
     repairRoles,
-    repairColumnsRaports
+    repairColumnsRaports,
+    createAccounts,
 };

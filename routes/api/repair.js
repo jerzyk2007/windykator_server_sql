@@ -7,6 +7,9 @@ const verifyRoles = require("../../middleware/verifyRoles");
 router
     .route('/advisers-name')
     .get(verifyRoles(ROLES_LIST.Admin), Repair.repairAdvisersName);
+router
+    .route('/get-accounts-data')
+    .get(verifyRoles(ROLES_LIST.Admin), Repair.createAccounts);
 
 
 module.exports = router;
