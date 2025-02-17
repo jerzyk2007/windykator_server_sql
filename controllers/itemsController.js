@@ -292,6 +292,20 @@ const savePreparedItems = async (req, res) => {
     }
 };
 
+const deletePreparedItem = async (req, res) => {
+    const { dep } = req.params;
+    try {
+        await connect_SQL.query(
+            'DELETE FROM join_items WHERE department = ?', [dep]
+        );
+        res.end();
+    }
+    catch (error) {
+        logEvents(`itemsController, deletePreparedItem: ${error}`, "reqServerErrors.txt");
+
+    }
+};
+
 
 module.exports = {
     newItem,
@@ -301,5 +315,6 @@ module.exports = {
     getFKSettingsItems,
     getDepfromDocuments,
     getPreparedItems,
-    savePreparedItems
+    savePreparedItems,
+    deletePreparedItem
 };

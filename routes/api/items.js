@@ -56,4 +56,8 @@ router
     .route("/save-prepared-items")
     .patch(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.savePreparedItems);
 
+router
+    .route("/delete-prepared-item/:dep")
+    .delete(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.deletePreparedItem);
+
 module.exports = router;

@@ -703,12 +703,16 @@ const getStructureOrganization = async (req, res) => {
       })
     );
 
+    const [accounts] = await connect_SQL.query(
+      "SELECT username, usersurname,userlogin, departments  FROM users"
+    );
 
-    if (data.length) {
-      const cleanedData = findMail.map(({ id_join_items, ...rest }) => rest);
-      res.json(cleanedData);
+    if (data.length && accounts.length) {
+      const structure = findMail.map(({ id_join_items, ...rest }) => rest);
+
+      return res.json({ structure, accounts });
     } else {
-      res.json([]);
+      return res.json({ structure: [], accounts: [] });
     }
   }
   catch (error) {
