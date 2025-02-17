@@ -703,10 +703,9 @@ const getStructureOrganization = async (req, res) => {
       })
     );
 
-    console.log('test');
+
     if (data.length) {
       const cleanedData = findMail.map(({ id_join_items, ...rest }) => rest);
-      console.log(cleanedData);
       res.json(cleanedData);
     } else {
       res.json([]);
