@@ -206,8 +206,24 @@ const updateCarReleaseDates = async () => {
 const updateSettlements = async () => {
   try {
 
+    //     const queryMsSql = `
+    //     DECLARE @Termin DATETIME = '2012-11-29'; -- Przykładowe wartości
+    // DECLARE @IS_BILANS BIT = 1;
+    // DECLARE @IS_ROZLICZONY BIT = 0;
+    // DECLARE @DATA_KONIEC DATETIME = GETDATE();
+
+    // SELECT 
+    //    T.OPIS,
+    //  T.WARTOSC_SALDO,
+    // CONVERT(VARCHAR(10),  T.DATA, 23) AS DATA_FV
+    // FROM [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] T WITH(NOLOCK)
+    // WHERE T.IS_BILANS = @IS_BILANS
+    //  AND T.IS_ROZLICZONY = @IS_ROZLICZONY
+    //  AND T.DATA <= @DATA_KONIEC
+    //  AND T.WARTOSC_SALDO IS NOT NULL
+    //  AND T.TERMIN IS NOT NULL
+    //        `;
     const queryMsSql = `
-    DECLARE @Termin DATETIME = '2012-11-29'; -- Przykładowe wartości
 DECLARE @IS_BILANS BIT = 1;
 DECLARE @IS_ROZLICZONY BIT = 0;
 DECLARE @DATA_KONIEC DATETIME = GETDATE();
