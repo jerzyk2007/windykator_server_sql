@@ -1,7 +1,7 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { verifyUserTableConfig } = require('./usersController');
 const bcryptjs = require("bcryptjs");
-
+const crypto = require("crypto");
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -201,12 +201,39 @@ const repairColumnsRaports = async () => {
     }
 };
 
+const generatePassword = async (length = 12) => {
+    const chars = {
+        lower: "abcdefghijklmnopqrstuvwxyz",
+        upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        digits: "0123456789",
+        special: "!@#$%"
+    };
+
+    const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
+
+    let password = [
+        getRandomChar(chars.lower),
+        getRandomChar(chars.upper),
+        getRandomChar(chars.digits),
+        getRandomChar(chars.special),
+        ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
+    ].sort(() => Math.random() - 0.5).join("");
+
+    const hashedPwd = await bcryptjs.hash(password, 10);
+    console.log(password);
+    console.log(hashedPwd);
+    return ({
+        password,
+        hashedPwd
+    });
+};
+
 const hashedPwd = async () => {
     const password = await bcryptjs.hash("Start123!", 10);
     return password;
 };
 
-// pobiera dane struktury orgaznizacji
+// tworzy konta dla pracowników wg struktury organizacyjnej, operacja jednorazowa :)
 const createAccounts = async (req, res) => {
     try {
         const [data] = await connect_SQL.query(
@@ -315,7 +342,6 @@ const createAccounts = async (req, res) => {
                     departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
                 }
             });
-
             return {
                 userlogin: userMail || null,
                 username: name,
@@ -325,54 +351,53 @@ const createAccounts = async (req, res) => {
             };
         }));
         let existUser = [];
+        console.log(await generatePassword());
 
 
-        for (const user of result) {
-            const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ? `,
-                [user.userlogin]
-            );
-            if (!checkDuplicate.length) {
+        // for (const user of result) {
+        //     const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ? `,
+        //         [user.userlogin]
+        //     );
+        //     if (!checkDuplicate.length) {
 
-                existUser.push({ ...user, haslo: "Start123!" });
-                // console.log(user);
-                await connect_SQL.query(
-                    `INSERT INTO users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [user.username,
-                    user.usersurname,
-                    user.userlogin,
-                    user.password,
-                    JSON.stringify(user.dzial),
-                    JSON.stringify(roles),
-                    JSON.stringify(permissions),
-                    JSON.stringify(tableSettings),
-                    JSON.stringify(raportSettings),
-                    ]);
+        //         existUser.push({ ...user, haslo: "Start123!" });
+        //         // console.log(user);
+        //         // await connect_SQL.query(
+        //         //     `INSERT INTO users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        //         //     [user.username,
+        //         //     user.usersurname,
+        //         //     user.userlogin,
+        //         //     user.password,
+        //         //     JSON.stringify(user.dzial),
+        //         //     JSON.stringify(roles),
+        //         //     JSON.stringify(permissions),
+        //         //     JSON.stringify(tableSettings),
+        //         //     JSON.stringify(raportSettings),
+        //         //     ]);
 
-                const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
+        //         // const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
 
-                const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM users WHERE userlogin = ?',
-                    [user.userlogin]
-                );
+        //         // const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM users WHERE userlogin = ?',
+        //         //     [user.userlogin]
+        //         // );
 
-                // console.log(checkIdUser[0].id_user);
-                // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
-                await verifyUserTableConfig(checkIdUser[0].id_user, user.dzial, getColumns);
-                // console.log(result.length);
+        //         // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
+        //         await verifyUserTableConfig(checkIdUser[0].id_user, user.dzial, getColumns);
+        //         // console.log(result.length);
 
-            }
-            else {
-                // console.log(user.userlogin);
-                // existUser.push({ ...user, haslo: "Już ma konto" });
-            }
+        //     }
+        //     else {
+        //         existUser.push({ ...user, haslo: "Już ma konto" });
+        //     }
 
-        }
-        console.log(existUser);
+        // }
         // res.json({ existUser });
     }
     catch (error) {
         console.error(error);
     }
 };
+
 
 
 
@@ -383,4 +408,5 @@ module.exports = {
     repairRoles,
     repairColumnsRaports,
     createAccounts,
+    generatePassword
 };

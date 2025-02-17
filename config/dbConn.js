@@ -13,7 +13,7 @@ const connect_SQL = mysql.createPool({
   //wymuszenie zwracania danych z mysql jako liczby jeśli sa zadeklorawane jako liczby
   decimalNumbers: true, // Liczby będą zwracane jako liczby
   waitForConnections: true, // Czekanie na wolne połączenie
-  connectionLimit: 50, // Maksymalna liczba połączeń
+  connectionLimit: 20,// Maksymalna liczba połączeń
   connectTimeout: 30000, // Maksymalny czas oczekiwania na połączenie (ms)
 });
 
