@@ -2,6 +2,21 @@ const mysql = require("mysql2/promise");
 const sql = require("msnodesqlv8");
 
 // połączenie z mysql
+// const connect_SQL = mysql.createPool({
+//   host: process.env.HOST_MYSQL,
+//   port: process.env.PORT_MYSQL,
+//   user: process.env.USER_MYSQL,
+//   password: process.env.PASSWORD_MYSQL,
+//   database: process.env.DATABASE_MYSQL,
+//   dateStrings: true,
+//   decimalNumbers: true,
+//   waitForConnections: true,
+//   connectionLimit: 80,
+//   connectTimeout: 30000,
+//   acquireTimeout: 10000,  // Limit na uzyskanie połączenia (10 sek.)
+//   idleTimeout: 30000,     // Limit czasu bezczynności (30 sek.)
+// });
+
 const connect_SQL = mysql.createPool({
   host: process.env.HOST_MYSQL,
   port: process.env.PORT_MYSQL,

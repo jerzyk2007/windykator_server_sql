@@ -2,6 +2,7 @@ const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { verifyUserTableConfig } = require('./usersController');
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
+const { sendEmail } = require('./mailController');
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -220,17 +221,11 @@ const generatePassword = async (length = 12) => {
     ].sort(() => Math.random() - 0.5).join("");
 
     const hashedPwd = await bcryptjs.hash(password, 10);
-    console.log(password);
-    console.log(hashedPwd);
+
     return ({
         password,
         hashedPwd
     });
-};
-
-const hashedPwd = async () => {
-    const password = await bcryptjs.hash("Start123!", 10);
-    return password;
 };
 
 // tworzy konta dla pracowników wg struktury organizacyjnej, operacja jednorazowa :)
@@ -265,10 +260,6 @@ const createAccounts = async (req, res) => {
             .filter(name => name !== 'Brak danych') // Usuwa "Brak danych"
             .sort(); // Sortuje alfabetycznie
 
-        // console.log(uniqueOwners);
-
-
-        // const hashedPwd = await bcryptjs.hash("Start123!", 10);
         const roles = { Start: 1, User: 100, Editor: 110 };
         const permissions = {
             "Basic": false,
@@ -313,7 +304,7 @@ const createAccounts = async (req, res) => {
         //     const [surname, name] = user.split(' '); // Podział na imię i nazwisko
         //     let userMail = '';
         //     let departments = new Set();
-
+        //     const pass = await generatePassword();
         //     findMail.forEach(({ owner, mail, department }) => {
         //         const index = owner.indexOf(user);
         //         if (index !== -1) {
@@ -321,76 +312,98 @@ const createAccounts = async (req, res) => {
         //             departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
         //         }
         //     });
-
         //     return {
         //         userlogin: userMail || null,
         //         username: name,
         //         usersurname: surname,
+        //         password: pass.password, // Teraz czekamy na wygenerowanie hasła
+        //         hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
         //         dzial: [...departments] // Konwersja z Set na tablicę
         //     };
         // }));
 
-        const result = await Promise.all(uniqueOwners.map(async user => {
-            const [surname, name] = user.split(' '); // Podział na imię i nazwisko
-            let userMail = '';
-            let departments = new Set();
+        const result = [
+            {
+                userlogin: 'piotr.zakrzewski@krotoski.com',
+                username: 'Piotr',
+                usersurname: 'Zakrzewski',
+                password: 'j%6Jws5Eo0Hc',
+                hashedPwd: '$2a$10$yrm451Fvp7XrcGB1qXG2DemIaQY2u1pyb/OFLln3iCq0jyHVrroFW',
+                dzial: ['D034', 'D054']
+            },
+            {
+                userlogin: 'jerzy.zalewski@krotoski.com',
+                username: 'Jerzy',
+                usersurname: 'Zalewski',
+                password: 'cvL%0$sRicts',
+                hashedPwd: '$2a$10$nzsnKsik9CWmhbGvCHpCfOEyqqk/WDUroYVDXWkaOzRDLL3bfefd.',
+                dzial: ['D161']
+            },
+            {
+                userlogin: 'adam.zyskowski@krotoski.com',
+                username: 'Adam',
+                usersurname: 'Zyskowski',
+                password: 'nY6R!!kEXqzA',
+                hashedPwd: '$2a$10$jr4KTMaYeFvwJ/97yQR/auVRTYhk5M0uJ1tkX2pfst9Cq7jarRFaS',
+                dzial: ['D007']
+            }
+        ];
 
-            findMail.forEach(({ owner, mail, department }) => {
-                const index = owner.indexOf(user);
-                if (index !== -1) {
-                    if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
-                    departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
-                }
-            });
-            return {
-                userlogin: userMail || null,
-                username: name,
-                usersurname: surname,
-                password: await hashedPwd(), // Teraz czekamy na wygenerowanie hasła
-                dzial: [...departments] // Konwersja z Set na tablicę
-            };
-        }));
-        let existUser = [];
-        console.log(await generatePassword());
+        for (const user of result) {
+            const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ? `,
+                [user.userlogin]
+            );
+            if (!checkDuplicate.length) {
 
+                console.log(user);
+                await connect_SQL.query(
+                    `INSERT INTO users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [user.username,
+                    user.usersurname,
+                    user.userlogin,
+                    user.hashedPwd,
+                    JSON.stringify(user.dzial),
+                    JSON.stringify(roles),
+                    JSON.stringify(permissions),
+                    JSON.stringify(tableSettings),
+                    JSON.stringify(raportSettings),
+                    ]);
 
-        // for (const user of result) {
-        //     const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ? `,
-        //         [user.userlogin]
-        //     );
-        //     if (!checkDuplicate.length) {
+                const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
 
-        //         existUser.push({ ...user, haslo: "Start123!" });
-        //         // console.log(user);
-        //         // await connect_SQL.query(
-        //         //     `INSERT INTO users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        //         //     [user.username,
-        //         //     user.usersurname,
-        //         //     user.userlogin,
-        //         //     user.password,
-        //         //     JSON.stringify(user.dzial),
-        //         //     JSON.stringify(roles),
-        //         //     JSON.stringify(permissions),
-        //         //     JSON.stringify(tableSettings),
-        //         //     JSON.stringify(raportSettings),
-        //         //     ]);
+                const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM users WHERE userlogin = ?',
+                    [user.userlogin]
+                );
 
-        //         // const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
+                // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
+                await verifyUserTableConfig(checkIdUser[0].id_user, user.dzial, getColumns);
+                // console.log(result.length);
 
-        //         // const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM users WHERE userlogin = ?',
-        //         //     [user.userlogin]
-        //         // );
+                const mailOptions = {
+                    from: "powiadomienia-raportbl@krotoski.com",
+                    // to: `${user.userlogin}`,
+                    to: `jerzy.komorowski@krotoski.com`,
+                    subject: "Zostało założone konto dla Ciebie",
+                    // text: "Treść wiadomości testowej",
+                    html: `
+                    <b>Dzień dobry</b><br>
+                    Zostało założone konto dla Ciebie, aplikacja dostępna pod adresem 
+                    <a href="https://raportbl.krotoski.com/" target="_blank">https://raportbl.krotoski.com</a><br>
+                    Login: ${user.userlogin}<br>
+                    Hasło: ${user.password}<br>
+                    Masz dostęp do działów: ${user.dzial.join(", ")} <br>
+                     <br>
+                    Z poważaniem.<br>
+                    Dział Nadzoru i Kontroli Należności <br>
+                `,
+                };
+                // console.log(mailOptions);
+                await sendEmail(mailOptions);
 
-        //         // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
-        //         await verifyUserTableConfig(checkIdUser[0].id_user, user.dzial, getColumns);
-        //         // console.log(result.length);
+            }
 
-        //     }
-        //     else {
-        //         existUser.push({ ...user, haslo: "Już ma konto" });
-        //     }
+        }
 
-        // }
         // res.json({ existUser });
     }
     catch (error) {

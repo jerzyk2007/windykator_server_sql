@@ -2,7 +2,7 @@ const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, generatePassword } = require("./repairDataController");
 const { updateData, updateSettlements, updateSettlementDescription, updateDocZal, updateCarReleaseDates } = require("./getDataFromMSSQL");
-const { sendEmail, testMail } = require("./mailController");
+const { testMail } = require("./mailController");
 
 const getTime = async (req, res) => {
   try {
