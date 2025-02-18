@@ -306,6 +306,41 @@ const deletePreparedItem = async (req, res) => {
     }
 };
 
+const checkDocPayment = async (req, res) => {
+    const { departments } = req.body;
+    try {
+        if (!departments.length) {
+            return res.json({ checkDoc: [] });
+        }
+        let checkDoc = [];
+        for (const dep of departments) {
+            const [checkPayment] = await connect_SQL.query(
+                `SELECT D.NUMER_FV FROM documents AS D
+                LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV
+                WHERE S.NALEZNOSC != 0 AND D.DZIAL = ?
+                LIMIT 1`, [dep]);
+            if (checkPayment[0]?.NUMER_FV) {
+                checkDoc.push({
+                    dep,
+                    exist: true
+                });
+
+            } else {
+                checkDoc.push({
+                    dep,
+                    exist: false
+                });
+
+            }
+
+        }
+        res.json({ checkDoc });
+    }
+    catch (error) {
+        logEvents(`itemsController, checkDocPayment: ${error}`, "reqServerErrors.txt");
+
+    }
+};
 
 module.exports = {
     newItem,
@@ -316,5 +351,6 @@ module.exports = {
     getDepfromDocuments,
     getPreparedItems,
     savePreparedItems,
-    deletePreparedItem
+    deletePreparedItem,
+    checkDocPayment
 };
