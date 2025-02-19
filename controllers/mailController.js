@@ -45,7 +45,7 @@
 //     secure: true,
 //     auth: {
 //         user: "jerzy.komorowski@onet.eu",
-//         pass: "Kubulutek1!",
+//         pass: "...,
 //     },
 // });
 
@@ -53,7 +53,7 @@
 // const imapConfig = {
 //     imap: {
 //         user: "jerzy.komorowski@onet.eu",
-//         password: "Kubulutek1!",
+//         password: "...",
 //         host: "imap.poczta.onet.pl",
 //         port: 993,
 //         tls: true,
