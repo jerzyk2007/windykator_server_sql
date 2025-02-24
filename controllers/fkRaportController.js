@@ -659,11 +659,14 @@ const getRaportDocumentsControlBL = async (req, res) => {
     // const [dataReport] = await connect_SQL.query(
     //   "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND FKR.CZY_W_KANCELARI = 'NIE' AND FKR.PRZEDZIAL_WIEKOWANIE !=' < 0' AND FKR.PRZEDZIAL_WIEKOWANIE !='1 - 7' AND FKR.DO_ROZLICZENIA_AS > 0"
     // );
+    // const [dataReport] = await connect_SQL.query(
+    //   "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV LEFT JOIN mark_documents AS MD ON FKR.NR_DOKUMENTU = MD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND MD.RAPORT_FK = 1 AND S.NALEZNOSC !=0"
+    // );
     const [dataReport] = await connect_SQL.query(
-      "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV LEFT JOIN mark_documents AS MD ON FKR.NR_DOKUMENTU = MD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND MD.RAPORT_FK = 1 AND S.NALEZNOSC !=0"
+      "SELECT CD.*, D.NUMER_FV,  D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM documents AS D LEFT JOIN settlements as S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON D.NUMER_FV = CD.NUMER_FV LEFT JOIN join_items AS JI ON D.DZIAL = JI.department LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV WHERE JI.area = 'BLACHARNIA' AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
     );
     if (dataReport.length) {
-      const cleanedData = dataReport.map(({ id_control_documents, NUMER_FV, ...rest }) => rest);
+      const cleanedData = dataReport.map(({ id_control_documents, ...rest }) => rest);
       res.json(cleanedData);
     } else {
       res.json([]);
