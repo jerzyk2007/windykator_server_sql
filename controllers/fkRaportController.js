@@ -815,8 +815,6 @@ const addDecisionDate = async (req, res) => {
 
     // const [result] = await connect_SQL.query(`SELECT * FROM management_decision_description_FK WHERE NUMER_FV = 'FV/UP/326/25/A/D86' AND WYKORZYSTANO_RAPORT_FK IS NULL ORDER BY id_management_decision_description_FK `);
 
-    // console.log(result);
-
     res.end();
   }
   catch (error) {

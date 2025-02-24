@@ -7,7 +7,8 @@ const handleRefreshToken = async (req, res) => {
   const cookies = req.cookies;
 
   if (!cookies?.jwt) {
-    return res.sendStatus(401);
+    return res.end();
+    // return res.sendStatus(401);  // unauthorized
   }
 
   const refreshToken = cookies.jwt;
@@ -21,7 +22,8 @@ const handleRefreshToken = async (req, res) => {
     );
 
     if (!findUser[0]) {
-      return res.sendStatus(403); // forbidden
+      return res.end();
+      // return res.sendStatus(403); // forbidden
     }
 
     // evaluate jwt
