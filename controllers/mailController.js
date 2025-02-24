@@ -16,17 +16,8 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// // // Konfiguracja IMAP
-// // const imapConfig = {
-// //     imap: {
-// //         user: process.env.IMAP_USER,
-// //         password: process.env.IMAP_PASS,
-// //         host: process.env.IMAP_HOST,
-// //         port: process.env.IMAP_PORT || 993,
-// //         tls: true,
-// //         authTimeout: 3000,
-// //     },
-// // };
+
+
 
 
 
