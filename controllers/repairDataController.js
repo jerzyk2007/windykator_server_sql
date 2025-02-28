@@ -270,7 +270,32 @@ const createAccounts = async (req, res) => {
             raportDepartments: '{"size":{},"visible":{"CEL_BEZ_PZU_LINK4":false,"PRZETERMINOWANE_BEZ_PZU_LINK4":false,"ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4":false,"NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4":false,"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DZIALY","CEL","CEL_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","CEL_CALOSC","PRZETERMINOWANE_FV","ILOSC_PRZETERMINOWANYCH_FV","NIEPRZETERMINOWANE_FV","CEL_BEZ_KANCELARII","PRZETERMINOWANE_BEZ_KANCELARII","ILOSC_PRZETERMINOWANYCH_FV_BEZ_KANCELARII","NIEPRZETERMINOWANE_FV_BEZ_KANCELARII","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}'
         };
         const tableSettings = {
-            "size": {},
+            "size": {
+                "NIP": 100,
+                "VIN": 100,
+                "AREA": 100,
+                "DZIAL": 100,
+                "NETTO": 100,
+                "BRUTTO": 111,
+                "TERMIN": 122,
+                "DATA_FV": 140,
+                "DORADCA": 100,
+                "NUMER_FV": 194,
+                "KONTRAHENT": 270,
+                "BLAD_DORADCY": 100,
+                "TYP_PLATNOSCI": 100,
+                "DO_ROZLICZENIA": 136,
+                "UWAGI_ASYSTENT": 250,
+                "JAKA_KANCELARIA": 100,
+                "UWAGI_Z_FAKTURY": 100,
+                "NR_REJESTRACYJNY": 100,
+                "DATA_WYDANIA_AUTA": 100,
+                "INFORMACJA_ZARZAD": 192,
+                "CZY_PRZETERMINOWANE": 100,
+                "ILE_DNI_PO_TERMINIE": 111,
+                "ZAZNACZ_KONTRAHENTA": 100,
+                "OSTATECZNA_DATA_ROZLICZENIA": 230
+            },
             "order": [
                 "NUMER_FV",
                 "DATA_FV",
@@ -278,83 +303,107 @@ const createAccounts = async (req, res) => {
                 "ILE_DNI_PO_TERMINIE",
                 "BRUTTO",
                 "DO_ROZLICZENIA",
+                "KONTRAHENT",
                 "UWAGI_ASYSTENT",
+                "AREA",
+                "BLAD_DORADCY",
+                "CZY_PRZETERMINOWANE",
+                "DATA_WYDANIA_AUTA",
+                "DORADCA",
+                "DZIAL",
+                "INFORMACJA_ZARZAD",
+                "JAKA_KANCELARIA",
+                "NETTO",
+                "NIP",
+                "NR_REJESTRACYJNY",
+                "OSTATECZNA_DATA_ROZLICZENIA",
+                "TYP_PLATNOSCI",
+                "UWAGI_Z_FAKTURY",
+                "VIN",
+                "ZAZNACZ_KONTRAHENTA",
                 "mrt-row-spacer"
             ],
             "pinning": {
-                "left": [],
+                "left": [
+                    "NUMER_FV"
+                ],
                 "right": []
             },
             "visible": {
+                "NIP": false,
+                "VIN": false,
+                "AREA": false,
+                "DZIAL": false,
+                "NETTO": false,
                 "BRUTTO": true,
                 "TERMIN": true,
                 "DATA_FV": true,
+                "DORADCA": false,
                 "NUMER_FV": true,
+                "KONTRAHENT": true,
+                "BLAD_DORADCY": false,
+                "TYP_PLATNOSCI": false,
                 "DO_ROZLICZENIA": true,
                 "UWAGI_ASYSTENT": true,
-                "ILE_DNI_PO_TERMINIE": true
+                "JAKA_KANCELARIA": false,
+                "UWAGI_Z_FAKTURY": false,
+                "NR_REJESTRACYJNY": false,
+                "DATA_WYDANIA_AUTA": false,
+                "INFORMACJA_ZARZAD": true,
+                "CZY_PRZETERMINOWANE": false,
+                "ILE_DNI_PO_TERMINIE": true,
+                "ZAZNACZ_KONTRAHENTA": false,
+                "OSTATECZNA_DATA_ROZLICZENIA": true
             },
             "pagination": {
-                "pageSize": 10,
+                "pageSize": 30,
                 "pageIndex": 0
             }
         };
 
-        // const result = await Promise.all(uniqueOwners.map(async user => {
-        //     const [surname, name] = user.split(' '); // Podział na imię i nazwisko
-        //     let userMail = '';
-        //     let departments = new Set();
-        //     const pass = await generatePassword();
-        //     findMail.forEach(({ owner, mail, department }) => {
-        //         const index = owner.indexOf(user);
-        //         if (index !== -1) {
-        //             if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
-        //             departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
-        //         }
-        //     });
-        //     return {
-        //         userlogin: userMail || null,
-        //         username: name,
-        //         usersurname: surname,
-        //         password: pass.password, // Teraz czekamy na wygenerowanie hasła
-        //         hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
-        //         dzial: [...departments] // Konwersja z Set na tablicę
-        //     };
-        // }));
+        const result = await Promise.all(uniqueOwners.map(async user => {
+            const [surname, name] = user.split(' '); // Podział na imię i nazwisko
+            let userMail = '';
+            let departments = new Set();
+            const pass = await generatePassword();
+            findMail.forEach(({ owner, mail, department }) => {
+                const index = owner.indexOf(user);
+                if (index !== -1) {
+                    if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
+                    departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
+                }
+            });
+            return {
+                userlogin: userMail || null,
+                username: name,
+                usersurname: surname,
+                password: pass.password, // Teraz czekamy na wygenerowanie hasła
+                hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
+                dzial: [...departments] // Konwersja z Set na tablicę
+            };
+        }));
 
-        const result = [
-            {
-                userlogin: 'piotr.zakrzewski@krotoski.com',
-                username: 'Piotr',
-                usersurname: 'Zakrzewski',
-                password: 'j%6Jws5Eo0Hc',
-                hashedPwd: '$2a$10$yrm451Fvp7XrcGB1qXG2DemIaQY2u1pyb/OFLln3iCq0jyHVrroFW',
-                dzial: ['D034', 'D054']
-            },
-            {
-                userlogin: 'jerzy.zalewski@krotoski.com',
-                username: 'Jerzy',
-                usersurname: 'Zalewski',
-                password: 'cvL%0$sRicts',
-                hashedPwd: '$2a$10$nzsnKsik9CWmhbGvCHpCfOEyqqk/WDUroYVDXWkaOzRDLL3bfefd.',
-                dzial: ['D161']
-            },
-            {
-                userlogin: 'adam.zyskowski@krotoski.com',
-                username: 'Adam',
-                usersurname: 'Zyskowski',
-                password: 'nY6R!!kEXqzA',
-                hashedPwd: '$2a$10$jr4KTMaYeFvwJ/97yQR/auVRTYhk5M0uJ1tkX2pfst9Cq7jarRFaS',
-                dzial: ['D007']
-            }
-        ];
+        // do testów i dodawania uzytkowników
+        // const pass = await generatePassword();
+        // const result = [
+        //     {
+        //         userlogin: 'piotr.zakrzewski@krotoski.com',
+        //         username: 'Piotr',
+        //         usersurname: 'Zakrzewski',
+        //         // password: 'j%6Jws5Eo0Hc',
+        //         password: pass.password,
+        //         // hashedPwd: '$2a$10$yrm451Fvp7XrcGB1qXG2DemIaQY2u1pyb/OFLln3iCq0jyHVrroFW',
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D034', 'D054', 'D007']
+        //     },
+
+        // ];
 
         for (const user of result) {
             const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ? `,
                 [user.userlogin]
             );
             if (!checkDuplicate.length) {
-
                 console.log(user);
                 await connect_SQL.query(
                     `INSERT INTO users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -377,21 +426,25 @@ const createAccounts = async (req, res) => {
 
                 // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
                 await verifyUserTableConfig(checkIdUser[0].id_user, user.dzial, getColumns);
-                // console.log(result.length);
 
                 const mailOptions = {
                     from: "powiadomienia-raportbl@krotoski.com",
-                    // to: `${user.userlogin}`,
-                    to: `jerzy.komorowski@krotoski.com`,
+                    to: `${user.userlogin}`,
+                    // to: `jerzy.komorowski@krotoski.com`,
                     subject: "Zostało założone konto dla Ciebie",
                     // text: "Treść wiadomości testowej",
                     html: `
                     <b>Dzień dobry</b><br>
-                    Zostało założone konto dla Ciebie, aplikacja dostępna pod adresem 
+                    <br>
+                    Zostało założone konto dla Ciebie, aplikacja dostępna pod adresem <br>
                     <a href="https://raportbl.krotoski.com/" target="_blank">https://raportbl.krotoski.com</a><br>
+                    <br>
                     Login: ${user.userlogin}<br>
                     Hasło: ${user.password}<br>
-                    Masz dostęp do działów: ${user.dzial.join(", ")} <br>
+                    Masz dostęp do działów: ${user.dzial.join(", ")} <br/>
+                    <br>
+                    Polecamy skorzystać z instrukcji obsługi, aby poznać funkcje programu.<br/>
+                    <a href="https://raportbl.krotoski.com/instruction" target="_blank">https://raportbl.krotoski.com/instruction</a><br>
                      <br>
                     Z poważaniem.<br>
                     Dział Nadzoru i Kontroli Należności <br>
@@ -404,7 +457,11 @@ const createAccounts = async (req, res) => {
 
         }
 
-        // res.json({ existUser });
+
+        //wyciągnięcie wszystkich maili
+        // const userLoginsString = [...new Set(result.map(user => user.userlogin))].sort().join('; ');
+
+        // console.log(userLoginsString);
     }
     catch (error) {
         console.error(error);

@@ -82,9 +82,7 @@ const getRaportDataV2 = async (req, res) => {
 
 
     const getDifferencesFK_AS = await differencesAS_FK();
-
     res.json({ dataRaport, differences: getDifferencesFK_AS });
-    // res.json([]);
   } catch (error) {
     logEvents(`fkRaportController, getRaportDataV2: ${error}`, "reqServerErrors.txt");
     res.status(500).json({ error: "Server error" });
@@ -329,7 +327,7 @@ const generateRaport = async (req, res) => {
 const generateRaportV2 = async (req, res) => {
   try {
     const [getData] = await connect_SQL.query(`SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
-RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, D.VIN,
+RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, D.VIN, D.DORADCA, 
 DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
 S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
 FROM raportFK_accountancy AS RA 
@@ -340,8 +338,6 @@ LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV
 LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV 
 LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
 `);
-    // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota')`);
-    // WHERE TYP_DOKUMENTU IN ('Faktura', 'Nota') AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL`);
 
 
     // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
@@ -438,6 +434,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
         DATA_WYDANIA_AUTA: doc.DATA_WYDANIA_AUTA,
         DATA_WYSTAWIENIA_FV: DATA_FV,
         DO_ROZLICZENIA_AS: doc.NALEZNOSC_AS,
+        DORADCA: doc.DORADCA,
         DZIAL: doc.DZIAL,
         ETAP_SPRAWY: doc.STATUS_AKTUALNY,
         HISTORIA_ZMIANY_DATY_ROZLICZENIA,
@@ -466,8 +463,6 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
     });
 
 
-    // const filteredData = cleanData.filter(item => item.PRZEDZIAL_WIEKOWANIE !== "1-7" && item.PRZEDZIAL_WIEKOWANIE !== "<0");
-
     await connect_SQL.query("TRUNCATE TABLE fk_raport_v2");
 
     // Teraz przygotuj dane do wstawienia
@@ -479,6 +474,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
       item.DATA_WYDANIA_AUTA ?? null,
       item.DATA_WYSTAWIENIA_FV ?? null,
       item.DO_ROZLICZENIA_AS ?? null,
+      item.DORADCA ?? null,
       item.DZIAL ?? null,
       item.ETAP_SPRAWY ?? null,
       item.HISTORIA_ZMIANY_DATY_ROZLICZENIA ?? null,
@@ -506,11 +502,11 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
     ]);
 
     const query = `
-INSERT IGNORE INTO fk_raport_v2
-  (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DZIAL, ETAP_SPRAWY, HISTORIA_ZMIANY_DATY_ROZLICZENIA, ILE_DNI_NA_PLATNOSC_FV, INFORMACJA_ZARZAD, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OSTATECZNA_DATA_ROZLICZENIA, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU, VIN) 
-VALUES 
-  ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
-`;
+    INSERT IGNORE INTO fk_raport_v2
+      (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DORADCA, DZIAL, ETAP_SPRAWY, HISTORIA_ZMIANY_DATY_ROZLICZENIA, ILE_DNI_NA_PLATNOSC_FV, INFORMACJA_ZARZAD, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OSTATECZNA_DATA_ROZLICZENIA, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU, VIN) 
+    VALUES 
+      ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+    `;
 
     // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
@@ -796,7 +792,6 @@ const addDecisionDate = async (req, res) => {
   const { NUMER_FV, data } = req.body;
   try {
     const [raportDate] = await connect_SQL.query(`SELECT date FROM  fk_updates_date WHERE title = 'accountancy'`);
-    // console.log(data);
     if (data.INFORMACJA_ZARZAD.length && raportDate[0].date) {
       for (item of data.INFORMACJA_ZARZAD) {
         await connect_SQL.query(`INSERT INTO management_decision_FK (NUMER_FV, INFORMACJA_ZARZAD, WYKORZYSTANO_RAPORT_FK) VALUES (?, ?, ?)`, [
@@ -819,8 +814,6 @@ const addDecisionDate = async (req, res) => {
     }
 
     // const [result] = await connect_SQL.query(`SELECT * FROM management_decision_description_FK WHERE NUMER_FV = 'FV/UP/326/25/A/D86' AND WYKORZYSTANO_RAPORT_FK IS NULL ORDER BY id_management_decision_description_FK `);
-
-    // console.log(result);
 
     res.end();
   }
