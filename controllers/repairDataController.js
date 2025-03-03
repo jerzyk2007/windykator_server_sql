@@ -361,40 +361,112 @@ const createAccounts = async (req, res) => {
             }
         };
 
-        const result = await Promise.all(uniqueOwners.map(async user => {
-            const [surname, name] = user.split(' '); // Podział na imię i nazwisko
-            let userMail = '';
-            let departments = new Set();
-            const pass = await generatePassword();
-            findMail.forEach(({ owner, mail, department }) => {
-                const index = owner.indexOf(user);
-                if (index !== -1) {
-                    if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
-                    departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
-                }
-            });
-            return {
-                userlogin: userMail || null,
-                username: name,
-                usersurname: surname,
-                password: pass.password, // Teraz czekamy na wygenerowanie hasła
-                hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
-                dzial: [...departments] // Konwersja z Set na tablicę
-            };
-        }));
+        // const result = await Promise.all(uniqueOwners.map(async user => {
+        //     const [surname, name] = user.split(' '); // Podział na imię i nazwisko
+        //     let userMail = '';
+        //     let departments = new Set();
+        //     const pass = await generatePassword();
+        //     findMail.forEach(({ owner, mail, department }) => {
+        //         const index = owner.indexOf(user);
+        //         if (index !== -1) {
+        //             if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
+        //             departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
+        //         }
+        //     });
+        //     return {
+        //         userlogin: userMail || null,
+        //         username: name,
+        //         usersurname: surname,
+        //         password: pass.password, // Teraz czekamy na wygenerowanie hasła
+        //         hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
+        //         dzial: [...departments] // Konwersja z Set na tablicę
+        //     };
+        // }));
 
         // do testów i dodawania uzytkowników
         // const pass = await generatePassword();
         // const result = [
         //     {
-        //         userlogin: 'piotr.zakrzewski@krotoski.com',
-        //         username: 'Piotr',
-        //         usersurname: 'Zakrzewski',
+        //         userlogin: 'justyna.kowalska@krotoski.com',
+        //         username: 'Justyna',
+        //         usersurname: 'Kowalska',
         //         // password: 'j%6Jws5Eo0Hc',
         //         password: pass.password,
         //         // hashedPwd: '$2a$10$yrm451Fvp7XrcGB1qXG2DemIaQY2u1pyb/OFLln3iCq0jyHVrroFW',
         //         hashedPwd: pass.hashedPwd,
-        //         dzial: ['D034', 'D054', 'D007']
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'edyta.michalowska@krotoski.com',
+        //         username: 'Edyta',
+        //         usersurname: 'Michałowska',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'marcin.manelski@krotoski.com',
+        //         username: 'Marcin',
+        //         usersurname: 'Manelski',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'robert.modzelewski@krotoski.com',
+        //         username: 'Robert',
+        //         usersurname: 'Modzelewski',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'artur.miloszewski@krotoski.com',
+        //         username: 'Artur',
+        //         usersurname: 'Miłoszewski',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'tomasz.babinski@krotoski.com',
+        //         username: 'Tomasz',
+        //         usersurname: 'Babiński',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'mariusz.lapinski@krotoski.com',
+        //         username: 'Mariusz',
+        //         usersurname: 'Łapiński',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'lukasz.pikora@krotoski.com',
+        //         username: 'Łukasz',
+        //         usersurname: 'Pikora',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'maciej.malek@krotoski.com',
+        //         username: 'Maciej',
+        //         usersurname: 'Małek',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
+        //     },
+        //     {
+        //         userlogin: 'arkadiusz.szelenbaum@krotoski.com',
+        //         username: 'Arkadiusz',
+        //         usersurname: 'Szelenbaum',
+        //         password: pass.password,
+        //         hashedPwd: pass.hashedPwd,
+        //         dzial: ['D047', 'D447']
         //     },
 
         // ];
