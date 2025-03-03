@@ -38,10 +38,11 @@ app.use(compression());
 
 // middleware for cookies
 app.use(cookieParser());
-
+app.use("/reset-password", require("./routes/resetPassword"));
 app.use("/login", require("./routes/login"));
 app.use("/refresh", require("./routes/refresh"));
 app.use("/logout", require("./routes/logout"));
+
 
 // // //protected routes
 app.use(verifyJWT);

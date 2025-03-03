@@ -1,0 +1,4 @@
+20250303	17:21:05	mailController, sendEmail: przed
+20250303	17:21:06	mailController, sendEmail: [object Object]
+20250303	17:22:51	mailController, sendEmail: przed
+20250303	17:22:52	mailController, sendEmail: [object Object]
