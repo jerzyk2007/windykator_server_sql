@@ -502,13 +502,14 @@ const changeDocumentControl = async (req, res) => {
     );
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
-        "UPDATE control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?  WHERE NUMER_FV = ?",
+        "UPDATE control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?  WHERE NUMER_FV = ?",
         [
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
           documentControlBL.prawoJazdy ? documentControlBL.prawoJazdy : null,
           documentControlBL.dowodRejestr ? documentControlBL.dowodRejestr : null,
           documentControlBL.polisaAC ? documentControlBL.polisaAC : null,
+          documentControlBL.decyzja ? documentControlBL.decyzja : null,
           documentControlBL.faktura ? documentControlBL.faktura : null,
           documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
@@ -518,13 +519,14 @@ const changeDocumentControl = async (req, res) => {
 
     } else {
       await connect_SQL.query(
-        "INSERT INTO control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [NUMER_FV,
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
           documentControlBL.prawoJazdy ? documentControlBL.prawoJazdy : null,
           documentControlBL.dowodRejestr ? documentControlBL.dowodRejestr : null,
           documentControlBL.polisaAC ? documentControlBL.polisaAC : null,
+          documentControlBL.decyzja ? documentControlBL.decyzja : null,
           documentControlBL.faktura ? documentControlBL.faktura : null,
           documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,

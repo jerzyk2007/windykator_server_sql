@@ -7,61 +7,94 @@ const { sendEmail } = require('./mailController');
 
 
 //funkcja generuje hasło i zaszyfrowane hasło do DB zgodnie z załaożeniami bezpieczeństwa
-const generatePassword = async (length = 12) => {
-    const chars = {
-        lower: "abcdefghijklmnopqrstuvwxyz",
-        upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-        digits: "0123456789",
-        special: "!@#$%"
-    };
+const generatePassword = (length = 15) => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
-
-    let password = [
-        getRandomChar(chars.lower),
-        getRandomChar(chars.upper),
-        getRandomChar(chars.digits),
-        getRandomChar(chars.special),
-        ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
-    ].sort(() => Math.random() - 0.5).join("");
-
-    const hashedPwd = await bcryptjs.hash(password, 10);
-
-    return (hashedPwd);
+    return Array.from({ length }, () => chars[crypto.randomInt(0, chars.length)]).join("");
 };
 
+// const generatePassword = async (length = 12) => {
+//     const chars = {
+//         lower: "abcdefghijklmnopqrstuvwxyz",
+//         upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+//         digits: "0123456789",
+//         special: "!@#$%"
+//     };
+
+//     const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
+
+//     let password = [
+//         getRandomChar(chars.lower),
+//         getRandomChar(chars.upper),
+//         getRandomChar(chars.digits),
+//         getRandomChar(chars.special),
+//         ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
+//     ].sort(() => Math.random() - 0.5).join("");
+
+
+//     return (password);
+// };
+// const generatePassword = async (length = 12) => {
+//     const chars = {
+//         lower: "abcdefghijklmnopqrstuvwxyz",
+//         upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+//         digits: "0123456789",
+//         special: "!@#$%"
+//     };
+
+//     const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
+
+//     let password = [
+//         getRandomChar(chars.lower),
+//         getRandomChar(chars.upper),
+//         getRandomChar(chars.digits),
+//         getRandomChar(chars.special),
+//         ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
+//     ].sort(() => Math.random() - 0.5).join("");
+
+//     const hashedPwd = await bcryptjs.hash(password, 10);
+
+//     return (hashedPwd);
+// };
+
 // const baseUrl = "http://localhost:3000";
-const baseUrl = "https://raportbl.krotoski.com:3000";
+const baseUrl = "https://raportbl.krotoski.com";
 
 const resetPass = async (req, res) => {
     const { userlogin } = req.body;
     try {
+
         const [checkMail] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ?`, [userlogin]);
         if (!checkMail.length) {
             return res.end();
         }
 
-        const [existResetMail] = await connect_SQL.query(`SELECT email FROM password_resets WHERE email = ?`, [userlogin]);
+        await connect_SQL.query('DELETE FROM password_resets WHERE email = ?',
+            [
+                userlogin
+            ]
+        );
+        // const [existResetMail] = await connect_SQL.query(`SELECT email FROM password_resets WHERE email = ?`, [userlogin]);
 
-        const token = await generatePassword();
+        const token = generatePassword();
         const encodedToken = encodeURIComponent(token);
-        const url = "reset-password";
+        const url = "password-reset";
         const resetLink = `${baseUrl}/${url}/${encodedToken}`;
-        if (!existResetMail?.length) {
-            await connect_SQL.query(`INSERT INTO password_resets (email, token) VALUES (?, ?)`, [
-                userlogin,
-                token
-            ]);
+        // if (!existResetMail?.length) {
+        await connect_SQL.query(`INSERT INTO password_resets (email, token) VALUES (?, ?)`, [
+            userlogin,
+            token
+        ]);
 
-        } else {
-            await connect_SQL.query('UPDATE password_resets SET token = ? WHERE email = ?',
-                [
-                    token,
-                    userlogin
-                ]
-            );
+        // } else {
+        //     await connect_SQL.query('UPDATE password_resets SET token = ? WHERE email = ?',
+        //         [
+        //             token,
+        //             userlogin
+        //         ]
+        //     );
 
-        }
+        // }
 
         const mailOptions = {
             from: "powiadomienia-raportbl@krotoski.com",
@@ -85,7 +118,6 @@ const resetPass = async (req, res) => {
             Dział Nadzoru i Kontroli Należności <br>
         `,
         };
-
         await sendEmail(mailOptions);
         res.end();
 
@@ -124,7 +156,7 @@ const confirmPass = async (req, res) => {
                     ]
                 );
 
-                const url = "confirm-reset-password";
+                const url = "password-confirm-reset";
                 const encodedToken = encodeURIComponent(token);
                 const resetLink = `${baseUrl}/${url}/${encodedToken}/${checkToken[0].email}`;
                 const mailOptions = {
@@ -143,6 +175,7 @@ const confirmPass = async (req, res) => {
                     Dział Nadzoru i Kontroli Należności <br>
                 `,
                 };
+
                 await sendEmail(mailOptions);
             }
         }
@@ -180,11 +213,7 @@ const verifyPass = async (req, res) => {
 const changePass = async (req, res) => {
     const { password, token, email } = req.body;
     try {
-        // console.log('change');
-        // if (!email || !token) {
-        //     return res.end();
-        // }
-        // console.log(password, token, email);
+
         const hashedPwd = await bcryptjs.hash(password, 10);
         const [verifyAccess] = await connect_SQL.query(`SELECT email FROM password_resets WHERE token = ? AND email = ?`, [token, email]);
         if (verifyAccess[0].email) {
