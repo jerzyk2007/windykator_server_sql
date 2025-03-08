@@ -1,3 +1,7 @@
+const bcryptjs = require("bcryptjs");
+const crypto = require("crypto");
+
+
 const dzialMap = {
     D048: "D048/D058",
     D058: "D048/D058",
@@ -175,11 +179,38 @@ const documentsType = (data) => {
     return documentsType;
 };
 
+const generatePassword = async (length = 12) => {
+    const chars = {
+        lower: "abcdefghijklmnopqrstuvwxyz",
+        upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        digits: "0123456789",
+        special: "!@#$%"
+    };
+
+    const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
+
+    let password = [
+        getRandomChar(chars.lower),
+        getRandomChar(chars.upper),
+        getRandomChar(chars.digits),
+        getRandomChar(chars.special),
+        ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
+    ].sort(() => Math.random() - 0.5).join("");
+
+    const hashedPwd = await bcryptjs.hash(password, 10);
+
+    return ({
+        password,
+        hashedPwd
+    });
+};
+
 module.exports = {
     addDepartment,
     checkDate,
     checkTime,
     raportSettings,
     newUserTableSettings,
-    documentsType
+    documentsType,
+    generatePassword
 };

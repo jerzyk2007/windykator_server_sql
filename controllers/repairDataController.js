@@ -3,6 +3,7 @@ const { verifyUserTableConfig } = require('./usersController');
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require('./mailController');
+const { generatePassword } = require('./manageDocumentAddition');
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -202,31 +203,31 @@ const repairColumnsRaports = async () => {
     }
 };
 
-const generatePassword = async (length = 12) => {
-    const chars = {
-        lower: "abcdefghijklmnopqrstuvwxyz",
-        upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-        digits: "0123456789",
-        special: "!@#$%"
-    };
+// const generatePassword = async (length = 12) => {
+//     const chars = {
+//         lower: "abcdefghijklmnopqrstuvwxyz",
+//         upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+//         digits: "0123456789",
+//         special: "!@#$%"
+//     };
 
-    const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
+//     const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
 
-    let password = [
-        getRandomChar(chars.lower),
-        getRandomChar(chars.upper),
-        getRandomChar(chars.digits),
-        getRandomChar(chars.special),
-        ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
-    ].sort(() => Math.random() - 0.5).join("");
+//     let password = [
+//         getRandomChar(chars.lower),
+//         getRandomChar(chars.upper),
+//         getRandomChar(chars.digits),
+//         getRandomChar(chars.special),
+//         ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
+//     ].sort(() => Math.random() - 0.5).join("");
 
-    const hashedPwd = await bcryptjs.hash(password, 10);
+//     const hashedPwd = await bcryptjs.hash(password, 10);
 
-    return ({
-        password,
-        hashedPwd
-    });
-};
+//     return ({
+//         password,
+//         hashedPwd
+//     });
+// };
 
 // tworzy konta dla pracowników wg struktury organizacyjnej, operacja jednorazowa :)
 const createAccounts = async (req, res) => {

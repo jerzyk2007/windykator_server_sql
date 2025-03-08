@@ -3,7 +3,8 @@ const bcryptjs = require("bcryptjs");
 const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
 const { newUserTableSettings, raportSettings } = require('./manageDocumentAddition');
-
+const { generatePassword } = require('./manageDocumentAddition');
+const { sendEmail } = require('./mailController');
 
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
 const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) => {
@@ -175,36 +176,54 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
 
 // rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
-  const { userlogin, password, username, usersurname } = req.body;
+  const { userlogin, username, usersurname } = req.body;
 
-  if (!userlogin || !password || !username || !usersurname) {
+  if (!userlogin || !username || !usersurname) {
     return res
       .status(400)
       .json({ message: "Userlogin and password are required." });
   }
 
   try {
-    const [rows] = await connect_SQL.query(
+    const [checkUser] = await connect_SQL.query(
       "SELECT userlogin FROM users WHERE userlogin = ?",
       [userlogin]
     );
-
     // check for duplicate userlogin in db
-    if (rows[0]?.userlogin)
+    if (checkUser[0]?.userlogin)
       return res
         .status(409)
         .json({ message: `User ${userlogin} is existing in databse` });
 
     // encrypt the password
-    const hashedPwd = await bcryptjs.hash(password, 10);
     const roles = { Start: 1 };
-
-
+    const password = await generatePassword();
 
     await connect_SQL.query(
       "INSERT INTO users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [username, usersurname, userlogin, hashedPwd, JSON.stringify(roles), JSON.stringify(newUserTableSettings), JSON.stringify(raportSettings)]
+      [username, usersurname, userlogin, password.hashedPwd, JSON.stringify(roles), JSON.stringify(newUserTableSettings), JSON.stringify(raportSettings)]
     );
+
+    const mailOptions = {
+      from: "powiadomienia-raportbl@krotoski.com",
+      to: `${userlogin}`,
+      subject: "Zostało założone konto dla Ciebie",
+      html: `
+      <b>Dzień dobry</b><br>
+      <br>
+      Zostało założone konto dla Ciebie, aplikacja dostępna pod adresem <br>
+      <a href="https://raportbl.krotoski.com/" target="_blank">https://raportbl.krotoski.com</a><br>
+      <br>
+      Login: ${userlogin}<br>
+      Hasło: ${password.password}<br>
+    
+       <br>
+      Z poważaniem.<br>
+      Dział Nadzoru i Kontroli Należności <br>
+  `,
+    };
+    await sendEmail(mailOptions);
+
     res.status(201).json(`Nowy użytkownik ${userlogin} dodany.`);
   } catch (error) {
     logEvents(
