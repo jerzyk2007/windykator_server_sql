@@ -13,50 +13,6 @@ const generatePassword = (length = 15) => {
     return Array.from({ length }, () => chars[crypto.randomInt(0, chars.length)]).join("");
 };
 
-// const generatePassword = async (length = 12) => {
-//     const chars = {
-//         lower: "abcdefghijklmnopqrstuvwxyz",
-//         upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-//         digits: "0123456789",
-//         special: "!@#$%"
-//     };
-
-//     const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
-
-//     let password = [
-//         getRandomChar(chars.lower),
-//         getRandomChar(chars.upper),
-//         getRandomChar(chars.digits),
-//         getRandomChar(chars.special),
-//         ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
-//     ].sort(() => Math.random() - 0.5).join("");
-
-
-//     return (password);
-// };
-// const generatePassword = async (length = 12) => {
-//     const chars = {
-//         lower: "abcdefghijklmnopqrstuvwxyz",
-//         upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-//         digits: "0123456789",
-//         special: "!@#$%"
-//     };
-
-//     const getRandomChar = (set) => set[crypto.randomInt(0, set.length)];
-
-//     let password = [
-//         getRandomChar(chars.lower),
-//         getRandomChar(chars.upper),
-//         getRandomChar(chars.digits),
-//         getRandomChar(chars.special),
-//         ...Array.from({ length: length - 4 }, () => getRandomChar(Object.values(chars).join("")))
-//     ].sort(() => Math.random() - 0.5).join("");
-
-//     const hashedPwd = await bcryptjs.hash(password, 10);
-
-//     return (hashedPwd);
-// };
-
 // const baseUrl = "http://localhost:3000";
 const baseUrl = "https://raportbl.krotoski.com";
 
@@ -74,27 +30,16 @@ const resetPass = async (req, res) => {
                 userlogin
             ]
         );
-        // const [existResetMail] = await connect_SQL.query(`SELECT email FROM password_resets WHERE email = ?`, [userlogin]);
 
-        const token = generatePassword();
+        const token = generatePassword(30);
         const encodedToken = encodeURIComponent(token);
         const url = "password-reset";
         const resetLink = `${baseUrl}/${url}/${encodedToken}`;
-        // if (!existResetMail?.length) {
+
         await connect_SQL.query(`INSERT INTO password_resets (email, token) VALUES (?, ?)`, [
             userlogin,
             token
         ]);
-
-        // } else {
-        //     await connect_SQL.query('UPDATE password_resets SET token = ? WHERE email = ?',
-        //         [
-        //             token,
-        //             userlogin
-        //         ]
-        //     );
-
-        // }
 
         const mailOptions = {
             from: "powiadomienia-raportbl@krotoski.com",
@@ -148,7 +93,7 @@ const confirmPass = async (req, res) => {
             const verifyDate = verifyDatePass(checkToken[0].created_at);
 
             if (verifyDate <= 15) {
-                const token = await generatePassword();
+                const token = generatePassword(30);
 
                 await connect_SQL.query('UPDATE password_resets SET token = ? WHERE token = ?',
                     [token,
@@ -158,7 +103,8 @@ const confirmPass = async (req, res) => {
 
                 const url = "password-confirm-reset";
                 const encodedToken = encodeURIComponent(token);
-                const resetLink = `${baseUrl}/${url}/${encodedToken}/${checkToken[0].email}`;
+                // const resetLink = `${baseUrl}/${url}/${encodedToken}/${checkToken[0].email}`;
+                const resetLink = `${baseUrl}/${url}/${encodedToken}`;
                 const mailOptions = {
                     from: "powiadomienia-raportbl@krotoski.com",
                     to: `${checkToken[0].email}`,
@@ -189,12 +135,12 @@ const confirmPass = async (req, res) => {
 
 //sprawdzam czy ważność hasła jeszcze nie wygasła
 const verifyPass = async (req, res) => {
-    const { email, token } = req.body;
+    const { token } = req.body;
     try {
-        if (!email || !token) {
+        if (!token) {
             return res.end();
         }
-        const [verifyAccess] = await connect_SQL.query(`SELECT * FROM password_resets WHERE token = ? AND email = ?`, [token, email]);
+        const [verifyAccess] = await connect_SQL.query(`SELECT * FROM password_resets WHERE token = ?`, [token]);
         if (!verifyAccess.length) {
             return res.json({ checkDate: false });
         }
@@ -210,21 +156,22 @@ const verifyPass = async (req, res) => {
     }
 };
 
+// funckja zmienijąca hasła 
 const changePass = async (req, res) => {
-    const { password, token, email } = req.body;
+    const { password, token } = req.body;
     try {
 
         const hashedPwd = await bcryptjs.hash(password, 10);
-        const [verifyAccess] = await connect_SQL.query(`SELECT email FROM password_resets WHERE token = ? AND email = ?`, [token, email]);
+        const [verifyAccess] = await connect_SQL.query(`SELECT email FROM password_resets WHERE token = ? `, [token]);
         if (verifyAccess[0].email) {
             await connect_SQL.query('UPDATE users SET password = ? WHERE userlogin = ?',
                 [hashedPwd,
-                    email
+                    verifyAccess[0].email
                 ]
             );
             await connect_SQL.query('DELETE FROM password_resets WHERE email = ?',
                 [
-                    email
+                    verifyAccess[0].email
                 ]
             );
         }

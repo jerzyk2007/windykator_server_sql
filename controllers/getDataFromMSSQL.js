@@ -17,8 +17,8 @@ const formatDate = (date) => {
   return date;
 };
 
-
-const addDocumentToDatabase = async () => {
+//pobieram dokumenty z bazy mssql AS
+const addDocumentToDatabase = async (type) => {
   const query = `SELECT 
        fv.[NUMER],
 	    CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
@@ -60,7 +60,7 @@ GROUP BY
        auto.[NR_NADWOZIA],
        tr.[WARTOSC_NAL];
 `;
-
+  const firma = type === "KRT" ? "KRT" : "INNA";
   try {
     const documents = await msSqlQuery(query);
     // dodaje nazwy działów
@@ -74,7 +74,7 @@ GROUP BY
     for (const doc of addDep) {
 
       await connect_SQL.query(
-        "INSERT IGNORE INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT IGNORE INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           doc.NUMER,
           doc.WARTOSC_BRUTTO,
@@ -92,7 +92,8 @@ GROUP BY
           doc.KONTR_NIP || null,
           doc.NR_NADWOZIA,
           doc.NR_AUTORYZACJI || null,
-          doc.KOREKTA_NUMER
+          doc.KOREKTA_NUMER,
+          firma
         ]
       );
     }
@@ -205,24 +206,6 @@ const updateCarReleaseDates = async () => {
 
 const updateSettlements = async () => {
   try {
-
-    //     const queryMsSql = `
-    //     DECLARE @Termin DATETIME = '2012-11-29'; -- Przykładowe wartości
-    // DECLARE @IS_BILANS BIT = 1;
-    // DECLARE @IS_ROZLICZONY BIT = 0;
-    // DECLARE @DATA_KONIEC DATETIME = GETDATE();
-
-    // SELECT 
-    //    T.OPIS,
-    //  T.WARTOSC_SALDO,
-    // CONVERT(VARCHAR(10),  T.DATA, 23) AS DATA_FV
-    // FROM [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] T WITH(NOLOCK)
-    // WHERE T.IS_BILANS = @IS_BILANS
-    //  AND T.IS_ROZLICZONY = @IS_ROZLICZONY
-    //  AND T.DATA <= @DATA_KONIEC
-    //  AND T.WARTOSC_SALDO IS NOT NULL
-    //  AND T.TERMIN IS NOT NULL
-    //        `;
     const queryMsSql = `
 DECLARE @IS_BILANS BIT = 1;
 DECLARE @IS_ROZLICZONY BIT = 0;
@@ -436,7 +419,7 @@ const updateData = async () => {
     }
 
     // dodanie faktur do DB
-    addDocumentToDatabase().then((result) => {
+    addDocumentToDatabase("KRT").then((result) => {
       connect_SQL.query(
         "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
         [
