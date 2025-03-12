@@ -178,7 +178,8 @@ const generateRaport = async (req, res) => {
       const date2 = new Date(TERMIN_FV);
 
       // Oblicz różnicę w czasie (w milisekundach)
-      const differenceInTime = date1 - date2;
+      const differenceInTime = date1 - date2 - 1;
+
 
       // Przelicz różnicę w milisekundach na dni
       const differenceInDays = Math.round(differenceInTime / (1000 * 60 * 60 * 24));
@@ -377,18 +378,33 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
       return terminDate < today;
     };
 
+    const normalizeDate = (date) => {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0); // Ustawienie godziny na 00:00:00
+      return d;
+    };
+
     // przypisywanie przedziału wiekowania
-
     const checkAging = (TERMIN_FV) => {
-      const date1 = new Date();
-      const date2 = new Date(TERMIN_FV);
+      // const date1 = new Date();
+      // const date2 = new Date(TERMIN_FV);
 
-      // Oblicz różnicę w czasie (w milisekundach)
-      const differenceInTime = date1 - date2;
+      // // Oblicz różnicę w czasie (w milisekundach)
+      // const differenceInTime = date1 - date2;
 
-      // Przelicz różnicę w milisekundach na dni
-      const differenceInDays = Math.round(differenceInTime / (1000 * 60 * 60 * 24));
+      // // Przelicz różnicę w milisekundach na dni
+      // const differenceInDays = Math.round(differenceInTime / (1000 * 60 * 60 * 24));
+
+
+      const date1 = normalizeDate(new Date());
+      const date2 = normalizeDate(new Date(TERMIN_FV));
+
+      // Oblicz różnicę w dniach
+      const differenceInDays = Math.round((date1 - date2) / (1000 * 60 * 60 * 24));
+
       let title = "";
+
+
 
       for (const age of getAging) {
         if (age.TYPE === "first" && Number(age.FROM_TIME) >= differenceInDays) {
@@ -409,6 +425,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
           break;
         }
       }
+
       return title;
     };
     const cleanData = getData.map(doc => {
