@@ -30,21 +30,28 @@ const newItem = async (req, res) => {
     try {
         if (info !== "OWNER" && info !== "AGING") {
             await connect_SQL.query(
-                `INSERT INTO ${info.toLowerCase()}_items (${info}) VALUES (?)`,
+                `INSERT INTO company_${info.toLowerCase()}_items (${info}, COMPANY) VALUES (?, ?)`,
                 [
                     data.newName,
+                    data.company,
                 ]
             );
-        } else if (info === "OWNER") {
+
+            const [result] = await connect_SQL.query(`SELECT * FROM company_${info.toLowerCase()}_items`);
+            return res.json(result);
+        }
+        else if (info === "OWNER") {
 
             await connect_SQL.query(
-                `INSERT INTO ${info.toLowerCase()}_items (${info}, ${info}_MAIL) VALUES (?,?)`,
+                `INSERT INTO company_${info.toLowerCase()}_items (${info}, ${info}_MAIL, COMPANY) VALUES (?,?,?)`,
                 [
                     data.newName,
                     data.newMail,
+                    data.company
                 ]
             );
-        } else if (info === "AGING") {
+        }
+        else if (info === "AGING") {
             await connect_SQL.query(
                 `INSERT INTO ${info.toLowerCase()}_items (FROM_TIME, TO_TIME, TITLE, TYPE) VALUES (?,?,?,?)`,
                 [
@@ -68,30 +75,31 @@ const newItem = async (req, res) => {
 //funckja odczytująca działy, ownerów, lokalizacje
 const getDataItems = async (req, res) => {
     try {
+
         const [depResult] = await connect_SQL.query(
-            "SELECT * from department_items"
+            "SELECT * from company_department_items"
         );
 
         const [locResult] = await connect_SQL.query(
-            "SELECT * from localization_items"
+            "SELECT * from company_localization_items"
         );
 
         const [areaResult] = await connect_SQL.query(
-            "SELECT * from area_items");
-
+            "SELECT * from company_area_items");
 
         const [ownerResult] = await connect_SQL.query(
-            "SELECT * FROM owner_items"
+            "SELECT * FROM company_owner_items"
         );
-
 
         const [guardianResult] = await connect_SQL.query(
-            "SELECT * from guardian_items"
+            "SELECT * from company_guardian_items"
         );
-
 
         const [aging] = await connect_SQL.query(
             "SELECT * from aging_items"
+        );
+        const [company] = await connect_SQL.query(
+            "SELECT company from settings WHERE id_setting = 1"
         );
         res.json({
             data: {
@@ -101,6 +109,7 @@ const getDataItems = async (req, res) => {
                 owners: ownerResult,
                 guardians: guardianResult,
                 aging: aging,
+                company: company
             },
         });
     } catch (error) {
@@ -111,9 +120,15 @@ const getDataItems = async (req, res) => {
 const deleteItem = async (req, res) => {
     const { id, info } = req.params;
     try {
-        await connect_SQL.query(
-            `DELETE FROM ${info.toLowerCase()}_items WHERE id_${info.toLowerCase()}_items = ${id}`
-        );
+        if (info !== "AGING") {
+            await connect_SQL.query(
+                `DELETE FROM company_${info.toLowerCase()}_items WHERE id_${info.toLowerCase()}_items = ${id}`
+            );
+        } else if (info === "AGING") {
+            await connect_SQL.query(
+                `DELETE FROM ${info.toLowerCase()}_items WHERE id_${info.toLowerCase()}_items = ${id}`
+            );
+        }
         res.end();
     }
     catch (error) {
@@ -123,29 +138,35 @@ const deleteItem = async (req, res) => {
 
 const changeItem = async (req, res) => {
     const { id, info } = req.params;
-    const { data } = req.body;
+    const { updateData } = req.body;
 
     try {
+
         if (info !== "OWNER" && info !== "AGING") {
             await connect_SQL.query(
-                `UPDATE  ${info.toLowerCase()}_items SET ${info} = ? WHERE id_${info.toLowerCase()}_items = ${id}`,
-                [data.newName]
+                `UPDATE  company_${info.toLowerCase()}_items SET ${info} = ?, COMPANY = ? WHERE id_${info.toLowerCase()}_items = ?`,
+                [updateData.newName, updateData.company, id]
             );
-        } else if (info === "OWNER") {
+
+        }
+        else if (info === "OWNER") {
 
             await connect_SQL.query(
-                `UPDATE  ${info.toLowerCase()}_items SET ${info} = ?, ${info}_MAIL = ? WHERE id_${info.toLowerCase()}_items = ${id}`,
-                [data.newName,
-                data.newMail
+                `UPDATE  company_${info.toLowerCase()}_items SET ${info} = ?, ${info}_MAIL = ?, COMPANY = ? WHERE id_${info.toLowerCase()}_items = ${id}`,
+                [updateData.newName,
+                updateData.newMail,
+                updateData.company
                 ]
             );
-        } else if (info === "AGING") {
+        }
+        else if (info === "AGING") {
+            console.log(updateData);
             await connect_SQL.query(
                 `UPDATE  aging_items SET FROM_TIME = ?, TO_TIME = ?, TITLE = ? WHERE id_aging_items = ?`,
                 [
-                    data.FROM_TIME,
-                    data.TO_TIME,
-                    data.TITLE,
+                    updateData.FROM_TIME,
+                    updateData.TO_TIME,
+                    updateData.TITLE,
                     id
                 ]
             );
@@ -170,7 +191,7 @@ const getFKSettingsItems = async (req, res) => {
         });
 
         const [depResult] = await connect_SQL.query(
-            "SELECT DEPARTMENT from department_items"
+            "SELECT DEPARTMENT from company_department_items"
         );
 
         const departments = depResult.map((dep) => {
@@ -178,7 +199,7 @@ const getFKSettingsItems = async (req, res) => {
         });
 
         const [locResult] = await connect_SQL.query(
-            "SELECT LOCALIZATION from localization_items"
+            "SELECT LOCALIZATION from company_localization_items"
         );
         const localizations = locResult.map((loc) => {
             return loc.LOCALIZATION;
@@ -190,14 +211,14 @@ const getFKSettingsItems = async (req, res) => {
         });
 
         const [ownerResult] = await connect_SQL.query(
-            "SELECT OWNER from owner_items"
+            "SELECT OWNER from company_owner_items"
         );
         const owners = ownerResult.map((owner) => {
             return owner.OWNER;
         });
 
         const [guardianResult] = await connect_SQL.query(
-            "SELECT GUARDIAN from guardian_items"
+            "SELECT GUARDIAN from company_guardian_items"
         );
         const guardians = guardianResult.map((guardian) => {
             return guardian.GUARDIAN;

@@ -11,7 +11,7 @@ router
     .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.newItem);
 
 router
-    .route("/get-user-items")
+    .route("/get-items")
     .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.getDataItems);
 
 

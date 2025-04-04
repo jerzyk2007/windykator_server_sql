@@ -493,7 +493,46 @@ const createAccounts = async (req, res) => {
     }
 };
 
+const formatUwagiAsystent = (asystent) => {
+    return asystent.map(item => {
+        if (!Array.isArray(item.UWAGI_ASYSTENT)) return item; // Jeśli UWAGI_ASYSTENT nie jest tablicą, pomijamy
 
+        const nowaLista = item.UWAGI_ASYSTENT.flatMap(entry => {
+            if (/\d{2}-\d{2}-\d{4} - [\w\s]+ -/.test(entry)) {
+                // Nowy format (z datą i nazwiskiem) -> pozostaje bez zmian
+                return entry;
+            } else {
+                // Stary format -> rozbijamy na osobne linie
+                return entry.split("\n").filter(line => line.trim() !== ""); // Usuwamy puste linie
+            }
+        });
+
+        return { ...item, UWAGI_ASYSTENT: nowaLista };
+    });
+};
+
+const repairAsystent = async () => {
+    try {
+        const [asystent] = await connect_SQL.query('SELECT id_action, UWAGI_ASYSTENT FROM documents_actions');
+        console.log('start');
+
+        const update = formatUwagiAsystent(asystent);
+        for (const doc of update) {
+            const uwagiAsystentValue = doc.UWAGI_ASYSTENT ? JSON.stringify(doc.UWAGI_ASYSTENT) : null;
+            await connect_SQL.query(`UPDATE documents_actions SET UWAGI_ASYSTENT = ? WHERE id_action = ?`,
+                [
+                    uwagiAsystentValue,
+                    doc.id_action
+                ]
+            );
+        }
+        console.log('koniec');
+
+    }
+    catch (err) {
+        console.error(err);
+    }
+};
 
 
 module.exports = {
@@ -503,5 +542,6 @@ module.exports = {
     repairRoles,
     repairColumnsRaports,
     createAccounts,
-    generatePassword
+    generatePassword,
+    repairAsystent
 };
