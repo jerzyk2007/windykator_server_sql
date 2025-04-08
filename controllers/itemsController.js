@@ -50,6 +50,8 @@ const newItem = async (req, res) => {
                     data.company
                 ]
             );
+            const [result] = await connect_SQL.query(`SELECT * FROM company_${info.toLowerCase()}_items`);
+            return res.json(result);
         }
         else if (info === "AGING") {
             await connect_SQL.query(
@@ -160,7 +162,6 @@ const changeItem = async (req, res) => {
             );
         }
         else if (info === "AGING") {
-            console.log(updateData);
             await connect_SQL.query(
                 `UPDATE  aging_items SET FROM_TIME = ?, TO_TIME = ?, TITLE = ? WHERE id_aging_items = ?`,
                 [
@@ -183,12 +184,21 @@ const changeItem = async (req, res) => {
 const getFKSettingsItems = async (req, res) => {
     try {
         const [uniqeDepFromJI] = await connect_SQL.query(
-            "SELECT distinct department FROM join_items"
+            "SELECT distinct department FROM company_join_items"
         );
 
         const uniqueDepartments = uniqeDepFromJI.map((dep) => {
             return dep.department;
         });
+
+        const [uniqeDepFromCompanyJI] = await connect_SQL.query(
+            "SELECT distinct DEPARTMENT, COMPANY FROM company_join_items"
+        );
+
+        const [uniqeDepFromDocuments] = await connect_SQL.query(
+            "SELECT distinct DZIAL, FIRMA FROM documents"
+        );
+
 
         const [depResult] = await connect_SQL.query(
             "SELECT DEPARTMENT from company_department_items"
@@ -197,6 +207,8 @@ const getFKSettingsItems = async (req, res) => {
         const departments = depResult.map((dep) => {
             return dep.DEPARTMENT;
         });
+
+
 
         const [locResult] = await connect_SQL.query(
             "SELECT LOCALIZATION from company_localization_items"
@@ -225,6 +237,8 @@ const getFKSettingsItems = async (req, res) => {
         });
         res.json({
             uniqueDepartments,
+            uniqeDepFromCompanyJI,
+            uniqeDepFromDocuments,
             departments,
             areas,
             localizations,
@@ -241,7 +255,7 @@ const getFKSettingsItems = async (req, res) => {
 };
 
 
-// funkcja pobiera unikalne nazwy działów z pliku księgowego
+// funkcja pobiera unikalne nazwy działów z tabeli documents
 const getDepfromDocuments = async (req, res) => {
     try {
         const [getDepartments] = await connect_SQL.query(
@@ -255,7 +269,7 @@ const getDepfromDocuments = async (req, res) => {
         res.json(departments);
     } catch (error) {
         logEvents(
-            `itemsController, getDepfromAccountancy: ${error}`,
+            `itemsController, getDepfromDocuments: ${error}`,
             "reqServerErrors.txt"
         );
         res.status(500).json({ error: "Server error" });
@@ -329,32 +343,37 @@ const deletePreparedItem = async (req, res) => {
 
 const checkDocPayment = async (req, res) => {
     const { departments } = req.body;
+
     try {
         if (!departments.length) {
             return res.json({ checkDoc: [] });
         }
+
         let checkDoc = [];
         for (const dep of departments) {
             const [checkPayment] = await connect_SQL.query(
                 `SELECT D.NUMER_FV FROM documents AS D
                 LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV
                 WHERE S.NALEZNOSC != 0 AND D.DZIAL = ?
-                LIMIT 1`, [dep]);
+                LIMIT 1`, [dep.DZIAL]);
             if (checkPayment[0]?.NUMER_FV) {
                 checkDoc.push({
-                    dep,
+                    dep: dep.DZIAL,
+                    company: dep.FIRMA,
                     exist: true
                 });
 
             } else {
                 checkDoc.push({
-                    dep,
+                    dep: dep.DZIAL,
+                    company: dep.FIRMA,
                     exist: false
                 });
 
             }
 
         }
+
         res.json({ checkDoc });
     }
     catch (error) {
