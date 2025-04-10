@@ -1,0 +1,22 @@
+20250408	18:57:26	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:57:26	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:58:37	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:58:37	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:58:41	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:58:41	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:11	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:15	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:15	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:30	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:34	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:34	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:39	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:39	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:53	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250408	18:59:53	itemsController, getFKSettingsItems: ReferenceError: uniqeDepFromJI is not defined
+20250409	17:07:17	itemsController, getFKSettingsItems: Error: Unknown column 'COMPANY' in 'field list'
+20250409	17:07:18	itemsController, getFKSettingsItems: Error: Unknown column 'COMPANY' in 'field list'
+20250409	17:07:23	itemsController, getFKSettingsItems: Error: Unknown column 'COMPANY' in 'field list'
+20250409	17:07:24	itemsController, getFKSettingsItems: Error: Unknown column 'COMPANY' in 'field list'
+20250409	17:07:46	itemsController, getFKSettingsItems: Error: Unknown column 'COMPANY' in 'field list'
+20250409	17:07:47	itemsController, getFKSettingsItems: Error: Unknown column 'COMPANY' in 'field list'

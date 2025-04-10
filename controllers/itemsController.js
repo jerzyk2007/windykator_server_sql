@@ -183,19 +183,19 @@ const changeItem = async (req, res) => {
 // funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
 const getFKSettingsItems = async (req, res) => {
     try {
-        const [uniqeDepFromJI] = await connect_SQL.query(
+        const [uniqueDepFromJI] = await connect_SQL.query(
             "SELECT distinct department FROM company_join_items"
         );
 
-        const uniqueDepartments = uniqeDepFromJI.map((dep) => {
+        const uniqueDepartments = uniqueDepFromJI.map((dep) => {
             return dep.department;
         });
 
-        const [uniqeDepFromCompanyJI] = await connect_SQL.query(
+        const [uniqueDepFromCompanyJI] = await connect_SQL.query(
             "SELECT distinct DEPARTMENT, COMPANY FROM company_join_items"
         );
 
-        const [uniqeDepFromDocuments] = await connect_SQL.query(
+        const [uniqueDepFromDocuments] = await connect_SQL.query(
             "SELECT distinct DZIAL, FIRMA FROM documents"
         );
 
@@ -211,13 +211,17 @@ const getFKSettingsItems = async (req, res) => {
 
 
         const [locResult] = await connect_SQL.query(
-            "SELECT LOCALIZATION from company_localization_items"
+            "SELECT LOCALIZATION, COMPANY from company_localization_items"
         );
+
+        //del
         const localizations = locResult.map((loc) => {
             return loc.LOCALIZATION;
         });
 
-        const [areaResult] = await connect_SQL.query("SELECT AREA from area_items");
+        const [areaResult] = await connect_SQL.query("SELECT AREA, COMPANY from company_area_items");
+
+        //del
         const areas = areaResult.map((area) => {
             return area.AREA;
         });
@@ -235,15 +239,28 @@ const getFKSettingsItems = async (req, res) => {
         const guardians = guardianResult.map((guardian) => {
             return guardian.GUARDIAN;
         });
+
+        // pobieram zapisane wcześniej nazwy oddziałów firmy (KRT, KEM, itd)
+        const [company] = await connect_SQL.query(
+            "SELECT company from settings WHERE id_setting = 1"
+        );
+        //pobieram już zapisane wcześniej Itemy
+        const [preparedItems] = await connect_SQL.query(
+            "SELECT DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN FROM company_join_items ORDER BY DEPARTMENT"
+        );
         res.json({
             uniqueDepartments,
-            uniqeDepFromCompanyJI,
-            uniqeDepFromDocuments,
+            uniqueDepFromCompanyJI,
+            uniqueDepFromDocuments,
             departments,
             areas,
             localizations,
             owners,
             guardians,
+            company: company[0]?.company ? company[0].company : [],
+            preparedItems,
+            companyLoacalizations: locResult,
+            companyAreas: areaResult
         });
     } catch (error) {
         logEvents(
