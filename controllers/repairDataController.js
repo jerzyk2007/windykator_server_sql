@@ -493,46 +493,156 @@ const createAccounts = async (req, res) => {
     }
 };
 
-const formatUwagiAsystent = (asystent) => {
-    return asystent.map(item => {
-        if (!Array.isArray(item.UWAGI_ASYSTENT)) return item; // Jeśli UWAGI_ASYSTENT nie jest tablicą, pomijamy
+const repairHistory = async () => {
+    try {
+        const [getRaportFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU, TERMIN_PLATNOSCI_FV FROM fk_raport_v2 WHERE OBSZAR != 'KSIĘGOWOŚĆ' AND TYP_DOKUMENTU IN ('Faktura', 'Faktura zaliczkowa', 'Korekta', 'Nota') AND CZY_W_KANCELARI = 'NIE' AND DO_ROZLICZENIA_AS > 0`);
 
-        const nowaLista = item.UWAGI_ASYSTENT.flatMap(entry => {
-            if (/\d{2}-\d{2}-\d{4} - [\w\s]+ -/.test(entry)) {
-                // Nowy format (z datą i nazwiskiem) -> pozostaje bez zmian
-                return entry;
+        const [getDateHistory] = await connect_SQL.query('SELECT DISTINCT WYKORZYSTANO_RAPORT_FK FROM management_decision_FK');
+
+
+        const [getDateDecision] = await connect_SQL.query('SELECT * FROM management_decision_FK');
+
+        // console.log(getRaportFK);
+        // console.log(getDateHistory);
+
+        const subtractDays = (dateString, days) => {
+            const date = new Date(dateString);
+            date.setDate(date.getDate() + days);
+            return date.toISOString().split('T')[0]; // zwraca z powrotem w formacie yyyy-mm-dd
+        };
+
+        // const filteredData = getRaportFK.map(item => {
+        //     const usedDate = getDateHistory.map(prev => {
+        //         if (subtractDays(item.TERMIN_PLATNOSCI_FV, 8) < prev.WYKORZYSTANO_RAPORT_FK) {
+        //             // console.log('*');
+        //             // console.log(subtractDays(item.TERMIN_PLATNOSCI_FV, 8));
+        //             // console.log(prev.WYKORZYSTANO_RAPORT_FK);
+        //             // console.log('*');
+
+        //             return {
+        //                 NUMER_FV: item.NR_DOKUMENTU,
+        //                 WYKORZYSTANO: prev.WYKORZYSTANO_RAPORT_FK,
+        //                 TERMIN: item.TERMIN_PLATNOSCI_FV
+        //             };
+
+        //         }
+        //     });
+        //     if (usedDate.length > 1) {
+        //         console.log(usedDate.filter(Boolean));
+
+        //     }
+        // });
+
+
+
+        const merged = [];
+
+        getDateDecision.forEach(item => {
+            const existing = merged.find(el =>
+                el.NUMER_FV === item.NUMER_FV &&
+                el.WYKORZYSTANO_RAPORT_FK === item.WYKORZYSTANO_RAPORT_FK
+            );
+
+            if (existing) {
+                // Uzupełnij brakujące pola tylko jeśli są null
+                if (!existing.INFORMACJA_ZARZAD && item.INFORMACJA_ZARZAD) {
+                    existing.INFORMACJA_ZARZAD = item.INFORMACJA_ZARZAD;
+                }
+
+                if (!existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA && item.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+                    existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA = item.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
+                }
             } else {
-                // Stary format -> rozbijamy na osobne linie
-                return entry.split("\n").filter(line => line.trim() !== ""); // Usuwamy puste linie
+                // Brak duplikatu, dodaj nowy obiekt
+                merged.push({ ...item });
             }
         });
 
-        return { ...item, UWAGI_ASYSTENT: nowaLista };
-    });
-};
 
-const repairAsystent = async () => {
-    try {
-        const [asystent] = await connect_SQL.query('SELECT id_action, UWAGI_ASYSTENT FROM documents_actions');
-        console.log('start');
 
-        const update = formatUwagiAsystent(asystent);
-        for (const doc of update) {
-            const uwagiAsystentValue = doc.UWAGI_ASYSTENT ? JSON.stringify(doc.UWAGI_ASYSTENT) : null;
-            await connect_SQL.query(`UPDATE documents_actions SET UWAGI_ASYSTENT = ? WHERE id_action = ?`,
-                [
-                    uwagiAsystentValue,
-                    doc.id_action
-                ]
-            );
+        const filteredData = getRaportFK.flatMap(item => {
+            return getDateHistory
+                .filter(prev => subtractDays(item.TERMIN_PLATNOSCI_FV, 8) < prev.WYKORZYSTANO_RAPORT_FK)
+                .map(prev => ({
+                    NUMER_FV: item.NR_DOKUMENTU,
+                    WYKORZYSTANO: prev.WYKORZYSTANO_RAPORT_FK,
+                    // TERMIN: item.TERMIN_PLATNOSCI_FV
+                }));
+        });
+
+        // console.log(merged[0]);
+
+        // console.log(filteredData[0]);
+
+        // console.log(getDateHistory);
+        // console.log(getRaportFK);
+
+
+        const resultMap = {};
+
+        getDateHistory
+            .sort((a, b) => new Date(a.WYKORZYSTANO_RAPORT_FK) - new Date(b.WYKORZYSTANO_RAPORT_FK))
+            .forEach(dateObj => {
+                const currentDate = dateObj.WYKORZYSTANO_RAPORT_FK;
+
+                // Szukamy faktur z filteredData dla tej daty
+                const matches = filteredData.filter(fd => fd.WYKORZYSTANO === currentDate);
+
+                matches.forEach(match => {
+                    const numerFV = match.NUMER_FV;
+
+                    if (!resultMap[numerFV]) {
+                        resultMap[numerFV] = {
+                            NUMER_FV: numerFV,
+                            DATA: []
+                        };
+                    }
+
+                    // Znajdź odpowiadający rekord w merged
+                    const mergedMatch = merged.find(m =>
+                        m.NUMER_FV === numerFV && m.WYKORZYSTANO_RAPORT_FK === currentDate
+                    );
+
+                    const historyDate = mergedMatch?.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+                        ? [mergedMatch.HISTORIA_ZMIANY_DATY_ROZLICZENIA]
+                        : [];
+
+                    const historyText = mergedMatch?.INFORMACJA_ZARZAD
+                        ? [mergedMatch.INFORMACJA_ZARZAD]
+                        : [];
+
+                    resultMap[numerFV].DATA.push({
+                        info: `${resultMap[numerFV].DATA.length + 1} raport utworzono ${currentDate}`,
+                        historyDate,
+                        historyText
+                    });
+                });
+            });
+
+        const finalResult = Object.values(resultMap);
+        // console.log(finalResult);
+        const test = finalResult.map(item => {
+            if (item.NUMER_FV === 'FV/UP/5189/24/A/D86') {
+                console.log(item.DATA);
+
+            }
+        });
+
+        // console.log(finalResult);
+        await connect_SQL.query('TRUNCATE history_fk_documents');
+        for (const doc of finalResult) {
+            await connect_SQL.query(`INSERT INTO history_fk_documents (NUMER_FV, HISTORY_DOC) VALUES (?, ?)`,
+                [doc.NUMER_FV, JSON.stringify(doc.DATA)]);
         }
-        console.log('koniec');
+
 
     }
     catch (err) {
         console.error(err);
     }
 };
+
+
 
 
 module.exports = {
@@ -543,5 +653,5 @@ module.exports = {
     repairColumnsRaports,
     createAccounts,
     generatePassword,
-    repairAsystent
+    repairHistory
 };
