@@ -79,17 +79,17 @@ const options = {
 
 
 //ustawienie servera linux
-https
-  .createServer(options, app)
-  .listen(process.env.PORT, "0.0.0.0", function () {
-    console.log(
-      "Express server listening on port " +
-      `${process.env.PORT ? process.env.PORT : 3000}`
-    );
-  });
+// https
+//   .createServer(options, app)
+//   .listen(process.env.PORT, "0.0.0.0", function () {
+//     console.log(
+//       "Express server listening on port " +
+//       `${process.env.PORT ? process.env.PORT : 3000}`
+//     );
+//   });
 
 // ustawienie servera lokalnego
-// app.listen(3500, () => {
-//   console.log(`Server is listening on port 3500`);
-// });
+app.listen(3500, () => {
+  console.log(`Server is listening on port 3500`);
+});
 
