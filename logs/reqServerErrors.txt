@@ -1,0 +1,2 @@
+20250411	19:14:40	fkRaportController, addDecision: TypeError: Cannot read properties of undefined (reading 'id_management_date_description_FK')
+20250411	19:14:45	fkRaportController, addDecision: TypeError: Cannot read properties of undefined (reading 'id_management_date_description_FK')
