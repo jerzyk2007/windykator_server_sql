@@ -4,10 +4,6 @@ const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require('./mailController');
 const { generatePassword } = require('./manageDocumentAddition');
-const dayjs = require('dayjs');
-const isSameOrBefore = require('dayjs/plugin/isSameOrBefore');
-const { filter } = require("compression");
-dayjs.extend(isSameOrBefore);
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
