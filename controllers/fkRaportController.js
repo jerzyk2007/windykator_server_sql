@@ -809,6 +809,14 @@ const addDecisionDate = async (req, res) => {
   const { NUMER_FV, data } = req.body;
   try {
     const [raportDate] = await connect_SQL.query(`SELECT date FROM  fk_updates_date WHERE title = 'accountancy'`);
+
+    if (!raportDate[0].date) {
+      return res.end();
+    }
+
+
+
+
     if (data.INFORMACJA_ZARZAD.length && raportDate[0].date) {
       for (item of data.INFORMACJA_ZARZAD) {
         await connect_SQL.query(`INSERT INTO management_decision_FK (NUMER_FV, INFORMACJA_ZARZAD, WYKORZYSTANO_RAPORT_FK) VALUES (?, ?, ?)`, [
@@ -830,7 +838,60 @@ const addDecisionDate = async (req, res) => {
       }
     }
 
-    // const [result] = await connect_SQL.query(`SELECT * FROM management_decision_description_FK WHERE NUMER_FV = 'FV/UP/326/25/A/D86' AND WYKORZYSTANO_RAPORT_FK IS NULL ORDER BY id_management_decision_description_FK `);
+
+    // robię zapis równoległy do nowej tabelimanagement_date_description_FK
+    const [searchDuplicate] = await connect_SQL.query(`SELECT * FROM  management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ?`,
+      [NUMER_FV, raportDate[0].date]);
+    if (searchDuplicate[0]?.id_management_date_description_FK) {
+      // console.log(raportDate[0].date);
+      const id = searchDuplicate[0].id_management_date_description_FK;
+      // const NUMER_FV = searchDuplicate[0].NUMER_FV;
+      const HISTORIA_ZMIANY_DATY_ROZLICZENIA = searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA;
+      const INFORMACJA_ZARZAD = searchDuplicate[0].INFORMACJA_ZARZAD;
+      // const WYKORZYSTANO_RAPORT_FK = searchDuplicate[0].WYKORZYSTANO_RAPORT_FK;
+
+
+      if (Array.isArray(data.INFORMACJA_ZARZAD) && data.INFORMACJA_ZARZAD.length) {
+        INFORMACJA_ZARZAD.push(...data.INFORMACJA_ZARZAD);
+      }
+
+      if (Array.isArray(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA) && data.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length) {
+        HISTORIA_ZMIANY_DATY_ROZLICZENIA.push(...data.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
+      }
+
+      // const nr = 'FV/UBL/1349/24/A/D8';
+      // const infoMAN = [
+      //   '03-04-2025 - Ostanówko - W szkodzie są dwie faktury. Do pełnego rozliczenia szkody (dwóch faktur) brakuje 3175,38 PLNTU potwierdziło dopłatę jednak nie przesłali decyzji. Ponownie poprosiłem o dosłanie.',
+      // ];
+      // const dateMan = [];
+      // const rep = '2025-03-23';
+
+      // console.log(NUMER_FV);
+      // console.log(INFORMACJA_ZARZAD);
+      // console.log(HISTORIA_ZMIANY_DATY_ROZLICZENIA);
+      // console.log(WYKORZYSTANO_RAPORT_FK);
+      // console.log(id);
+
+      // console.log(searchDuplicate[0]);
+
+      // JSON.stringify(filteredObject),
+
+
+      await connect_SQL.query(`UPDATE management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?  `,
+        [JSON.stringify(INFORMACJA_ZARZAD), JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA), id]
+      );
+
+
+
+    } else {
+
+
+      await connect_SQL.query(`INSERT INTO management_date_description_FK (NUMER_FV, INFORMACJA_ZARZAD, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK) VALUES (?, ?, ?, ?)`,
+        [NUMER_FV, JSON.stringify(data.INFORMACJA_ZARZAD), JSON.stringify(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA), raportDate[0].date]
+      );
+    }
+
+
 
     res.end();
   }

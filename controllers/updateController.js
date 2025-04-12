@@ -1,9 +1,9 @@
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
-const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, generatePassword, repairHistory } = require("./repairDataController");
+const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, generatePassword, repairHistory, repairManagementDecisionFK } = require("./repairDataController");
 const { updateData, updateSettlements, updateSettlementDescription, updateDocZal, updateCarReleaseDates } = require("./getDataFromMSSQL");
 const { testMail } = require("./mailController");
-const { generateHistoryDocuments } = require("./fkRaportController");
+const { generateHistoryDocument } = require("./fkRaportController");
 
 const getTime = async (req, res) => {
   try {
@@ -20,6 +20,8 @@ const getTime = async (req, res) => {
     // await generatePassword();
     // await repairHistory();
     // await generateHistoryDocuments();
+    // await repairManagementDecisionFK();
+
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT data_name, date,  hour, update_success FROM updates"
     );
