@@ -183,13 +183,13 @@ const changeItem = async (req, res) => {
 // funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
 const getFKSettingsItems = async (req, res) => {
     try {
-        const [uniqueDepFromJI] = await connect_SQL.query(
-            "SELECT distinct department FROM company_join_items"
-        );
+        // const [uniqueDepFromJI] = await connect_SQL.query(
+        //     "SELECT distinct department FROM company_join_items"
+        // );
 
-        const uniqueDepartments = uniqueDepFromJI.map((dep) => {
-            return dep.department;
-        });
+        // const uniqueDepartments = uniqueDepFromJI.map((dep) => {
+        //     return dep.department;
+        // });
 
         const [uniqueDepFromCompanyJI] = await connect_SQL.query(
             "SELECT distinct DEPARTMENT, COMPANY FROM company_join_items"
@@ -200,13 +200,13 @@ const getFKSettingsItems = async (req, res) => {
         );
 
 
-        const [depResult] = await connect_SQL.query(
-            "SELECT DEPARTMENT from company_department_items"
-        );
+        // const [depResult] = await connect_SQL.query(
+        //     "SELECT DEPARTMENT from company_department_items"
+        // );
 
-        const departments = depResult.map((dep) => {
-            return dep.DEPARTMENT;
-        });
+        // const departments = depResult.map((dep) => {
+        //     return dep.DEPARTMENT;
+        // });
 
 
 
@@ -215,30 +215,32 @@ const getFKSettingsItems = async (req, res) => {
         );
 
         //del
-        const localizations = locResult.map((loc) => {
-            return loc.LOCALIZATION;
-        });
+        // const localizations = locResult.map((loc) => {
+        //     return loc.LOCALIZATION;
+        // });
 
         const [areaResult] = await connect_SQL.query("SELECT AREA, COMPANY from company_area_items");
 
         //del
-        const areas = areaResult.map((area) => {
-            return area.AREA;
-        });
+        // const areas = areaResult.map((area) => {
+        //     return area.AREA;
+        // });
 
         const [ownerResult] = await connect_SQL.query(
-            "SELECT OWNER from company_owner_items"
+            "SELECT OWNER, COMPANY from company_owner_items"
         );
-        const owners = ownerResult.map((owner) => {
-            return owner.OWNER;
-        });
+
+        // del
+        // const owners = ownerResult.map((owner) => {
+        //     return owner.OWNER;
+        // });
 
         const [guardianResult] = await connect_SQL.query(
-            "SELECT GUARDIAN from company_guardian_items"
+            "SELECT GUARDIAN, COMPANY from company_guardian_items"
         );
-        const guardians = guardianResult.map((guardian) => {
-            return guardian.GUARDIAN;
-        });
+        // const guardians = guardianResult.map((guardian) => {
+        //     return guardian.GUARDIAN;
+        // });
 
         // pobieram zapisane wcześniej nazwy oddziałów firmy (KRT, KEM, itd)
         const [company] = await connect_SQL.query(
@@ -249,18 +251,20 @@ const getFKSettingsItems = async (req, res) => {
             "SELECT DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN FROM company_join_items ORDER BY DEPARTMENT"
         );
         res.json({
-            uniqueDepartments,
+            // uniqueDepartments,
             uniqueDepFromCompanyJI,
             uniqueDepFromDocuments,
-            departments,
-            areas,
-            localizations,
-            owners,
-            guardians,
+            // departments,
+            // areas,
+            // localizations,
+            // owners,
+            // guardians,
             company: company[0]?.company ? company[0].company : [],
             preparedItems,
             companyLoacalizations: locResult,
-            companyAreas: areaResult
+            companyAreas: areaResult,
+            companyOwners: ownerResult,
+            companyGuardians: guardianResult
         });
     } catch (error) {
         logEvents(
@@ -273,67 +277,71 @@ const getFKSettingsItems = async (req, res) => {
 
 
 // funkcja pobiera unikalne nazwy działów z tabeli documents
-const getDepfromDocuments = async (req, res) => {
-    try {
-        const [getDepartments] = await connect_SQL.query(
-            "SELECT distinct DZIAL from documents"
-        );
+// const getDepfromDocuments = async (req, res) => {
+//     try {
+//         const [getDepartments] = await connect_SQL.query(
+//             "SELECT distinct DZIAL from documents"
+//         );
 
-        const departments = getDepartments.map((dep) => {
-            return dep.DZIAL;
-        });
+//         const departments = getDepartments.map((dep) => {
+//             return dep.DZIAL;
+//         });
 
-        res.json(departments);
-    } catch (error) {
-        logEvents(
-            `itemsController, getDepfromDocuments: ${error}`,
-            "reqServerErrors.txt"
-        );
-        res.status(500).json({ error: "Server error" });
-    }
-};
+//         res.json(departments);
+//     } catch (error) {
+//         logEvents(
+//             `itemsController, getDepfromDocuments: ${error}`,
+//             "reqServerErrors.txt"
+//         );
+//         res.status(500).json({ error: "Server error" });
+//     }
+// };
 
 // funkcja pobierająca kpl owner, dział, lokalizacja dla "Dopasuj dane"
-const getPreparedItems = async (req, res) => {
-    try {
-        const [preparedItems] = await connect_SQL.query(
-            "SELECT department, localization, area, owner, guardian FROM join_items ORDER BY department"
-        );
-        res.json(preparedItems);
-    } catch (error) {
-        logEvents(`itemsController, savePrepareItems: ${error}`, "reqServerErrors.txt");
-        res.status(500).json({ error: "Server error" });
-    }
-};
+// const getPreparedItems = async (req, res) => {
+//     try {
+//         const [preparedItems] = await connect_SQL.query(
+//             "SELECT department, localization, area, owner, guardian FROM join_items ORDER BY department"
+//         );
+//         res.json(preparedItems);
+//     } catch (error) {
+//         logEvents(`itemsController, savePrepareItems: ${error}`, "reqServerErrors.txt");
+//         res.status(500).json({ error: "Server error" });
+//     }
+// };
 
 // funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
 const savePreparedItems = async (req, res) => {
-    const { department, localization, area, owner, guardian } = req.body;
+    const { DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN } = req.body;
     try {
+
         const [duplicate] = await connect_SQL.query(
-            "SELECT department FROM join_items WHERE department = ?",
-            [department]
+            "SELECT DEPARTMENT, COMPANY FROM company_join_items WHERE DEPARTMENT = ? AND COMPANY = ?",
+            [DEPARTMENT, COMPANY]
         );
-        if (duplicate[0]?.department) {
+
+        if (duplicate[0]?.DEPARTMENT && duplicate[0]?.COMPANY) {
             await connect_SQL.query(
-                "UPDATE join_items SET localization = ?, area = ?, owner = ?, guardian = ? WHERE department = ?",
+                "UPDATE company_join_items SET COMPANY = ?, LOCALIZATION = ?, AREA = ?, OWNER = ?, GUARDIAN = ? WHERE DEPARTMENT = ?",
                 [
-                    localization,
-                    area,
-                    JSON.stringify(owner),
-                    JSON.stringify(guardian),
-                    department,
+                    COMPANY,
+                    LOCALIZATION,
+                    AREA,
+                    JSON.stringify(OWNER),
+                    JSON.stringify(GUARDIAN),
+                    DEPARTMENT,
                 ]
             );
         } else {
             await connect_SQL.query(
-                "INSERT INTO join_items (department, localization, area, owner, guardian) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO company_join_items (DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN ) VALUES (?, ?, ?, ?, ?, ?)",
                 [
-                    department,
-                    localization,
-                    area,
-                    JSON.stringify(owner),
-                    JSON.stringify(guardian),
+                    DEPARTMENT,
+                    COMPANY,
+                    LOCALIZATION,
+                    AREA,
+                    JSON.stringify(OWNER),
+                    JSON.stringify(GUARDIAN),
                 ]
             );
         }
@@ -345,10 +353,10 @@ const savePreparedItems = async (req, res) => {
 };
 
 const deletePreparedItem = async (req, res) => {
-    const { dep } = req.params;
+    const { dep, comp } = req.params;
     try {
         await connect_SQL.query(
-            'DELETE FROM join_items WHERE department = ?', [dep]
+            'DELETE FROM company_join_items WHERE DEPARTMENT = ? AND COMPANY = ?', [dep, comp]
         );
         res.end();
     }
@@ -405,8 +413,8 @@ module.exports = {
     deleteItem,
     changeItem,
     getFKSettingsItems,
-    getDepfromDocuments,
-    getPreparedItems,
+    // getDepfromDocuments,
+    // getPreparedItems,
     savePreparedItems,
     deletePreparedItem,
     checkDocPayment

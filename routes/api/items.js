@@ -41,15 +41,15 @@ router
     .route("/get-fksettings-data")
     .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.getFKSettingsItems);
 
-// funkcja pobiera unikalne nazwy działów z pliku księgowego
-router
-    .route("/get-uniques-dep")
-    .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.getDepfromDocuments);
+// funkcja pobiera unikalne nazwy działów  dokumentów
+// router
+//     .route("/get-uniques-dep")
+//     .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.getDepfromDocuments);
 
 // funkcja pobierająca kpl owner, dział, lokalizacja
-router
-    .route("/get-prepared-items")
-    .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.getPreparedItems);
+// router
+//     .route("/get-prepared-items")
+//     .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.getPreparedItems);
 
 // funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
 router
@@ -57,7 +57,7 @@ router
     .patch(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.savePreparedItems);
 
 router
-    .route("/delete-prepared-item/:dep")
+    .route("/delete-prepared-item/:dep/:comp")
     .delete(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.deletePreparedItem);
 
 router
