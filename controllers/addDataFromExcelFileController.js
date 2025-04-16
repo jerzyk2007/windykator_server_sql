@@ -181,12 +181,12 @@ const becaredFile = async (rows, res) => {
   try {
     for (const row of rows) {
       const [findDoc] = await connect_SQL.query(
-        "SELECT id_document FROM documents WHERE NUMER_FV = ?",
+        "SELECT id_document FROM company_documents WHERE NUMER_FV = ?",
         [row["Numery Faktur"]]
       );
       if (findDoc[0]?.id_document) {
         const [checkDoc] = await connect_SQL.query(
-          "SELECT document_id FROM documents_actions WHERE document_id = ?",
+          "SELECT document_id FROM company_documents_actions WHERE document_id = ?",
           [findDoc[0].id_document]
         );
         if (checkDoc[0]?.document_id) {
@@ -208,7 +208,7 @@ const becaredFile = async (rows, res) => {
             ? row["Suma roszczeń"]
             : 0;
           await connect_SQL.query(
-            "UPDATE documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
+            "UPDATE company_documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
             [
               STATUS_SPRAWY_KANCELARIA,
               KOMENTARZ_KANCELARIA_BECARED,
@@ -405,7 +405,7 @@ const accountancyFile = async (rows, res) => {
 
     const addDep = addDepartment(changeNameColumns);
 
-    const [findItems] = await connect_SQL.query('SELECT department FROM join_items');
+    const [findItems] = await connect_SQL.query('SELECT department FROM company_join_items');
 
     // console.log(addDep[0]);
     // console.log(findItems[0]);
@@ -426,7 +426,7 @@ const accountancyFile = async (rows, res) => {
       return res.json({ info: `Brak danych o działach: ${errorDepartments}` });
     }
 
-    await connect_SQL.query("TRUNCATE TABLE raportFK_accountancy");
+    await connect_SQL.query("TRUNCATE TABLE company_raportFK_accountancy");
 
     const values = addDep.map(item => [
       item.NUMER,
@@ -440,7 +440,7 @@ const accountancyFile = async (rows, res) => {
     ]);
 
     const query = `
-      INSERT IGNORE INTO raportFK_accountancy
+      INSERT IGNORE INTO company_raportFK_accountancy
         ( NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL) 
       VALUES 
         ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}

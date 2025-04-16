@@ -74,7 +74,7 @@ GROUP BY
     for (const doc of addDep) {
 
       await connect_SQL.query(
-        "INSERT IGNORE INTO documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           doc.NUMER,
           doc.WARTOSC_BRUTTO,
@@ -173,7 +173,7 @@ const updateCarReleaseDates = async () => {
 
     const carReleaseDates = await msSqlQuery(queryMsSql);
 
-    const queryMySql = `SELECT fv.id_document, fv.NUMER_FV  FROM documents as fv LEFT JOIN documents_actions as da ON fv.id_document = da.document_id LEFT JOIN join_items as ji ON fv.DZIAL = ji.department WHERE da.DATA_WYDANIA_AUTA IS  NULL AND (ji.area='SAMOCHODY NOWE' OR ji.area='SAMOCHODY UŻYWANE') AND fv.NUMER_FV LIKE '%FV%'`;
+    const queryMySql = `SELECT fv.id_document, fv.NUMER_FV  FROM company_documents as fv LEFT JOIN company_documents_actions as da ON fv.id_document = da.document_id LEFT JOIN company_join_items as ji ON fv.DZIAL = ji.department WHERE da.DATA_WYDANIA_AUTA IS  NULL AND (ji.area='SAMOCHODY NOWE' OR ji.area='SAMOCHODY UŻYWANE') AND fv.NUMER_FV LIKE '%FV%'`;
 
     const [findDoc] = await connect_SQL.query(queryMySql);
 
@@ -190,7 +190,7 @@ const updateCarReleaseDates = async () => {
     for (const doc of filteredFindDoc) {
       // wstawia lub aktualizuje
       await connect_SQL.query(
-        `INSERT INTO documents_actions (document_id, DATA_WYDANIA_AUTA)
+        `INSERT INTO company_documents_actions (document_id, DATA_WYDANIA_AUTA)
          VALUES (?, ?)
          ON DUPLICATE KEY UPDATE DATA_WYDANIA_AUTA = ?`,
         [doc.id_document, doc.DATA_WYDANIA, doc.DATA_WYDANIA]

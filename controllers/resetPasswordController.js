@@ -25,7 +25,7 @@ const resetPass = async (req, res) => {
             return res.end();
         }
 
-        await connect_SQL.query('DELETE FROM password_resets WHERE email = ?',
+        await connect_SQL.query('DELETE FROM company_password_resets WHERE email = ?',
             [
                 userlogin
             ]
@@ -36,7 +36,7 @@ const resetPass = async (req, res) => {
         const url = "password-reset";
         const resetLink = `${baseUrl}/${url}/${encodedToken}`;
 
-        await connect_SQL.query(`INSERT INTO password_resets (email, token) VALUES (?, ?)`, [
+        await connect_SQL.query(`INSERT INTO company_password_resets (email, token) VALUES (?, ?)`, [
             userlogin,
             token
         ]);
@@ -87,7 +87,7 @@ const verifyDatePass = (date) => {
 const confirmPass = async (req, res) => {
     const { decodedToken } = req.body;
     try {
-        const [checkToken] = await connect_SQL.query(`SELECT * FROM password_resets WHERE token = ?`, [decodedToken]);
+        const [checkToken] = await connect_SQL.query(`SELECT * FROM company_password_resets WHERE token = ?`, [decodedToken]);
 
         if (checkToken[0]?.id_password_resets) {
             const verifyDate = verifyDatePass(checkToken[0].created_at);
@@ -95,7 +95,7 @@ const confirmPass = async (req, res) => {
             if (verifyDate <= 15) {
                 const token = generatePassword(30);
 
-                await connect_SQL.query('UPDATE password_resets SET token = ? WHERE token = ?',
+                await connect_SQL.query('UPDATE company_password_resets SET token = ? WHERE token = ?',
                     [token,
                         checkToken[0].token
                     ]
@@ -140,7 +140,7 @@ const verifyPass = async (req, res) => {
         if (!token) {
             return res.end();
         }
-        const [verifyAccess] = await connect_SQL.query(`SELECT * FROM password_resets WHERE token = ?`, [token]);
+        const [verifyAccess] = await connect_SQL.query(`SELECT * FROM company_password_resets WHERE token = ?`, [token]);
         if (!verifyAccess.length) {
             return res.json({ checkDate: false });
         }
@@ -162,14 +162,14 @@ const changePass = async (req, res) => {
     try {
 
         const hashedPwd = await bcryptjs.hash(password, 10);
-        const [verifyAccess] = await connect_SQL.query(`SELECT email FROM password_resets WHERE token = ? `, [token]);
+        const [verifyAccess] = await connect_SQL.query(`SELECT email FROM company_password_resets WHERE token = ? `, [token]);
         if (verifyAccess[0].email) {
             await connect_SQL.query('UPDATE users SET password = ? WHERE userlogin = ?',
                 [hashedPwd,
                     verifyAccess[0].email
                 ]
             );
-            await connect_SQL.query('DELETE FROM password_resets WHERE email = ?',
+            await connect_SQL.query('DELETE FROM company_password_resets WHERE email = ?',
                 [
                     verifyAccess[0].email
                 ]

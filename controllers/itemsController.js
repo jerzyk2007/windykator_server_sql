@@ -55,7 +55,7 @@ const newItem = async (req, res) => {
         }
         else if (info === "AGING") {
             await connect_SQL.query(
-                `INSERT INTO ${info.toLowerCase()}_items (FROM_TIME, TO_TIME, TITLE, TYPE) VALUES (?,?,?,?)`,
+                `INSERT INTO company_${info.toLowerCase()}_items (FROM_TIME, TO_TIME, TITLE, TYPE) VALUES (?,?,?,?)`,
                 [
                     data.FROM_TIME,
                     data.TO_TIME,
@@ -63,6 +63,8 @@ const newItem = async (req, res) => {
                     data.TYPE
                 ]
             );
+            const [result] = await connect_SQL.query(`SELECT * FROM company_${info.toLowerCase()}_items`);
+            return res.json(result);
         }
         res.end();
     }
@@ -98,10 +100,10 @@ const getDataItems = async (req, res) => {
         );
 
         const [aging] = await connect_SQL.query(
-            "SELECT * from aging_items"
+            "SELECT * from company_aging_items"
         );
         const [company] = await connect_SQL.query(
-            "SELECT company from settings WHERE id_setting = 1"
+            "SELECT company from company_settings WHERE id_setting = 1"
         );
         res.json({
             data: {
@@ -128,7 +130,7 @@ const deleteItem = async (req, res) => {
             );
         } else if (info === "AGING") {
             await connect_SQL.query(
-                `DELETE FROM ${info.toLowerCase()}_items WHERE id_${info.toLowerCase()}_items = ${id}`
+                `DELETE FROM company_${info.toLowerCase()}_items WHERE id_${info.toLowerCase()}_items = ${id}`
             );
         }
         res.end();
@@ -141,7 +143,7 @@ const deleteItem = async (req, res) => {
 const changeItem = async (req, res) => {
     const { id, info } = req.params;
     const { updateData } = req.body;
-
+    console.log(info);
     try {
 
         if (info !== "OWNER" && info !== "AGING") {
@@ -163,7 +165,7 @@ const changeItem = async (req, res) => {
         }
         else if (info === "AGING") {
             await connect_SQL.query(
-                `UPDATE  aging_items SET FROM_TIME = ?, TO_TIME = ?, TITLE = ? WHERE id_aging_items = ?`,
+                `UPDATE  company_aging_items SET FROM_TIME = ?, TO_TIME = ?, TITLE = ? WHERE id_aging_items = ?`,
                 [
                     updateData.FROM_TIME,
                     updateData.TO_TIME,
@@ -196,7 +198,7 @@ const getFKSettingsItems = async (req, res) => {
         );
 
         const [uniqueDepFromDocuments] = await connect_SQL.query(
-            "SELECT distinct DZIAL, FIRMA FROM documents"
+            "SELECT distinct DZIAL, FIRMA FROM company_documents"
         );
 
 
@@ -244,7 +246,7 @@ const getFKSettingsItems = async (req, res) => {
 
         // pobieram zapisane wcześniej nazwy oddziałów firmy (KRT, KEM, itd)
         const [company] = await connect_SQL.query(
-            "SELECT company from settings WHERE id_setting = 1"
+            "SELECT company from company_settings WHERE id_setting = 1"
         );
         //pobieram już zapisane wcześniej Itemy
         const [preparedItems] = await connect_SQL.query(
@@ -280,7 +282,7 @@ const getFKSettingsItems = async (req, res) => {
 // const getDepfromDocuments = async (req, res) => {
 //     try {
 //         const [getDepartments] = await connect_SQL.query(
-//             "SELECT distinct DZIAL from documents"
+//             "SELECT distinct DZIAL from company_documents"
 //         );
 
 //         const departments = getDepartments.map((dep) => {
@@ -377,7 +379,7 @@ const checkDocPayment = async (req, res) => {
         let checkDoc = [];
         for (const dep of departments) {
             const [checkPayment] = await connect_SQL.query(
-                `SELECT D.NUMER_FV FROM documents AS D
+                `SELECT D.NUMER_FV FROM company_documents AS D
                 LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV
                 WHERE S.NALEZNOSC != 0 AND D.DZIAL = ?
                 LIMIT 1`, [dep.DZIAL]);

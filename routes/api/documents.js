@@ -39,9 +39,9 @@ router
   .get(verifyRoles(ROLES_LIST.User), Documents.getColumnsName);
 
 // pobiera dane dla danych Kredytu Kupieckiego
-router
-  .route("/get-data-credit-trade")
-  .get(verifyRoles(ROLES_LIST.User), Documents.getTradeCreditData);
+// router
+//   .route("/get-data-credit-trade")
+//   .get(verifyRoles(ROLES_LIST.User), Documents.getTradeCreditData);
 
 // zapisuje zmiany w chat kontroli dokuemntacji
 router

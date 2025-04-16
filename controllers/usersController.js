@@ -17,7 +17,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     const [getUserAreas] = await connect_SQL.query(
       `SELECT DISTINCT ji.area 
          FROM users AS u 
-         LEFT JOIN join_items AS ji 
+         LEFT JOIN company_join_items AS ji 
            ON JSON_CONTAINS(?, JSON_QUOTE(ji.department))
          WHERE u.id_user = ?`,
       [JSON.stringify(departments), id_user]

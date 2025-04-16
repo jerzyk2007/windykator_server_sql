@@ -4,11 +4,8 @@ const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 
 
 const getAllDocumentsSQL =
-  "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU   FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV LEFT JOIN join_items AS JI ON D.DZIAL = JI.department";
+  "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department";
 
-// const getAllDocumentsSQL =
-//   "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, DA.OSTATECZNA_DATA_ROZLICZENIA,   IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU   FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV LEFT JOIN join_items AS JI ON D.DZIAL = JI.department";
-// IFNULL(DA.UWAGI_ASYSTENT, ' ') AS UWAGI_ASYSTENT,
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info) => {
   let filteredData = [];
@@ -34,8 +31,9 @@ const getDataDocuments = async (id_user, info) => {
       (permission) => permissions[permission]
     );
 
+
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
-    const sqlCondition = departments?.length > 0 ? `(${departments.map(dep => `D.DZIAL = '${dep}'`).join(' OR ')})` : null;
+    const sqlCondition = departments?.length > 0 ? `(${departments.map(dep => `D.DZIAL = '${dep.departments}' AND D.FIRMA ='${dep.company}' `).join(' OR ')})` : null;
 
     const DORADCA = `${usersurname} ${username}`;
 
@@ -175,12 +173,12 @@ const becaredFile = async (rows, res) => {
   try {
     for (const row of rows) {
       const [findDoc] = await connect_SQL.query(
-        "SELECT id_document FROM documents WHERE NUMER_FV = ?",
+        "SELECT id_document FROM company_documents WHERE NUMER_FV = ?",
         [row["Numery Faktur"]]
       );
       if (findDoc[0]?.id_document) {
         const [checkDoc] = await connect_SQL.query(
-          "SELECT document_id FROM documents_actions WHERE document_id = ?",
+          "SELECT document_id FROM company_documents_actions WHERE document_id = ?",
           [findDoc[0].id_document]
         );
         if (checkDoc[0]?.document_id) {
@@ -202,7 +200,7 @@ const becaredFile = async (rows, res) => {
             ? row["Suma roszczeń"]
             : 0;
           await connect_SQL.query(
-            "UPDATE documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
+            "UPDATE company_documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
             [
               STATUS_SPRAWY_KANCELARIA,
               KOMENTARZ_KANCELARIA_BECARED,
@@ -232,7 +230,7 @@ const changeSingleDocument = async (req, res) => {
   const { id_document, documentItem } = req.body;
   try {
     // const [documentsExist] = await connect_SQL.query(
-    //   "SELECT id_document from documents WHERE id_document = ?",
+    //   "SELECT id_document from company_documents WHERE id_document = ?",
     //   [id_document]
     // );
 
@@ -244,13 +242,13 @@ const changeSingleDocument = async (req, res) => {
     // }
 
     const [documents_ActionsExist] = await connect_SQL.query(
-      "SELECT id_action from documents_actions WHERE document_id = ?",
+      "SELECT id_action from company_documents_actions WHERE document_id = ?",
       [id_document]
     );
 
     if (documents_ActionsExist[0]?.id_action) {
       await connect_SQL.query(
-        "UPDATE documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ?, INFORMACJA_ZARZAD = ?  WHERE document_id = ?",
+        "UPDATE company_documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ?, INFORMACJA_ZARZAD = ?  WHERE document_id = ?",
         [
           documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK" ? documentItem.DZIALANIA : null,
           documentItem.JAKA_KANCELARIA_TU && documentItem.JAKA_KANCELARIA_TU !== "BRAK" ? documentItem.JAKA_KANCELARIA_TU : null,
@@ -267,7 +265,7 @@ const changeSingleDocument = async (req, res) => {
       );
     } else {
       await connect_SQL.query(
-        "INSERT INTO documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA_TU, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY, DATA_WYDANIA_AUTA,OSTATECZNA_DATA_ROZLICZENIA, HISTORIA_ZMIANY_DATY_ROZLICZENIA, INFORMACJA_ZARZAD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO company_documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA_TU, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY, DATA_WYDANIA_AUTA,OSTATECZNA_DATA_ROZLICZENIA, HISTORIA_ZMIANY_DATY_ROZLICZENIA, INFORMACJA_ZARZAD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [id_document,
           documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK" ? documentItem.DZIALANIA : null,
           documentItem.JAKA_KANCELARIA_TU && documentItem.JAKA_KANCELARIA_TU !== "BRAK" ? documentItem.JAKA_KANCELARIA_TU : null,
@@ -345,6 +343,7 @@ const getSettingsColumnsTable = async (req, res) => {
 const getSingleDocument = async (req, res) => {
   const { id_document } = req.params;
   try {
+
     const [result] = await connect_SQL.query(
       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
     D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
@@ -353,14 +352,14 @@ const getSingleDocument = async (req, res) => {
     ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
     IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area AS AREA, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, 
     R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL, MD.NUMER_FV AS MARK_FV, MD.RAPORT_FK AS MARK_FK
-    FROM documents AS D 
-    LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
+    FROM company_documents AS D 
+    LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
     LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER 
-    LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
+    LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department
     LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
     LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV
     LEFT JOIN fv_zaliczkowe AS FZAL ON D.NUMER_FV = FZAL.NUMER_FV 
-    LEFT JOIN mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV
+    LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV
     WHERE D.id_document = ?`,
       [id_document]
     );
@@ -378,15 +377,11 @@ const getSingleDocument = async (req, res) => {
 // SQL pobieram nazwy kolumn do sutawień tabeli
 const getColumnsName = async (req, res) => {
   try {
-    // const [result] = await connect_SQL.query(
-    //   "SELECT documents.*, documents_actions.*,   datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id  LIMIT 1"
-    // );
+
     const [result] = await connect_SQL.query(
-      "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA FROM documents AS D LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LIMIT 1"
+      "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, DS.OPIS_ROZRACHUNKU,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN settlements_description AS DS ON D.NUMER_FV = DS.NUMER LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV LIMIT 1"
     );
-    // const [result] = await connect_SQL.query(
-    //   "SELECT documents.*, documents_actions.*, DS.*,  datediff(NOW(), TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((BRUTTO - NETTO), 2) AS '100_VAT', ROUND(((BRUTTO - NETTO) / 2), 2) AS '50_VAT', IF(TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE FROM documents LEFT JOIN documents_actions ON documents.id_document = documents_actions.document_id LEFT JOIN settlements_description AS DS ON documents.NUMER_FV = DS.NUMER LIMIT 1"
-    // );
+
     const keysArray = Object.keys(result[0]);
 
     // usuwam kolumny których nie chce przekazać do front
@@ -408,48 +403,50 @@ const getColumnsName = async (req, res) => {
   }
 };
 
-const getTradeCreditData = async (req, res) => {
-  try {
-    // const [tradeCreditData] = await connect_SQL.query(
-    //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.zgoda_na_platnosci_opoznione = 'TAK'"
-    // );
-    // const [tradeCreditData] = await connect_SQL.query(
-    //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.sposob_zaplaty = 'PRZELEW'"
-    // );
-    // const [tradeCreditData] = await connect_SQL.query(
-    //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer LIMIT 10000"
-    // );
-    const [tradeCreditData] = await connect_SQL.query(
-      "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01'"
-    );
-    // const [tradeCreditData] = await connect_SQL.query(
-    //   "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01' AND segment='SAMOCHODY NOWE' AND kontrahent_nip = '5252800978'"
-    // );
+// const getTradeCreditData = async (req, res) => {
+//   try {
+//     // const [tradeCreditData] = await connect_SQL.query(
+//     //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.zgoda_na_platnosci_opoznione = 'TAK'"
+//     // );
+//     // const [tradeCreditData] = await connect_SQL.query(
+//     //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.sposob_zaplaty = 'PRZELEW'"
+//     // );
+//     // const [tradeCreditData] = await connect_SQL.query(
+//     //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer LIMIT 10000"
+//     // );
+//     const [tradeCreditData] = await connect_SQL.query(
+//       "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01'"
+//     );
+//     // const [tradeCreditData] = await connect_SQL.query(
+//     //   "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01' AND segment='SAMOCHODY NOWE' AND kontrahent_nip = '5252800978'"
+//     // );
 
-    const [areaCreditData] = await connect_SQL.query(
-      "SELECT * FROM area_data_credit_trade"
-    );
-    console.log("finish");
-    res.json({ tradeCreditData, areaCreditData });
-  } catch (error) {
-    logEvents(
-      `documentsController, getTradeCreditData: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     const [areaCreditData] = await connect_SQL.query(
+//       "SELECT * FROM area_data_credit_trade"
+//     );
+//     console.log("finish");
+//     res.json({ tradeCreditData, areaCreditData });
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, getTradeCreditData: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // zapis chatu z kontroli dokumentacji
+
+
 const changeControlChat = async (req, res) => {
   const { NUMER_FV, chat } = req.body;
   try {
     const [findDoc] = await connect_SQL.query(
-      "SELECT NUMER_FV FROM control_documents WHERE NUMER_FV = ?", [NUMER_FV]
+      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ?", [NUMER_FV]
     );
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
-        "UPDATE control_documents SET CONTROL_UWAGI = ? WHERE NUMER_FV = ?",
+        "UPDATE company_control_documents SET CONTROL_UWAGI = ? WHERE NUMER_FV = ?",
         [
           JSON.stringify(chat),
           NUMER_FV
@@ -458,7 +455,7 @@ const changeControlChat = async (req, res) => {
 
     } else {
       await connect_SQL.query(
-        "INSERT INTO control_documents (NUMER_FV, CONTROL_UWAGI) VALUES (?, ?)",
+        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UWAGI) VALUES (?, ?)",
         [NUMER_FV,
           JSON.stringify(chat)
         ]
@@ -479,7 +476,7 @@ const getDataDocumentsControl = async (req, res) => {
   try {
     const { doc_nr } = req.params;
     const [doc_control] = await connect_SQL.query(
-      "SELECT * FROM control_documents WHERE NUMER_FV = ?", [doc_nr]
+      "SELECT * FROM company_control_documents WHERE NUMER_FV = ?", [doc_nr]
     );
     if (doc_control.length) {
       res.json(doc_control[0]);
@@ -501,11 +498,11 @@ const changeDocumentControl = async (req, res) => {
   const { NUMER_FV, documentControlBL } = req.body;
   try {
     const [findDoc] = await connect_SQL.query(
-      "SELECT NUMER_FV FROM control_documents WHERE NUMER_FV = ?", [NUMER_FV]
+      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ?", [NUMER_FV]
     );
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
-        "UPDATE control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?  WHERE NUMER_FV = ?",
+        "UPDATE company_control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?  WHERE NUMER_FV = ?",
         [
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
@@ -522,7 +519,7 @@ const changeDocumentControl = async (req, res) => {
 
     } else {
       await connect_SQL.query(
-        "INSERT INTO control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [NUMER_FV,
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
@@ -554,7 +551,7 @@ module.exports = {
   getDataDocuments,
   getSingleDocument,
   getColumnsName,
-  getTradeCreditData,
+  // getTradeCreditData,
   changeControlChat,
   getDataDocumentsControl,
   changeDocumentControl

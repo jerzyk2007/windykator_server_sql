@@ -10,7 +10,7 @@ const repairAdvisersName = async (req, res) => {
     try {
         //         const [getAdvisersName] = await connect_SQL.query(
         //             `SELECT D.NUMER_FV, D.DORADCA
-        // FROM documents as D
+        // FROM company_documents as D
         // LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
         // WHERE  D.DORADCA != 'Brak danych'`
         //         );
@@ -41,7 +41,7 @@ const repairAdvisersName = async (req, res) => {
         console.log('start doradca');
         for (const doc of documents) {
             await connect_SQL.query(
-                'UPDATE documents SET DORADCA = ? WHERE NUMER_FV = ?', [doc.PRZYGOTOWAL, doc.NUMER]);
+                'UPDATE company_documents SET DORADCA = ? WHERE NUMER_FV = ?', [doc.PRZYGOTOWAL, doc.NUMER]);
         }
 
         console.log('finish');
@@ -89,7 +89,7 @@ const changeUserSettings = async () => {
 //         for (const doc of documents) {
 //             const [checkDoc] = await connect_SQL.query(`
 //                 SELECT NUMER_FV
-//                 FROM documents 
+//                 FROM company_documents 
 //                 WHERE NUMER_FV = '${doc.NUMER_FV}'`);
 
 //             if (!checkDoc[0]) {
@@ -109,17 +109,16 @@ const checkFKDocuments = async () => {
     try {
         const [documents] = await connect_SQL.query(`
        SELECT D.NUMER_FV, D.TERMIN, S.NALEZNOSC
-    from documents AS D
+    from company_documents AS D
     LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
     WHERE S.NALEZNOSC != 0
     AND D.TERMIN < '2025-01-01'`);
 
-        console.log(documents.length);
         const newDocuments = [];
         for (const doc of documents) {
             const [checkDoc] = await connect_SQL.query(`
                 SELECT NUMER_FV
-                FROM raportFK_accountancy 
+                FROM company_raportFK_accountancy 
                 WHERE NUMER_FV = '${doc.NUMER_FV}'`);
 
             if (!checkDoc[0]) {
@@ -233,7 +232,7 @@ const repairColumnsRaports = async () => {
 const createAccounts = async (req, res) => {
     try {
         const [data] = await connect_SQL.query(
-            "SELECT * FROM join_items ORDER BY department"
+            "SELECT * FROM company_join_items ORDER BY department"
         );
 
         const findMail = await Promise.all(
@@ -241,7 +240,7 @@ const createAccounts = async (req, res) => {
                 const ownerMail = await Promise.all(
                     item.owner.map(async (own) => {
                         const [mail] = await connect_SQL.query(
-                            `SELECT owner_mail FROM owner_items WHERE owner = ?`, [own]
+                            `SELECT OWNER_MAIL FROM company_owner_items WHERE owner = ?`, [own]
                         );
 
                         // Zamiana null na "Brak danych"
@@ -495,7 +494,7 @@ const createAccounts = async (req, res) => {
 
 const repairHistory = async () => {
     try {
-        const [getRaportFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU, TERMIN_PLATNOSCI_FV FROM fk_raport_v2 WHERE OBSZAR != 'KSIĘGOWOŚĆ' AND TYP_DOKUMENTU IN ('Faktura', 'Faktura zaliczkowa', 'Korekta', 'Nota') AND CZY_W_KANCELARI = 'NIE' AND DO_ROZLICZENIA_AS > 0`);
+        const [getRaportFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU, TERMIN_PLATNOSCI_FV FROM company_fk_raport_v2 WHERE OBSZAR != 'KSIĘGOWOŚĆ' AND TYP_DOKUMENTU IN ('Faktura', 'Faktura zaliczkowa', 'Korekta', 'Nota') AND CZY_W_KANCELARI = 'NIE' AND DO_ROZLICZENIA_AS > 0`);
 
         const [getDateHistory] = await connect_SQL.query('SELECT DISTINCT WYKORZYSTANO_RAPORT_FK FROM management_decision_FK');
 
@@ -858,6 +857,30 @@ const repairManagementDecisionFK = async () => {
     }
 };
 
+const usersDepartmentsCompany = async () => {
+    try {
+        const [departments] = await connect_SQL.query(`SELECT id_user, departments FROM users`);
+
+        for (const dep of departments) {
+            const id = dep.id_user;
+            const company = 'KRT';
+
+            const resultArray = dep.departments.map(department => ({
+                departments: department,
+                company
+            }));
+
+            console.log('id:', id);
+            console.log(resultArray);
+
+            // await connect_SQL.query('UPDATE testowanie_windykacja.users SET departments = ? WHERE id_user = ?', [JSON.stringify(resultArray), id]);
+        }
+    }
+    catch (err) {
+        console.error(err);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
@@ -867,5 +890,6 @@ module.exports = {
     createAccounts,
     generatePassword,
     repairHistory,
-    repairManagementDecisionFK
+    repairManagementDecisionFK,
+    usersDepartmentsCompany
 };

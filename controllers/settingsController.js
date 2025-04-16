@@ -54,7 +54,7 @@ const changeColumns = async (req, res) => {
 const getFilteredDepartments = async (res) => {
   try {
     const [mappedDepartments] = await connect_SQL.query(
-      "SELECT DZIAL FROM documents"
+      "SELECT DZIAL FROM company_documents"
     );
     const uniqueDepartmentsValues = Array.from(
       new Set(mappedDepartments.map((filtr) => filtr["DZIAL"]))
@@ -75,7 +75,7 @@ const getFilteredDepartments = async (res) => {
 const getSettings = async (req, res) => {
   try {
     const [userSettings] = await connect_SQL.query(
-      "SELECT roles, permissions, columns FROM settings WHERE id_setting = 1"
+      "SELECT roles, permissions, columns FROM company_settings WHERE id_setting = 1"
     );
 
     //zamieniam obiekt json na tablice ze stringami, kazdy klucz to wartość string w tablicy
@@ -112,11 +112,21 @@ const getSettings = async (req, res) => {
 
     const uniqueDepartments = await getFilteredDepartments(res);
 
+
     const [departmentsFromJI] = await connect_SQL.query(
-      "SELECT DISTINCT department FROM windykacja.join_items"
+      "SELECT DISTINCT DEPARTMENT FROM company_join_items"
     );
 
-    const departmentStrings = departmentsFromJI.map(item => item.department);
+    const departmentStrings = departmentsFromJI.map(item => item.DEPARTMENT);
+
+
+
+    const [depsFromCJI] = await connect_SQL.query(
+      "SELECT DISTINCT DEPARTMENT, COMPANY FROM company_join_items"
+    );
+    const [depsFromCompDocs] = await connect_SQL.query(
+      "SELECT DISTINCT DZIAL, FIRMA FROM company_documents"
+    );
 
     res.json([
       { roles },
@@ -124,6 +134,8 @@ const getSettings = async (req, res) => {
       { departmentsJI: departmentStrings },
       { columns: userSettings[0].columns },
       { permissions: userSettings[0].permissions },
+      { depsFromCJI },
+      { depsFromCompDocs },
     ]);
   } catch (error) {
     logEvents(
@@ -141,7 +153,7 @@ const getDepartments = async (req, res) => {
 
     //pobieram zapisane cele
     const [getTarget] = await connect_SQL.query(
-      "SELECT target from settings WHERE id_setting = 1"
+      "SELECT target from company_settings WHERE id_setting = 1"
     );
     res.json({
       departments: uniqueDepartments,
@@ -161,7 +173,7 @@ const saveTargetPercent = async (req, res) => {
   const { target } = req.body;
   try {
     await connect_SQL.query(
-      "UPDATE settings SET target = ? WHERE id_setting = 1",
+      "UPDATE company_settings SET target = ? WHERE id_setting = 1",
       [JSON.stringify(target)]
     );
 
@@ -182,7 +194,7 @@ const getColumns = async (req, res) => {
       "SELECT * FROM table_columns"
     );
     const [areas] = await connect_SQL.query(
-      "SELECT area FROM area_items"
+      "SELECT AREA FROM company_area_items"
     );
     const filteredAreas = areas.map(item => item.area);
     res.json({ columns, areas: filteredAreas.sort() });

@@ -25,10 +25,10 @@ const getRaportData = async (req, res) => {
 const differencesAS_FK = async () => {
   try {
     //pobieram wszytskie numery faktur z programu
-    const [docAS] = await connect_SQL.query(`SELECT D.NUMER_FV FROM documents AS D LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV WHERE S.NALEZNOSC !=0`);
+    const [docAS] = await connect_SQL.query(`SELECT D.NUMER_FV FROM company_documents AS D LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV WHERE S.NALEZNOSC !=0`);
     const fvAS = docAS.map(item => item.NUMER_FV);
 
-    const [docFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU FROM fk_raport_v2`);
+    const [docFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU FROM company_fk_raport_v2`);
     const fvFK = docFK.map(item => item.NR_DOKUMENTU);
 
     const filteredFvAS = fvAS.filter(fv => !fvFK.includes(fv));
@@ -40,9 +40,9 @@ const differencesAS_FK = async () => {
       D.DATA_FV AS DATA_WYSTAWIENIA_FV, D.TERMIN AS TERMIN_PLATNOSCI_FV,
       IFNULL(JI.area, 'BRAK DANYCH') AS OBSZAR, IFNULL(JI.guardian, 'BRAK DANY') AS OPIEKUN_OBSZARU_CENTRALI, 
       IFNULL(JI.owner,  'BRAK DANY') AS OWNER
-      FROM documents AS D 
+      FROM company_documents AS D 
       LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
-      LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
+      LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department
       WHERE S.NALEZNOSC !=0 AND ${sqlCondition}`
     );
 
@@ -74,7 +74,7 @@ const differencesAS_FK = async () => {
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika, wersja poprawiona
 const getRaportDataV2 = async (req, res) => {
   try {
-    const [dataRaport] = await connect_SQL.query('SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK_V2.* FROM fk_raport_v2 AS FK_V2 LEFT JOIN history_fk_documents AS HFD ON FK_V2.NR_DOKUMENTU = HFD.NUMER_FV');
+    const [dataRaport] = await connect_SQL.query('SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK_V2.* FROM company_fk_raport_v2 AS FK_V2 LEFT JOIN history_fk_documents AS HFD ON FK_V2.NR_DOKUMENTU = HFD.NUMER_FV');
     //usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach(item => {
       delete item.id_fk_raport;
@@ -116,9 +116,9 @@ const getDateCounter = async (req, res) => {
 const deleteDataRaport = async (req, res) => {
   try {
     await connect_SQL.query('TRUNCATE fk_updates_date');
-    await connect_SQL.query('TRUNCATE raportFK_accountancy');
-    await connect_SQL.query('TRUNCATE mark_documents');
-    await connect_SQL.query("TRUNCATE TABLE fk_raport_v2");
+    await connect_SQL.query('TRUNCATE company_raportFK_accountancy');
+    await connect_SQL.query('TRUNCATE company_mark_documents');
+    await connect_SQL.query("TRUNCATE TABLE company_fk_raport_v2");
 
     res.json({ result: "delete" });
   } catch (error) {
@@ -133,9 +133,9 @@ const deleteDataRaport = async (req, res) => {
 // generowanie raportu wersji 1 i zapisanie do bazy danych
 const generateRaport = async (req, res) => {
   try {
-    const [getData] = await connect_SQL.query('SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS FROM raportFK_accountancy AS RA LEFT JOIN join_items AS JI ON RA.DZIAL = JI.department LEFT JOIN documents AS D ON RA.NUMER_FV = D.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER ');
+    const [getData] = await connect_SQL.query('SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS FROM company_raportFK_accountancy AS RA LEFT JOIN company_join_items AS JI ON RA.DZIAL = JI.department LEFT JOIN company_documents AS D ON RA.NUMER_FV = D.NUMER_FV LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER ');
 
-    const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
+    const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM company_aging_items');
 
     // jeśli nie ma DATA_FV to od TERMIN_FV jest odejmowane 14 dni
     const changeDate = (dateStr) => {
@@ -331,18 +331,18 @@ const generateRaportV2 = async (req, res) => {
 RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.localization, JI.area, JI.owner, JI.guardian, D.DATA_FV, D.VIN, D.DORADCA, 
 DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
 S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
-FROM raportFK_accountancy AS RA 
-LEFT JOIN join_items AS JI ON RA.DZIAL = JI.department 
-LEFT JOIN documents AS D ON RA.NUMER_FV = D.NUMER_FV 
-LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id 
+FROM company_raportFK_accountancy AS RA 
+LEFT JOIN company_join_items AS JI ON RA.DZIAL = JI.department 
+LEFT JOIN company_documents AS D ON RA.NUMER_FV = D.NUMER_FV 
+LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
 LEFT JOIN rubicon_raport_fk AS R ON RA.NUMER_FV = R.NUMER_FV 
 LEFT JOIN settlements AS S ON RA.NUMER_FV = S.NUMER_FV 
 LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
 `);
 
 
-    // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM aging_items');
-    const [getAging] = await connect_SQL.query('SELECT \`FROM_TIME\`, TO_TIME, TITLE, TYPE FROM aging_items');
+    // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM company_aging_items');
+    const [getAging] = await connect_SQL.query('SELECT \`FROM_TIME\`, TO_TIME, TITLE, TYPE FROM company_aging_items');
 
     // jeśli nie ma DATA_FV to od TERMIN_FV jest odejmowane 14 dni
     const changeDate = (dateStr) => {
@@ -480,7 +480,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
     });
 
 
-    await connect_SQL.query("TRUNCATE TABLE fk_raport_v2");
+    await connect_SQL.query("TRUNCATE TABLE company_fk_raport_v2");
 
     // Teraz przygotuj dane do wstawienia
     const values = cleanData.map(item => [
@@ -519,7 +519,7 @@ LEFT JOIN settlements_description AS SD ON RA.NUMER_FV = SD.NUMER
     ]);
 
     const query = `
-    INSERT IGNORE INTO fk_raport_v2
+    INSERT IGNORE INTO company_fk_raport_v2
       (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DORADCA, DZIAL, ETAP_SPRAWY, HISTORIA_ZMIANY_DATY_ROZLICZENIA, ILE_DNI_NA_PLATNOSC_FV, INFORMACJA_ZARZAD, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OSTATECZNA_DATA_ROZLICZENIA, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU, VIN) 
     VALUES 
       ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
@@ -559,7 +559,7 @@ const dataFkAccocuntancyFromExcel = async (req, res) => {
   const { documents_data } = req.body;
   try {
     const [preparedItems] = await connect_SQL.query(
-      "SELECT department, localization, area, owner, guardian FROM join_items ORDER BY department"
+      "SELECT DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN FROM company_join_items ORDER BY DEPARTMENT"
     );
     // dodaje wygenerowane na działy na podstawie nazwy documentu
     const resultDep = prepareDepartments(documents_data);
@@ -604,7 +604,7 @@ const saveMark = async (req, res) => {
   const documents = req.body;
   try {
     // // await connect_SQL.query(`UPDATE mark_documents SET RAPORT_FK = 0`);
-    await connect_SQL.query('TRUNCATE mark_documents');
+    await connect_SQL.query('TRUNCATE company_mark_documents');
 
 
     // // Teraz przygotuj dane do wstawienia
@@ -613,7 +613,7 @@ const saveMark = async (req, res) => {
     ]);
 
     const query = `
-       INSERT IGNORE INTO mark_documents
+       INSERT IGNORE INTO company_mark_documents
          (NUMER_FV, RAPORT_FK) 
        VALUES 
          ${values.map(() => "(?, 1)").join(", ")}
@@ -651,7 +651,7 @@ const changeMark = async (req, res) => {
   try {
 
     await connect_SQL.query(
-      "UPDATE mark_documents SET RAPORT_FK = ? WHERE NUMER_FV = ?",
+      "UPDATE company_mark_documents SET RAPORT_FK = ? WHERE NUMER_FV = ?",
       [
         MARK_FK,
         NUMER_FV
@@ -670,13 +670,13 @@ const changeMark = async (req, res) => {
 const getRaportDocumentsControlBL = async (req, res) => {
   try {
     // const [dataReport] = await connect_SQL.query(
-    //   "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND FKR.CZY_W_KANCELARI = 'NIE' AND FKR.PRZEDZIAL_WIEKOWANIE !=' < 0' AND FKR.PRZEDZIAL_WIEKOWANIE !='1 - 7' AND FKR.DO_ROZLICZENIA_AS > 0"
+    //   "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND FKR.CZY_W_KANCELARI = 'NIE' AND FKR.PRZEDZIAL_WIEKOWANIE !=' < 0' AND FKR.PRZEDZIAL_WIEKOWANIE !='1 - 7' AND FKR.DO_ROZLICZENIA_AS > 0"
     // );
     // const [dataReport] = await connect_SQL.query(
-    //   "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV LEFT JOIN mark_documents AS MD ON FKR.NR_DOKUMENTU = MD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND MD.RAPORT_FK = 1 AND S.NALEZNOSC !=0"
+    //   "SELECT CD.*, FKR.NR_DOKUMENTU, D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,  datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM fk_raport_v2 AS FKR LEFT JOIN documents AS D ON FKR.NR_DOKUMENTU = D.NUMER_FV LEFT JOIN settlements as S ON FKR.NR_DOKUMENTU = S.NUMER_FV LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON FKR.NR_DOKUMENTU = CD.NUMER_FV LEFT JOIN mark_documents AS MD ON FKR.NR_DOKUMENTU = MD.NUMER_FV WHERE FKR.OBSZAR ='BLACHARNIA' AND MD.RAPORT_FK = 1 AND S.NALEZNOSC !=0"
     // );
     const [dataReport] = await connect_SQL.query(
-      "SELECT CD.*, D.NUMER_FV,  D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM documents AS D LEFT JOIN settlements as S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN control_documents AS CD ON D.NUMER_FV = CD.NUMER_FV LEFT JOIN join_items AS JI ON D.DZIAL = JI.department LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV WHERE JI.area = 'BLACHARNIA' AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+      "SELECT CD.*, D.NUMER_FV,  D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM company_documents AS D LEFT JOIN settlements as S ON D.NUMER_FV = S.NUMER_FV LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_control_documents AS CD ON D.NUMER_FV = CD.NUMER_FV LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN rubicon AS R ON R.NUMER_FV = D.NUMER_FV WHERE JI.area = 'BLACHARNIA' AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
     );
     if (dataReport.length) {
       const cleanedData = dataReport.map(({ id_control_documents, ...rest }) => rest);
@@ -696,7 +696,7 @@ const getRaportDocumentsControlBL = async (req, res) => {
 const getStructureOrganization = async (req, res) => {
   try {
     const [data] = await connect_SQL.query(
-      "SELECT * FROM join_items ORDER BY department"
+      "SELECT * FROM company_join_items ORDER BY department"
     );
 
     const findMail = await Promise.all(
@@ -704,7 +704,7 @@ const getStructureOrganization = async (req, res) => {
         const ownerMail = await Promise.all(
           item.owner.map(async (own) => {
             const [mail] = await connect_SQL.query(
-              `SELECT owner_mail FROM owner_items WHERE owner = ?`, [own]
+              `SELECT OWNER_MAIL FROM company_owner_items WHERE owner = ?`, [own]
             );
 
             // Zamiana null na "Brak danych"
@@ -742,7 +742,7 @@ const generateHistoryDocuments = async (req, res) => {
 
     const [raportDate] = await connect_SQL.query(`SELECT date FROM  fk_updates_date WHERE title = 'accountancy'`);
 
-    const [markDocuments] = await connect_SQL.query(`SELECT NUMER_FV FROM mark_documents WHERE RAPORT_FK = 1`);
+    const [markDocuments] = await connect_SQL.query(`SELECT NUMER_FV FROM company_mark_documents WHERE RAPORT_FK = 1`);
 
 
 
@@ -808,7 +808,7 @@ const generateHistoryDocuments = async (req, res) => {
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, data } = req.body;
   try {
-    const [raportDate] = await connect_SQL.query(`SELECT date FROM  fk_updates_date WHERE title = 'accountancy'`);
+    const [raportDate] = await connect_SQL.query(`SELECT date FROM fk_updates_date WHERE title = 'accountancy'`);
 
     if (!raportDate[0].date) {
       return res.end();
