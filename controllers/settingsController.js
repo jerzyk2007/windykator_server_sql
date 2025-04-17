@@ -7,7 +7,7 @@ const changeColumns = async (req, res) => {
   const { columns } = req.body;
 
   try {
-    await connect_SQL.query("TRUNCATE TABLE table_columns");
+    await connect_SQL.query("TRUNCATE TABLE company_table_columns");
 
     // Teraz przygotuj dane do wstawienia
     const values = columns.map(item => [
@@ -20,7 +20,7 @@ const changeColumns = async (req, res) => {
 
     // Przygotowanie zapytania SQL z wieloma wartościami
     const query = `
-          INSERT IGNORE INTO table_columns
+          INSERT IGNORE INTO company_table_columns
             (accessorKey, header, filterVariant, type, areas) 
           VALUES 
             ${values.map(() => "(?, ?, ?, ?, ?)").join(", ")}
@@ -112,14 +112,11 @@ const getSettings = async (req, res) => {
 
     const uniqueDepartments = await getFilteredDepartments(res);
 
-
     const [departmentsFromJI] = await connect_SQL.query(
       "SELECT DISTINCT DEPARTMENT FROM company_join_items"
     );
 
     const departmentStrings = departmentsFromJI.map(item => item.DEPARTMENT);
-
-
 
     const [depsFromCJI] = await connect_SQL.query(
       "SELECT DISTINCT DEPARTMENT, COMPANY FROM company_join_items"
@@ -128,14 +125,19 @@ const getSettings = async (req, res) => {
       "SELECT DISTINCT DZIAL, FIRMA FROM company_documents"
     );
 
+    const [company] = await connect_SQL.query(
+      "SELECT company from company_settings WHERE id_setting = 1"
+    );
+
     res.json([
       { roles },
       { departments: uniqueDepartments },
       { departmentsJI: departmentStrings },
       { columns: userSettings[0].columns },
       { permissions: userSettings[0].permissions },
-      { depsFromCJI },
-      { depsFromCompDocs },
+      { departmentsFromCJI: depsFromCJI },
+      { departmentsFromCompDocs: depsFromCompDocs },
+      { company: company[0]?.company ? company[0].company : [] },
     ]);
   } catch (error) {
     logEvents(
@@ -191,7 +193,7 @@ const saveTargetPercent = async (req, res) => {
 const getColumns = async (req, res) => {
   try {
     const [columns] = await connect_SQL.query(
-      "SELECT * FROM table_columns"
+      "SELECT * FROM company_table_columns"
     );
     const [areas] = await connect_SQL.query(
       "SELECT AREA FROM company_area_items"

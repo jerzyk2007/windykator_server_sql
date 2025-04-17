@@ -4,6 +4,8 @@ const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require('./mailController');
 const { generatePassword } = require('./manageDocumentAddition');
+const { addDepartment } = require('./manageDocumentAddition');
+
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -442,7 +444,7 @@ const createAccounts = async (req, res) => {
                     JSON.stringify(raportSettings),
                     ]);
 
-                const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
+                const [getColumns] = await connect_SQL.query('SELECT * FROM comapny_table_columns');
 
                 const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM users WHERE userlogin = ?',
                     [user.userlogin]
@@ -859,14 +861,14 @@ const repairManagementDecisionFK = async () => {
 
 const usersDepartmentsCompany = async () => {
     try {
-        const [departments] = await connect_SQL.query(`SELECT id_user, departments FROM users`);
+        const [departments] = await connect_SQL.query(`SELECT id_user, departments FROM windykacja.users`);
 
         for (const dep of departments) {
             const id = dep.id_user;
             const company = 'KRT';
 
             const resultArray = dep.departments.map(department => ({
-                departments: department,
+                department: department,
                 company
             }));
 
@@ -881,6 +883,105 @@ const usersDepartmentsCompany = async () => {
     }
 };
 
+
+// zamienia na krótki format daty
+const formatDate = (date) => {
+    if (date instanceof Date) {
+        return date.toISOString().split('T')[0]; // Wyciąga tylko część daty, np. "2024-11-08"
+    }
+    return date;
+};
+
+//pobieram dokumenty z bazy mssql AS
+const testAddDocumentToDatabase = async (type) => {
+    const twoDaysAgo = "2025-04-14";
+    const query = `SELECT 
+         fv.[NUMER],
+          CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+      CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+         fv.[KONTR_NAZWA],
+         fv.[KONTR_NIP],
+         SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+         SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
+         fv.[NR_SZKODY],
+         fv.[NR_AUTORYZACJI],
+         fv.[UWAGI],
+         fv.[KOREKTA_NUMER],
+         zap.[NAZWA] AS TYP_PLATNOSCI,
+         us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
+         auto.[REJESTRACJA],
+         auto.[NR_NADWOZIA],
+         tr.[WARTOSC_NAL]
+  FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
+  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
+  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
+  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
+  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+  WHERE fv.[NUMER] != 'POTEM' 
+    AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
+  GROUP BY 
+         fv.[NUMER],
+         CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
+         CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
+             fv.[KONTR_NAZWA],
+         fv.[KONTR_NIP],
+         fv.[NR_SZKODY],
+         fv.[NR_AUTORYZACJI],
+         fv.[UWAGI],
+         fv.[KOREKTA_NUMER],
+         zap.[NAZWA],
+         us.[NAZWA] + ' ' + us.[IMIE],
+         auto.[REJESTRACJA],
+         auto.[NR_NADWOZIA],
+         tr.[WARTOSC_NAL];
+  `;
+    const firma = type === "KRT" ? "KRT" : "INNA";
+    try {
+        const documents = await msSqlQuery(query);
+        // dodaje nazwy działów
+        const addDep = addDepartment(documents);
+
+        addDep.forEach(row => {
+            row.DATA_WYSTAWIENIA = formatDate(row.DATA_WYSTAWIENIA);
+            row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
+        });
+
+        console.log(addDep);
+
+        // for (const doc of addDep) {
+
+        //   await connect_SQL.query(
+        //     "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        //     [
+        //       doc.NUMER,
+        //       doc.WARTOSC_BRUTTO,
+        //       doc.WARTOSC_NETTO,
+        //       doc.DZIAL,
+        //       doc.WARTOSC_NAL || 0,
+        //       doc.DATA_WYSTAWIENIA,
+        //       doc.DATA_ZAPLATA,
+        //       doc.KONTR_NAZWA,
+        //       doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
+        //       doc.REJESTRACJA,
+        //       doc.NR_SZKODY || null,
+        //       doc.UWAGI,
+        //       doc.TYP_PLATNOSCI,
+        //       doc.KONTR_NIP || null,
+        //       doc.NR_NADWOZIA,
+        //       doc.NR_AUTORYZACJI || null,
+        //       doc.KOREKTA_NUMER,
+        //       firma
+        //     ]
+        //   );
+        // }
+        return true;
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
@@ -891,5 +992,6 @@ module.exports = {
     generatePassword,
     repairHistory,
     repairManagementDecisionFK,
-    usersDepartmentsCompany
+    usersDepartmentsCompany,
+    testAddDocumentToDatabase
 };

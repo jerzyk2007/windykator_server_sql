@@ -33,7 +33,7 @@ const getDataDocuments = async (id_user, info) => {
 
 
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
-    const sqlCondition = departments?.length > 0 ? `(${departments.map(dep => `D.DZIAL = '${dep.departments}' AND D.FIRMA ='${dep.company}' `).join(' OR ')})` : null;
+    const sqlCondition = departments?.length > 0 ? `(${departments.map(dep => `D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}' `).join(' OR ')})` : null;
 
     const DORADCA = `${usersurname} ${username}`;
 

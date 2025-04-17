@@ -60,7 +60,7 @@ GROUP BY
        auto.[NR_NADWOZIA],
        tr.[WARTOSC_NAL];
 `;
-  const firma = type === "KRT" ? "KRT" : "INNA";
+  const firma = "KRT";
   try {
     const documents = await msSqlQuery(query);
     // dodaje nazwy działów
@@ -71,32 +71,34 @@ GROUP BY
       row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
     });
 
-    for (const doc of addDep) {
+    // console.log(addDep);
 
-      await connect_SQL.query(
-        "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          doc.NUMER,
-          doc.WARTOSC_BRUTTO,
-          doc.WARTOSC_NETTO,
-          doc.DZIAL,
-          doc.WARTOSC_NAL || 0,
-          doc.DATA_WYSTAWIENIA,
-          doc.DATA_ZAPLATA,
-          doc.KONTR_NAZWA,
-          doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
-          doc.REJESTRACJA,
-          doc.NR_SZKODY || null,
-          doc.UWAGI,
-          doc.TYP_PLATNOSCI,
-          doc.KONTR_NIP || null,
-          doc.NR_NADWOZIA,
-          doc.NR_AUTORYZACJI || null,
-          doc.KOREKTA_NUMER,
-          firma
-        ]
-      );
-    }
+    // for (const doc of addDep) {
+
+    // //   await connect_SQL.query(
+    // //     "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    // //     [
+    // //       doc.NUMER,
+    // //       doc.WARTOSC_BRUTTO,
+    // //       doc.WARTOSC_NETTO,
+    // //       doc.DZIAL,
+    // //       doc.WARTOSC_NAL || 0,
+    // //       doc.DATA_WYSTAWIENIA,
+    // //       doc.DATA_ZAPLATA,
+    // //       doc.KONTR_NAZWA,
+    // //       doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
+    // //       doc.REJESTRACJA,
+    // //       doc.NR_SZKODY || null,
+    // //       doc.UWAGI,
+    // //       doc.TYP_PLATNOSCI,
+    // //       doc.KONTR_NIP || null,
+    // //       doc.NR_NADWOZIA,
+    // //       doc.NR_AUTORYZACJI || null,
+    // //       doc.KOREKTA_NUMER,
+    // //       firma
+    // //     ]
+    // //   );
+    // // }
     return true;
   }
   catch (error) {

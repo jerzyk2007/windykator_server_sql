@@ -702,31 +702,37 @@ const getStructureOrganization = async (req, res) => {
     const findMail = await Promise.all(
       data.map(async (item) => {
         const ownerMail = await Promise.all(
-          item.owner.map(async (own) => {
+          item.OWNER.map(async (own) => {
             const [mail] = await connect_SQL.query(
               `SELECT OWNER_MAIL FROM company_owner_items WHERE owner = ?`, [own]
             );
 
             // Zamiana null na "Brak danych"
-            return mail.map(row => row.owner_mail || "Brak danych");
+            return mail.map(row => row.OWNER_MAIL || "Brak danych");
           })
         );
 
         return {
           ...item,
-          mail: ownerMail.flat() // Spłaszczamy tablicę wyników
+          MAIL: ownerMail.flat() // Spłaszczamy tablicę wyników
         };
       })
     );
 
     const [accounts] = await connect_SQL.query(
-      "SELECT username, usersurname,userlogin, departments  FROM users"
+      "SELECT username, usersurname, userlogin, departments FROM users"
     );
+    const filteredDeps = accounts.map(item => {
+      return {
+        ...item,
+        departments: item.departments.map(acc => `${acc.department}-${acc.company}`)
+      };
+    });
 
     if (data.length && accounts.length) {
       const structure = findMail.map(({ id_join_items, ...rest }) => rest);
 
-      return res.json({ structure, accounts });
+      return res.json({ structure, accounts: filteredDeps });
     } else {
       return res.json({ structure: [], accounts: [] });
     }

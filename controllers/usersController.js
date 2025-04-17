@@ -13,24 +13,39 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     // pobieram ustawienia kolumn tabeli danego użytkownika
     // const [getUserColumns] = await connect_SQL.query('SELECT columns, tableSettings FROM users WHERE id_user = ?', [id_user]);
 
-    // sprawdzim do jakich obszarów jest przypisany user na podstawie działó
-    const [getUserAreas] = await connect_SQL.query(
-      `SELECT DISTINCT ji.area 
-         FROM users AS u 
-         LEFT JOIN company_join_items AS ji 
-           ON JSON_CONTAINS(?, JSON_QUOTE(ji.department))
-         WHERE u.id_user = ?`,
-      [JSON.stringify(departments), id_user]
-    );
+    // const depTest = departments.map(item => item.department);
+    // console.log(depTest);
 
+    // sprawdzim do jakich obszarów jest przypisany user na podstawie działów
+    // const [getUserAreas] = await connect_SQL.query(
+    //   `SELECT DISTINCT ji.area 
+    //      FROM users AS u 
+    //      LEFT JOIN company_join_items AS ji 
+    //        ON JSON_CONTAINS(?, JSON_QUOTE(ji.department))
+    //      WHERE u.id_user = ?`,
+    //   [JSON.stringify(departments), id_user]
+    // );
 
+    // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
+    const whereClauses = departments.map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`).join(' OR ');
+    const values = departments.flatMap(dep => [dep.department, dep.company]);
+
+    const query = `
+  SELECT DISTINCT ji.AREA
+  FROM users AS u
+  LEFT JOIN company_join_items AS ji
+    ON (${whereClauses})
+  WHERE u.id_user = ?
+`;
+    // Dodaj id_user na końcu wartości
+    values.push(id_user);
+    const [getUserAreas] = await connect_SQL.query(query, values);
 
     // pobieram ustawienia kolumn, przypisanych działów i ustawień tabeli danego użytkownika
     const [checkDepartments] = await connect_SQL.query(
       "SELECT columns, departments, tableSettings FROM users WHERE id_user = ?",
       [id_user]
     );
-
 
     const areaDep = columnsFromSettings.reduce((acc, column) => {
       column.areas.forEach(area => {
@@ -61,7 +76,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     }, []);
 
     //  obszary(area) do jakich ma dostęp uzytkownik
-    const areaUsers = getUserAreas.map(item => item.area);
+    const areaUsers = getUserAreas.map(item => item.AREA);
 
     // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
     const filteredAreas = areaDep
@@ -83,8 +98,6 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
       }
       return acc;
     }, []);
-
-    // if (getUserColumns[0]?.columns) {
 
     // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
     const assignedUserNewColumns = uniqueObjects.map(column => column.accessorKey);
@@ -371,7 +384,7 @@ const changeUserPermissions = async (req, res) => {
   const { permissions } = req.body;
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET permissions = ?WHERE id_user = ?",
+      "UPDATE users SET permissions = ? WHERE id_user = ?",
       [JSON.stringify(permissions), id_user]
     );
     if (result.affectedRows > 0) {
@@ -397,7 +410,7 @@ const changeUserDepartments = async (req, res) => {
   try {
 
     // pobieram wszytskie kolumny dla tabel które sa opisane w programie
-    const [getColumns] = await connect_SQL.query('SELECT * FROM table_columns');
+    const [getColumns] = await connect_SQL.query('SELECT * FROM company_table_columns');
 
     if (departments?.length > 0) {
       await verifyUserTableConfig(id_user, departments, getColumns);
@@ -417,7 +430,7 @@ const changeUserDepartments = async (req, res) => {
     }
   } catch (error) {
     logEvents(
-      `usersController, changePasswordAnotherUser: ${error}`,
+      `usersController, changeUserDepartments: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ message: error.message });
@@ -490,6 +503,10 @@ const getUsersData = async (req, res) => {
         .map((user) => {
           if (user.roles) {
             user.roles = Object.keys(user.roles).map((role) => role);
+          } if (user.departments) {
+            // user.newDepartments = [...user.departments];
+            user.oldDepartments = user.departments.map(dep => dep.department);
+            // console.log(test);
           }
           return user;
         })
