@@ -112,7 +112,7 @@ const checkFKDocuments = async () => {
         const [documents] = await connect_SQL.query(`
        SELECT D.NUMER_FV, D.TERMIN, S.NALEZNOSC
     from company_documents AS D
-    LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV 
+    LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
     WHERE S.NALEZNOSC != 0
     AND D.TERMIN < '2025-01-01'`);
 

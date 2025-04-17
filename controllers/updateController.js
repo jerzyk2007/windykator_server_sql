@@ -1,7 +1,7 @@
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, generatePassword, repairHistory, repairManagementDecisionFK, usersDepartmentsCompany, testAddDocumentToDatabase } = require("./repairDataController");
-const { updateData, updateSettlements, updateSettlementDescription, updateDocZal, updateCarReleaseDates, addDocumentToDatabase } = require("./getDataFromMSSQL");
+const { updateData, updateDocuments } = require("./getDataFromMSSQL");
 const { testMail } = require("./mailController");
 const { generateHistoryDocument } = require("./fkRaportController");
 const { updateDataKEM } = require("./getDataFromMSSQLKEM");
@@ -9,10 +9,11 @@ const { updateDataKEM } = require("./getDataFromMSSQLKEM");
 const getTime = async (req, res) => {
   try {
     // await updateData();
+
+    // await updateDocuments();
     // await updateSettlementDescription();
     // await updateDocZal();
     // await changeUserSettings();
-    // await updateCarReleaseDates();
     // await checkFKDocuments();
     // await repairRoles();
     // await repairColumnsRaports();
@@ -23,6 +24,9 @@ const getTime = async (req, res) => {
     // await generateHistoryDocuments();
     // await repairManagementDecisionFK();
     // await usersDepartmentsCompany();
+
+    // await updateDocZal();
+    // await updateCarReleaseDates();
 
     // await addDocumentToDatabase();
 

@@ -143,7 +143,6 @@ const deleteItem = async (req, res) => {
 const changeItem = async (req, res) => {
     const { id, info } = req.params;
     const { updateData } = req.body;
-    console.log(info);
     try {
 
         if (info !== "OWNER" && info !== "AGING") {
@@ -380,7 +379,7 @@ const checkDocPayment = async (req, res) => {
         for (const dep of departments) {
             const [checkPayment] = await connect_SQL.query(
                 `SELECT D.NUMER_FV FROM company_documents AS D
-                LEFT JOIN settlements AS S ON D.NUMER_FV = S.NUMER_FV
+                LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
                 WHERE S.NALEZNOSC != 0 AND D.DZIAL = ?
                 LIMIT 1`, [dep.DZIAL]);
             if (checkPayment[0]?.NUMER_FV) {

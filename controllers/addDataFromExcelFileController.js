@@ -114,8 +114,8 @@ const settlementsFile = async (rows, res) => {
     // Zamiana obiektu na tablicę
     const result = Object.values(processedData);
 
-    // Najpierw wyczyść tabelę settlements_description
-    await connect_SQL.query("TRUNCATE TABLE settlements");
+    // Najpierw wyczyść tabelę company_settlements
+    await connect_SQL.query("TRUNCATE TABLE company_settlements");
 
     // Teraz przygotuj dane do wstawienia
     const values = result.map(item => [
@@ -126,7 +126,7 @@ const settlementsFile = async (rows, res) => {
 
     // Przygotowanie zapytania SQL z wieloma wartościami
     const query = `
-          INSERT IGNORE INTO settlements
+          INSERT IGNORE INTO company_settlements
             ( NUMER_FV, DATA_FV, NALEZNOSC) 
           VALUES 
             ${values.map(() => "(?, ?, ?)").join(", ")}

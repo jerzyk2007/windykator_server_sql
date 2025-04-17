@@ -21,7 +21,7 @@ const formatDate = (date) => {
 
 //pobieram dokumenty z bazy mssql AS
 const addDocumentToDatabase = async (type) => {
-    const query = `SELECT 
+    const queryKRT = `SELECT 
        fv.[NUMER],
 	    CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
 	CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
@@ -62,7 +62,49 @@ GROUP BY
        auto.[NR_NADWOZIA],
        tr.[WARTOSC_NAL];
 `;
-    // const firma = type === "KRT" ? "KRT" : "INNA";
+
+    const queryKEM = `SELECT 
+fv.[NUMER],
+ CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+fv.[KONTR_NAZWA],
+fv.[KONTR_NIP],
+SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
+fv.[NR_SZKODY],
+fv.[NR_AUTORYZACJI],
+fv.[UWAGI],
+fv.[KOREKTA_NUMER],
+zap.[NAZWA] AS TYP_PLATNOSCI,
+us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
+auto.[REJESTRACJA],
+auto.[NR_NADWOZIA],
+tr.[WARTOSC_NAL]
+FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[FAKTDOC] AS fv
+LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
+LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
+LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
+LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+WHERE fv.[NUMER] != 'POTEM' 
+AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
+GROUP BY 
+fv.[NUMER],
+CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
+CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
+    fv.[KONTR_NAZWA],
+fv.[KONTR_NIP],
+fv.[NR_SZKODY],
+fv.[NR_AUTORYZACJI],
+fv.[UWAGI],
+fv.[KOREKTA_NUMER],
+zap.[NAZWA],
+us.[NAZWA] + ' ' + us.[IMIE],
+auto.[REJESTRACJA],
+auto.[NR_NADWOZIA],
+tr.[WARTOSC_NAL];
+`;
+    const query = type === "KRT" ? "KRT" : "INNA";
     const firma = "KEM";
     try {
         const documents = await msSqlQuery(query);
@@ -135,7 +177,7 @@ GROUP BY
 
         const documents = await msSqlQuery(queryMsSql);
 
-        await connect_SQL.query("TRUNCATE TABLE fv_zaliczkowe");
+        await connect_SQL.query("TRUNCATE TABLE company_fv_zaliczkowe");
 
         //     // // Teraz przygotuj dane do wstawienia
         const values = documents.map(item => [
@@ -146,7 +188,7 @@ GROUP BY
 
         // Przygotowanie zapytania SQL z wieloma wartościami
         const query = `
-      INSERT IGNORE INTO fv_zaliczkowe 
+      INSERT IGNORE INTO company_fv_zaliczkowe 
         ( NUMER_FV, FV_ZALICZKOWA, KWOTA_BRUTTO) 
       VALUES 
         ${values.map(() => "(?, ?,  ?)").join(", ")}
@@ -255,8 +297,8 @@ WHERE T.IS_BILANS = @IS_BILANS
             }, {})
         );
 
-        // Najpierw wyczyść tabelę settlements_description
-        await connect_SQL.query("TRUNCATE TABLE settlements");
+        // Najpierw wyczyść tabelę settlements
+        await connect_SQL.query("TRUNCATE TABLE company_settlements");
 
         // Teraz przygotuj dane do wstawienia
         const values = checkDuplicate.map(item => [
@@ -266,7 +308,7 @@ WHERE T.IS_BILANS = @IS_BILANS
         ]);
 
         const query = `
-     INSERT IGNORE INTO settlements
+     INSERT IGNORE INTO company_settlements
        ( NUMER_FV, DATA_FV, NALEZNOSC) 
      VALUES 
        ${values.map(() => "(?, ?, ?)").join(", ")}
@@ -364,7 +406,7 @@ const updateSettlementDescription = async () => {
                 ]);
 
                 const query = `
-          INSERT IGNORE INTO settlements_description 
+          INSERT IGNORE INTO company_settlements_description 
             (NUMER, OPIS_ROZRACHUNKU, DATA_ROZL_AS) 
           VALUES 
             ${values.map(() => "(?, ?, ?)").join(", ")}
@@ -375,7 +417,7 @@ const updateSettlementDescription = async () => {
         };
 
         try {
-            await connect_SQL.query("TRUNCATE TABLE settlements_description");
+            await connect_SQL.query("TRUNCATE TABLE company_settlements_description");
             await batchInsert(connect_SQL, updatedSettlements);
         } catch (error) {
             logEvents(`getDataFromMSSQL, updateSettlementDescription, addMany settlements description: ${error}`, "reqServerErrors.txt");
