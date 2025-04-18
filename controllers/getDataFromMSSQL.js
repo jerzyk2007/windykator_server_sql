@@ -663,7 +663,7 @@ const updateDocuments = async () => {
 const updateData = async () => {
   try {
     const [getUpdatesData] = await connect_SQL.query(
-      "SELECT data_name, date,  hour, update_success FROM updates"
+      "SELECT data_name, date, hour, update_success FROM updates"
     );
     const filteredUpdatesData = getUpdatesData.filter(item => item.data_name !== 'Rubicon' && item.data_name !== 'BeCared' && item.data_name !== "Dokumenty Raportu FK");
     const updateProgress = filteredUpdatesData.map(item => {

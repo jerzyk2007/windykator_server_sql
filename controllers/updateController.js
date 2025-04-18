@@ -4,7 +4,6 @@ const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, gen
 const { updateData, updateDocuments } = require("./getDataFromMSSQL");
 const { testMail } = require("./mailController");
 const { generateHistoryDocument } = require("./fkRaportController");
-const { updateDataKEM } = require("./getDataFromMSSQLKEM");
 
 const getTime = async (req, res) => {
   try {
@@ -34,7 +33,7 @@ const getTime = async (req, res) => {
     // await updateDataKEM();
 
     const [getUpdatesData] = await connect_SQL.query(
-      "SELECT data_name, date,  hour, update_success FROM updates"
+      "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
     );
     res.json(getUpdatesData);
   } catch (error) {

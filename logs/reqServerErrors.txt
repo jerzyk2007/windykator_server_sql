@@ -1,0 +1,2 @@
+20250418	15:41:42	fkRaportController, generateRaportV2: Error: Unknown column 'COMPANY' in 'field list'
+20250418	15:43:07	fkRaportController, generateRaportV2: Error: Unknown column 'COMPANY' in 'field list'

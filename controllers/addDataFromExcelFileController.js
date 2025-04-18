@@ -376,8 +376,25 @@ const rubiconFile = async (rows, res) => {
   }
 };
 
-const accountancyFile = async (rows, res) => {
+const accountancyFile = async (req, res) => {
+  const { type } = req.params;
+  if (!req.file) {
+    return res.status(400).json({ error: "Not delivered file" });
+  }
   try {
+    const buffer = req.file.buffer;
+    const data = new Uint8Array(buffer);
+
+    if (!isExcelFile(data)) {
+      console.log('error');
+      return res.status(500).json({ error: "Invalid file" });
+    }
+
+    const workbook = read(buffer, { type: "buffer" });
+    const workSheetName = workbook.SheetNames[0];
+    const workSheet = workbook.Sheets[workSheetName];
+    const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
+
     if (
       !("Nr. dokumentu" in rows[0]) ||
       !("Kontrahent" in rows[0]) ||
@@ -397,24 +414,19 @@ const accountancyFile = async (rows, res) => {
         DO_ROZLICZENIA: item["Płatność"],
         TERMIN: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
         KONTO: item["Synt."],
-        TYP_DOKUMENTU: documentsType(item["Nr. dokumentu"])
+        TYP_DOKUMENTU: documentsType(item["Nr. dokumentu"]),
+        FIRMA: type
       };
     });
 
-
-
     const addDep = addDepartment(changeNameColumns);
-
-    const [findItems] = await connect_SQL.query('SELECT department FROM company_join_items');
-
-    // console.log(addDep[0]);
-    // console.log(findItems[0]);
+    const [findItems] = await connect_SQL.query('SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?', [type]);
 
 
     // jeśli nie będzie możliwe dopasowanie ownerów, lokalizacji to wyskoczy bład we froncie
     let errorDepartments = [];
     addDep.forEach(item => {
-      if (!findItems.some(findItem => findItem.department === item.DZIAL)) {
+      if (!findItems.some(findItem => findItem.DEPARTMENT === item.DZIAL)) {
         // Jeśli DZIAL nie ma odpowiednika, dodaj do errorDepartments
         if (!errorDepartments.includes(item.DZIAL)) {
           errorDepartments.push(item.DZIAL);
@@ -425,8 +437,7 @@ const accountancyFile = async (rows, res) => {
     if (errorDepartments.length > 0) {
       return res.json({ info: `Brak danych o działach: ${errorDepartments}` });
     }
-
-    await connect_SQL.query("TRUNCATE TABLE company_raportFK_accountancy");
+    await connect_SQL.query("TRUNCATE TABLE company_raportFK_KRT_accountancy");
 
     const values = addDep.map(item => [
       item.NUMER,
@@ -437,21 +448,19 @@ const accountancyFile = async (rows, res) => {
       item.KONTO,
       item.TYP_DOKUMENTU,
       item.DZIAL,
+      item.FIRMA
     ]);
 
     const query = `
-      INSERT IGNORE INTO company_raportFK_accountancy
-        ( NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL) 
+      INSERT IGNORE INTO company_raportFK_KRT_accountancy
+        (NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL, FIRMA) 
       VALUES 
-        ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+        ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
     `;
 
     await connect_SQL.query(query, values.flat());
-    // console.log(addDep);
 
-    const sql = `INSERT INTO fk_updates_date (title, date, counter) VALUES (?, ?, ?)`;
-    const params = ["accountancy", checkDate(new Date()), addDep.length || 0];
-    await connect_SQL.query(sql, params);
+    await connect_SQL.query(`UPDATE company_fk_updates_date SET DATE = ?, COUNTER = ? WHERE TITLE = 'accountancy' AND COMPANY = ?`, [checkDate(new Date()), addDep.length || 0, type]);
 
     res.json({ info: 'Dane zaktualizowane.' });
   }
@@ -488,9 +497,10 @@ const documentsFromFile = async (req, res) => {
       return becaredFile(rows, res);
     } else if (type === "rubicon") {
       return rubiconFile(rows, res);
-    } else if (type === "accountancy") {
-      return accountancyFile(rows, res);
     }
+    // else if (type === "accountancy") {
+    //   return accountancyFile(rows, res);
+    // }
     else {
       return res.status(500).json({ error: "Invalid file" });
     }
@@ -505,5 +515,6 @@ const documentsFromFile = async (req, res) => {
 };
 
 module.exports = {
-  documentsFromFile
+  documentsFromFile,
+  accountancyFile
 };

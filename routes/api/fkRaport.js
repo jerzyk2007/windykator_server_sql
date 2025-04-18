@@ -6,9 +6,9 @@ const verifyRoles = require("../../middleware/verifyRoles");
 
 
 // pobieranie danych do raportu FK wg wstępnego filtrowania
-router
-  .route("/get-raport-data")
-  .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getRaportData);
+// router
+//   .route("/get-raport-data")
+//   .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getRaportData);
 
 // pobieranie danych do raportu FK v2 wg wstępnego filtrowania
 router
@@ -18,22 +18,17 @@ router
 
 // pobieram daty  aktualizacji plików excel dla raportu FK
 router
-  .route("/get-date-counter")
+  .route("/get-date-counter/:company")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getDateCounter);
 
 // usuwam wszystkie dane wczytanych plików excel raportu FK
 router
-  .route("/delete-data-raport")
+  .route("/delete-data-raport/:company")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.deleteDataRaport);
-
-// generowanie raportu FK i zapisanie w tabeli
-router
-  .route("/generate-raport")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateRaport);
 
 // generowanie raportu FK wersja 2 i zapisanie w tabeli
 router
-  .route("/generate-raport-v2")
+  .route("/generate-raport/:company")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateRaportV2);
 
 //sprawdza czy w pliku wiekowanie znajdują się dokumentu do których jest przygotowany dział (lokalizacja, owner itp) jeśli nie ma zwraca ionformacje o brakach

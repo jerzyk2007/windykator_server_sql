@@ -110,7 +110,7 @@ const changeUserSettings = async () => {
 const checkFKDocuments = async () => {
     try {
         const [documents] = await connect_SQL.query(`
-       SELECT D.NUMER_FV, D.TERMIN, S.NALEZNOSC
+       SELECT D.NUMER_FV, D.TERMIN, D.FIRMA, S.NALEZNOSC
     from company_documents AS D
     LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
     WHERE S.NALEZNOSC != 0
@@ -120,8 +120,8 @@ const checkFKDocuments = async () => {
         for (const doc of documents) {
             const [checkDoc] = await connect_SQL.query(`
                 SELECT NUMER_FV
-                FROM company_raportFK_accountancy 
-                WHERE NUMER_FV = '${doc.NUMER_FV}'`);
+                FROM company_raportFK_KRT_accountancy 
+                WHERE NUMER_FV = '${doc.NUMER_FV}' AND FIRMA = '${doc.FIRMA}'`);
 
             if (!checkDoc[0]) {
                 if (doc.NUMER_FV.includes('FV')) {
@@ -496,7 +496,7 @@ const createAccounts = async (req, res) => {
 
 const repairHistory = async () => {
     try {
-        const [getRaportFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU, TERMIN_PLATNOSCI_FV FROM company_fk_raport_v2 WHERE OBSZAR != 'KSIĘGOWOŚĆ' AND TYP_DOKUMENTU IN ('Faktura', 'Faktura zaliczkowa', 'Korekta', 'Nota') AND CZY_W_KANCELARI = 'NIE' AND DO_ROZLICZENIA_AS > 0`);
+        const [getRaportFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU, TERMIN_PLATNOSCI_FV FROM company_fk_raport_KRT WHERE OBSZAR != 'KSIĘGOWOŚĆ' AND TYP_DOKUMENTU IN ('Faktura', 'Faktura zaliczkowa', 'Korekta', 'Nota') AND CZY_W_KANCELARI = 'NIE' AND DO_ROZLICZENIA_AS > 0`);
 
         const [getDateHistory] = await connect_SQL.query('SELECT DISTINCT WYKORZYSTANO_RAPORT_FK FROM management_decision_FK');
 

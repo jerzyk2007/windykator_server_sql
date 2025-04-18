@@ -16,4 +16,12 @@ router
         AddData.documentsFromFile
     );
 
+router
+    .route("/send-documents-accountancy/:type")
+    .post(
+        verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK),
+        upload.single("excelFile"),
+        AddData.accountancyFile
+    );
+
 module.exports = router;
