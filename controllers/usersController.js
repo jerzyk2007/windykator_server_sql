@@ -27,6 +27,8 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     // );
 
     // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
+    if (!departments.length) return;
+
     const whereClauses = departments.map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`).join(' OR ');
     const values = departments.flatMap(dep => [dep.department, dep.company]);
 
@@ -183,6 +185,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
       `usersController, verifyUserTableConfig: ${error}`,
       "reqServerErrors.txt"
     );
+    // console.error(error);
   }
 };
 

@@ -198,7 +198,7 @@ const getColumns = async (req, res) => {
     const [areas] = await connect_SQL.query(
       "SELECT AREA FROM company_area_items"
     );
-    const filteredAreas = areas.map(item => item.area);
+    const filteredAreas = areas.map(item => item.AREA);
     res.json({ columns, areas: filteredAreas.sort() });
   } catch (error) {
     logEvents(
