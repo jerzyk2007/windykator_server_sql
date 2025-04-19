@@ -35,138 +35,138 @@ const isExcelDate = (value) => {
 };
 
 //SQL funkcja która dodaje dane z Rozrachunków do bazy danych i nanosi nowe należności na wszytskie faktury w DB
-const settlementsFile = async (rows, res) => {
-  if (
-    !("TYTUŁ" in rows[0]) ||
-    !("TERMIN" in rows[0]) ||
-    !("NALEŻNOŚĆ" in rows[0]) ||
-    !("WPROWADZONO" in rows[0]) ||
-    !("ZOBOWIĄZANIE" in rows[0])
-  ) {
-    return res.status(500).json({ error: "Invalid file" });
-  }
-  try {
-    const processedData = rows.reduce((acc, curr) => {
-      const cleanDoc = curr["TYTUŁ"].split(" ")[0];
+// const settlementsFile = async (rows, res) => {
+//   if (
+//     !("TYTUŁ" in rows[0]) ||
+//     !("TERMIN" in rows[0]) ||
+//     !("NALEŻNOŚĆ" in rows[0]) ||
+//     !("WPROWADZONO" in rows[0]) ||
+//     !("ZOBOWIĄZANIE" in rows[0])
+//   ) {
+//     return res.status(500).json({ error: "Invalid file" });
+//   }
+//   try {
+//     const processedData = rows.reduce((acc, curr) => {
+//       const cleanDoc = curr["TYTUŁ"].split(" ")[0];
 
-      let termin_fv = "";
-      let data_fv = "";
-      if (
-        curr["TERMIN"] &&
-        isExcelDate(curr["TERMIN"]) &&
-        curr["WPROWADZONO"] &&
-        isExcelDate(curr["WPROWADZONO"])
-      ) {
-        termin_fv = excelDateToISODate(curr["TERMIN"]).toString();
-        data_fv = excelDateToISODate(curr["WPROWADZONO"]).toString();
-      } else {
-        termin_fv = curr["TERMIN"] ? curr["TERMIN"] : null;
-        data_fv = curr["WPROWADZONO"] ? curr["WPROWADZONO"] : null;
-      }
+//       let termin_fv = "";
+//       let data_fv = "";
+//       if (
+//         curr["TERMIN"] &&
+//         isExcelDate(curr["TERMIN"]) &&
+//         curr["WPROWADZONO"] &&
+//         isExcelDate(curr["WPROWADZONO"])
+//       ) {
+//         termin_fv = excelDateToISODate(curr["TERMIN"]).toString();
+//         data_fv = excelDateToISODate(curr["WPROWADZONO"]).toString();
+//       } else {
+//         termin_fv = curr["TERMIN"] ? curr["TERMIN"] : null;
+//         data_fv = curr["WPROWADZONO"] ? curr["WPROWADZONO"] : null;
+//       }
 
-      const do_rozliczenia = curr["NALEŻNOŚĆ"]
-        ? isNaN(parseFloat(curr["NALEŻNOŚĆ"]))
-          ? 0
-          : parseFloat(curr["NALEŻNOŚĆ"])
-        : 0;
+//       const do_rozliczenia = curr["NALEŻNOŚĆ"]
+//         ? isNaN(parseFloat(curr["NALEŻNOŚĆ"]))
+//           ? 0
+//           : parseFloat(curr["NALEŻNOŚĆ"])
+//         : 0;
 
-      const zobowiazania =
-        curr["ZOBOWIĄZANIE"] && curr["ZOBOWIĄZANIE"] !== 0
-          ? isNaN(parseFloat(curr["ZOBOWIĄZANIE"]))
-            ? 0
-            : parseFloat(curr["ZOBOWIĄZANIE"])
-          : 0;
+//       const zobowiazania =
+//         curr["ZOBOWIĄZANIE"] && curr["ZOBOWIĄZANIE"] !== 0
+//           ? isNaN(parseFloat(curr["ZOBOWIĄZANIE"]))
+//             ? 0
+//             : parseFloat(curr["ZOBOWIĄZANIE"])
+//           : 0;
 
-      if (!acc[cleanDoc]) {
-        // Jeśli numer faktury nie istnieje jeszcze w accumulatorze, dodajemy nowy obiekt
-        acc[cleanDoc] = {
-          NUMER_FV: cleanDoc,
-          TERMIN: termin_fv,
-          DATA_WYSTAWIENIA_FV: data_fv,
-          DO_ROZLICZENIA: do_rozliczenia,
-          ZOBOWIAZANIA: zobowiazania,
-        };
-      } else {
-        // Jeśli numer faktury już istnieje, agregujemy dane:
+//       if (!acc[cleanDoc]) {
+//         // Jeśli numer faktury nie istnieje jeszcze w accumulatorze, dodajemy nowy obiekt
+//         acc[cleanDoc] = {
+//           NUMER_FV: cleanDoc,
+//           TERMIN: termin_fv,
+//           DATA_WYSTAWIENIA_FV: data_fv,
+//           DO_ROZLICZENIA: do_rozliczenia,
+//           ZOBOWIAZANIA: zobowiazania,
+//         };
+//       } else {
+//         // Jeśli numer faktury już istnieje, agregujemy dane:
 
-        // Wybór najstarszej daty TERMIN
-        if (isExcelDate(curr["TERMIN"])) {
-          const currentTermDate = excelDateToISODate(curr["TERMIN"]);
-          // const existingTermDate = excelDateToISODate(acc[cleanDoc].TERMIN);
-          const existingTermDate = acc[cleanDoc].TERMIN;
+//         // Wybór najstarszej daty TERMIN
+//         if (isExcelDate(curr["TERMIN"])) {
+//           const currentTermDate = excelDateToISODate(curr["TERMIN"]);
+//           // const existingTermDate = excelDateToISODate(acc[cleanDoc].TERMIN);
+//           const existingTermDate = acc[cleanDoc].TERMIN;
 
-          acc[cleanDoc].TERMIN =
-            currentTermDate < existingTermDate
-              ? currentTermDate
-              : existingTermDate;
-        }
+//           acc[cleanDoc].TERMIN =
+//             currentTermDate < existingTermDate
+//               ? currentTermDate
+//               : existingTermDate;
+//         }
 
-        // Sumowanie wartości DO_ROZLICZENIA
-        acc[cleanDoc].DO_ROZLICZENIA += do_rozliczenia;
+//         // Sumowanie wartości DO_ROZLICZENIA
+//         acc[cleanDoc].DO_ROZLICZENIA += do_rozliczenia;
 
-        // Sumowanie wartości ZOBOWIAZANIA
-        acc[cleanDoc].ZOBOWIAZANIA += zobowiazania;
-      }
+//         // Sumowanie wartości ZOBOWIAZANIA
+//         acc[cleanDoc].ZOBOWIAZANIA += zobowiazania;
+//       }
 
-      return acc;
-    }, {});
+//       return acc;
+//     }, {});
 
-    // Zamiana obiektu na tablicę
-    const result = Object.values(processedData);
+//     // Zamiana obiektu na tablicę
+//     const result = Object.values(processedData);
 
-    // Najpierw wyczyść tabelę company_settlements
-    await connect_SQL.query("TRUNCATE TABLE company_settlements");
+//     // Najpierw wyczyść tabelę company_settlements
+//     await connect_SQL.query("TRUNCATE TABLE company_settlements");
 
-    // Teraz przygotuj dane do wstawienia
-    const values = result.map(item => [
-      item.NUMER_FV,
-      item.DATA_WYSTAWIENIA_FV,
-      item.DO_ROZLICZENIA !== 0 ? item.DO_ROZLICZENIA : -item.ZOBOWIAZANIA,
-    ]);
+//     // Teraz przygotuj dane do wstawienia
+//     const values = result.map(item => [
+//       item.NUMER_FV,
+//       item.DATA_WYSTAWIENIA_FV,
+//       item.DO_ROZLICZENIA !== 0 ? item.DO_ROZLICZENIA : -item.ZOBOWIAZANIA,
+//     ]);
 
-    // Przygotowanie zapytania SQL z wieloma wartościami
-    const query = `
-          INSERT IGNORE INTO company_settlements
-            ( NUMER_FV, DATA_FV, NALEZNOSC) 
-          VALUES 
-            ${values.map(() => "(?, ?, ?)").join(", ")}
-        `;
+//     // Przygotowanie zapytania SQL z wieloma wartościami
+//     const query = `
+//           INSERT IGNORE INTO company_settlements
+//             ( NUMER_FV, DATA_FV, NALEZNOSC) 
+//           VALUES 
+//             ${values.map(() => "(?, ?, ?)").join(", ")}
+//         `;
 
-    // Wykonanie zapytania INSERT
-    await connect_SQL.query(query, values.flat());
+//     // Wykonanie zapytania INSERT
+//     await connect_SQL.query(query, values.flat());
 
-    await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-      [
-        checkDate(new Date()),
-        checkTime(new Date()),
-        "Zaktualizowano.",
-        'Rozrachunki'
-      ]);
+//     await connect_SQL.query(
+//       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+//       [
+//         checkDate(new Date()),
+//         checkTime(new Date()),
+//         "Zaktualizowano.",
+//         'Rozrachunki'
+//       ]);
 
 
-    res.status(201).json({ message: "Documents are updated" });
-  } catch (error) {
-    await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-      [
-        checkDate(new Date()),
-        checkTime(new Date()),
-        "Błąd aktualizacji",
-        'Rozrachunki'
-      ]);
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     await connect_SQL.query(
+//       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+//       [
+//         checkDate(new Date()),
+//         checkTime(new Date()),
+//         "Błąd aktualizacji",
+//         'Rozrachunki'
+//       ]);
 
-    logEvents(
-      `addDataFromExcelFileController, settlementsFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     logEvents(
+//       `addDataFromExcelFileController, settlementsFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // SQL funkcja która dodaje dane z becared
 const becaredFile = async (rows, res) => {
-  console.log('bec');
+
   if (
     !("Numery Faktur" in rows[0]) ||
     !("Etap Sprawy" in rows[0]) ||
@@ -177,7 +177,6 @@ const becaredFile = async (rows, res) => {
   ) {
     return res.status(500).json({ error: "Invalid file" });
   }
-
   try {
     for (const row of rows) {
       const [findDoc] = await connect_SQL.query(
@@ -223,7 +222,7 @@ const becaredFile = async (rows, res) => {
     }
 
     await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
@@ -234,7 +233,7 @@ const becaredFile = async (rows, res) => {
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
     await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
@@ -305,7 +304,7 @@ const rubiconFile = async (rows, res) => {
 
 
     await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
@@ -361,7 +360,7 @@ const rubiconFile = async (rows, res) => {
   } catch (error) {
 
     await connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
@@ -491,9 +490,10 @@ const documentsFromFile = async (req, res) => {
     const workSheetName = workbook.SheetNames[0];
     const workSheet = workbook.Sheets[workSheetName];
     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
-    if (type === "settlements") {
-      return settlementsFile(rows, res);
-    } else if (type === "becared") {
+    // if (type === "settlements") {
+    //   return settlementsFile(rows, res);
+    // } 
+    if (type === "becared") {
       return becaredFile(rows, res);
     } else if (type === "rubicon") {
       return rubiconFile(rows, res);

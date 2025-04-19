@@ -644,7 +644,7 @@ const updateDocuments = async () => {
     const success = resultKRT && resultKEM;
 
     connect_SQL.query(
-      "UPDATE updates SET date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
@@ -661,36 +661,38 @@ const updateDocuments = async () => {
 
 //wykonuje po kolei aktualizację danych i zapisuje daty i statusy
 const updateData = async () => {
+
   try {
     const [getUpdatesData] = await connect_SQL.query(
-      "SELECT data_name, date, hour, update_success FROM updates"
+      "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
     );
-    const filteredUpdatesData = getUpdatesData.filter(item => item.data_name !== 'Rubicon' && item.data_name !== 'BeCared' && item.data_name !== "Dokumenty Raportu FK");
+
+    const filteredUpdatesData = getUpdatesData.filter(item => item.DATA_NAME !== 'Rubicon' && item.DATA_NAME !== 'BeCared' && item.DATA_NAME !== "Dokumenty Raportu FK");
     const updateProgress = filteredUpdatesData.map(item => {
       return {
         ...item,
-        date: '',
-        hour: '',
-        update_success: "Trwa aktualizacja ..."
+        DATE: '',
+        HOUR: '',
+        UPDATE_SUCCESS: "Trwa aktualizacja ..."
       };
     });
-
     for (const item of updateProgress) {
       const queryUpdate = `
-      UPDATE updates 
+      UPDATE company_updates 
       SET 
-      data_name = '${item.data_name}',
-      date = '${item.date}',    
-        hour = '${item.hour}', 
-        update_success = '${item.update_success}'
+      DATA_NAME = '${item.DATA_NAME}',
+      DATE = '${item.DATE}',    
+        HOUR = '${item.HOUR}', 
+        UPDATE_SUCCESS = '${item.UPDATE_SUCCESS}'
       WHERE 
-        data_name = '${item.data_name}'
+        DATA_NAME = '${item.DATA_NAME}'
     `;
       await connect_SQL.query(queryUpdate);
     }
 
     // dodanie faktur do DB
     updateDocuments();
+
     // updateDocuments().then((result) => {
     //   connect_SQL.query(
     //     "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
@@ -710,7 +712,7 @@ const updateData = async () => {
     // dodanie dat wydania samochodów 
     updateCarReleaseDates().then((result) => {
       connect_SQL.query(
-        "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+        "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
         [
           checkDate(new Date()),
           checkTime(new Date()),
@@ -725,7 +727,7 @@ const updateData = async () => {
     // // aktualizacja rozrachunków
     updateSettlements().then((result) => {
       connect_SQL.query(
-        "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+        "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
         [
           checkDate(new Date()),
           checkTime(new Date()),
@@ -739,7 +741,7 @@ const updateData = async () => {
     // // aktualizacja opisu rozrachunków
     updateSettlementDescription().then((result) => {
       connect_SQL.query(
-        "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+        "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
         [
           checkDate(new Date()),
           checkTime(new Date()),

@@ -12,7 +12,7 @@ const verifyRoles = require("../../middleware/verifyRoles");
 
 // pobieranie danych do raportu FK v2 wg wstępnego filtrowania
 router
-  .route("/get-raport-data-v2")
+  .route("/get-raport-data-v2/:company")
   .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getRaportDataV2);
 
 

@@ -28,7 +28,7 @@ const differencesAS_FK = async () => {
     const [docAS] = await connect_SQL.query(`SELECT D.NUMER_FV FROM company_documents AS D LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY WHERE S.NALEZNOSC !=0`);
     const fvAS = docAS.map(item => item.NUMER_FV);
 
-    const [docFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU FROM company_KRT`);
+    const [docFK] = await connect_SQL.query(`SELECT NR_DOKUMENTU FROM company_fk_raport_KRT`);
     const fvFK = docFK.map(item => item.NR_DOKUMENTU);
 
     const filteredFvAS = fvAS.filter(fv => !fvFK.includes(fv));
@@ -73,16 +73,22 @@ const differencesAS_FK = async () => {
 
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika, wersja poprawiona
 const getRaportDataV2 = async (req, res) => {
+  const { company } = req.params;
   try {
+
+    //celowy błąd żeby pamiętać o dodaniu company do pobierania historii
     const [dataRaport] = await connect_SQL.query(
       'SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK_V2.* FROM company_fk_raport_KRT AS FK_V2 LEFT JOIN history_fk_documents AS HFD ON FK_V2.NR_DOKUMENTU = HFD.NUMER_FV');
     //usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach(item => {
       delete item.id_fk_raport;
     });
-
-
     const getDifferencesFK_AS = await differencesAS_FK();
+
+    await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
+      [checkDate(new Date()), 0, 'raport', company]
+    );
+
     res.json({ dataRaport, differences: getDifferencesFK_AS });
   } catch (error) {
     logEvents(`fkRaportController, getRaportDataV2: ${error}`, "reqServerErrors.txt");
@@ -95,7 +101,6 @@ const getDateCounter = async (req, res) => {
   const { company } = req.params;
   try {
     const [result] = await connect_SQL.query(`SELECT TITLE, DATE, COUNTER FROM company_fk_updates_date WHERE COMPANY = ?`, [company]);
-
     const updateData = result.reduce((acc, item) => {
       acc[item.TITLE] = {
         date: item.DATE,    // Przypisanie `date` jako `hour`
@@ -103,14 +108,19 @@ const getDateCounter = async (req, res) => {
       };
       return acc;
     }, {});
-
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates WHERE DATA_NAME = 'Rozrachunki'"
     );
+
     const dms = {
       date: getUpdatesData[0]?.UPDATE_SUCCESS === 'Zaktualizowano.' ? getUpdatesData[0].DATE : "Błąd aktualizacji",
       hour: getUpdatesData[0]?.UPDATE_SUCCESS === 'Zaktualizowano.' ? getUpdatesData[0].HOUR : "Błąd aktualizacji",
     };
+
+    // await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
+    //   [checkDate(new Date()), 0, 'raport', company]
+    // );
+
     updateData.dms = dms;
 
     res.json({ updateData });
@@ -127,7 +137,10 @@ const getDateCounter = async (req, res) => {
 const deleteDataRaport = async (req, res) => {
   const { company } = req.params;
   try {
-    await connect_SQL.query(`UPDATE company_fk_updates_date SET DATE = null, COUNTER = null WHERE TITLE = 'accountancy' AND COMPANY = ?`, [company]);
+    await connect_SQL.query(
+      `UPDATE company_fk_updates_date SET DATE = null, COUNTER = null WHERE TITLE IN ('accountancy', 'generate', 'raport') AND COMPANY = ?`,
+      [company]
+    );
     await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
     await connect_SQL.query('TRUNCATE company_raportFK_KRT_accountancy');
     await connect_SQL.query("TRUNCATE TABLE company_fk_raport_KRT");
@@ -339,6 +352,14 @@ LEFT JOIN company_settlements_description AS SD ON RA.NUMER_FV = SD.NUMER AND RA
     // // dodanie daty wygenerowania raportu
     // const [checkRaportDate] = await connect_SQL.query(`SELECT title FROM fk_updates_date WHERE title='raport_v2'`);
 
+    await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
+      [checkDate(new Date()), getData.length || 0, 'generate', company]
+    );
+
+    await connect_SQL.query(
+      `UPDATE company_fk_updates_date SET DATE = null, COUNTER = null WHERE TITLE = 'raport' AND COMPANY = ?`,
+      [company]
+    );
     // if (checkRaportDate[0]?.title) {
     //   await connect_SQL.query(`UPDATE fk_updates_date SET  date = ?, counter = ? WHERE title = ?`,
     //     [checkDate(new Date()), getData.length || 0, 'raport_v2']
@@ -431,7 +452,7 @@ const saveMark = async (req, res) => {
     await connect_SQL.query(query, values.flat());
 
     connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
@@ -443,7 +464,7 @@ const saveMark = async (req, res) => {
   catch (error) {
     logEvents(`fkRaportController, saveMark: ${error}`, "reqServerErrors.txt");
     connect_SQL.query(
-      "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
