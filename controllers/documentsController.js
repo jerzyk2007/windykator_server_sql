@@ -11,7 +11,7 @@ const getDataDocuments = async (id_user, info) => {
   let filteredData = [];
   try {
     const [findUser] = await connect_SQL.query(
-      "SELECT  permissions, username, usersurname, departments FROM users WHERE id_user = ?",
+      "SELECT  permissions, username, usersurname, departments FROM company_users WHERE id_user = ?",
       [id_user]
     );
 
@@ -320,7 +320,7 @@ const getSettingsColumnsTable = async (req, res) => {
   try {
 
     const findUser = await connect_SQL.query(
-      "SELECT  tableSettings, columns  FROM users WHERE id_user = ?",
+      "SELECT  tableSettings, columns  FROM company_users WHERE id_user = ?",
       [id_user]
     );
 

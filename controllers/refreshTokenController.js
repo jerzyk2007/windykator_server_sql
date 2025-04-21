@@ -17,7 +17,7 @@ const handleRefreshToken = async (req, res) => {
     // const findUser = await User.findOne({ refreshToken }).exec();
 
     const [findUser] = await connect_SQL.query(
-      "SELECT id_user, userlogin, username, usersurname, permissions, roles FROM users WHERE refreshToken = ?",
+      "SELECT id_user, userlogin, username, usersurname, permissions, roles FROM company_users WHERE refreshToken = ?",
       [refreshToken]
     );
 

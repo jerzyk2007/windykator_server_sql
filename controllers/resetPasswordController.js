@@ -20,7 +20,7 @@ const resetPass = async (req, res) => {
     const { userlogin } = req.body;
     try {
 
-        const [checkMail] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ?`, [userlogin]);
+        const [checkMail] = await connect_SQL.query(`SELECT userlogin FROM company_users WHERE userlogin = ?`, [userlogin]);
         if (!checkMail.length) {
             return res.end();
         }
@@ -164,7 +164,7 @@ const changePass = async (req, res) => {
         const hashedPwd = await bcryptjs.hash(password, 10);
         const [verifyAccess] = await connect_SQL.query(`SELECT email FROM company_password_resets WHERE token = ? `, [token]);
         if (verifyAccess[0].email) {
-            await connect_SQL.query('UPDATE users SET password = ? WHERE userlogin = ?',
+            await connect_SQL.query('UPDATE company_users SET password = ? WHERE userlogin = ?',
                 [hashedPwd,
                     verifyAccess[0].email
                 ]

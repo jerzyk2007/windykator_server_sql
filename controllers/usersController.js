@@ -10,22 +10,6 @@ const { sendEmail } = require('./mailController');
 const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) => {
   try {
 
-    // pobieram ustawienia kolumn tabeli danego użytkownika
-    // const [getUserColumns] = await connect_SQL.query('SELECT columns, tableSettings FROM users WHERE id_user = ?', [id_user]);
-
-    // const depTest = departments.map(item => item.department);
-    // console.log(depTest);
-
-    // sprawdzim do jakich obszarów jest przypisany user na podstawie działów
-    // const [getUserAreas] = await connect_SQL.query(
-    //   `SELECT DISTINCT ji.area 
-    //      FROM users AS u 
-    //      LEFT JOIN company_join_items AS ji 
-    //        ON JSON_CONTAINS(?, JSON_QUOTE(ji.department))
-    //      WHERE u.id_user = ?`,
-    //   [JSON.stringify(departments), id_user]
-    // );
-
     // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
     if (!departments.length) return;
 
@@ -34,7 +18,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
 
     const query = `
   SELECT DISTINCT ji.AREA
-  FROM users AS u
+  FROM company_users AS u
   LEFT JOIN company_join_items AS ji
     ON (${whereClauses})
   WHERE u.id_user = ?
@@ -45,7 +29,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
 
     // pobieram ustawienia kolumn, przypisanych działów i ustawień tabeli danego użytkownika
     const [checkDepartments] = await connect_SQL.query(
-      "SELECT columns, departments, tableSettings FROM users WHERE id_user = ?",
+      "SELECT columns, departments, tableSettings FROM company_users WHERE id_user = ?",
       [id_user]
     );
 
@@ -171,11 +155,11 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     };
 
     await connect_SQL.query(
-      "UPDATE users SET tableSettings = ? WHERE id_user = ?",
+      "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
       [JSON.stringify(newTableSettings), id_user]
     );
     await connect_SQL.query(
-      "Update users SET columns = ? WHERE id_user = ?",
+      "Update company_users SET columns = ? WHERE id_user = ?",
       [JSON.stringify(uniqueObjects), id_user]
     );
 
@@ -202,7 +186,7 @@ const createNewUser = async (req, res) => {
 
   try {
     const [checkUser] = await connect_SQL.query(
-      "SELECT userlogin FROM users WHERE userlogin = ?",
+      "SELECT userlogin FROM company_users WHERE userlogin = ?",
       [userlogin]
     );
     // check for duplicate userlogin in db
@@ -216,7 +200,7 @@ const createNewUser = async (req, res) => {
     const password = await generatePassword();
 
     await connect_SQL.query(
-      "INSERT INTO users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [username, usersurname, userlogin, password.hashedPwd, JSON.stringify(roles), JSON.stringify(newUserTableSettings), JSON.stringify(raportSettings)]
     );
 
@@ -261,7 +245,7 @@ const changeLogin = async (req, res) => {
   }
   try {
     const [existingUser] = await connect_SQL.query(
-      "SELECT userlogin FROM users WHERE userlogin = ?",
+      "SELECT userlogin FROM company_users WHERE userlogin = ?",
       [newUserlogin]
     );
     if (existingUser.length > 0) {
@@ -269,7 +253,7 @@ const changeLogin = async (req, res) => {
     }
 
     const [result] = await connect_SQL.query(
-      "UPDATE users SET userlogin = ? WHERE id_user = ?",
+      "UPDATE company_users SET userlogin = ? WHERE id_user = ?",
       [newUserlogin, id_user]
     );
     if (result.affectedRows > 0) {
@@ -297,7 +281,7 @@ const changeName = async (req, res) => {
   }
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET username = ?, usersurname = ? WHERE id_user = ?",
+      "UPDATE company_users SET username = ?, usersurname = ? WHERE id_user = ?",
       [name, surname, id_user]
     );
     if (result.affectedRows > 0) {
@@ -330,7 +314,7 @@ const changePassword = async (req, res) => {
     const hashedPwd = await bcryptjs.hash(password, 10);
 
     const [result] = await connect_SQL.query(
-      "UPDATE users SET password = ? WHERE id_user = ? AND refreshToken = ? ",
+      "UPDATE company_users SET password = ? WHERE id_user = ? AND refreshToken = ? ",
       [hashedPwd, id_user, refreshToken]
     );
     if (result.affectedRows > 0) {
@@ -361,7 +345,7 @@ const changePasswordAnotherUser = async (req, res) => {
   try {
     const hashedPwd = await bcryptjs.hash(password, 10);
     const [result] = await connect_SQL.query(
-      "UPDATE users SET password = ? WHERE id_user = ?",
+      "UPDATE company_users SET password = ? WHERE id_user = ?",
       [hashedPwd, id_user]
     );
 
@@ -387,7 +371,7 @@ const changeUserPermissions = async (req, res) => {
   const { permissions } = req.body;
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET permissions = ? WHERE id_user = ?",
+      "UPDATE company_users SET permissions = ? WHERE id_user = ?",
       [JSON.stringify(permissions), id_user]
     );
     if (result.affectedRows > 0) {
@@ -420,7 +404,7 @@ const changeUserDepartments = async (req, res) => {
     }
 
     const [result] = await connect_SQL.query(
-      "UPDATE users SET departments = ? WHERE id_user = ?",
+      "UPDATE company_users SET departments = ? WHERE id_user = ?",
       [JSON.stringify(departments), id_user]
     );
 
@@ -448,7 +432,7 @@ const deleteUser = async (req, res) => {
   }
   try {
     const [result] = await connect_SQL.query(
-      "DELETE FROM users WHERE id_user = ?",
+      "DELETE FROM company_users WHERE id_user = ?",
       [id_user]
     );
 
@@ -473,7 +457,7 @@ const saveTableSettings = async (req, res) => {
 
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET tableSettings = ? WHERE id_user = ?",
+      "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
       [JSON.stringify(tableSettings), id_user]
     );
     if (result.affectedRows > 0) {
@@ -497,7 +481,7 @@ const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
     const [result] = await connect_SQL.query(
-      "SELECT id_user, username, usersurname, userlogin, roles, tableSettings, raportSettings, permissions, departments, columns FROM users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
+      "SELECT id_user, username, usersurname, userlogin, roles, tableSettings, raportSettings, permissions, departments, columns FROM company_users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
       [`%${search}%`, `%${search}%`, `%${search}%`]
     );
 
@@ -536,7 +520,7 @@ const changeRoles = async (req, res) => {
 
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET roles = ? WHERE id_user = ?",
+      "UPDATE company_users SET roles = ? WHERE id_user = ?",
       [JSON.stringify(filteredRoles), id_user]
     );
 
@@ -559,7 +543,7 @@ const changeColumns = async (req, res) => {
   const { columns } = req.body;
   try {
     const [result] = await connect_SQL.query(
-      "UPDATE users SET columns = ? WHERE id_user = ?",
+      "UPDATE company_users SET columns = ? WHERE id_user = ?",
       [[JSON.stringify(columns)], id_user]
     );
 
@@ -589,7 +573,7 @@ const saveRaporDepartmentSettings = async (req, res) => {
   }
   try {
     const [exist] = await connect_SQL.query(
-      "SELECT raportSettings FROM users WHERE id_user = ?",
+      "SELECT raportSettings FROM company_users WHERE id_user = ?",
       [id_user]
     );
     if (!exist[0]?.raportSettings) {
@@ -599,12 +583,12 @@ const saveRaporDepartmentSettings = async (req, res) => {
       };
 
       await connect_SQL.query(
-        "UPDATE users SET raportSettings = ? WHERE id_user = ?",
+        "UPDATE company_users SET raportSettings = ? WHERE id_user = ?",
         [JSON.stringify(raportSettings), id_user]
       );
     } else {
       const [result] = await connect_SQL.query(
-        "UPDATE users SET raportSettings = JSON_SET(raportSettings,'$.raportDepartments', ?) WHERE id_user = ?",
+        "UPDATE company_users SET raportSettings = JSON_SET(raportSettings,'$.raportDepartments', ?) WHERE id_user = ?",
         [JSON.stringify(raportDepartments), id_user]
       );
 
@@ -637,7 +621,7 @@ const getRaportDepartmentSettings = async (req, res) => {
 
   try {
     const [result] = await connect_SQL.query(
-      "SELECT raportSettings FROM users WHERE id_user = ?",
+      "SELECT raportSettings FROM company_users WHERE id_user = ?",
       [id_user]
     );
     if (
@@ -673,7 +657,7 @@ const saveRaporAdviserSettings = async (req, res) => {
 
   try {
     const [exist] = await connect_SQL.query(
-      "SELECT raportSettings FROM users WHERE id_user = ?",
+      "SELECT raportSettings FROM company_users WHERE id_user = ?",
       [id_user]
     );
     if (!exist[0]?.raportSettings) {
@@ -683,12 +667,12 @@ const saveRaporAdviserSettings = async (req, res) => {
       };
 
       await connect_SQL.query(
-        "UPDATE users SET raportSettings = ? WHERE id_user = ?",
+        "UPDATE company_users SET raportSettings = ? WHERE id_user = ?",
         [JSON.stringify(raportSettings), id_user]
       );
     } else {
       const [result] = await connect_SQL.query(
-        "UPDATE users SET raportSettings = JSON_SET(raportSettings, '$.raportAdvisers', ?) WHERE id_user = ?",
+        "UPDATE company_users SET raportSettings = JSON_SET(raportSettings, '$.raportAdvisers', ?) WHERE id_user = ?",
         [JSON.stringify(raportAdvisers), id_user]
       );
 
@@ -720,7 +704,7 @@ const getRaportAdviserSettings = async (req, res) => {
   }
   try {
     const [result] = await connect_SQL.query(
-      "SELECT raportSettings FROM users WHERE id_user = ?",
+      "SELECT raportSettings FROM company_users WHERE id_user = ?",
       [id_user]
     );
 

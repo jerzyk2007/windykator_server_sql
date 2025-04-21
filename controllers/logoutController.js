@@ -10,7 +10,7 @@ const handleLogout = async (req, res) => {
   const refreshToken = cookies.jwt;
   try {
     const [result] = await connect_SQL.query(
-      "SELECT * FROM users WHERE refreshToken = ?",
+      "SELECT * FROM company_users WHERE refreshToken = ?",
       [refreshToken]
     );
 
@@ -24,7 +24,7 @@ const handleLogout = async (req, res) => {
     }
     // Delete the refreshToken in db
     await connect_SQL.query(
-      "UPDATE users SET refreshToken = ? WHERE refreshToken = ?",
+      "UPDATE company_users SET refreshToken = ? WHERE refreshToken = ?",
       ["", refreshToken]
     );
 

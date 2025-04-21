@@ -33,7 +33,7 @@ const changeColumns = async (req, res) => {
 
 
     const [userColumns] = await connect_SQL.query(
-      `SELECT id_user, columns, departments, tableSettings FROM users`
+      `SELECT id_user, columns, departments, tableSettings FROM company_users`
     );
 
 

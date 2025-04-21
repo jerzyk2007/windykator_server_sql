@@ -46,7 +46,6 @@ app.use("/logout", require("./routes/logout"));
 
 // // //protected routes
 app.use(verifyJWT);
-app.use("/contacts", require("./routes/api/contacts"));
 app.use("/documents", require("./routes/api/documents"));
 app.use("/settings", require("./routes/api/settings"));
 app.use("/user", require("./routes/api/users"));

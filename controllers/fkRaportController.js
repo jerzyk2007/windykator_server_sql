@@ -544,7 +544,7 @@ const getStructureOrganization = async (req, res) => {
     );
 
     const [accounts] = await connect_SQL.query(
-      "SELECT username, usersurname, userlogin, departments FROM users"
+      "SELECT username, usersurname, userlogin, departments FROM company_users"
     );
     const filteredDeps = accounts.map(item => {
       return {

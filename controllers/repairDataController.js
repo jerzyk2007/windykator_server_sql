@@ -57,7 +57,7 @@ const repairAdvisersName = async (req, res) => {
 
 const changeUserSettings = async () => {
     try {
-        const [users] = await connect_SQL.query(`SELECT id_user, roles FROM users`);
+        const [users] = await connect_SQL.query(`SELECT id_user, roles FROM company_users`);
 
         for (const user of users) {
             const { EditorPlus, ...filteredObject } = user.roles;
@@ -65,7 +65,7 @@ const changeUserSettings = async () => {
             console.log(filteredObject);
 
             await connect_SQL.query(
-                "UPDATE users SET roles = ? WHERE id_user = ?",
+                "UPDATE company_users SET roles = ? WHERE id_user = ?",
                 [
                     JSON.stringify(filteredObject),
                     user.id_user
@@ -143,8 +143,8 @@ const checkFKDocuments = async () => {
 
 const repairRoles = async () => {
     try {
-        // const [users] = await connect_SQL.query(`SELECT id_user, roles FROM users`);
-        const [users] = await connect_SQL.query(`SELECT id_user, roles FROM users`);
+
+        const [users] = await connect_SQL.query(`SELECT id_user, roles FROM company_users`);
 
         const updatedUsers = users.map(item => {
             if (item.roles.Editor) {
@@ -167,7 +167,7 @@ const repairRoles = async () => {
         //     console.log(item.roles);
 
         //     connect_SQL.query(
-        //         "UPDATE users SET  roles = ? WHERE id_user = ?",
+        //         "UPDATE company_users SET  roles = ? WHERE id_user = ?",
         //         [
         //             JSON.stringify(item.roles),
         //             item.id_user
@@ -191,7 +191,7 @@ const repairColumnsRaports = async () => {
         //     raportDepartments: '{"size":{},"visible":{"CEL_BEZ_PZU_LINK4":false,"PRZETERMINOWANE_BEZ_PZU_LINK4":false,"ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4":false,"NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4":false,"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DZIALY","CEL","CEL_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","CEL_CALOSC","PRZETERMINOWANE_FV","ILOSC_PRZETERMINOWANYCH_FV","NIEPRZETERMINOWANE_FV","CEL_BEZ_KANCELARII","PRZETERMINOWANE_BEZ_KANCELARII","ILOSC_PRZETERMINOWANYCH_FV_BEZ_KANCELARII","NIEPRZETERMINOWANE_FV_BEZ_KANCELARII","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}'
         // };
 
-        // await connect_SQL.query(`UPDATE users SET raportSettings = ? WHERE usersurname = ?`,
+        // await connect_SQL.query(`UPDATE company_users SET raportSettings = ? WHERE usersurname = ?`,
         //     [
         //         JSON.stringify(raportSettings),
         //         'Kowalski'
@@ -426,13 +426,13 @@ const createAccounts = async (req, res) => {
         ];
 
         for (const user of result) {
-            const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM users WHERE userlogin = ? `,
+            const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM company_users WHERE userlogin = ? `,
                 [user.userlogin]
             );
             if (!checkDuplicate.length) {
                 console.log(user);
                 await connect_SQL.query(
-                    `INSERT INTO users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    `INSERT INTO company_users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [user.username,
                     user.usersurname,
                     user.userlogin,
@@ -446,7 +446,7 @@ const createAccounts = async (req, res) => {
 
                 const [getColumns] = await connect_SQL.query('SELECT * FROM comapny_table_columns');
 
-                const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM users WHERE userlogin = ?',
+                const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM company_users WHERE userlogin = ?',
                     [user.userlogin]
                 );
 

@@ -13,7 +13,7 @@ const handleLogin = async (req, res) => {
     }
 
     const [result] = await connect_SQL.query(
-      "SELECT userlogin, username, usersurname, password, id_user, permissions, roles FROM users WHERE userlogin = ?",
+      "SELECT userlogin, username, usersurname, password, id_user, permissions, roles FROM company_users WHERE userlogin = ?",
       [userlogin]
     );
     if (!result[0]?.userlogin) {
@@ -34,7 +34,7 @@ const handleLogin = async (req, res) => {
       );
 
       await connect_SQL.query(
-        "UPDATE users SET refreshToken = ? WHERE userlogin = ?",
+        "UPDATE company_users SET refreshToken = ? WHERE userlogin = ?",
         [refreshToken, userlogin]
       );
       res
