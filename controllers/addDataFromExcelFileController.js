@@ -286,17 +286,18 @@ const rubiconFile = async (rows, res) => {
       }
 
     }).filter(Boolean);
-    await connect_SQL.query("TRUNCATE TABLE rubicon");
+    await connect_SQL.query("TRUNCATE TABLE company_rubicon_BL");
 
     const rubiconData = filteredData.map(item => [
       item.NUMER_FV,
       item.STATUS_AKTUALNY,
-      item.JAKA_KANCELARIA
+      item.JAKA_KANCELARIA,
+      'KRT'
     ]);
 
     const query = `
-         INSERT IGNORE INTO rubicon
-           ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA ) 
+         INSERT IGNORE INTO company_rubicon_BL
+           ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, COMPANY ) 
          VALUES 
            ${rubiconData.map(() => "(?, ?,  ?)").join(", ")}
        `;
@@ -339,19 +340,20 @@ const rubiconFile = async (rows, res) => {
 
     }).filter(Boolean);
 
-    await connect_SQL.query("TRUNCATE TABLE rubicon_raport_fk");
+    await connect_SQL.query("TRUNCATE TABLE company_rubicon_raport_fk");
 
     const rubiconDataV2 = filteredDataV2.map(item => [
       item.NUMER_FV,
       item.STATUS_AKTUALNY,
-      item.JAKA_KANCELARIA
+      item.JAKA_KANCELARIA,
+      'KRT'
     ]);
 
     const queryV2 = `
-  INSERT IGNORE INTO rubicon_raport_fk
-    ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA ) 
+  INSERT IGNORE INTO company_rubicon_raport_fk
+    ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, COMPANY) 
   VALUES 
-    ${rubiconDataV2.map(() => "(?, ?,  ?)").join(", ")}
+    ${rubiconDataV2.map(() => "(?, ?, ?, ?)").join(", ")}
 `;
     await connect_SQL.query(queryV2, rubiconDataV2.flat());
 

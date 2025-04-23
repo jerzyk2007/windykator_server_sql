@@ -947,7 +947,6 @@ const testAddDocumentToDatabase = async (type) => {
             row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
         });
 
-        console.log(addDep);
 
         // for (const doc of addDep) {
 

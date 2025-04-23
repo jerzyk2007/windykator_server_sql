@@ -3,34 +3,16 @@ const { connect_SQL } = require("../config/dbConn");
 const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, generatePassword, repairHistory, repairManagementDecisionFK, usersDepartmentsCompany, testAddDocumentToDatabase } = require("./repairDataController");
 const { updateData, updateDocuments } = require("./getDataFromMSSQL");
 const { testMail } = require("./mailController");
-const { generateHistoryDocument } = require("./fkRaportController");
+const { generateHistoryDocuments } = require("./fkRaportController");
+const { allUpdate } = require("./copyDBtoDB");
 
 const getTime = async (req, res) => {
   try {
     // await updateData();
 
-    // await updateDocuments();
-    // await updateSettlementDescription();
-    // await updateDocZal();
-    // await changeUserSettings();
-    // await checkFKDocuments();
-    // await repairRoles();
-    // await repairColumnsRaports();
-    // await createAccounts();
-    // testMail();
-    // await generatePassword();
-    // await repairHistory();
-    // await generateHistoryDocuments();
-    // await repairManagementDecisionFK();
-    // await usersDepartmentsCompany();
+    // await generateHistoryDocuments('KRT');
 
-    // await updateDocZal();
-    // await updateCarReleaseDates();
-
-    // await addDocumentToDatabase();
-
-    // await testAddDocumentToDatabase();
-    // await updateDataKEM();
+    // await allUpdate();
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"

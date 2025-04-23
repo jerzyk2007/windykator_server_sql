@@ -3,6 +3,7 @@ const cron = require('node-cron');
 const { logEvents } = require("../middleware/logEvents");
 const { addDepartment } = require('./manageDocumentAddition');
 const { checkDate, checkTime } = require('./manageDocumentAddition');
+const { allUpdate } = require('./copyDBtoDB');
 
 const today = new Date();
 today.setDate(today.getDate() - 2); // Odejmujemy 2 dni
@@ -667,7 +668,7 @@ const updateData = async () => {
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
     );
 
-    const filteredUpdatesData = getUpdatesData.filter(item => item.DATA_NAME !== 'Rubicon' && item.DATA_NAME !== 'BeCared' && item.DATA_NAME !== "Dokumenty Raportu FK");
+    const filteredUpdatesData = getUpdatesData.filter(item => item.DATA_NAME !== 'Rubicon' && item.DATA_NAME !== 'BeCared' && item.DATA_NAME !== "Dokumenty Raportu FK - KRT" && item.DATA_NAME !== "Dokumenty Raportu FK - KEM");
     const updateProgress = filteredUpdatesData.map(item => {
       return {
         ...item,
@@ -758,6 +759,9 @@ const updateData = async () => {
   }
 };
 
+// cron.schedule('27 12 * * *', allUpdate, {
+//   timezone: "Europe/Warsaw"
+// });
 cron.schedule('40 06 * * *', updateData, {
   timezone: "Europe/Warsaw"
 });
