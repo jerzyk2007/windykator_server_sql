@@ -491,54 +491,54 @@ const companyUsers = async () => {
     }
 };
 
-const addDocumentKEMToDatabase = async (type, twoDaysAgo) => {
+const addDocumentKEMToDatabase = async (firma, twoDaysAgo) => {
     const formatDate = (date) => {
         if (date instanceof Date) {
             return date.toISOString().split('T')[0]; // Wyciąga tylko część daty, np. "2024-11-08"
         }
         return date;
     };
-    const queryKRT = `SELECT 
-         fv.[NUMER],
-          CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
-      CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
-         fv.[KONTR_NAZWA],
-         fv.[KONTR_NIP],
-         SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
-         SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
-         fv.[NR_SZKODY],
-         fv.[NR_AUTORYZACJI],
-         fv.[UWAGI],
-         fv.[KOREKTA_NUMER],
-         zap.[NAZWA] AS TYP_PLATNOSCI,
-         us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
-         auto.[REJESTRACJA],
-         auto.[NR_NADWOZIA],
-         tr.[WARTOSC_NAL]
-  FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
-  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
-  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
-  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
-  LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
-  WHERE fv.[NUMER] != 'POTEM' 
-    AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
-  GROUP BY 
-         fv.[NUMER],
-         CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
-         CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
-             fv.[KONTR_NAZWA],
-         fv.[KONTR_NIP],
-         fv.[NR_SZKODY],
-         fv.[NR_AUTORYZACJI],
-         fv.[UWAGI],
-         fv.[KOREKTA_NUMER],
-         zap.[NAZWA],
-         us.[NAZWA] + ' ' + us.[IMIE],
-         auto.[REJESTRACJA],
-         auto.[NR_NADWOZIA],
-         tr.[WARTOSC_NAL];
-  `;
+    //     const queryKRT = `SELECT 
+    //          fv.[NUMER],
+    //           CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+    //       CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+    //          fv.[KONTR_NAZWA],
+    //          fv.[KONTR_NIP],
+    //          SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+    //          SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
+    //          fv.[NR_SZKODY],
+    //          fv.[NR_AUTORYZACJI],
+    //          fv.[UWAGI],
+    //          fv.[KOREKTA_NUMER],
+    //          zap.[NAZWA] AS TYP_PLATNOSCI,
+    //          us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
+    //          auto.[REJESTRACJA],
+    //          auto.[NR_NADWOZIA],
+    //          tr.[WARTOSC_NAL]
+    //   FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
+    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
+    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
+    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
+    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+    //   WHERE fv.[NUMER] != 'POTEM' 
+    //     AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
+    //   GROUP BY 
+    //          fv.[NUMER],
+    //          CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
+    //          CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
+    //              fv.[KONTR_NAZWA],
+    //          fv.[KONTR_NIP],
+    //          fv.[NR_SZKODY],
+    //          fv.[NR_AUTORYZACJI],
+    //          fv.[UWAGI],
+    //          fv.[KOREKTA_NUMER],
+    //          zap.[NAZWA],
+    //          us.[NAZWA] + ' ' + us.[IMIE],
+    //          auto.[REJESTRACJA],
+    //          auto.[NR_NADWOZIA],
+    //          tr.[WARTOSC_NAL];
+    //   `;
 
     const queryKEM = `SELECT 
   fv.[NUMER],
@@ -581,10 +581,10 @@ const addDocumentKEMToDatabase = async (type, twoDaysAgo) => {
   auto.[NR_NADWOZIA],
   tr.[WARTOSC_NAL];
   `;
-    const query = type === "KRT" ? queryKRT : type === "KEM" ? queryKEM : "";
-    const firma = type;
+    // const query = type === "KRT" ? queryKRT : type === "KEM" ? queryKEM : "";
+    // const firma = type;
     try {
-        const documents = await msSqlQuery(query);
+        const documents = await msSqlQuery(queryKEM);
         // dodaje nazwy działów
         const addDep = addDepartment(documents);
 
@@ -656,7 +656,7 @@ const addDocumentKEMToDatabase = async (type, twoDaysAgo) => {
     }
 };
 
-const allUpdate = async () => {
+const copyDbtoDB = async () => {
     try {
         // console.log('✅ companyAgingItems');
         // await companyAgingItems();
@@ -706,8 +706,8 @@ const allUpdate = async () => {
         // console.log('✅ companyUsers');
         // await companyUsers();
 
-        // console.log('✅ addDocumentKEMToDatabase');
-        // await addDocumentKEMToDatabase('KEM', '2024-01-01');
+        console.log('✅ addDocumentKEMToDatabase');
+        await addDocumentKEMToDatabase('KEM', '2024-01-01');
 
 
 
@@ -722,5 +722,5 @@ const allUpdate = async () => {
 };
 
 module.exports = {
-    allUpdate,
+    copyDbtoDB,
 };

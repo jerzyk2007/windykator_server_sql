@@ -1,0 +1,4 @@
+20250423	14:13:36	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
+20250426	09:33:39	fkRaportController, getRaportDocumentsControlBL: Error: Table 'company_windykacja.rubicon' doesn't exist
+20250426	09:34:03	fkRaportController, getRaportDocumentsControlBL: Error: Table 'company_windykacja.rubicon' doesn't exist
+20250426	09:34:21	fkRaportController, getRaportDocumentsControlBL: Error: Table 'company_windykacja.rubicon' doesn't exist
