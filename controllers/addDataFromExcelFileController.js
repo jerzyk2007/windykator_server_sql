@@ -378,7 +378,7 @@ const rubiconFile = async (rows, res) => {
 };
 
 const accountancyFile = async (req, res) => {
-  const { type } = req.params;
+  const { company } = req.params;
   if (!req.file) {
     return res.status(400).json({ error: "Not delivered file" });
   }
@@ -416,12 +416,12 @@ const accountancyFile = async (req, res) => {
         TERMIN: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
         KONTO: item["Synt."],
         TYP_DOKUMENTU: documentsType(item["Nr. dokumentu"]),
-        FIRMA: type
+        FIRMA: company
       };
     });
 
     const addDep = addDepartment(changeNameColumns);
-    const [findItems] = await connect_SQL.query('SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?', [type]);
+    const [findItems] = await connect_SQL.query('SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?', [company]);
 
 
     // jeśli nie będzie możliwe dopasowanie ownerów, lokalizacji to wyskoczy bład we froncie
@@ -438,7 +438,7 @@ const accountancyFile = async (req, res) => {
     if (errorDepartments.length > 0) {
       return res.json({ info: `Brak danych o działach: ${errorDepartments}` });
     }
-    await connect_SQL.query("TRUNCATE TABLE company_raportFK_KRT_accountancy");
+    await connect_SQL.query(`TRUNCATE TABLE company_raportFK_${company}_accountancy`);
 
     const values = addDep.map(item => [
       item.NUMER,
@@ -453,7 +453,7 @@ const accountancyFile = async (req, res) => {
     ]);
 
     const query = `
-      INSERT IGNORE INTO company_raportFK_KRT_accountancy
+      INSERT IGNORE INTO company_raportFK_${company}_accountancy
         (NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL, FIRMA) 
       VALUES 
         ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
@@ -461,7 +461,7 @@ const accountancyFile = async (req, res) => {
 
     await connect_SQL.query(query, values.flat());
 
-    await connect_SQL.query(`UPDATE company_fk_updates_date SET DATE = ?, COUNTER = ? WHERE TITLE = 'accountancy' AND COMPANY = ?`, [checkDate(new Date()), addDep.length || 0, type]);
+    await connect_SQL.query(`UPDATE company_fk_updates_date SET DATE = ?, COUNTER = ? WHERE TITLE = 'accountancy' AND COMPANY = ?`, [checkDate(new Date()), addDep.length || 0, company]);
 
     res.json({ info: 'Dane zaktualizowane.' });
   }

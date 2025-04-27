@@ -4,17 +4,10 @@ const fKRaport = require("../../controllers/fkRaportController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
-
-// pobieranie danych do raportu FK wg wstępnego filtrowania
-// router
-//   .route("/get-raport-data")
-//   .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getRaportData);
-
 // pobieranie danych do raportu FK v2 wg wstępnego filtrowania
 router
   .route("/get-raport-data/:company")
   .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getRaportData);
-
 
 // pobieram daty  aktualizacji plików excel dla raportu FK
 router
@@ -30,22 +23,6 @@ router
 router
   .route("/generate-raport/:company")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateRaport);
-
-//sprawdza czy w pliku wiekowanie znajdują się dokumentu do których jest przygotowany dział (lokalizacja, owner itp) jeśli nie ma zwraca ionformacje o brakach
-// router
-//   .route("/send-accountancy-fk")
-//   .post(
-//     verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin),
-//     fKRaport.dataFkAccocuntancyFromExcel
-//   );
-
-// znacznik na dokumentach dla raportu fk 
-// router
-//   .route("/send-document-mark-fk")
-//   .post(
-//     verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin),
-//     fKRaport.saveMark
-//   );
 
 // usuwanie znacznika na wybranym dokumencie dla raportu fk 
 router
@@ -64,10 +41,6 @@ router
 router
   .route("/get-organization-structure")
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getStructureOrganization);
-
-// router
-//   .route("/generate-history-documents")
-//   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateHistoryDocuments);
 
 //dodaje ostateczną decyzję i datę do osobnej tabeli, dla wygenerowania historii w raporcie FK
 router

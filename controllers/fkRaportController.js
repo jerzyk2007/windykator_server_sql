@@ -64,11 +64,10 @@ const getRaportData = async (req, res) => {
   const { raportInfo } = req.body;
 
   try {
-
     const [dataRaport] = await connect_SQL.query(
       `SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK.* 
       FROM company_fk_raport_${company} AS FK 
-      LEFT JOIN company_history_KRT AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`);
+      LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`);
 
 
     // usuwam z każdego obiektu klucz id_fk_raport
@@ -420,15 +419,23 @@ const getDateCounter = async (req, res) => {
 const deleteDataRaport = async (req, res) => {
   const { company } = req.params;
   try {
-    // await generateHistoryDocuments(company);
+    //generuję historię wpisów uwzględniając 
+    await generateHistoryDocuments(company);
+
+    //usuwam daty dodanie wiekowanie, generowanie i pobrania raportu
     await connect_SQL.query(
       `UPDATE company_fk_updates_date SET DATE = null, COUNTER = null WHERE TITLE IN ('accountancy', 'generate', 'raport') AND COMPANY = ?`,
       [company]
     );
-    await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
-    await connect_SQL.query(`TRUNCATE company_raportFK_${company}_accountancy`);
-    await connect_SQL.query(`TRUNCATE TABLE company_fk_raport_${company}`);
 
+    //usuwam znaczniki dokumentów
+    await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
+
+    // czyszczę tabelę z wiekowaniem
+    await connect_SQL.query(`TRUNCATE company_raportFK_${company}_accountancy`);
+
+    // czyszczę tabelę z raportem
+    await connect_SQL.query(`TRUNCATE TABLE company_fk_raport_${company}`);
 
     res.json({ result: "delete" });
   } catch (error) {
@@ -462,11 +469,6 @@ const generateRaport = async (req, res) => {
     LEFT JOIN company_settlements_description AS SD ON RA.NUMER_FV = SD.NUMER AND RA.FIRMA = SD.COMPANY
     `);
 
-    const test = getData.map(item => {
-      if (item.NUMER_FV === 'FV/UBL/90/25/V/D8') {
-        console.log(item);
-      }
-    });
 
     // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM company_aging_items');
     const [getAging] = await connect_SQL.query('SELECT \`FROM_TIME\`, TO_TIME, TITLE, TYPE FROM company_aging_items');
@@ -644,23 +646,16 @@ const generateRaport = async (req, res) => {
     await connect_SQL.query(query, values.flat());
 
     // // dodanie daty wygenerowania raportu
-    // const [checkRaportDate] = await connect_SQL.query(`SELECT title FROM fk_updates_date WHERE title='raport_v2'`);
-
     await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
       [checkDate(new Date()), getData.length || 0, 'generate', company]
     );
-
-    // await connect_SQL.query(
-    //   `UPDATE company_fk_updates_date SET DATE = null, COUNTER = null WHERE TITLE = 'raport' AND COMPANY = ?`,
-    //   [company]
-    // );
 
     res.end();
   }
   catch (error) {
     console.error(error);
     logEvents(
-      `fkRaportController, generateRaport: ${error}`,
+      `fkRaportController, generateRaport - ${company}: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
@@ -668,58 +663,12 @@ const generateRaport = async (req, res) => {
   }
 };
 
-//funkcja dodaje dane z pliku wiekowania i sprawdza czy w pliku wiekowanie znajdują się dokumentu do których jest przygotowany dział (lokalizacja, owner itp) jeśli nie ma zwraca ionformacje o brakach
-// const dataFkAccocuntancyFromExcel = async (req, res) => {
-//   const { documents_data } = req.body;
-//   try {
-//     const [preparedItems] = await connect_SQL.query(
-//       "SELECT DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN FROM company_join_items ORDER BY DEPARTMENT"
-//     );
-//     // dodaje wygenerowane na działy na podstawie nazwy documentu
-//     const resultDep = prepareDepartments(documents_data);
-
-//     if (!resultDep) {
-//       return res.status(500).json({ error: "Server error" });
-//     }
-
-//     const addItems = generateItems(preparedItems, resultDep);
-
-//     if (!addItems) {
-//       return res.status(500).json({ error: "Server error" });
-//     } else if (addItems.errorDepartments.length) {
-//       return res.json({ errorDepartments: addItems.errorDepartments });
-//     }
-
-//     const addDocDate = await docDateUpdate(addItems.generateData);
-//     if (!addDocDate) {
-//       return res.status(500).json({ error: "Server error" });
-//     }
-
-//     const updateSettlements = await updateSettlementDescription(addDocDate);
-//     if (!updateSettlements) {
-//       return res.status(500).json({ error: "Server error" });
-//     }
-
-//     await savePreparedData(updateSettlements, 'accountancy');
-
-//     res.end();
-//   }
-//   catch (error) {
-//     logEvents(
-//       `fkRaportController, dataFkAccocuntancyFromExcel: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     return res.status(500).json({ error: "Server error" });
-//   }
-// };
-
 // funkcja która robi znaczniki przy dokumentach,m zgodnych z dokumentami z fkraport, żeby user mógł mieć dostęp tylko do dokumentów omawianych w fkraport
 const saveMark = async (documents, company) => {
   // const documents = req.body;
   try {
 
     const [markDocs] = await connect_SQL.query(`SELECT NUMER_FV, COMPANY, RAPORT_FK FROM company_mark_documents WHERE COMPANY != ?`, [company]);
-
 
     const prepareMarks = documents.map(doc => {
       return {
@@ -752,27 +701,6 @@ const saveMark = async (documents, company) => {
 
     // // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
-
-
-    // // await connect_SQL.query(`UPDATE mark_documents SET RAPORT_FK = 0`);
-    // await connect_SQL.query('TRUNCATE company_mark_documents');
-
-    // await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
-
-    // // Teraz przygotuj dane do wstawienia
-    // const values = documents.map(item => [
-    //   item
-    // ]);
-
-    // const query = `
-    //    INSERT IGNORE INTO company_mark_documentssss
-    //      (NUMER_FV, RAPORT_FK) 
-    //    VALUES 
-    //      ${values.map(() => "(?, 1)").join(", ")}
-    //  `;
-
-    // // // Wykonanie zapytania INSERT
-    // await connect_SQL.query(query, values.flat());
 
     connect_SQL.query(
       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
@@ -815,7 +743,6 @@ const changeMark = async (req, res) => {
 
   }
 };
-
 
 // pobiera dane do raportu kontroli dokuemntów BL
 const getRaportDocumentsControlBL = async (req, res) => {
@@ -892,122 +819,60 @@ const getStructureOrganization = async (req, res) => {
 const generateHistoryDocuments = async (company) => {
   try {
 
-    const [raportDate] = await connect_SQL.query(`SELECT DATE FROM  company_fk_updates_date WHERE title = 'accountancy'`);
+    const [raportDate] = await connect_SQL.query(`SELECT DATE FROM  company_fk_updates_date WHERE title = 'accountancy' AND COMPANY = ?`, [company]);
 
-    const testDate = '2025-04-10';
+    const [markDocuments] = await connect_SQL.query(`SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`, [company]);
 
-    const [markDocuments] = await connect_SQL.query(`SELECT NUMER_FV FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`, [company]);
-    // console.log(raportDate[0].DATE);
+    for (item of markDocuments) {
 
-    // ******
-    // const [oldHistory] = await connect_SQL.query(`SELECT * FROM windykacja.history_fk_documents;`);
+      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+      const [getDoc] = await connect_SQL.query(`SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`, [item.NUMER_FV, raportDate[0].DATE, company]);
 
-    // console.log(oldHistory);
-    // const updateHistory = oldHistory.map(item => {
-    //   return {
-    //     ...item,
-    //     COMPANY: company
-    //   };
-    // });
+      //szukam czy jest wpis histori w tabeli history_fk_documents
+      const [getDocHist] = await connect_SQL.query(`SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`, [item.NUMER_FV, company]);
 
-    // for (const item of updateHistory) {
-    //   await connect_SQL.query(`INSERT INTO company_windykacja.company_history_KRT (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-    //     [item.NUMER_FV, JSON.stringify(item.HISTORY_DOC), item.COMPANY]);
-    // }
-    // *******
+      //jesli nie ma historycznych wpisów tworzę nowy
+      if (!getDocHist.length) {
 
-    // for (const item of markDocuments) {
-    //   const [getDoc] = await connect_SQL.query(`SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`, [item.NUMER_FV, testDate, company]);
+        const newHistory = {
+          info: `1 raport utworzono ${raportDate[0].DATE}`,
+          historyDate: [],
+          historyText: []
+        };
 
-    //   const [getDocHist] = await connect_SQL.query(`SELECT HISTORY_DOC FROM company_history_KRT WHERE NUMER_FV = ? AND COMPANY = ?`, [item.NUMER_FV, company]);
-    //   if (!getDocHist.length) {
-    //     const newHistory = {
-    //       info: `1 raport utworzono ${raportDate[0].date}`,
-    //       historyDate: [],
-    //       historyText: []
-    //     };
+        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+        getDoc.forEach(doc => {
+          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+            newHistory.historyDate.push(...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
+          }
+          if (doc.INFORMACJA_ZARZAD) {
+            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+          }
+        });
 
-    //     // console.log(getDoc);
-    //     // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
-    //     getDoc.forEach(doc => {
-    //       console.log(doc);
-    //       if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-    //         newHistory.historyDate.push(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
-    //       }
-    //       if (doc.INFORMACJA_ZARZAD) {
-    //         newHistory.historyText.push(doc.INFORMACJA_ZARZAD);
-    //       }
-    //     });
+        await connect_SQL.query(`INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+          [item.NUMER_FV, JSON.stringify([newHistory]), company]);
+      }
+      else {
+        const newHistory = {
+          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${raportDate[0].DATE}`,
+          historyDate: [],
+          historyText: []
+        };
+        getDoc.forEach(doc => {
+          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+            newHistory.historyDate.push(...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
+          }
+          if (doc.INFORMACJA_ZARZAD) {
+            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+          }
+        });
+        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
 
-    //     await connect_SQL.query(`INSERT INTO history_fk_documents (NUMER_FV, HISTORY_DOC) VALUES (?, ?)`,
-    //       [item.NUMER_FV, JSON.stringify([newHistory])]);
-    //   }
-
-    // }
-
-    // mapuje wszytskie dokumenty oznaczone znacznikiem wsytępowania i dodaję do nich opisy, daty
-    // const addDesc = markDocuments.map(async (item) => {
-
-
-
-    // for (const item of markDocuments) {
-    //   // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
-    //   // const [getDoc] = await connect_SQL.query(`SELECT * FROM management_decision_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ?`, [item.NUMER_FV, raportDate[0].DATE]);
-    //   const [getDoc] = await connect_SQL.query(`SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`, [item.NUMER_FV, testDate, company]);
-
-    //   //szukam czy jest wpis histori w tabeli history_fk_documents
-    //   const [getDocHist] = await connect_SQL.query(`SELECT HISTORY_DOC FROM company_history_KRT WHERE NUMER_FV = ? AND COMPANY`, [item.NUMER_FV, company]);
-
-
-    //   if (!getDocHist.length) {
-
-    //     const newHistory = {
-    //       info: `1 raport utworzono ${testDate}`,
-    //       // info: `1 raport utworzono ${raportDate[0].date}`,
-    //       historyDate: [],
-    //       historyText: []
-    //     };
-
-    //     // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
-    //     getDoc.forEach(doc => {
-    //       if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-    //         newHistory.historyDate.push(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
-    //       }
-    //       if (doc.INFORMACJA_ZARZAD) {
-    //         newHistory.historyText.push(doc.INFORMACJA_ZARZAD);
-    //       }
-    //     });
-    //     // console.log(newHistory);
-
-    //     await connect_SQL.query(`INSERT INTO company_history_KRT (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-    //       [item.NUMER_FV, JSON.stringify([newHistory]), company]);
-    //   } else {
-
-    //     const newHistory = {
-    //       info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${testDate}`,
-    //       // info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${raportDate[0].DATE}`,
-    //       historyDate: [],
-    //       historyText: []
-    //     };
-    //     getDoc.forEach(doc => {
-    //       if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-    //         newHistory.historyDate.push(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
-    //       }
-    //       if (doc.INFORMACJA_ZARZAD) {
-    //         newHistory.historyText.push(doc.INFORMACJA_ZARZAD);
-    //       }
-    //     });
-    //     const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
-    //     // if (item.NUMER_FV === 'FV/UBL/165/22/S/D148') {
-    //     //   console.log(prepareArray);
-
-    //     // }
-    //     await connect_SQL.query(`UPDATE  company_history_KRT SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
-    //       [JSON.stringify(prepareArray), item.NUMER_FV], company);
-    //   }
-    // }
-    // });
-
+        await connect_SQL.query(`UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
+          [JSON.stringify(prepareArray), item.NUMER_FV, company]);
+      }
+    }
   }
   catch (error) {
     logEvents(`fkRaportController, generateHistoryDocuments: ${error}`, "reqServerErrors.txt");
@@ -1022,27 +887,6 @@ const addDecisionDate = async (req, res) => {
     if (!raportDate[0].DATE) {
       return res.end();
     }
-
-    // if (data.INFORMACJA_ZARZAD.length && raportDate[0].DATE) {
-    //   for (item of data.INFORMACJA_ZARZAD) {
-    //     await connect_SQL.query(`INSERT INTO management_decision_FK (NUMER_FV, INFORMACJA_ZARZAD, WYKORZYSTANO_RAPORT_FK) VALUES (?, ?, ?)`, [
-    //       NUMER_FV,
-    //       item,
-    //       raportDate[0].DATE
-    //     ]);
-    //   }
-    // }
-    // if (data.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length && raportDate[0].DATE) {
-
-    //   for (item of data.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-
-    //     await connect_SQL.query(`INSERT INTO management_decision_FK (NUMER_FV, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK) VALUES (?, ?, ?)`, [
-    //       NUMER_FV,
-    //       item,
-    //       raportDate[0].DATE
-    //     ]);
-    //   }
-    // }
 
     // robię zapis równoległy do nowej tabelimanagement_date_description_FK
     const [searchDuplicate] = await connect_SQL.query(
@@ -1085,7 +929,6 @@ module.exports = {
   getDateCounter,
   deleteDataRaport,
   generateRaport,
-  // saveMark,
   changeMark,
   getRaportDocumentsControlBL,
   getStructureOrganization,

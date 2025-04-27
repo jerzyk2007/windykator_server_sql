@@ -211,10 +211,10 @@ const companyGuardianItems = async () => {
 };
 
 
-const companyHistoryKRT = async () => {
+const companyHistoryManagement = async () => {
     try {
         const [result] = await connect_SQL.query(`SELECT * FROM windykacja.history_fk_documents`);
-        await connect_SQL.query('TRUNCATE company_history_KRT');
+        await connect_SQL.query('TRUNCATE company_history_management');
 
         const values = result.map(item => [
             item.NUMER_FV,
@@ -223,7 +223,7 @@ const companyHistoryKRT = async () => {
         ]);
 
         const query = `
-            INSERT IGNORE INTO company_history_KRT 
+            INSERT IGNORE INTO company_history_management 
               (NUMER_FV, HISTORY_DOC, COMPANY) 
             VALUES 
               ${values.map(() => "(?, ?,  ?)").join(", ")}
@@ -498,47 +498,6 @@ const addDocumentKEMToDatabase = async (firma, twoDaysAgo) => {
         }
         return date;
     };
-    //     const queryKRT = `SELECT 
-    //          fv.[NUMER],
-    //           CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
-    //       CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
-    //          fv.[KONTR_NAZWA],
-    //          fv.[KONTR_NIP],
-    //          SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
-    //          SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
-    //          fv.[NR_SZKODY],
-    //          fv.[NR_AUTORYZACJI],
-    //          fv.[UWAGI],
-    //          fv.[KOREKTA_NUMER],
-    //          zap.[NAZWA] AS TYP_PLATNOSCI,
-    //          us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
-    //          auto.[REJESTRACJA],
-    //          auto.[NR_NADWOZIA],
-    //          tr.[WARTOSC_NAL]
-    //   FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
-    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
-    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
-    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
-    //   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
-    //   WHERE fv.[NUMER] != 'POTEM' 
-    //     AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
-    //   GROUP BY 
-    //          fv.[NUMER],
-    //          CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
-    //          CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
-    //              fv.[KONTR_NAZWA],
-    //          fv.[KONTR_NIP],
-    //          fv.[NR_SZKODY],
-    //          fv.[NR_AUTORYZACJI],
-    //          fv.[UWAGI],
-    //          fv.[KOREKTA_NUMER],
-    //          zap.[NAZWA],
-    //          us.[NAZWA] + ' ' + us.[IMIE],
-    //          auto.[REJESTRACJA],
-    //          auto.[NR_NADWOZIA],
-    //          tr.[WARTOSC_NAL];
-    //   `;
 
     const queryKEM = `SELECT 
   fv.[NUMER],
@@ -581,8 +540,7 @@ const addDocumentKEMToDatabase = async (firma, twoDaysAgo) => {
   auto.[NR_NADWOZIA],
   tr.[WARTOSC_NAL];
   `;
-    // const query = type === "KRT" ? queryKRT : type === "KEM" ? queryKEM : "";
-    // const firma = type;
+
     try {
         const documents = await msSqlQuery(queryKEM);
         // dodaje nazwy działów
@@ -592,9 +550,6 @@ const addDocumentKEMToDatabase = async (firma, twoDaysAgo) => {
             row.DATA_WYSTAWIENIA = formatDate(row.DATA_WYSTAWIENIA);
             row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
         });
-
-
-
 
         const values = addDep.map(item => [
             item.NUMER_FV,
@@ -679,8 +634,8 @@ const copyDbtoDB = async () => {
         // console.log('✅ companyGuardianItems');
         // await companyGuardianItems();
 
-        // console.log('✅ companyHistoryKRT');
-        // await companyHistoryKRT();
+        // console.log('✅ companyHistoryManagement');
+        // await companyHistoryManagement();
 
         // console.log('✅ companyJoinItems');
         // await companyJoinItems();
@@ -706,12 +661,8 @@ const copyDbtoDB = async () => {
         // console.log('✅ companyUsers');
         // await companyUsers();
 
-        console.log('✅ addDocumentKEMToDatabase');
-        await addDocumentKEMToDatabase('KEM', '2024-01-01');
-
-
-
-
+        // console.log('✅ addDocumentKEMToDatabase');
+        // await addDocumentKEMToDatabase('KEM', '2024-01-01');
 
 
         console.log('koniec');

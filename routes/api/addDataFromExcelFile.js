@@ -17,7 +17,7 @@ router
     );
 
 router
-    .route("/send-documents-accountancy/:type")
+    .route("/send-documents-accountancy/:company")
     .post(
         verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK),
         upload.single("excelFile"),
