@@ -551,60 +551,70 @@ const addDocumentKEMToDatabase = async (firma, twoDaysAgo) => {
             row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
         });
 
-        const values = addDep.map(item => [
-            item.NUMER_FV,
-            item.BRUTTO,
-            item.NETTO,
-            item.DZIAL,
-            item.DO_ROZLICZENIA,
-            item.DATA_FV,
-            item.TERMIN,
-            item.KONTRAHENT,
-            item.DORADCA,
-            item.NR_REJESTRACYJNY,
-            item.NR_SZKODY,
-            item.UWAGI_Z_FAKTURY,
-            item.TYP_PLATNOSCI,
-            item.NIP,
-            item.VIN,
-            item.NR_AUTORYZACJI,
-            item.KOREKTA,
-            firma
-        ]);
 
-        const querySQL = `
-            INSERT IGNORE INTO company_documents 
-              (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) 
-            VALUES 
-              ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
-          `;
-        await connect_SQL.query(querySQL, values.flat());
-        // for (const doc of addDep) {
+        // const values = addDep.map(item => [
+        //     item.NUMER,
+        //     item.WARTOSC_BRUTTO,
+        //     item.WARTOSC_NETTO,
+        //     item.DZIAL,
+        //     item.WARTOSC_NAL,
+        //     item.DATA_WYSTAWIENIA,
+        //     item.DATA_ZAPLATA,
+        //     item.KONTR_NAZWA,
+        //     item.PRZYGOTOWAL,
+        //     item.REJESTRACJA,
+        //     item.NR_SZKODY,
+        //     item.UWAGI,
+        //     item.TYP_PLATNOSCI,
+        //     item.NIP,
+        //     item.NR_NADWOZIA,
+        //     item.NR_AUTORYZACJI,
+        //     item.KOREKTA_NUMER,
+        //     firma
+        // ]);
 
-        //     await connect_SQL.query(
-        //         "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        //         [
-        //             doc.NUMER,
-        //             doc.WARTOSC_BRUTTO,
-        //             doc.WARTOSC_NETTO,
-        //             doc.DZIAL,
-        //             doc.WARTOSC_NAL || 0,
-        //             doc.DATA_WYSTAWIENIA,
-        //             doc.DATA_ZAPLATA,
-        //             doc.KONTR_NAZWA,
-        //             doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
-        //             doc.REJESTRACJA,
-        //             doc.NR_SZKODY || null,
-        //             doc.UWAGI,
-        //             doc.TYP_PLATNOSCI,
-        //             doc.KONTR_NIP || null,
-        //             doc.NR_NADWOZIA,
-        //             doc.NR_AUTORYZACJI || null,
-        //             doc.KOREKTA_NUMER,
-        //             firma
-        //         ]
-        //     );
-        // }
+        // const querySQL = `
+        //     INSERT IGNORE INTO company_documents 
+        //       (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) 
+        //     VALUES 
+        //       ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+        //   `;
+        // await connect_SQL.query(querySQL, values.flat());
+
+
+
+
+        let counter = 1;
+
+        for (const doc of addDep) {
+
+            console.log(counter++, addDep.length);
+
+            await connect_SQL.query(
+                "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    doc.NUMER,
+                    doc.WARTOSC_BRUTTO,
+                    doc.WARTOSC_NETTO,
+                    doc.DZIAL,
+                    doc.WARTOSC_NAL || 0,
+                    doc.DATA_WYSTAWIENIA,
+                    doc.DATA_ZAPLATA,
+                    doc.KONTR_NAZWA,
+                    doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
+                    doc.REJESTRACJA,
+                    doc.NR_SZKODY || null,
+                    doc.UWAGI,
+                    doc.TYP_PLATNOSCI,
+                    doc.KONTR_NIP || null,
+                    doc.NR_NADWOZIA,
+                    doc.NR_AUTORYZACJI || null,
+                    doc.KOREKTA_NUMER,
+                    firma
+                ]
+            );
+        }
+        console.log('koniec');
     }
     catch (error) {
         console.error(error);
@@ -661,8 +671,8 @@ const copyDbtoDB = async () => {
         // console.log('✅ companyUsers');
         // await companyUsers();
 
-        // console.log('✅ addDocumentKEMToDatabase');
-        // await addDocumentKEMToDatabase('KEM', '2024-01-01');
+        console.log('✅ addDocumentKEMToDatabase');
+        await addDocumentKEMToDatabase('KEM', '2024-01-01');
 
 
         console.log('koniec');

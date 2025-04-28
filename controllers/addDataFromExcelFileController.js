@@ -258,6 +258,7 @@ const rubiconFile = async (rows, res) => {
   ) {
     return res.status(500).json({ error: "Error file" });
   }
+
   try {
     const filteredData = rows.map(row => {
       const status =
@@ -299,7 +300,7 @@ const rubiconFile = async (rows, res) => {
          INSERT IGNORE INTO company_rubicon_BL
            ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, COMPANY ) 
          VALUES 
-           ${rubiconData.map(() => "(?, ?,  ?)").join(", ")}
+           ${rubiconData.map(() => "(?, ?, ?, ?)").join(", ")}
        `;
     await connect_SQL.query(query, rubiconData.flat());
 
