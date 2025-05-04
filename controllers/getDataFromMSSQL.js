@@ -510,7 +510,7 @@ const updateSettlementDescriptionKRT = async () => {
     );
     return updatedSettlements;
   }
-  catch (err) {
+  catch (error) {
     logEvents(`getDataFromMSSQL, updateSettlementDescriptionKRT: ${error}`, "reqServerErrors.txt");
   }
 };
@@ -585,8 +585,8 @@ const updateSettlementDescriptionKEM = async () => {
     );
     return updatedSettlements;
   }
-  catch (err) {
-    logEvents(`getDataFromMSSQL, updateSettlementDescriptionKRT: ${error}`, "reqServerErrors.txt");
+  catch (error) {
+    logEvents(`getDataFromMSSQL, updateSettlementDescriptionKEM: ${error}`, "reqServerErrors.txt");
   }
 };
 
@@ -594,6 +594,11 @@ const updateSettlementDescriptionKEM = async () => {
 const updateSettlementDescription = async () => {
   const dataKRT = await updateSettlementDescriptionKRT();
   const dataKEM = await updateSettlementDescriptionKEM();
+
+  // Sprawdzenie czy dane zostały poprawnie zwrócone
+  if (!dataKRT || !dataKEM) {
+    return false;
+  }
 
   const updatedSettlements = [...dataKRT, ...dataKEM];
   try {
@@ -769,8 +774,8 @@ cron.schedule('40 06 * * *', updateData, {
 
 module.exports = {
   updateData,
-  updateDocuments
-  // updateSettlementDescription,
+  updateDocuments,
+  updateSettlementDescription,
   // updateDocZal,
   // updateCarReleaseDates,
   // updateDocZal
