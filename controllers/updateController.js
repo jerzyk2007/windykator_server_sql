@@ -8,7 +8,7 @@ const { copyDbtoDB } = require("./copyDBtoDB");
 
 const getTime = async (req, res) => {
   try {
-    await updateData();
+    // await updateData();
     // await updateSettlementDescription();
     // await generateHistoryDocuments('KRT');
     // await copyDbtoDB();
