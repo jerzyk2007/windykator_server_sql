@@ -270,6 +270,91 @@ const rubiconFile = async (rows, res) => {
           row["Status aktualny"] !== "Zablokowana BL" &&
           row["Status aktualny"] !== "Zablokowana KF" &&
           row["Status aktualny"] !== "Zablokowana KF BL" &&
+          row["Status aktualny"] !== "Do decyzji"
+          ? row["Status aktualny"]
+          : "BRAK";
+      if (status !== "BRAK") {
+        return {
+          NUMER_FV: row['Faktura nr'],
+          STATUS_AKTUALNY: status !== "BRAK" ? status : row.ETAP_SPRAWY,
+          JAKA_KANCELARIA: status !== "BRAK"
+            ? row["Firma zewnętrzna"]
+            : null,
+          FIRMA: 'KRT'
+        };
+      }
+
+    }).filter(Boolean);
+
+
+    const query = `
+    INSERT INTO company_rubicon_data ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, COMPANY) 
+    VALUES ?
+    ON DUPLICATE KEY UPDATE
+      STATUS_AKTUALNY = VALUES(STATUS_AKTUALNY),
+      FIRMA_ZEWNETRZNA = VALUES(FIRMA_ZEWNETRZNA),
+      COMPANY = VALUES(COMPANY)
+  `;
+
+    const values = filteredData.map(row => [
+      row.NUMER_FV,
+      row.STATUS_AKTUALNY,
+      row.JAKA_KANCELARIA,
+      row.FIRMA
+    ]);
+
+    await connect_SQL.query(query, [values]);
+
+    await connect_SQL.query(
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Zaktualizowano.",
+        'Rubicon'
+      ]);
+
+    res.end();
+  } catch (error) {
+
+    await connect_SQL.query(
+      "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+      [
+        checkDate(new Date()),
+        checkTime(new Date()),
+        "Błąd aktualizacji",
+        'Rubicon'
+      ]);
+    logEvents(
+      `addDataFromExcelFileController, rubiconFile: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+const rubiconFileOld = async (rows, res) => {
+  if (
+    !('Faktura nr' in rows[0]) ||
+    !('Status aktualny' in rows[0]) ||
+    !('data przeniesienia<br>do WP' in rows[0]) ||
+    !('Firma zewnętrzna' in rows[0])
+  ) {
+    return res.status(500).json({ error: "Error file" });
+  }
+
+  try {
+    const filteredData = rows.map(row => {
+      const status =
+        row["Status aktualny"] !== "Brak działań" &&
+          row["Status aktualny"] !== "Rozliczona" &&
+          row["Status aktualny"] !== "sms/mail +3" &&
+          row["Status aktualny"] !== "sms/mail -2" &&
+          row["Status aktualny"] !== "Zablokowana" &&
+          row["Status aktualny"] !== "Zablokowana BL" &&
+          row["Status aktualny"] !== "Zablokowana KF" &&
+          row["Status aktualny"] !== "Zablokowana KF BL" &&
           row["Status aktualny"] !== "Windykacja zablokowana bezterminowo" &&
           row["Status aktualny"] !== "Windykacja zablokowana 10" &&
           row["Status aktualny"] !== "Do decyzji"
