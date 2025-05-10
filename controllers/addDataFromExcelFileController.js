@@ -123,7 +123,9 @@ const rubiconFile = async (rows, res) => {
     !('Faktura nr' in rows[0]) ||
     !('Status aktualny' in rows[0]) ||
     !('data przeniesienia<br>do WP' in rows[0]) ||
-    !('Firma zewnętrzna' in rows[0])
+    !('Firma zewnętrzna' in rows[0]) ||
+    !('data przeniesienia<br>do WP' in rows[0])
+
   ) {
     return res.status(500).json({ error: "Error file" });
   }
@@ -149,6 +151,7 @@ const rubiconFile = async (rows, res) => {
           JAKA_KANCELARIA: status !== "BRAK"
             ? row["Firma zewnętrzna"]
             : null,
+          DATA_PRZENIESIENIA_DO_WP: row['data przeniesienia<br>do WP'],
           FIRMA: 'KRT'
         };
       }
@@ -157,22 +160,45 @@ const rubiconFile = async (rows, res) => {
 
 
     const query = `
-    INSERT INTO company_rubicon_data ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, COMPANY) 
-    VALUES ?
-    ON DUPLICATE KEY UPDATE
-      STATUS_AKTUALNY = VALUES(STATUS_AKTUALNY),
-      FIRMA_ZEWNETRZNA = VALUES(FIRMA_ZEWNETRZNA),
-      COMPANY = VALUES(COMPANY)
-  `;
+      INSERT INTO company_rubicon_data ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY) 
+      VALUES ?
+      ON DUPLICATE KEY UPDATE
+        STATUS_AKTUALNY = VALUES(STATUS_AKTUALNY),
+        FIRMA_ZEWNETRZNA = VALUES(FIRMA_ZEWNETRZNA),
+        DATA_PRZENIESIENIA_DO_WP = VALUES(DATA_PRZENIESIENIA_DO_WP),
+        COMPANY = VALUES(COMPANY)
+    `;
 
     const values = filteredData.map(row => [
       row.NUMER_FV,
       row.STATUS_AKTUALNY,
       row.JAKA_KANCELARIA,
+      row.DATA_PRZENIESIENIA_DO_WP,
       row.FIRMA
     ]);
 
     await connect_SQL.query(query, [values]);
+
+
+    const queryHistory = `
+    INSERT INTO company_rubicon_data_history ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY) 
+    VALUES ?
+    ON DUPLICATE KEY UPDATE
+      STATUS_AKTUALNY = VALUES(STATUS_AKTUALNY),
+      FIRMA_ZEWNETRZNA = VALUES(FIRMA_ZEWNETRZNA),
+      DATA_PRZENIESIENIA_DO_WP = VALUES(DATA_PRZENIESIENIA_DO_WP),
+      COMPANY = VALUES(COMPANY)
+  `;
+
+    const valuesHistory = filteredData.map(row => [
+      row.NUMER_FV,
+      row.STATUS_AKTUALNY,
+      row.JAKA_KANCELARIA,
+      row.DATA_PRZENIESIENIA_DO_WP,
+      row.FIRMA
+    ]);
+
+    await connect_SQL.query(queryHistory, [valuesHistory]);
 
     await connect_SQL.query(
       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
@@ -300,6 +326,47 @@ const accountancyFile = async (req, res) => {
   }
 };
 
+const randomFile = async (rows, res) => {
+  try {
+
+    const filteredData = rows.map(item => {
+      const DATA_DODANIA = isExcelDate(item.data)
+        ? excelDateToISODate(item.data)
+        : null;
+      return {
+        NUMER_FV: item.faktura,
+        KANCELARIA: item.firma,
+        DATA_DODANIA,
+        FIRMA: 'KRT'
+      };
+    });
+
+    const values = filteredData.map(item => [
+      item.NUMER_FV,
+      item.DATA_DODANIA,
+      item.KANCELARIA,
+      item.FIRMA
+    ]);
+
+    const query = `
+      INSERT IGNORE INTO company_rubicon_data_history
+        (NUMER_FV, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA, COMPANY) 
+      VALUES 
+        ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+    `;
+
+    await connect_SQL.query(query, values.flat());
+    console.log(filteredData);
+    res.end();
+  } catch (error) {
+    logEvents(
+      `addDataFromExcelFileController, randomFile: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 const documentsFromFile = async (req, res) => {
   const { type } = req.params;
   if (!req.file) {
@@ -318,13 +385,15 @@ const documentsFromFile = async (req, res) => {
     const workSheetName = workbook.SheetNames[0];
     const workSheet = workbook.Sheets[workSheetName];
     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
-    // if (type === "settlements") {
-    //   return settlementsFile(rows, res);
-    // } 
+
     if (type === "becared") {
       return becaredFile(rows, res);
-    } else if (type === "rubicon") {
+    }
+    else if (type === "rubicon") {
       return rubiconFile(rows, res);
+    }
+    else if (type === "random") {
+      return randomFile(rows, res);
     }
     else {
       return res.status(500).json({ error: "Invalid file" });

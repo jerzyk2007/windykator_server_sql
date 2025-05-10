@@ -83,25 +83,68 @@ const getExcelRaport = async (data) => {
 const getRaportArea = async (req, res) => {
 
   const { raportData } = req.body;
+
   try {
 
-    const query = `SELECT C_D.NUMER_FV, C_D.DATA_FV, C_D.TERMIN, ROUND(C_D.BRUTTO, 2) AS BRUTTO, 
-ROUND(IFNULL(C_S.NALEZNOSC, 0), 2) AS NALEZNOSC, C_D.KONTRAHENT, C_D.NIP, C_S_D.DATA_ROZL_AS, C_J_I.AREA, 
-datediff(NOW(), C_D.TERMIN) AS ILE_DNI_PO_TERMINIE, IFNULL(UPPER(C_R_BL.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA, 
-datediff(C_D.TERMIN, C_D.DATA_FV ) AS ILE_DNI_NA_PLATNOSC, C_D.TYP_PLATNOSCI, datediff( C_S_D.DATA_ROZL_AS, C_D.TERMIN) AS PLATNOSC_PO_TERMINIE
-FROM company_documents AS C_D
-LEFT JOIN company_join_items AS C_J_I ON C_D.DZIAL = C_J_I.DEPARTMENT
-LEFT JOIN company_rubicon_data AS C_R_BL ON C_D.NUMER_FV = C_R_BL.NUMER_FV
-LEFT JOIN company_settlements AS C_S ON C_D.NUMER_FV = C_S.NUMER_FV AND C_D.FIRMA = C_S.COMPANY
-JOIN company_settlements_description AS C_S_D 
-  ON C_S_D.NUMER = C_D.NUMER_FV AND C_S_D.COMPANY = C_D.FIRMA
-WHERE C_D.FIRMA IN (?)
+    const query = `SELECT  
+     C_D.NUMER_FV, 
+  C_D.DATA_FV, 
+  C_D.TERMIN, 
+  ROUND(C_D.BRUTTO, 2) AS BRUTTO, 
+  ROUND(IFNULL(C_S.NALEZNOSC, 0), 2) AS NALEZNOSC, 
+  C_D.KONTRAHENT, 
+  C_D.NIP, 
+  C_S_D.DATA_ROZL_AS, 
+  C_J_I.AREA, 
+  DATEDIFF(NOW(), C_D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+  CASE 
+    WHEN C_R_D_H.NUMER_FV IS NOT NULL THEN 'TAK'
+    ELSE 'NIE'
+  END AS CZY_PRZEKAZANO_DO_WP, 
+  DATEDIFF(C_D.TERMIN, C_D.DATA_FV) AS ILE_DNI_NA_PLATNOSC, 
+  C_D.TYP_PLATNOSCI, 
+  DATEDIFF(C_S_D.DATA_ROZL_AS, C_D.TERMIN) AS PLATNOSC_PO_TERMINIE,
+  C_D.TYP_PLATNOSCI, 
+  C_D.DZIAL
+FROM 
+  company_documents AS C_D
+LEFT JOIN company_join_items AS C_J_I 
+  ON C_D.DZIAL = C_J_I.DEPARTMENT
+LEFT JOIN company_rubicon_data_history AS C_R_D_H 
+  ON C_D.NUMER_FV = C_R_D_H.NUMER_FV
+LEFT JOIN company_settlements AS C_S 
+  ON C_D.NUMER_FV = C_S.NUMER_FV 
+LEFT JOIN company_settlements_description AS C_S_D 
+  ON C_S_D.NUMER = C_D.NUMER_FV 
+WHERE 
+  C_D.FIRMA = 'KRT'
   AND C_D.DATA_FV BETWEEN ? AND ?
-  AND C_J_I.AREA IN (?)
-   AND C_D.TYP_PLATNOSCI LIKE '%PRZELEW%'`;
+  AND (C_J_I.AREA IN (?) OR C_J_I.AREA IS NULL)
+`;
+
+
+    //     const query = `SELECT C_D.NUMER_FV, C_D.DATA_FV, C_D.TERMIN, ROUND(C_D.BRUTTO, 2) AS BRUTTO,;
+    // ROUND(IFNULL(C_S.NALEZNOSC, 0), 2) AS NALEZNOSC, C_D.KONTRAHENT, C_D.NIP, C_S_D.DATA_ROZL_AS, C_J_I.AREA, 
+    // datediff(NOW(), C_D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+    // CASE 
+    //   WHEN C_R_D_H.NUMER_FV IS NOT NULL THEN 'TAK'
+    //   ELSE 'NIE'
+    // END AS CZY_PRZEKAZANO_DO_WP, 
+    // datediff(C_D.TERMIN, C_D.DATA_FV ) AS ILE_DNI_NA_PLATNOSC, C_D.TYP_PLATNOSCI, datediff( C_S_D.DATA_ROZL_AS, C_D.TERMIN) AS PLATNOSC_PO_TERMINIE,
+    // C_D.TYP_PLATNOSCI, C_D.DZIAL
+    // FROM company_documents AS C_D
+    // LEFT JOIN company_join_items AS C_J_I ON C_D.DZIAL = C_J_I.DEPARTMENT
+    // LEFT JOIN company_rubicon_data_history AS C_R_D_H ON C_D.NUMER_FV = C_R_D_H.NUMER_FV
+    // LEFT JOIN company_settlements AS C_S ON C_D.NUMER_FV = C_S.NUMER_FV AND C_D.FIRMA = C_S.COMPANY
+    // JOIN company_settlements_description AS C_S_D 
+    //   ON C_S_D.NUMER = C_D.NUMER_FV AND C_S_D.COMPANY = C_D.FIRMA
+    // WHERE C_D.FIRMA IN (?)
+    //   AND C_D.DATA_FV BETWEEN ? AND ?
+    //   AND C_J_I.AREA IN (?)`;
+
 
     const [result] = await connect_SQL.query(query, [
-      raportData.company, raportData.docDateFrom, raportData.docDateTo, raportData.areas]);
+      raportData.docDateFrom, raportData.docDateTo, raportData.areas]);
 
     const convertToDateIfPossible = (value, addDays = 0) => {
       const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -130,13 +173,13 @@ WHERE C_D.FIRMA IN (?)
         BRUTTO: item.BRUTTO,
         NALEZNOSC: item.NALEZNOSC,
         KONTRAHENT: item.KONTRAHENT,
-        NIP: item.NIP,
+        NIP: item?.NIP ? item.NIP : " ",
         DATA_ROZL_AS: convertToDateIfPossible(item.DATA_ROZL_AS),
         AREA: item.AREA,
         ILE_DNI_PO_TERMINIE: item.NALEZNOSC !== 0 ? item.ILE_DNI_PO_TERMINIE : 0,
-        JAKA_KANCELARIA: item.JAKA_KANCELARIA,
+        CZY_PRZEKAZANO_DO_WP: item.CZY_PRZEKAZANO_DO_WP,
         ILE_DNI_NA_PLATNOSC: item.ILE_DNI_NA_PLATNOSC,
-        TYP_PLATNOSCI: item.TYP_PLATNOSCI,
+        TYP_PLATNOSCI: item?.TYP_PLATNOSCI ? item.TYP_PLATNOSCI : " ",
         CZY_FV_ROZLICZONA: item.NALEZNOSC === 0 ? "NIE" : "TAK",
         PLATNOSC_PO_TERMINIE: item?.PLATNOSC_PO_TERMINIE ? item.PLATNOSC_PO_TERMINIE : " ",
         CZY_FV_ROZLICZONA: item.NALEZNOSC === 0 ? "TAK" : "NIE"
