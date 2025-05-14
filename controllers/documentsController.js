@@ -344,7 +344,7 @@ const getSingleDocument = async (req, res) => {
   const { id_document } = req.params;
   try {
 
-    const [result] = await connect_SQL.query(
+    const [singleDoc] = await connect_SQL.query(
       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
     D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
     D.NR_SZKODY, D.NR_AUTORYZACJI, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, 
@@ -364,7 +364,16 @@ const getSingleDocument = async (req, res) => {
       [id_document]
     );
 
-    res.json(result[0]);
+    const [controlDoc] = await connect_SQL.query(`SELECT * FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?`,
+      [singleDoc[0].NUMER_FV, singleDoc[0].FIRMA]
+    );
+
+    res.json({
+      singleDoc: singleDoc[0],
+      controlDoc: controlDoc[0] ? controlDoc[0] : {},
+    });
+    // res.json(result[0]);
+    // res.end();
   } catch (error) {
     logEvents(
       `documentsController, getSingleDocument: ${error}`,
@@ -439,10 +448,11 @@ const getColumnsName = async (req, res) => {
 
 
 const changeControlChat = async (req, res) => {
-  const { NUMER_FV, chat } = req.body;
+  const { NUMER_FV, chat, FIRMA } = req.body;
+
   try {
     const [findDoc] = await connect_SQL.query(
-      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ?", [NUMER_FV]
+      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?", [NUMER_FV, FIRMA]
     );
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
@@ -455,9 +465,10 @@ const changeControlChat = async (req, res) => {
 
     } else {
       await connect_SQL.query(
-        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UWAGI) VALUES (?, ?)",
+        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UWAGI, COMPANY) VALUES (?, ?, ?)",
         [NUMER_FV,
-          JSON.stringify(chat)
+          JSON.stringify(chat),
+          FIRMA
         ]
       );
     }
@@ -495,14 +506,14 @@ const getDataDocumentsControl = async (req, res) => {
 
 // zapis chatu z kontroli dokumentacji
 const changeDocumentControl = async (req, res) => {
-  const { NUMER_FV, documentControlBL } = req.body;
+  const { NUMER_FV, documentControlBL, FIRMA } = req.body;
   try {
     const [findDoc] = await connect_SQL.query(
       "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ?", [NUMER_FV]
     );
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
-        "UPDATE company_control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?  WHERE NUMER_FV = ?",
+        "UPDATE company_control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?, COMPANY = ?  WHERE NUMER_FV = ?",
         [
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
@@ -513,13 +524,14 @@ const changeDocumentControl = async (req, res) => {
           documentControlBL.faktura ? documentControlBL.faktura : null,
           documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
+          FIRMA,
           NUMER_FV
         ]
       );
 
     } else {
       await connect_SQL.query(
-        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT, COMPANY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [NUMER_FV,
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
@@ -530,6 +542,7 @@ const changeDocumentControl = async (req, res) => {
           documentControlBL.faktura ? documentControlBL.faktura : null,
           documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
+          FIRMA
         ]
       );
     }
