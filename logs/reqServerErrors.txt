@@ -1,6 +1,0 @@
-20250515	09:38:15	logoutController, handleLogout: Error: read ECONNRESET
-20250515	09:38:26	documentsController, getSingleDocument: Error: read ECONNRESET
-20250515	09:41:16	fkRaportController, addDecision: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '?' at line 1
-20250515	09:42:45	fkRaportController, addDecision: Error: read ECONNRESET
-20250515	10:30:45	refreshTokenController, handleRefreshToken: Error: read ECONNRESET
-20250515	10:40:47	documentsController, getSingleDocument: Error: read ECONNRESET
