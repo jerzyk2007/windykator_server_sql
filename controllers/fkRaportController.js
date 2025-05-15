@@ -552,13 +552,13 @@ const generateRaport = async (req, res) => {
       const DATA_FV = doc.DATA_FV ? doc.DATA_FV : changeDate(doc.TERMIN_FV);
       const ILE_DNI_NA_PLATNOSC_FV = howManyDays(DATA_FV, doc.TERMIN_FV);
       const PRZETER_NIEPRZETER = isOlderThanToday(doc.TERMIN_FV) ? "Przeterminowane" : "Nieprzeterminowane";
-      const CZY_SAMOCHOD_WYDANY = doc.DATA_WYDANIA_AUTA && (doc.area === "SAMOCHODY NOWE" || doc.area === "SAMOCHODY UŻYWANE") ? "TAK" : null;
+      const CZY_SAMOCHOD_WYDANY = doc.DATA_WYDANIA_AUTA && (doc.AREA === "SAMOCHODY NOWE" || doc.AREA === "SAMOCHODY UŻYWANE") ? "TAK" : null;
       const PRZEDZIAL_WIEKOWANIE = checkAging(doc.TERMIN_FV);
-      const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA ? doc.FIRMA_ZEWNETRZNA : doc.JAKA_KANCELARIA_TU && doc.area === 'BLACHARNIA' ? doc.JAKA_KANCELARIA_TU : null;
+      const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA ? doc.FIRMA_ZEWNETRZNA : doc.JAKA_KANCELARIA_TU && doc.AREA === 'BLACHARNIA' ? doc.JAKA_KANCELARIA_TU : null;
       const CZY_W_KANCELARI = JAKA_KANCELARIA ? "TAK" : "NIE";
       const HISTORIA_ZMIANY_DATY_ROZLICZENIA = doc?.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length : null;
       let KWOTA_WPS = CZY_W_KANCELARI === "TAK" ? doc.NALEZNOSC_AS : null;
-      KWOTA_WPS = doc.area === "BLACHARNIA" && doc.JAKA_KANCELARIA_TU ? doc.KWOTA_WINDYKOWANA_BECARED : null;
+      KWOTA_WPS = doc.AREA === "BLACHARNIA" && doc.JAKA_KANCELARIA_TU ? doc.KWOTA_WINDYKOWANA_BECARED : null;
 
       return {
         BRAK_DATY_WYSTAWIENIA_FV: doc.DATA_FV ? null : "TAK",
@@ -596,6 +596,8 @@ const generateRaport = async (req, res) => {
         FIRMA: company
       };
     });
+
+
     await connect_SQL.query(`TRUNCATE TABLE company_fk_raport_${company}`);
 
     // Teraz przygotuj dane do wstawienia
@@ -749,7 +751,7 @@ const getRaportDocumentsControlBL = async (req, res) => {
   try {
 
     const [dataReport] = await connect_SQL.query(
-      "SELECT CD.*, D.NUMER_FV,  D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM company_documents AS D LEFT JOIN company_settlements as S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_control_documents AS CD ON D.NUMER_FV = CD.NUMER_FV LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV WHERE JI.area = 'BLACHARNIA' AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
+      "SELECT CD.*, D.NUMER_FV,  D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM company_documents AS D LEFT JOIN company_settlements as S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_control_documents AS CD ON D.NUMER_FV = CD.NUMER_FV LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV WHERE JI.AREA = 'BLACHARNIA' AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
     );
     if (dataReport.length) {
       const cleanedData = dataReport.map(({ id_control_documents, ...rest }) => rest);
@@ -883,8 +885,9 @@ const generateHistoryDocuments = async (company) => {
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, FIRMA, data } = req.body;
   try {
-    const [raportDate] = await connect_SQL.query(`SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'accountancy'`);
+    const [raportDate] = await connect_SQL.query(`SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'accountancy' AND COMPANY = ?`, [FIRMA]);
     if (!raportDate[0].DATE) {
+      console.log('brak');
       return res.end();
     }
 
@@ -892,6 +895,7 @@ const addDecisionDate = async (req, res) => {
     const [searchDuplicate] = await connect_SQL.query(
       `SELECT * FROM  company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
       [NUMER_FV, raportDate[0].DATE, FIRMA]);
+
     if (searchDuplicate[0]?.id_management_date_description_FK) {
       const id = searchDuplicate[0].id_management_date_description_FK;
       // const NUMER_FV = searchDuplicate[0].NUMER_FV;
@@ -911,7 +915,6 @@ const addDecisionDate = async (req, res) => {
         [JSON.stringify(INFORMACJA_ZARZAD), JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA), id]
       );
     } else {
-
       await connect_SQL.query(`INSERT INTO company_management_date_description_FK (NUMER_FV, INFORMACJA_ZARZAD, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK, COMPANY) VALUES (?, ?, ?, ?, ?)`,
         [NUMER_FV, JSON.stringify(data.INFORMACJA_ZARZAD), JSON.stringify(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA), raportDate[0].DATE, FIRMA]
       );

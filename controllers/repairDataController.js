@@ -981,6 +981,68 @@ const testAddDocumentToDatabase = async (type) => {
     }
 };
 
+const addDocToHistory = async () => {
+    try {
+        // const [historyDoc] = await connect_SQL.query(`SELECT HISTORIA_ZMIANY_DATY_ROZLICZENIA, INFORMACJA_ZARZAD  FROM company_documents_actions`);
+        const [historyDoc] = await connect_SQL.query(`SELECT C_D_A.HISTORIA_ZMIANY_DATY_ROZLICZENIA, C_D_A.INFORMACJA_ZARZAD, C_D.NUMER_FV
+FROM company_documents_actions AS C_D_A
+LEFT JOIN company_documents AS C_D ON C_D.id_document = C_D_A.document_id `);
+        const thresholdDate = new Date('2025-04-29'); // YYYY-MM-DD
+
+        const result = historyDoc.filter(doc => {
+            const infoZarzad = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
+            const ostatecznaData = Array.isArray(doc.OSTATECZNA_DATA_ROZLICZENIA) ? doc.OSTATECZNA_DATA_ROZLICZENIA : [];
+
+            // Funkcja pomocnicza do wyciągania i porównywania dat
+            const containsRecentDate = arr => arr.some(entry => {
+                const match = entry.match(/^(\d{2})-(\d{2})-(\d{4})/); // Szukamy daty na początku
+                if (!match) return false;
+                const [_, dd, mm, yyyy] = match;
+                const entryDate = new Date(`${yyyy}-${mm}-${dd}`);
+                return entryDate >= thresholdDate;
+            });
+
+            return containsRecentDate(infoZarzad) || containsRecentDate(ostatecznaData);
+        });
+        const reportDate = '2025-04-22';
+        console.log(result[54]);
+
+
+        //         for (const doc of result) {
+        //             const [docDuplicate] = await connect_SQL.query(`SELECT * FROM company_windykacja.company_management_date_description_FK
+        // WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ?`, [doc.NUMER_FV, reportDate]);
+        //             if (docDuplicate.length) {
+        //                 // console.log(docDuplicate);
+
+        //             } else {
+        //                 console.log(doc);
+        //             }
+        //         }
+
+        // for (const doc of result) {
+        //     if (doc.NUMER_FV === 'FV/UBL/1008/24/A/D38') {
+        //         console.log(doc);
+        //     }
+
+
+        //     // await connect_SQL.query(
+        //     //     `INSERT INTO company_management_date_description_FK (NUMER_FV, HISTORIA_ZMIANY_DATY_ROZLICZENIA, INFORMACJA_ZARZAD, WYKORZYSTANO_RAPORT_FK, COMPANY ) VALUES ( ?, ?, ?, ?, ?)`,
+        //     //     [
+        //     //         doc.NUMER_FV,
+        //     //         JSON.stringify(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA : []),
+        //     //         JSON.stringify(doc.INFORMACJA_ZARZAD ? doc.INFORMACJA_ZARZAD : []),
+        //     //         reportDate,
+        //     //         'KRT'
+
+        //     //     ]);
+
+        // }
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
@@ -992,5 +1054,6 @@ module.exports = {
     repairHistory,
     repairManagementDecisionFK,
     usersDepartmentsCompany,
-    testAddDocumentToDatabase
+    testAddDocumentToDatabase,
+    addDocToHistory
 };

@@ -4,7 +4,7 @@ const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, gen
 const { updateData, updateDocuments, updateSettlementDescription } = require("./getDataFromMSSQL");
 const { testMail } = require("./mailController");
 const { generateHistoryDocuments } = require("./fkRaportController");
-const { copyDbtoDB } = require("./copyDBtoDB");
+const { addDocToHistory } = require("./repairDataController");
 
 const getTime = async (req, res) => {
   try {
@@ -12,6 +12,8 @@ const getTime = async (req, res) => {
     // await updateSettlementDescription();
     // await generateHistoryDocuments('KRT');
     // await copyDbtoDB();
+
+    // await addDocToHistory();
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
