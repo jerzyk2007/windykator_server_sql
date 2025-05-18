@@ -13,7 +13,7 @@ const getTime = async (req, res) => {
     // await generateHistoryDocuments('KRT');
     // await copyDbtoDB();
 
-    // await addDocToHistory();
+    await addDocToHistory();
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"

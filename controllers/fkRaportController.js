@@ -891,7 +891,7 @@ const addDecisionDate = async (req, res) => {
       return res.end();
     }
 
-    // robię zapis równoległy do nowej tabelimanagement_date_description_FK
+    // robię zapis równoległy do nowej tabeli company_management_date_description_FK
     const [searchDuplicate] = await connect_SQL.query(
       `SELECT * FROM  company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
       [NUMER_FV, raportDate[0].DATE, FIRMA]);
@@ -911,7 +911,7 @@ const addDecisionDate = async (req, res) => {
         HISTORIA_ZMIANY_DATY_ROZLICZENIA.push(...data.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
       }
 
-      await connect_SQL.query(`UPDATE management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?  `,
+      await connect_SQL.query(`UPDATE company_management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?  `,
         [JSON.stringify(INFORMACJA_ZARZAD), JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA), id]
       );
     } else {

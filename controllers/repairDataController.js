@@ -987,7 +987,7 @@ const addDocToHistory = async () => {
         const [historyDoc] = await connect_SQL.query(`SELECT C_D_A.HISTORIA_ZMIANY_DATY_ROZLICZENIA, C_D_A.INFORMACJA_ZARZAD, C_D.NUMER_FV
 FROM company_documents_actions AS C_D_A
 LEFT JOIN company_documents AS C_D ON C_D.id_document = C_D_A.document_id `);
-        const thresholdDate = new Date('2025-04-29'); // YYYY-MM-DD
+        const thresholdDate = new Date('2025-05-14'); // YYYY-MM-DD
 
         const result = historyDoc.filter(doc => {
             const infoZarzad = Array.isArray(doc.INFORMACJA_ZARZAD) ? doc.INFORMACJA_ZARZAD : [];
@@ -1004,8 +1004,8 @@ LEFT JOIN company_documents AS C_D ON C_D.id_document = C_D_A.document_id `);
 
             return containsRecentDate(infoZarzad) || containsRecentDate(ostatecznaData);
         });
-        const reportDate = '2025-04-22';
-        console.log(result[54]);
+        const reportDate = '2025-05-14';
+        console.log(result[21]);
 
 
         //         for (const doc of result) {
