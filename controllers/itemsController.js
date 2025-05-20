@@ -320,7 +320,7 @@ const savePreparedItems = async (req, res) => {
             "SELECT DEPARTMENT, COMPANY FROM company_join_items WHERE DEPARTMENT = ? AND COMPANY = ?",
             [DEPARTMENT, COMPANY]
         );
-
+        console.log(duplicate);
         if (duplicate[0]?.DEPARTMENT && duplicate[0]?.COMPANY) {
             await connect_SQL.query(
                 "UPDATE company_join_items SET COMPANY = ?, LOCALIZATION = ?, AREA = ?, OWNER = ?, GUARDIAN = ? WHERE DEPARTMENT = ?",
@@ -348,7 +348,7 @@ const savePreparedItems = async (req, res) => {
         }
         res.end();
     } catch (error) {
-        logEvents(`itemsController, savePrepareItems: ${error}`, "reqServerErrors.txt");
+        logEvents(`itemsController, savePreparedItems: ${error}`, "reqServerErrors.txt");
         res.status(500).json({ error: "Server error" });
     }
 };
