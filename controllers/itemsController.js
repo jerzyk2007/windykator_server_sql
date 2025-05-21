@@ -313,36 +313,35 @@ const getFKSettingsItems = async (req, res) => {
 
 // funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
 const savePreparedItems = async (req, res) => {
-    const { DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN } = req.body;
+    const { itemData } = req.body;
     try {
-
+        // console.log(itemData);
         const [duplicate] = await connect_SQL.query(
             "SELECT DEPARTMENT, COMPANY FROM company_join_items WHERE DEPARTMENT = ? AND COMPANY = ?",
-            [DEPARTMENT, COMPANY]
+            [itemData.department, itemData.company]
         );
-        console.log(duplicate);
         if (duplicate[0]?.DEPARTMENT && duplicate[0]?.COMPANY) {
             await connect_SQL.query(
-                "UPDATE company_join_items SET COMPANY = ?, LOCALIZATION = ?, AREA = ?, OWNER = ?, GUARDIAN = ? WHERE DEPARTMENT = ?",
+                "UPDATE company_join_items SET LOCALIZATION = ?, AREA = ?, OWNER = ?, GUARDIAN = ? WHERE DEPARTMENT = ? AND COMPANY = ?",
                 [
-                    COMPANY,
-                    LOCALIZATION,
-                    AREA,
-                    JSON.stringify(OWNER),
-                    JSON.stringify(GUARDIAN),
-                    DEPARTMENT,
+                    itemData.localization,
+                    itemData.area,
+                    JSON.stringify(itemData.owner),
+                    JSON.stringify(itemData.guardian),
+                    itemData.department,
+                    itemData.company,
                 ]
             );
         } else {
             await connect_SQL.query(
                 "INSERT INTO company_join_items (DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN ) VALUES (?, ?, ?, ?, ?, ?)",
                 [
-                    DEPARTMENT,
-                    COMPANY,
-                    LOCALIZATION,
-                    AREA,
-                    JSON.stringify(OWNER),
-                    JSON.stringify(GUARDIAN),
+                    itemData.department,
+                    itemData.company,
+                    itemData.localization,
+                    itemData.area,
+                    JSON.stringify(itemData.owner),
+                    JSON.stringify(itemData.guardian),
                 ]
             );
         }

@@ -60,6 +60,7 @@ router
     .route("/delete-prepared-item/:dep/:comp")
     .delete(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.deletePreparedItem);
 
+
 router
     .route("/check-doc-payment")
     .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), items.checkDocPayment);
