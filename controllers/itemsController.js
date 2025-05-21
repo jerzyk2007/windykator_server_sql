@@ -315,7 +315,6 @@ const getFKSettingsItems = async (req, res) => {
 const savePreparedItems = async (req, res) => {
     const { itemData } = req.body;
     try {
-        // console.log(itemData);
         const [duplicate] = await connect_SQL.query(
             "SELECT DEPARTMENT, COMPANY FROM company_join_items WHERE DEPARTMENT = ? AND COMPANY = ?",
             [itemData.department, itemData.company]
