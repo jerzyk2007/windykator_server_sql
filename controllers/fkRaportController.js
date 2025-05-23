@@ -1,8 +1,7 @@
-const { connect_SQL } = require("../config/dbConn");
+const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { checkDate, checkTime } = require('./manageDocumentAddition');
 const { documentsType } = require('./manageDocumentAddition');
 const { getExcelRaport } = require('./fkRaportExcelGenerate');
-
 const { logEvents } = require("../middleware/logEvents");
 
 // do wyszukiwania różnic pomiędzy FK a AS
@@ -927,6 +926,216 @@ const addDecisionDate = async (req, res) => {
   }
 };
 
+const getAccountancyDataMsSQL = async () => {
+  try {
+
+    // const endDate = '2025-04-30';
+
+    // szukam daty jako ostatni dzień poprzedniego miesiąca
+    const today = new Date();
+    const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+    const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
+
+    // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
+    const lastDay = new Date(year, month, 0);
+    const yyyy = lastDay.getFullYear();
+    const mm = String(lastDay.getMonth() + 1).padStart(2, '0'); // getMonth() zwraca 0-11
+    const dd = String(lastDay.getDate()).padStart(2, '0');
+
+    const endDate = `${yyyy}-${mm}-${dd}`;
+
+    const query = `
+ DECLARE @datado DATE = '${endDate}';
+DECLARE @synt INT = NULL; -- podaj 201 lub 203 lub NULL (NULL = oba)
+
+WITH Kontrahenci AS (
+    SELECT
+        k.pozycja,
+        k.skrot
+    FROM fkkomandytowa.FK.fk_kontrahenci AS k
+),
+Rozrachunki AS (
+    SELECT
+        transakcja,
+        SUM(kwota * SIGN(0 - strona + 0.5)) AS WnMaRozliczono,
+        SUM(
+            (CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END) * SIGN(0 - strona + 0.5)
+        ) AS WnMaRozliczono_w
+    FROM fkkomandytowa.FK.rozrachunki
+    WHERE CONVERT(DATE, dataokr) <= @datado
+      AND czyRozliczenie = 1
+      AND potencjalna = 0
+    GROUP BY transakcja
+)
+SELECT
+    stanNa,
+    dsymbol,
+    kontrahent,
+    synt,
+    poz1,
+    poz2,
+    termin,
+    dniPrzetreminowania,
+    przedział,
+    płatność,
+    ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) AS saldoKontrahent,
+    CASE
+        WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) > 0 THEN 'N'
+        WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) = 0 THEN 'R'
+        ELSE 'Z'
+    END AS Typ
+FROM (
+    -- ZOBOWIĄZANIA 1
+    SELECT
+        @datado AS stanNa,
+        r.dsymbol,
+        k.skrot AS kontrahent,
+        r.synt,
+        r.poz1,
+        r.poz2,
+        CAST(r.termin AS DATE) AS termin,
+        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+        CASE
+            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        ROUND(
+            CASE WHEN SUM(r.kwota) > 0 THEN -SUM(r.kwota) ELSE SUM(r.kwota) END
+            + SUM(
+                CASE
+                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+                    ELSE ISNULL(rr.WnMaRozliczono, 0)
+                END
+            ), 2
+        ) AS płatność
+    FROM fkkomandytowa.FK.fk_rozdata r
+    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+    WHERE r.potencjalna = 0
+      AND r.synt IN (201,203)
+      AND (@synt IS NULL OR r.synt = @synt)
+      AND r.baza = 2
+      AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+      AND (
+            r.strona = 1
+            OR (r.strona = 0 AND r.kwota < 0)
+          )
+      AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+      AND r.strona = 1
+    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+    UNION ALL
+    -- ZOBOWIĄZANIA 2
+    SELECT
+        @datado AS stanNa,
+        r.dsymbol,
+        k.skrot AS kontrahent,
+        r.synt,
+        r.poz1,
+        r.poz2,
+        CAST(r.termin AS DATE) AS termin,
+        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+        CASE
+            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        ROUND(
+            SUM(r.kwota)
+            - SUM(
+                CASE
+                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+                    ELSE ISNULL(rr.WnMaRozliczono, 0)
+                END
+            ), 2
+        ) AS płatność
+    FROM fkkomandytowa.FK.fk_rozdata r
+    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+    WHERE r.potencjalna = 0
+      AND r.synt IN (201,203)
+      AND (@synt IS NULL OR r.synt = @synt)
+      AND r.baza = 2
+      AND (
+            r.strona = 0
+            OR (r.strona = 1 AND r.kwota < 0)
+          )
+      AND r.rozliczona = 0
+      AND r.termin BETWEEN '1800-01-01' AND CONVERT(DATE, @datado)
+      AND r.strona = 0
+      AND r.kwota < 0
+      AND r.doRozlZl > 0
+    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+    UNION ALL
+    -- NALEŻNOŚCI
+    SELECT
+        @datado AS stanNa,
+        r.dsymbol,
+        k.skrot AS kontrahent,
+        r.synt,
+        r.poz1,
+        r.poz2,
+        CAST(r.termin AS DATE) AS termin,
+        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+        CASE
+            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        ROUND(
+            SUM(r.kwota)
+            + SUM(
+                CASE
+                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+                    ELSE ISNULL(rr.WnMaRozliczono, 0)
+                END
+            ), 2
+        ) AS płatność
+    FROM fkkomandytowa.FK.fk_rozdata r
+    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+    WHERE r.potencjalna = 0
+      AND r.synt IN (201,203)
+      AND (@synt IS NULL OR r.synt = @synt)
+      AND r.baza = 2
+      AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+      AND (
+            r.strona = 0
+            OR (r.strona = 1 AND r.kwota < 0)
+          )
+      AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+      AND r.strona = 0
+      AND r.orgStrona = 0
+    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+) as wynik
+WHERE ROUND(płatność,2) <> 0
+ORDER BY poz2;
+
+
+    `;
+
+    const accountancyData = await msSqlQuery(query);
+    console.log(accountancyData.length);
+
+
+  }
+  catch (error) {
+    logEvents(`fkRaportController, getAccountancyDataMsSQL: ${error}`, "reqServerErrors.txt");
+  }
+};
+
 module.exports = {
   getRaportData,
   getDateCounter,
@@ -936,5 +1145,6 @@ module.exports = {
   getRaportDocumentsControlBL,
   getStructureOrganization,
   generateHistoryDocuments,
-  addDecisionDate
+  addDecisionDate,
+  getAccountancyDataMsSQL
 };
