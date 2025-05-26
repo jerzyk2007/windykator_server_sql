@@ -361,7 +361,18 @@ const getRaportData = async (req, res) => {
     //sortowanie obiektów wg kolejności, żeby arkusze w excel były odpowiednio posortowane
     const sortOrder = ["ALL", "WYDANE - NIEZAPŁACONE", "BLACHARNIA", "CZĘŚCI", "F&I", "KSIĘGOWOŚĆ", "KSIĘGOWOŚĆ AS", "SAMOCHODY NOWE", "SAMOCHODY UŻYWANE", "SERWIS", "WDT",];
 
-    const sortedArray = accountingData.sort((a, b) =>
+
+
+    // sortowanie w tablicach data po TERMIN_PLATNOSCI_FV rosnąco 
+    const sortedData = accountingData.map(item => {
+      if (Array.isArray(item.data)) {
+        item.data.sort((a, b) => new Date(a.DATA_WYSTAWIENIA_FV) - new Date(b.DATA_WYSTAWIENIA_FV));
+      }
+      return item;
+    });
+
+    //sortowanie wg kolejności arkuszy do excela
+    const sortedArray = sortedData.sort((a, b) =>
       sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
     );
 
