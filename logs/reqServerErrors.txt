@@ -1,4 +1,0 @@
-20250526	10:39:09	fkRaportController, getRaportDocumentsControlBL: Error: read ECONNRESET
-20250526	12:10:43	fkRaportController, getRaportDocumentsControlBL: Error: read ECONNRESET
-20250526	12:34:32	getDataFromMSSQL, updateSettlementDescription, addMany settlements description: Error: read ECONNRESET
-20250526	12:34:35	getDataFromMSSQL, updateSettlementDescription, addMany settlements description: Error: read ECONNRESET

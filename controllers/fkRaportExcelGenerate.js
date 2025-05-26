@@ -222,7 +222,9 @@ const getExcelRaport = async (cleanData, raportInfo) => {
                 // Dodaj dane z każdego obiektu jako wiersze, zaczynając od 1 w kolumnie 'Lp'
                 sheet.data.forEach((row, index) => {
                     const rowData = [index + 1, ...headers.map((header) => row[header] || '')]; // Dodaj numer porządkowy
-                    worksheet.addRow(rowData);
+                    // worksheet.addRow(rowData);
+                    const newRow = worksheet.addRow(rowData);
+                    newRow.height = 40; // 
                 });
 
                 // Stylizowanie nagłówków
