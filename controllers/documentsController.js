@@ -513,7 +513,7 @@ const changeDocumentControl = async (req, res) => {
     );
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
-        "UPDATE company_control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?, COMPANY = ?  WHERE NUMER_FV = ?",
+        "UPDATE company_control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?, CONTROL_BRAK_DZIALAN_OD_OST = ?, COMPANY = ?  WHERE NUMER_FV = ? AND COMPANY = ?",
         [
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
@@ -524,14 +524,16 @@ const changeDocumentControl = async (req, res) => {
           documentControlBL.faktura ? documentControlBL.faktura : null,
           documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
+          documentControlBL.zmianyOstatniaKontrola ? documentControlBL.zmianyOstatniaKontrola : null,
           FIRMA,
-          NUMER_FV
+          NUMER_FV,
+          FIRMA
         ]
       );
 
     } else {
       await connect_SQL.query(
-        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT, COMPANY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT, CONTROL_BRAK_DZIALAN_OD_OST, COMPANY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [NUMER_FV,
           documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
           documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
@@ -542,6 +544,7 @@ const changeDocumentControl = async (req, res) => {
           documentControlBL.faktura ? documentControlBL.faktura : null,
           documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
+          documentControlBL.zmianyOstatniaKontrola ? documentControlBL.zmianyOstatniaKontrola : null,
           FIRMA
         ]
       );
@@ -550,9 +553,10 @@ const changeDocumentControl = async (req, res) => {
   }
   catch (error) {
     logEvents(
-      `documentsController, changeControlChat: ${error}`,
+      `documentsController, changeDocumentControl: ${error}`,
       "reqServerErrors.txt"
     );
+    console.error(error);
   }
 };
 

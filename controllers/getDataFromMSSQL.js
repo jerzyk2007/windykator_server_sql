@@ -501,7 +501,7 @@ const updateSettlementDescriptionKRT = async () => {
           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
             const dateA = new Date(a.split(' - ')[0]);
             const dateB = new Date(b.split(' - ')[0]);
-            return dateA - dateB;
+            return dateB - dateA;
           });
         }
 
@@ -576,7 +576,7 @@ const updateSettlementDescriptionKEM = async () => {
           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
             const dateA = new Date(a.split(' - ')[0]);
             const dateB = new Date(b.split(' - ')[0]);
-            return dateA - dateB;
+            return dateB - dateA;
           });
         }
 
