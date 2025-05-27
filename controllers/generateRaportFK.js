@@ -100,10 +100,10 @@ const generateHistoryDocuments = async (company) => {
 };
 
 
+
 // pobieram nowe dane wiekowania 
 const getAccountancyDataMsSQL = async (company, res) => {
     try {
-
         // szukam daty jako ostatni dzień poprzedniego miesiąca
         const today = new Date();
         const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
@@ -118,65 +118,65 @@ const getAccountancyDataMsSQL = async (company, res) => {
         const endDate = `${yyyy}-${mm}-${dd}`;
 
         const queryKRT = `
- DECLARE @datado DATE = '${endDate}';
-DECLARE @synt INT = NULL; -- podaj 201 lub 203 lub NULL (NULL = oba)
+        DECLARE @datado DATE = '${endDate}';
+        DECLARE @synt INT = NULL; -- podaj 201 lub 203 lub NULL (NULL = oba)
 
-WITH Kontrahenci AS (
-    SELECT
-        k.pozycja,
-        k.skrot
-    FROM fkkomandytowa.FK.fk_kontrahenci AS k
-),
-Rozrachunki AS (
-    SELECT
-        transakcja,
-        SUM(kwota * SIGN(0 - strona + 0.5)) AS WnMaRozliczono,
-        SUM(
-            (CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END) * SIGN(0 - strona + 0.5)
-        ) AS WnMaRozliczono_w
-    FROM fkkomandytowa.FK.rozrachunki
-    WHERE CONVERT(DATE, dataokr) <= @datado
-      AND czyRozliczenie = 1
-      AND potencjalna = 0
-    GROUP BY transakcja
-)
-SELECT
-    stanNa,
-    dsymbol,
-    kontrahent,
-    synt,
-    poz1,
-    poz2,
-    termin,
-    dniPrzetreminowania,
-    przedział,
-    płatność,
-    ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) AS saldoKontrahent,
-    CASE
-        WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) > 0 THEN 'N'
-        WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) = 0 THEN 'R'
-        ELSE 'Z'
-    END AS Typ
-FROM (
-    -- ZOBOWIĄZANIA 1
-    SELECT
-        @datado AS stanNa,
-        r.dsymbol,
-        k.skrot AS kontrahent,
-        r.synt,
-        r.poz1,
-        r.poz2,
-        CAST(r.termin AS DATE) AS termin,
-        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
-        CASE
-            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
-            ELSE '> 360'
-        END AS przedział,
+        WITH Kontrahenci AS (
+        SELECT
+            k.pozycja,
+            k.skrot
+        FROM fkkomandytowa.FK.fk_kontrahenci AS k
+        ),
+        Rozrachunki AS (
+            SELECT
+                transakcja,
+                SUM(kwota * SIGN(0 - strona + 0.5)) AS WnMaRozliczono,
+                SUM(
+                    (CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END) * SIGN(0 - strona + 0.5)
+                ) AS WnMaRozliczono_w
+            FROM fkkomandytowa.FK.rozrachunki
+            WHERE CONVERT(DATE, dataokr) <= @datado
+            AND czyRozliczenie = 1
+            AND potencjalna = 0
+            GROUP BY transakcja
+        )
+        SELECT
+            stanNa,
+            dsymbol,
+            kontrahent,
+            synt,
+            poz1,
+            poz2,
+            termin,
+            dniPrzetreminowania,
+            przedział,
+            płatność,
+            ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) AS saldoKontrahent,
+            CASE
+                WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) > 0 THEN 'N'
+                WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) = 0 THEN 'R'
+                ELSE 'Z'
+            END AS Typ
+        FROM (
+            -- ZOBOWIĄZANIA 1
+            SELECT
+                @datado AS stanNa,
+                r.dsymbol,
+                k.skrot AS kontrahent,
+                r.synt,
+                r.poz1,
+                r.poz2,
+                CAST(r.termin AS DATE) AS termin,
+                DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+                CASE
+                    WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+                    ELSE '> 360'
+                END AS przedział,
         ROUND(
             CASE WHEN SUM(r.kwota) > 0 THEN -SUM(r.kwota) ELSE SUM(r.kwota) END
             + SUM(
@@ -186,24 +186,24 @@ FROM (
                 END
             ), 2
         ) AS płatność
-    FROM fkkomandytowa.FK.fk_rozdata r
-    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-    WHERE r.potencjalna = 0
-      AND r.synt IN (201,203)
-      AND (@synt IS NULL OR r.synt = @synt)
-      AND r.baza = 2
-      AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
-      AND (
-            r.strona = 1
-            OR (r.strona = 0 AND r.kwota < 0)
-          )
-      AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
-      AND r.strona = 1
-    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-    UNION ALL
-    -- ZOBOWIĄZANIA 2
-    SELECT
+        FROM fkkomandytowa.FK.fk_rozdata r
+        LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+        LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+        WHERE r.potencjalna = 0
+        AND r.synt IN (201,203)
+        AND (@synt IS NULL OR r.synt = @synt)
+        AND r.baza = 2
+        AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+        AND (
+                r.strona = 1
+                OR (r.strona = 0 AND r.kwota < 0)
+            )
+        AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+        AND r.strona = 1
+        GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+        UNION ALL
+        -- ZOBOWIĄZANIA 2
+        SELECT
         @datado AS stanNa,
         r.dsymbol,
         k.skrot AS kontrahent,
@@ -230,26 +230,26 @@ FROM (
                 END
             ), 2
         ) AS płatność
-    FROM fkkomandytowa.FK.fk_rozdata r
-    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-    WHERE r.potencjalna = 0
-      AND r.synt IN (201,203)
-      AND (@synt IS NULL OR r.synt = @synt)
-      AND r.baza = 2
-      AND (
-            r.strona = 0
-            OR (r.strona = 1 AND r.kwota < 0)
-          )
-      AND r.rozliczona = 0
-      AND r.termin BETWEEN '1800-01-01' AND CONVERT(DATE, @datado)
-      AND r.strona = 0
-      AND r.kwota < 0
-      AND r.doRozlZl > 0
-    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-    UNION ALL
-    -- NALEŻNOŚCI
-    SELECT
+        FROM fkkomandytowa.FK.fk_rozdata r
+        LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+        LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+        WHERE r.potencjalna = 0
+        AND r.synt IN (201,203)
+        AND (@synt IS NULL OR r.synt = @synt)
+        AND r.baza = 2
+        AND (
+                r.strona = 0
+                OR (r.strona = 1 AND r.kwota < 0)
+            )
+        AND r.rozliczona = 0
+        AND r.termin BETWEEN '1800-01-01' AND CONVERT(DATE, @datado)
+        AND r.strona = 0
+        AND r.kwota < 0
+        AND r.doRozlZl > 0
+        GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+        UNION ALL
+        -- NALEŻNOŚCI
+        SELECT
         @datado AS stanNa,
         r.dsymbol,
         k.skrot AS kontrahent,
@@ -276,27 +276,25 @@ FROM (
                 END
             ), 2
         ) AS płatność
-    FROM fkkomandytowa.FK.fk_rozdata r
-    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-    WHERE r.potencjalna = 0
-      AND r.synt IN (201,203)
-      AND (@synt IS NULL OR r.synt = @synt)
-      AND r.baza = 2
-      AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
-      AND (
+        FROM fkkomandytowa.FK.fk_rozdata r
+        LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+        LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+        WHERE r.potencjalna = 0
+        AND r.synt IN (201,203)
+        AND (@synt IS NULL OR r.synt = @synt)
+        AND r.baza = 2
+        AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+        AND (
             r.strona = 0
             OR (r.strona = 1 AND r.kwota < 0)
-          )
-      AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
-      AND r.strona = 0
-      AND r.orgStrona = 0
-    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-) as wynik
-WHERE ROUND(płatność,2) <> 0
-ORDER BY poz2;
-
-
+                )
+            AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+            AND r.strona = 0
+            AND r.orgStrona = 0
+            GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+        ) as wynik
+        WHERE ROUND(płatność,2) <> 0
+        ORDER BY poz2;
     `;
 
         const query = company === 'KRT' ? queryKRT : null;
@@ -361,13 +359,18 @@ const saveAccountancyData = async (data, company) => {
         ]);
 
         const query = `
-      INSERT IGNORE INTO company_raportFK_${company}_accountancy
+         INSERT IGNORE INTO company_raportFK_${company}_accountancy
         (NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL, FIRMA) 
-      VALUES 
+         VALUES 
         ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
     `;
 
         await connect_SQL.query(query, values.flat());
+
+        // // dodanie daty wygenerowania raportu
+        await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
+            [checkDate(new Date()), 'generate', company]
+        );
 
     }
     catch (error) {
@@ -377,26 +380,25 @@ const saveAccountancyData = async (data, company) => {
 
 
 // generowanie raportu w wersji poprawionej 
-const generateRaport = async (company) => {
+const generateRaportCompany = async (company) => {
     try {
         const [getData] = await connect_SQL.query(`
-          SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, 
-          RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
-    RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.LOCALIZATION, JI.AREA, 
-    JI.OWNER, JI.GUARDIAN, D.DATA_FV, D.VIN, D.DORADCA, 
-    DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, 
-    DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, 
-    DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
-    S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
-    FROM company_raportFK_${company}_accountancy AS RA 
-    LEFT JOIN company_join_items AS JI ON RA.DZIAL = JI.department AND RA.FIRMA = JI.COMPANY
-    LEFT JOIN company_documents AS D ON RA.NUMER_FV = D.NUMER_FV AND RA.FIRMA = D.FIRMA
-    LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
-    LEFT JOIN company_rubicon_data AS R ON RA.NUMER_FV = R.NUMER_FV AND RA.FIRMA = R.COMPANY
-    LEFT JOIN company_settlements AS S ON RA.NUMER_FV = S.NUMER_FV AND RA.FIRMA = S.COMPANY
-    LEFT JOIN company_settlements_description AS SD ON RA.NUMER_FV = SD.NUMER AND RA.FIRMA = SD.COMPANY
+        SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, 
+        RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
+        RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.LOCALIZATION, JI.AREA, 
+        JI.OWNER, JI.GUARDIAN, D.DATA_FV, D.VIN, D.DORADCA, 
+        DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, 
+        DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, 
+        DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
+        S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
+        FROM company_raportFK_${company}_accountancy AS RA 
+        LEFT JOIN company_join_items AS JI ON RA.DZIAL = JI.department AND RA.FIRMA = JI.COMPANY
+        LEFT JOIN company_documents AS D ON RA.NUMER_FV = D.NUMER_FV AND RA.FIRMA = D.FIRMA
+        LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
+        LEFT JOIN company_rubicon_data AS R ON RA.NUMER_FV = R.NUMER_FV AND RA.FIRMA = R.COMPANY
+        LEFT JOIN company_settlements AS S ON RA.NUMER_FV = S.NUMER_FV AND RA.FIRMA = S.COMPANY
+        LEFT JOIN company_settlements_description AS SD ON RA.NUMER_FV = SD.NUMER AND RA.FIRMA = SD.COMPANY
     `);
-
 
         // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM company_aging_items');
         const [getAging] = await connect_SQL.query('SELECT \`FROM_TIME\`, TO_TIME, TITLE, TYPE FROM company_aging_items');
@@ -610,13 +612,13 @@ const differencesAS_FK = async (company) => {
 
         const [getDoc] = await connect_SQL.query(
             `SELECT D.NUMER_FV AS NR_DOKUMENTU, D.DZIAL, IFNULL(JI.localization, 'BRAK DANYCH') AS LOKALIZACJA, D.KONTRAHENT, S.NALEZNOSC AS DO_ROZLICZENIA_AS, 
-      D.DATA_FV AS DATA_WYSTAWIENIA_FV, D.TERMIN AS TERMIN_PLATNOSCI_FV,
-      IFNULL(JI.AREA, 'BRAK DANYCH') AS OBSZAR, IFNULL(JI.GUARDIAN, 'BRAK DANYCH') AS OPIEKUN_OBSZARU_CENTRALI, 
-      IFNULL(JI.OWNER,  'BRAK DANYCH') AS OWNER
-      FROM company_documents AS D 
-      LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
-      LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department
-      WHERE S.NALEZNOSC !=0 AND ${sqlCondition} AND D.FIRMA = ?`, [company]
+        D.DATA_FV AS DATA_WYSTAWIENIA_FV, D.TERMIN AS TERMIN_PLATNOSCI_FV,
+        IFNULL(JI.AREA, 'BRAK DANYCH') AS OBSZAR, IFNULL(JI.GUARDIAN, 'BRAK DANYCH') AS OPIEKUN_OBSZARU_CENTRALI, 
+        IFNULL(JI.OWNER,  'BRAK DANYCH') AS OWNER
+        FROM company_documents AS D 
+        LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
+        LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department
+        WHERE S.NALEZNOSC !=0 AND ${sqlCondition} AND D.FIRMA = ?`, [company]
         );
 
         const safeParseJSON = (data) => {
@@ -707,13 +709,26 @@ const saveMark = async (documents, company) => {
 
 const getRaportData = async (req, res) => {
     const { company } = req.params;
-    const { raportInfo } = req.body;
+
+    const [raportDate] = await connect_SQL.query(`    
+        SELECT TITLE, DATE
+        FROM company_fk_updates_date
+        WHERE COMPANY = ?
+        AND TITLE IN ('generate', 'accountancy')`, [company]);
+
+    const raportInfo =
+    {
+        reportDate: raportDate.find(row => row.TITLE === 'generate')?.DATE || " ",
+        agingDate: raportDate.find(row => row.TITLE === 'accountancy')?.DATE || " ",
+        reportName: 'Draft 201 203_należności'
+    };
 
     try {
+
         const [dataRaport] = await connect_SQL.query(
             `SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK.* 
-      FROM company_fk_raport_${company} AS FK 
-      LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`);
+            FROM company_fk_raport_${company} AS FK 
+            LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`);
 
 
         // usuwam z każdego obiektu klucz id_fk_raport
@@ -817,8 +832,6 @@ const getRaportData = async (req, res) => {
             };
         }
         );
-
-
 
         const cleanDifferences = getDifferencesFK_AS.map(item => {
             return {
@@ -966,8 +979,9 @@ const getRaportData = async (req, res) => {
                     doc.TYP_DOKUMENTU !== 'Inne' &&
                     doc.TYP_DOKUMENTU !== 'Korekta' &&
                     doc.ROZNICA !== "NULL" &&
-                    doc.DATA_ROZLICZENIA_AS !== "NULL" &&
-                    doc.DATA_ROZLICZENIA_AS <= new Date(raportInfo.accountingDate)
+                    doc.DATA_ROZLICZENIA_AS !== "NULL"
+                    // &&
+                    // doc.DATA_ROZLICZENIA_AS <= new Date(raportInfo.accountingDate)
                 );
 
                 // drugie filtrowanie wszytskich danych
@@ -997,18 +1011,22 @@ const getRaportData = async (req, res) => {
             .flatMap(doc => doc.data) // Rozbij tablice data na jedną tablicę
             .map(item => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU      
 
-
-
-        // console.log(markDocuments.sort());
-        // console.log(markDocuments.length);
-
         saveMark(markDocuments, company);
         // res.json({ dataRaport, differences: getDifferencesFK_AS });
 
         //sortowanie obiektów wg kolejności, żeby arkusze w excel były odpowiednio posortowane
         const sortOrder = ["ALL", "WYDANE - NIEZAPŁACONE", "BLACHARNIA", "CZĘŚCI", "F&I", "KSIĘGOWOŚĆ", "KSIĘGOWOŚĆ AS", "SAMOCHODY NOWE", "SAMOCHODY UŻYWANE", "SERWIS", "WDT",];
 
-        const sortedArray = accountingData.sort((a, b) =>
+        // sortowanie w tablicach data po TERMIN_PLATNOSCI_FV rosnąco 
+        const sortedData = accountingData.map(item => {
+            if (Array.isArray(item.data)) {
+                item.data.sort((a, b) => new Date(a.DATA_WYSTAWIENIA_FV) - new Date(b.DATA_WYSTAWIENIA_FV));
+            }
+            return item;
+        });
+
+        //sortowanie wg kolejności arkuszy do excela
+        const sortedArray = sortedData.sort((a, b) =>
             sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
         );
 
@@ -1028,7 +1046,6 @@ const generateNewRaport = async (req, res) => {
     const { company } = req.params;
 
     try {
-
         // pobieram nowe dane wiekowania 
         const accountancyData = await getAccountancyDataMsSQL(company, res);
 
@@ -1047,7 +1064,7 @@ const generateNewRaport = async (req, res) => {
         // zapisuję dane wiekowania do tabeli
         await saveAccountancyData(accountancyData, company);
 
-        await generateRaport(company);
+        await generateRaportCompany(company);
 
         res.end();
     }
@@ -1056,7 +1073,6 @@ const generateNewRaport = async (req, res) => {
 
     }
 };
-
 
 module.exports = {
     getDateCounter,

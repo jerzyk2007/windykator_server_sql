@@ -16,9 +16,9 @@ router
   .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), generateRaport.getDateCounter);
 
 // usuwam wszystkie dane wczytanych plików excel raportu FK
-router
-  .route("/delete-data-raport/:company")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.deleteDataRaport);
+// router
+// .route("/delete-data-raport/:company")
+// .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.deleteDataRaport);
 
 // generowanie raportu FK wersja 2 i zapisanie w tabeli
 router

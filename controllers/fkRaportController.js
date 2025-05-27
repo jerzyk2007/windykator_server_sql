@@ -426,36 +426,36 @@ const getDateCounter = async (req, res) => {
 };
 
 //funckja kasuje przygotwane dane do raportu, czas dodania pliki i ilość danych
-const deleteDataRaport = async (req, res) => {
-  const { company } = req.params;
-  try {
-    //generuję historię wpisów uwzględniając 
-    await generateHistoryDocuments(company);
+// const deleteDataRaport = async (req, res) => {
+//   const { company } = req.params;
+//   try {
+//     //generuję historię wpisów uwzględniając 
+//     await generateHistoryDocuments(company);
 
-    //usuwam daty dodanie wiekowanie, generowanie i pobrania raportu
-    await connect_SQL.query(
-      `UPDATE company_fk_updates_date SET DATE = null, COUNTER = null WHERE TITLE IN ('accountancy', 'generate', 'raport') AND COMPANY = ?`,
-      [company]
-    );
+//     //usuwam daty dodanie wiekowanie, generowanie i pobrania raportu
+//     await connect_SQL.query(
+//       `UPDATE company_fk_updates_date SET DATE = null, COUNTER = null WHERE TITLE IN ('accountancy', 'generate', 'raport') AND COMPANY = ?`,
+//       [company]
+//     );
 
-    //usuwam znaczniki dokumentów
-    await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
+//     //usuwam znaczniki dokumentów
+//     await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
 
-    // czyszczę tabelę z wiekowaniem
-    await connect_SQL.query(`TRUNCATE company_raportFK_${company}_accountancy`);
+//     // czyszczę tabelę z wiekowaniem
+//     await connect_SQL.query(`TRUNCATE company_raportFK_${company}_accountancy`);
 
-    // czyszczę tabelę z raportem
-    await connect_SQL.query(`TRUNCATE TABLE company_fk_raport_${company}`);
+//     // czyszczę tabelę z raportem
+//     await connect_SQL.query(`TRUNCATE TABLE company_fk_raport_${company}`);
 
-    res.json({ result: "delete" });
-  } catch (error) {
-    logEvents(
-      `fkRaportController, deleteDataRaport: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.json({ result: "delete" });
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, deleteDataRaport: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // generowanie raportu w wersji poprawionej 
 const generateRaport = async (req, res) => {
@@ -1150,7 +1150,7 @@ ORDER BY poz2;
 module.exports = {
   getRaportData,
   getDateCounter,
-  deleteDataRaport,
+  // deleteDataRaport,
   generateRaport,
   changeMark,
   getRaportDocumentsControlBL,
