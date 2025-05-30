@@ -6,6 +6,7 @@ const ROLES_LIST = {
   FK: 200,
   Nora: 300,
   Admin: 1000,
+  SuperAdmin: 2000,
   Root: 5000,
 };
 
