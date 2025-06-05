@@ -16,61 +16,6 @@ const generatePassword = (length = 15) => {
 // const baseUrl = "http://localhost:3000";
 const baseUrl = "https://raportbl.krotoski.com";
 
-const resetPass = async (req, res) => {
-    const { userlogin } = req.body;
-    try {
-
-        const [checkMail] = await connect_SQL.query(`SELECT userlogin FROM company_users WHERE userlogin = ?`, [userlogin]);
-        if (!checkMail.length) {
-            return res.end();
-        }
-
-        await connect_SQL.query('DELETE FROM company_password_resets WHERE email = ?',
-            [
-                userlogin
-            ]
-        );
-
-        const token = generatePassword(30);
-        const encodedToken = encodeURIComponent(token);
-        const url = "password-reset";
-        const resetLink = `${baseUrl}/${url}/${encodedToken}`;
-
-        await connect_SQL.query(`INSERT INTO company_password_resets (email, token) VALUES (?, ?)`, [
-            userlogin,
-            token
-        ]);
-
-        const mailOptions = {
-            from: "powiadomienia-raportbl@krotoski.com",
-            to: `${userlogin}`,
-            subject: "Reset hasła",
-            html: `
-            <b>Dzień dobry</b><br>
-            <br>
-            Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta. <br/>
-            Jeśli to Ty wysłałeś tę prośbę, kliknij w poniższy link, aby potwierdzić procedurę zmiany hasła: <br>
-              <br>
-            <a href=${resetLink} target="_blank">Zresetuj hasło</a><br>
-          
-            <br>
-            Po kliknięciu w powyższy link otrzymasz kolejny e-mail zawierający odnośnik umożliwiający zmianę hasła.<br/>
-            Jeśli wiadomość nie dotrze w ciągu 15 minut, prosimy o ponowne rozpoczęcie procedury resetowania hasła.<br>
-            <br>
-            Jeśli nie prosiłeś o zmianę hasła, zignoruj tę wiadomość – Twoje konto pozostaje bezpieczne.<br/>        
-            <br>
-            Z poważaniem.<br>
-            Dział Nadzoru i Kontroli Należności <br>
-        `,
-        };
-        await sendEmail(mailOptions);
-        res.end();
-
-    } catch (error) {
-        logEvents(`resetPasswordController, resetPass: ${error}`, "reqServerErrors.txt");
-        res.status(500).json({ error: "Server error" });
-    }
-};
 
 //sprawdzam czy użytkownik zmieścił się w czasie 15 min
 const verifyDatePass = (date) => {
@@ -84,32 +29,37 @@ const verifyDatePass = (date) => {
     return timeDifferenceInMinutes;
 };
 
-const confirmPass = async (req, res) => {
-    const { decodedToken } = req.body;
+
+const newConfirmPass = async (req, res) => {
+    const { userlogin } = req.body;
     try {
-        const [checkToken] = await connect_SQL.query(`SELECT * FROM company_password_resets WHERE token = ?`, [decodedToken]);
+        const [checkMail] = await connect_SQL.query(`SELECT userlogin FROM company_users WHERE userlogin = ?`, [userlogin]);
+        if (!checkMail.length) {
+            return res.end();
+        }
 
-        if (checkToken[0]?.id_password_resets) {
-            const verifyDate = verifyDatePass(checkToken[0].created_at);
+        // kasuję token resetowania jesli poprzednia zmniana hasła nie została ukończona
+        await connect_SQL.query('DELETE FROM company_password_resets WHERE email = ?',
+            [
+                userlogin
+            ]
+        );
 
-            if (verifyDate <= 15) {
-                const token = generatePassword(30);
+        const token = generatePassword(30);
+        const encodedToken = encodeURIComponent(token);
+        const url = "password-confirm-reset";
+        const resetLink = `${baseUrl}/${url}/${encodedToken}`;
 
-                await connect_SQL.query('UPDATE company_password_resets SET token = ? WHERE token = ?',
-                    [token,
-                        checkToken[0].token
-                    ]
-                );
+        await connect_SQL.query(`INSERT INTO company_password_resets (email, token) VALUES (?, ?)`, [
+            userlogin,
+            token
+        ]);
 
-                const url = "password-confirm-reset";
-                const encodedToken = encodeURIComponent(token);
-                // const resetLink = `${baseUrl}/${url}/${encodedToken}/${checkToken[0].email}`;
-                const resetLink = `${baseUrl}/${url}/${encodedToken}`;
-                const mailOptions = {
-                    from: "powiadomienia-raportbl@krotoski.com",
-                    to: `${checkToken[0].email}`,
-                    subject: "Reset hasła",
-                    html: `
+        const mailOptions = {
+            from: "powiadomienia-raportbl@krotoski.com",
+            to: `${userlogin}`,
+            subject: "Reset hasła",
+            html: `
                     <b>Dzień dobry</b><br>
                     <br>
                     Kliknij w poniższy link, aby ustawić nowe hasło: <br>
@@ -120,15 +70,13 @@ const confirmPass = async (req, res) => {
                     Z poważaniem.<br>
                     Dział Nadzoru i Kontroli Należności <br>
                 `,
-                };
+        };
 
-                await sendEmail(mailOptions);
-            }
-        }
-        res.end();
+        await sendEmail(mailOptions);
 
-    } catch (error) {
-        logEvents(`resetPasswordController, confirmPass: ${error}`, "reqServerErrors.txt");
+    }
+    catch (error) {
+        logEvents(`resetPasswordController, newConfirmPass: ${error}`, "reqServerErrors.txt");
         res.status(500).json({ error: "Server error" });
     }
 };
@@ -182,4 +130,5 @@ const changePass = async (req, res) => {
     }
 };
 
-module.exports = { resetPass, confirmPass, verifyPass, changePass };
+// module.exports = { resetPass, confirmPass, verifyPass, changePass, newConfirmPass };
+module.exports = { verifyPass, changePass, newConfirmPass };

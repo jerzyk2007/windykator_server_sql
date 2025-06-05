@@ -18,6 +18,8 @@ const getTime = async (req, res) => {
 
     // await getAccountancyDataMsSQL('KEM', 1);
 
+    // await createAccounts();
+
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
     );
