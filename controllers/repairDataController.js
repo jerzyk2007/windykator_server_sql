@@ -234,31 +234,46 @@ const repairColumnsRaports = async () => {
 const createAccounts = async (req, res) => {
     try {
         const [data] = await connect_SQL.query(
-            "SELECT * FROM company_join_items ORDER BY department"
+            "SELECT * FROM company_join_items  WHERE COMPANY = 'KEM' ORDER BY DEPARTMENT"
         );
+
+
+
+        // Dodaj do OWNER elementy z GUARDIAN, jeśli ich tam nie ma
+        data.forEach(item => {
+            item.GUARDIAN.forEach(guardianName => {
+                if (!item.OWNER.includes(guardianName)) {
+                    item.OWNER.push(guardianName);
+                }
+            });
+        });
+
+
 
         const findMail = await Promise.all(
             data.map(async (item) => {
-                const ownerMail = await Promise.all(
-                    item.owner.map(async (own) => {
-                        const [mail] = await connect_SQL.query(
-                            `SELECT OWNER_MAIL FROM company_owner_items WHERE owner = ?`, [own]
-                        );
 
+                const ownerMail = await Promise.all(
+                    item.OWNER.map(async (own) => {
+
+                        const [mail] = await connect_SQL.query(
+                            `SELECT OWNER_MAIL FROM company_owner_items WHERE OWNER = ?`, [own]
+                        );
                         // Zamiana null na "Brak danych"
-                        return mail.map(row => row.owner_mail || "Brak danych");
+                        return mail.map(row => row.OWNER_MAIL || "Brak danych");
                     })
                 );
 
                 return {
                     ...item,
-                    mail: ownerMail.flat() // Spłaszczamy tablicę wyników
+                    MAIL: ownerMail.flat() // Spłaszczamy tablicę wyników
                 };
             })
         );
 
+
         // Pobranie unikalnych wartości z owner, usunięcie "Brak danych" i sortowanie
-        const uniqueOwners = [...new Set(findMail.flatMap(item => item.owner))]
+        const uniqueOwners = [...new Set(findMail.flatMap(item => item.OWNER))]
             .filter(name => name !== 'Brak danych') // Usuwa "Brak danych"
             .sort(); // Sortuje alfabetycznie
 
@@ -363,74 +378,63 @@ const createAccounts = async (req, res) => {
             }
         };
 
-        // const result = await Promise.all(uniqueOwners.map(async user => {
-        //     const [surname, name] = user.split(' '); // Podział na imię i nazwisko
-        //     let userMail = '';
-        //     let departments = new Set();
-        //     const pass = await generatePassword();
-        //     findMail.forEach(({ owner, mail, department }) => {
-        //         const index = owner.indexOf(user);
-        //         if (index !== -1) {
-        //             if (!userMail) userMail = mail[index]; // Przypisujemy pierwszy znaleziony mail
-        //             departments.add(department); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
-        //         }
-        //     });
-        //     return {
-        //         userlogin: userMail || null,
-        //         username: name,
-        //         usersurname: surname,
-        //         password: pass.password, // Teraz czekamy na wygenerowanie hasła
-        //         hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
-        //         dzial: [...departments] // Konwersja z Set na tablicę
-        //     };
-        // }));
+        const result = await Promise.all(uniqueOwners.map(async user => {
+            const [surname, name] = user.split(' '); // Podział na imię i nazwisko
+            let userMail = '';
+            let departments = new Set();
+            const pass = await generatePassword();
 
+            findMail.forEach(({ OWNER, MAIL, DEPARTMENT }) => {
+                const index = OWNER.indexOf(user);
+                if (index !== -1) {
+                    if (!userMail) userMail = MAIL[index]; // Przypisujemy pierwszy znaleziony mail
+                    departments.add({ company: 'KEM', department: DEPARTMENT }); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
+                }
+            });
+            return {
+                userlogin: userMail || null,
+                username: name,
+                usersurname: surname,
+                password: pass.password, // Teraz czekamy na wygenerowanie hasła
+                hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
+                dzial: [...departments] // Konwersja z Set na tablicę
+            };
+        }));
+
+        // const test = result.map(item => {
+        //     if (item.userlogin === 'mariola.sliwa@krotoski.com') {
+        //         console.log(item);
+
+        //     }
+        // });
         // do testów i dodawania uzytkowników
-        const pass = await generatePassword();
-        const result = [
-            {
-                userlogin: 'krystian.janiak@porschecentrumlodz.com',
-                username: 'Krystian',
-                usersurname: 'Janiak',
-                // password: 'j%6Jws5Eo0Hc',
-                password: pass.password,
-                // hashedPwd: '$2a$10$yrm451Fvp7XrcGB1qXG2DemIaQY2u1pyb/OFLln3iCq0jyHVrroFW',
-                hashedPwd: pass.hashedPwd,
-                dzial: ['D097']
-            },
-            {
-                userlogin: 'michal.pazdzierski@porschecentrumlodz.com',
-                username: 'Michał',
-                usersurname: 'Paździerski',
-                password: pass.password,
-                hashedPwd: pass.hashedPwd,
-                dzial: ['D097']
-            },
-            {
-                userlogin: 'jakub.wierzbicki@porschecentrumlodz.com',
-                username: 'Jakub',
-                usersurname: 'Wierzbicki',
-                password: pass.password,
-                hashedPwd: pass.hashedPwd,
-                dzial: ['D097']
-            },
-            {
-                userlogin: 'jaroslaw.sloczynski@porschecentrumlodz.com',
-                username: 'Jarosław',
-                usersurname: 'Słoczyński',
-                password: pass.password,
-                hashedPwd: pass.hashedPwd,
-                dzial: ['D097']
-            },
+        // const pass = await generatePassword();
 
-        ];
+        // const result = [
+        //     {
+        //         userlogin: 'mariola.sliwa@krotoski.com',
+        //         username: 'Mariola',
+        //         usersurname: 'Śliwa',
+        //         password: 'WmW3%AwdrGbs',
+        //         hashedPwd: '$2a$10$1cI.SKg7Jn1M8vvDGj4GJuVLj4G1S7PCW.pd/N0WGPZlnYmwNN.0G',
+        //         dzial: [
+        //             { company: 'KEM', department: 'D531' },
+        //             { company: 'KEM', department: 'D538' }
+        //         ]
+        //     }
+        // ];
+
+
 
         for (const user of result) {
             const [checkDuplicate] = await connect_SQL.query(`SELECT userlogin FROM company_users WHERE userlogin = ? `,
                 [user.userlogin]
             );
+            // console.log(checkDuplicate);
+
             if (!checkDuplicate.length) {
-                console.log(user);
+                // console.log(user);
+
                 await connect_SQL.query(
                     `INSERT INTO company_users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [user.username,
@@ -444,19 +448,21 @@ const createAccounts = async (req, res) => {
                     JSON.stringify(raportSettings),
                     ]);
 
-                const [getColumns] = await connect_SQL.query('SELECT * FROM comapny_table_columns');
+                const [getColumns] = await connect_SQL.query('SELECT * FROM company_table_columns');
 
                 const [checkIdUser] = await connect_SQL.query('SELECT id_user FROM company_users WHERE userlogin = ?',
                     [user.userlogin]
                 );
 
-                // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
+                // // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
                 await verifyUserTableConfig(checkIdUser[0].id_user, user.dzial, getColumns);
+
+                const dzialy = user.dzial.map(item => item.department);
 
                 const mailOptions = {
                     from: "powiadomienia-raportbl@krotoski.com",
-                    to: `${user.userlogin}`,
-                    // to: `jerzy.komorowski@krotoski.com`,
+                    // to: `${user.userlogin}`,
+                    to: `jerzy.komorowski@krotoski.com`,
                     subject: "Zostało założone konto dla Ciebie",
                     // text: "Treść wiadomości testowej",
                     html: `
@@ -467,7 +473,7 @@ const createAccounts = async (req, res) => {
                     <br>
                     Login: ${user.userlogin}<br>
                     Hasło: ${user.password}<br>
-                    Masz dostęp do działów: ${user.dzial.join(", ")} <br/>
+                    Masz dostęp do działów: ${dzialy.join(", ")} <br/>
                     <br>
                     Polecamy skorzystać z instrukcji obsługi, aby poznać funkcje programu.<br/>
                     <a href="https://raportbl.krotoski.com/instruction" target="_blank">https://raportbl.krotoski.com/instruction</a><br>
@@ -476,7 +482,8 @@ const createAccounts = async (req, res) => {
                     Dział Nadzoru i Kontroli Należności <br>
                 `,
                 };
-                // console.log(mailOptions);
+
+
                 await sendEmail(mailOptions);
 
             }
@@ -484,7 +491,7 @@ const createAccounts = async (req, res) => {
         }
 
 
-        //wyciągnięcie wszystkich maili
+        // wyciągnięcie wszystkich maili;
         // const userLoginsString = [...new Set(result.map(user => user.userlogin))].sort().join('; ');
 
         // console.log(userLoginsString);
