@@ -297,7 +297,222 @@ const getAccountancyDataMsSQL = async (company, res) => {
         ORDER BY poz2;
     `;
 
-        const query = company === 'KRT' ? queryKRT : null;
+        const queryKEM = `
+   DECLARE @datado DATE = '${endDate}';
+   WITH RozrachunkiAgg AS (
+    SELECT
+        transakcja,
+        SUM(kwota * SIGN(0.0 - strona + 0.5)) AS WnMaRozliczono,
+        SUM(
+            (CASE
+                WHEN walutaObca IS NULL THEN kwota_w
+                ELSE rozliczonoWO
+            END) * SIGN(0.0 - strona + 0.5)
+        ) AS WnMaRozliczono_w
+    FROM Krotoski_Electromobility_2023.FK.rozrachunki
+    WHERE CONVERT(DATE, dataokr) <= @datado
+      AND czyRozliczenie = 1
+      AND potencjalna = 0
+    GROUP BY transakcja
+),
+-- CTE dla danych kontrahentów
+Kontrahenci AS (
+    SELECT
+        k."pozycja",
+        k.skrot
+    FROM Krotoski_Electromobility_2023.FK."fk_kontrahenci" AS k
+),
+-- CTE zbierające surowe transakcje z FK.fk_rozdata z obliczonym 'overdue_val'
+RawTransactions AS (
+    -- ZOBOWIĄZANIA - CZĘŚĆ 1 (strona = 1)
+    SELECT
+        rozdata.dsymbol,
+        rozdata.termin AS termin_orig,
+        rozdata.synt,
+        rozdata.poz1,
+        rozdata.poz2,
+        kpu.skrot AS kontrahent_skrot,
+        ROUND(
+            (CASE WHEN SUM(rozdata.kwota) > 0 THEN -SUM(rozdata.kwota) ELSE SUM(rozdata.kwota) END) +
+            SUM(
+                CASE
+                    WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
+                    ELSE ISNULL(rr.WnMaRozliczono, 0)
+                END
+            ), 2
+        ) AS overdue_val
+    FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
+    LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
+    WHERE rozdata.potencjalna = 0
+      AND rozdata.synt IN (201, 203)
+      AND CONVERT(DATE, rozdata.dataokr) <= @datado
+      AND rozdata.baza = 2
+      AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND CONVERT(DATE, rozdata.dataOstat) <= @datado)
+      AND rozdata.strona = 1
+    GROUP BY
+        rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
+
+    UNION ALL
+
+    -- ZOBOWIĄZANIA - CZĘŚĆ 2 (strona = 0, kwota < 0)
+    SELECT
+        rozdata.dsymbol,
+        rozdata.termin AS termin_orig,
+        rozdata.synt,
+        rozdata.poz1,
+        rozdata.poz2,
+        kpu.skrot AS kontrahent_skrot,
+        ROUND(
+            SUM(rozdata.kwota) -
+            SUM(
+                CASE
+                    WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
+                    ELSE ISNULL(rr.WnMaRozliczono, 0)
+                END
+            ), 2
+        ) AS overdue_val
+    FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
+    LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
+    WHERE rozdata.potencjalna = 0
+      AND rozdata.synt IN (201, 203)
+      AND rozdata.baza = 2
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND rozdata.rozliczona = 0
+      AND rozdata.termin >= '1800-01-01' AND CAST(rozdata.termin AS DATE) <= CAST(@datado AS DATE)
+      AND rozdata.strona = 0
+      AND rozdata.kwota < 0
+      AND rozdata.doRozlZl > 0
+    GROUP BY
+        rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
+
+    UNION ALL
+
+    -- NALEŻNOŚCI
+    SELECT
+        rozdata.dsymbol,
+        rozdata.termin AS termin_orig,
+        rozdata.synt,
+        rozdata.poz1,
+        rozdata.poz2,
+        kpu.skrot AS kontrahent_skrot,
+        ROUND(
+            SUM(rozdata.kwota) +
+            SUM(
+                CASE
+                    WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
+                    ELSE ISNULL(rr.WnMaRozliczono, 0)
+                END
+            ), 2
+        ) AS overdue_val
+    FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
+    LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
+    WHERE rozdata.potencjalna = 0
+      AND rozdata.synt IN (201, 203)
+      AND CONVERT(DATE, rozdata.dataokr) <= @datado
+      AND rozdata.baza = 2
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND CONVERT(DATE, rozdata.dataOstat) <= @datado)
+      AND rozdata.strona = 0
+      AND rozdata.orgStrona = 0
+    GROUP BY
+        rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
+),
+-- Agregacja transakcji do poziomu wymaganego przez oryginalne zapytanie
+AggregatedTransactions AS (
+    SELECT
+        CAST(@datado AS DATE) AS stanNa,
+        rt.dsymbol,
+        rt.kontrahent_skrot AS kontrahent,
+        rt.synt,
+        rt.poz1,
+        rt.poz2,
+        CAST(rt.termin_orig AS DATE) AS termin,
+        DATEDIFF(DAY, rt.termin_orig, @datado) AS dniPrzetreminowania,
+        SUM(rt.overdue_val) AS płatność
+    FROM RawTransactions rt
+    GROUP BY
+        rt.dsymbol,
+        rt.kontrahent_skrot,
+        rt.synt,
+        rt.poz1,
+        rt.poz2,
+        CAST(rt.termin_orig AS DATE),
+        DATEDIFF(DAY, rt.termin_orig, @datado)
+),
+-- Dodanie przedziału wiekowania i odfiltrowanie płatności zerowych
+ProcessedTransactions AS (
+    SELECT
+        stanNa,
+        dsymbol,
+        kontrahent,
+        synt,
+        poz1,
+        poz2,
+        termin,
+        dniPrzetreminowania,
+        CASE
+            WHEN DniPrzetreminowania < 1 THEN '< 1'       -- Obejmuje dni <= 0 (DniPrzetreminowania to INT)
+            WHEN DniPrzetreminowania BETWEEN 0 AND 30 THEN ' 1 - 30' -- W praktyce dla dni 1-30, bo 0 jest już objęte przez <1
+            WHEN DniPrzetreminowania BETWEEN 31 AND 60 THEN ' 31 - 60'
+            WHEN DniPrzetreminowania BETWEEN 61 AND 90 THEN ' 61 - 90'
+            WHEN DniPrzetreminowania BETWEEN 91 AND 180 THEN ' 91 - 180'
+            WHEN DniPrzetreminowania BETWEEN 181 AND 360 THEN ' 181 - 360'
+            ELSE '> 360'
+        END AS [przedział],
+        płatność
+    FROM AggregatedTransactions
+    WHERE ROUND(płatność, 2) <> 0.00
+)
+-- Finalny SELECT z funkcjami okna do obliczenia salda i typu
+SELECT
+    pt.stanNa,
+    pt.dsymbol,
+    pt.kontrahent,
+    pt.synt,
+    pt.poz1,
+    pt.poz2,
+    pt.termin,
+    pt.dniPrzetreminowania,
+    pt.przedział,
+    pt.płatność,
+    CASE
+        WHEN pt.synt = 201 THEN
+            ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2)
+        WHEN pt.synt = 203 THEN
+            ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2)
+        ELSE NULL
+    END AS saldoKontrahent,
+    CASE
+        WHEN pt.synt = 201 THEN
+            CASE
+                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2) > 0 THEN 'N'
+                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2) = 0 THEN 'R'
+                ELSE 'Z'
+            END
+        WHEN pt.synt = 203 THEN
+            CASE
+                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2) > 0 THEN 'N'
+                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2) = 0 THEN 'R'
+                ELSE 'Z'
+            END
+        ELSE NULL
+    END AS [Typ]
+FROM ProcessedTransactions pt
+ORDER BY
+    pt.synt,
+    CASE
+        WHEN pt.synt = 201 THEN CAST(pt.poz2 AS SQL_VARIANT)
+        WHEN pt.synt = 203 THEN CAST(pt.poz1 AS SQL_VARIANT)
+        ELSE NULL
+    END,
+    pt.termin,
+    pt.dsymbol;
+`;
+        const query = company === 'KRT' ? queryKRT : queryKEM;
 
         const accountancyData = await msSqlQuery(query);
 
@@ -321,6 +536,8 @@ const getAccountancyDataMsSQL = async (company, res) => {
         const addDep = addDepartment(changeNameColumns);
         const [findItems] = await connect_SQL.query('SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?', [company]);
 
+
+
         // jeśli nie będzie możliwe dopasowanie ownerów, lokalizacji to wyskoczy bład we froncie
         let errorDepartments = [];
         addDep.forEach(item => {
@@ -333,13 +550,16 @@ const getAccountancyDataMsSQL = async (company, res) => {
         });
 
         if (errorDepartments.length > 0) {
+            // console.log(errorDepartments);
+            // return res.json({ info: `Brak danych o działach: ${errorDepartments.join(', ')}` });
             return res.json({ info: `Brak danych o działach: ${errorDepartments.join(', ')}` });
         }
-
-        return addDep;
+        // console.log(addDep);
+        // return addDep;
 
     }
     catch (error) {
+        console.error(error);
         logEvents(`generateRaportFK, getAccountancyDataMsSQL: ${error}`, "reqServerErrors.txt");
     }
 };
@@ -1077,5 +1297,6 @@ const generateNewRaport = async (req, res) => {
 module.exports = {
     getDateCounter,
     generateNewRaport,
-    getRaportData
+    getRaportData,
+    getAccountancyDataMsSQL
 };

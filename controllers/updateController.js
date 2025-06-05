@@ -3,8 +3,9 @@ const { connect_SQL } = require("../config/dbConn");
 const { checkFKDocuments, repairRoles, repairColumnsRaports, createAccounts, generatePassword, repairHistory, repairManagementDecisionFK, usersDepartmentsCompany, testAddDocumentToDatabase } = require("./repairDataController");
 const { updateData, updateDocuments, updateSettlementDescription } = require("./getDataFromMSSQL");
 const { testMail } = require("./mailController");
-const { getAccountancyDataMsSQL } = require("./fkRaportController");
+// const { getAccountancyDataMsSQL } = require("./fkRaportController");
 const { addDocToHistory } = require("./repairDataController");
+const { getAccountancyDataMsSQL } = require("./generateRaportFK");
 
 const getTime = async (req, res) => {
   try {
@@ -15,7 +16,7 @@ const getTime = async (req, res) => {
 
     // await addDocToHistory();
 
-    // await getAccountancyDataMsSQL();
+    // await getAccountancyDataMsSQL('KEM', 1);
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
