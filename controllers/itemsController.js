@@ -184,82 +184,57 @@ const changeItem = async (req, res) => {
 // funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
 const getFKSettingsItems = async (req, res) => {
     try {
-        // const [uniqueDepFromJI] = await connect_SQL.query(
-        //     "SELECT distinct department FROM company_join_items"
-        // );
-
-        // const uniqueDepartments = uniqueDepFromJI.map((dep) => {
-        //     return dep.department;
-        // });
 
         const [uniqueDepFromCompanyJI] = await connect_SQL.query(
             "SELECT distinct DEPARTMENT, COMPANY FROM company_join_items"
         );
+        // console.log(uniqueDepFromCompanyJI);
 
         const [uniqueDepFromDocuments] = await connect_SQL.query(
             "SELECT distinct DZIAL, FIRMA FROM company_documents"
         );
 
+        const [depResult] = await connect_SQL.query(
+            "SELECT DEPARTMENT AS DZIAL, COMPANY AS FIRMA from company_department_items"
+        );
 
-        // const [depResult] = await connect_SQL.query(
-        //     "SELECT DEPARTMENT from company_department_items"
-        // );
+        // Tworzymy zbiór kluczy występujących w uniqueDepFromDocuments
+        const existingKeys = new Set(
+            uniqueDepFromDocuments.map(item => `${item.DZIAL}_${item.FIRMA}`)
+        );
 
-        // const departments = depResult.map((dep) => {
-        //     return dep.DEPARTMENT;
-        // });
-
-
+        // Filtrowanie: zostają tylko te, które nie występują w zbiorze
+        const manualAddDep = depResult.filter(
+            item => !existingKeys.has(`${item.DZIAL}_${item.FIRMA}`)
+        );
 
         const [locResult] = await connect_SQL.query(
             "SELECT LOCALIZATION, COMPANY from company_localization_items"
         );
 
-        //del
-        // const localizations = locResult.map((loc) => {
-        //     return loc.LOCALIZATION;
-        // });
-
         const [areaResult] = await connect_SQL.query("SELECT AREA, COMPANY from company_area_items");
-
-        //del
-        // const areas = areaResult.map((area) => {
-        //     return area.AREA;
-        // });
 
         const [ownerResult] = await connect_SQL.query(
             "SELECT OWNER, COMPANY from company_owner_items"
         );
 
-        // del
-        // const owners = ownerResult.map((owner) => {
-        //     return owner.OWNER;
-        // });
-
         const [guardianResult] = await connect_SQL.query(
             "SELECT GUARDIAN, COMPANY from company_guardian_items"
         );
-        // const guardians = guardianResult.map((guardian) => {
-        //     return guardian.GUARDIAN;
-        // });
 
         // pobieram zapisane wcześniej nazwy oddziałów firmy (KRT, KEM, itd)
         const [company] = await connect_SQL.query(
             "SELECT company from company_settings WHERE id_setting = 1"
         );
+
         //pobieram już zapisane wcześniej Itemy
         const [preparedItems] = await connect_SQL.query(
             "SELECT DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN FROM company_join_items ORDER BY DEPARTMENT"
         );
         res.json({
-            // uniqueDepartments,
             uniqueDepFromCompanyJI,
             uniqueDepFromDocuments,
-            // departments,
-            // areas,
-            // localizations,
-            // owners,
-            // guardians,
+            manualAddDep,
             company: company[0]?.company ? company[0].company : [],
             preparedItems,
             companyLoacalizations: locResult,
@@ -367,19 +342,18 @@ const deletePreparedItem = async (req, res) => {
 
 const checkDocPayment = async (req, res) => {
     const { departments } = req.body;
-
     try {
         if (!departments.length) {
             return res.json({ checkDoc: [] });
         }
-
         let checkDoc = [];
         for (const dep of departments) {
             const [checkPayment] = await connect_SQL.query(
                 `SELECT D.NUMER_FV FROM company_documents AS D
                 LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
-                WHERE S.NALEZNOSC != 0 AND D.DZIAL = ?
-                LIMIT 1`, [dep.DZIAL]);
+                WHERE S.NALEZNOSC != 0 AND D.DZIAL  AND D.FIRMA = ?
+                LIMIT 1`, [dep.DZIAL, dep.FIRMA]);
+            // console.log(checkPayment);
             if (checkPayment[0]?.NUMER_FV) {
                 checkDoc.push({
                     dep: dep.DZIAL,
@@ -391,13 +365,11 @@ const checkDocPayment = async (req, res) => {
                 checkDoc.push({
                     dep: dep.DZIAL,
                     company: dep.FIRMA,
+                    manual: dep.manual,
                     exist: false
                 });
-
             }
-
         }
-
         res.json({ checkDoc });
     }
     catch (error) {

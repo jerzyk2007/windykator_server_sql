@@ -567,7 +567,8 @@ ORDER BY
 
         if (errorDepartments.length > 0) {
             // return res.json({ info: `Brak danych o działach: ${errorDepartments.join(', ')}` });
-            return res.json({ info: `Brak danych o działach: ${errorDepartments.sort().join(', ')}` });
+            res.json({ info: `Brak danych o działach: ${errorDepartments.sort().join(', ')}` });
+            return [];
         }
         // console.log(addDep);
         return addDep;
@@ -802,7 +803,7 @@ const generateRaportCompany = async (company) => {
             item.VIN ?? null,
             item.FIRMA
         ]);
-
+        console.log(values);
         const query = `
         INSERT IGNORE INTO company_fk_raport_${company}
           (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DORADCA, DZIAL, ETAP_SPRAWY, HISTORIA_ZMIANY_DATY_ROZLICZENIA, ILE_DNI_NA_PLATNOSC_FV, INFORMACJA_ZARZAD, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OSTATECZNA_DATA_ROZLICZENIA, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU, VIN, FIRMA) 
@@ -820,6 +821,7 @@ const generateRaportCompany = async (company) => {
 
     }
     catch (error) {
+        console.error(error);
         logEvents(
             `generateRaportFK, generateRaport - ${company}: ${error}`,
             "reqServerErrors.txt"
@@ -1285,8 +1287,11 @@ const generateNewRaport = async (req, res) => {
         // pobieram nowe dane wiekowania 
         const accountancyData = await getAccountancyDataMsSQL(company, res);
 
+        if (accountancyData.length === 0) {
+            return;
+        }
         //generuję historię wpisów uwzględniając 
-        await generateHistoryDocuments(company);
+        // await generateHistoryDocuments(company);
 
         // //usuwam znaczniki dokumentów
         await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
