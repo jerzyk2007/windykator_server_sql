@@ -99,23 +99,39 @@ const generateHistoryDocuments = async (company) => {
     }
 };
 
+//wyznaczam datę ostatniego dnia poprzedniego miesiąca
+const getLastMonthDate = () => {
+    const today = new Date();
+    const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+    const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
+
+    // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
+    const lastDay = new Date(year, month, 0);
+    const yyyy = lastDay.getFullYear();
+    const mm = String(lastDay.getMonth() + 1).padStart(2, '0'); // getMonth() zwraca 0-11
+    const dd = String(lastDay.getDate()).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd}`;
+};
 
 
 // pobieram nowe dane wiekowania 
 const getAccountancyDataMsSQL = async (company, res) => {
     try {
         // szukam daty jako ostatni dzień poprzedniego miesiąca
-        const today = new Date();
-        const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-        const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
+        // const today = new Date();
+        // const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+        // const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
 
-        // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
-        const lastDay = new Date(year, month, 0);
-        const yyyy = lastDay.getFullYear();
-        const mm = String(lastDay.getMonth() + 1).padStart(2, '0'); // getMonth() zwraca 0-11
-        const dd = String(lastDay.getDate()).padStart(2, '0');
+        // // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
+        // const lastDay = new Date(year, month, 0);
+        // const yyyy = lastDay.getFullYear();
+        // const mm = String(lastDay.getMonth() + 1).padStart(2, '0'); // getMonth() zwraca 0-11
+        // const dd = String(lastDay.getDate()).padStart(2, '0');
 
-        const endDate = `${yyyy}-${mm}-${dd}`;
+        // const endDate = `${yyyy}-${mm}-${dd}`;
+
+        const endDate = getLastMonthDate();
 
         const queryKRT = `
         DECLARE @datado DATE = '${endDate}';
@@ -550,16 +566,14 @@ ORDER BY
         });
 
         if (errorDepartments.length > 0) {
-            // console.log(errorDepartments);
             // return res.json({ info: `Brak danych o działach: ${errorDepartments.join(', ')}` });
-            return res.json({ info: `Brak danych o działach: ${errorDepartments.join(', ')}` });
+            return res.json({ info: `Brak danych o działach: ${errorDepartments.sort().join(', ')}` });
         }
         // console.log(addDep);
-        // return addDep;
+        return addDep;
 
     }
     catch (error) {
-        console.error(error);
         logEvents(`generateRaportFK, getAccountancyDataMsSQL: ${error}`, "reqServerErrors.txt");
     }
 };
@@ -587,9 +601,11 @@ const saveAccountancyData = async (data, company) => {
 
         await connect_SQL.query(query, values.flat());
 
-        // // dodanie daty wygenerowania raportu
+        // // dodanie daty pobrania wiekowania
+        const endDate = getLastMonthDate();
+
         await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
-            [checkDate(new Date()), 'generate', company]
+            [endDate, 'accountancy', company]
         );
 
     }
