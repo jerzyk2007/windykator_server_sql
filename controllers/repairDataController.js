@@ -461,8 +461,8 @@ const createAccounts = async (req, res) => {
 
                 const mailOptions = {
                     from: "powiadomienia-raportbl@krotoski.com",
-                    // to: `${user.userlogin}`,
-                    to: `jerzy.komorowski@krotoski.com`,
+                    to: `${user.userlogin}`,
+                    // to: `jerzy.komorowski@krotoski.com`,
                     subject: "Zostało założone konto dla Ciebie",
                     // text: "Treść wiadomości testowej",
                     html: `
@@ -482,7 +482,7 @@ const createAccounts = async (req, res) => {
                     Dział Nadzoru i Kontroli Należności <br>
                 `,
                 };
-
+                console.log(mailOptions);
 
                 await sendEmail(mailOptions);
 
@@ -490,7 +490,7 @@ const createAccounts = async (req, res) => {
 
         }
 
-
+        console.log(result.length);
         // wyciągnięcie wszystkich maili;
         // const userLoginsString = [...new Set(result.map(user => user.userlogin))].sort().join('; ');
 

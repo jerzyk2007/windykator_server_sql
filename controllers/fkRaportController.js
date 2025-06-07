@@ -895,7 +895,7 @@ const generateHistoryDocuments = async (company) => {
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, FIRMA, data } = req.body;
   try {
-    const [raportDate] = await connect_SQL.query(`SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'accountancy' AND COMPANY = ?`, [FIRMA]);
+    const [raportDate] = await connect_SQL.query(`SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'generate' AND COMPANY = ?`, [FIRMA]);
     if (!raportDate[0].DATE) {
       console.log('brak');
       return res.end();
