@@ -1289,7 +1289,7 @@ const generateNewRaport = async (req, res) => {
             return;
         }
         //generuję historię wpisów uwzględniając 
-        // await generateHistoryDocuments(company);
+        await generateHistoryDocuments(company);
 
         //usuwam znaczniki dokumentów
         await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
