@@ -5,7 +5,7 @@ const { updateData, updateDocuments, updateSettlementDescription } = require("./
 const { testMail } = require("./mailController");
 // const { getAccountancyDataMsSQL } = require("./fkRaportController");
 const { addDocToHistory } = require("./repairDataController");
-const { getAccountancyDataMsSQL } = require("./generateRaportFK");
+const { getAccountancyDataMsSQL, generateRaportCompany } = require("./generateRaportFK");
 
 const getTime = async (req, res) => {
   try {
@@ -19,6 +19,8 @@ const getTime = async (req, res) => {
     // await getAccountancyDataMsSQL('KEM', 1);
 
     // await createAccounts();
+
+    // await generateRaportCompany('KRT');
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"

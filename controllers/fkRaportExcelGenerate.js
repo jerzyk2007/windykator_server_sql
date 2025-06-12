@@ -23,6 +23,7 @@ const columnsOrder = [
     "ILE DNI NA PLATNOŚĆ NA FV",
     "KONTO",
     "PRZETERMINOWANE / NIEPRZETERMINOWANE",
+    "TYP PŁATNOŚCI",
     "JAKA KANCELARIA",
     "ETAP SPRAWY",
     "KWOTA WPS",
@@ -105,6 +106,10 @@ const columnsName = [
     {
         accessorKey: "TERMIN_PLATNOSCI_FV",
         header: "TERMIN PŁATNOŚCI FV"
+    },
+    {
+        accessorKey: "TYP_PLATNOSCI",
+        header: "TYP PŁATNOŚCI"
     },
     {
         accessorKey: "PRZEDZIAL_WIEKOWANIE",
