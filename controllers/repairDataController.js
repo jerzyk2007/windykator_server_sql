@@ -1050,6 +1050,34 @@ LEFT JOIN company_documents AS C_D ON C_D.id_document = C_D_A.document_id `);
     }
 };
 
+//do wyciągnięcia maili ownerów 
+const getOwnersMail = async (company) => {
+    try {
+        const [owners] = await connect_SQL.query(
+            `SELECT OWNER FROM company_join_items
+            WHERE COMPANY = ?`, [company]);
+
+        const uniqueOwners = [
+            ...new Set(owners.flatMap(obj => obj.OWNER))
+        ].sort((a, b) => a.localeCompare(b, 'pl', { sensitivity: 'base' }));
+
+
+        let mailArray = [];
+        for (const owner of uniqueOwners) {
+            const [mailOwner] = await connect_SQL.query(
+                `SELECT OWNER_MAIL FROM company_owner_items
+            WHERE OWNER = ?`, [owner]);
+            // console.log(owner);
+            mailArray.push(mailOwner[0].OWNER_MAIL);
+        }
+
+        console.log(mailArray.join('; '));
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
@@ -1062,5 +1090,6 @@ module.exports = {
     repairManagementDecisionFK,
     usersDepartmentsCompany,
     testAddDocumentToDatabase,
-    addDocToHistory
+    addDocToHistory,
+    getOwnersMail
 };
