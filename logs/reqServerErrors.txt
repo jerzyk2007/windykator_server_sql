@@ -1,2 +1,0 @@
-20250612	16:18:26	generateRaportFK, generateRaportCompany - KRT: Error: Unknown column 'TYP_PLATNOSCI' in 'field list'
-20250612	16:27:47	generateRaportFK, generateRaportCompany - KRT: Error: Unknown column 'TYP_PLATNOSCI' in 'field list'
