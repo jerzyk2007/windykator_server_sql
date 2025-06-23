@@ -69,7 +69,6 @@ const getRaportData = async (req, res) => {
       FROM company_fk_raport_${company} AS FK 
       LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`);
 
-
     // usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach(item => {
       delete item.id_fk_raport;
@@ -351,11 +350,6 @@ const getRaportData = async (req, res) => {
       .flatMap(doc => doc.data) // Rozbij tablice data na jedną tablicę
       .map(item => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU      
 
-
-
-    // console.log(markDocuments.sort());
-    // console.log(markDocuments.length);
-
     saveMark(markDocuments, company);
     // res.json({ dataRaport, differences: getDifferencesFK_AS });
 
@@ -462,24 +456,41 @@ const deleteDataRaport = async (req, res) => {
 const generateRaport = async (req, res) => {
   const { company } = req.params;
   try {
-    const [getData] = await connect_SQL.query(`
-          SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, 
-          RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
-    RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.LOCALIZATION, JI.AREA, 
-    JI.OWNER, JI.GUARDIAN, D.DATA_FV, D.VIN, D.DORADCA, 
-    DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, 
-    DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, 
-    DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
-    S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
-    FROM company_raportFK_${company}_accountancy AS RA 
-    LEFT JOIN company_join_items AS JI ON RA.DZIAL = JI.department AND RA.FIRMA = JI.COMPANY
-    LEFT JOIN company_documents AS D ON RA.NUMER_FV = D.NUMER_FV AND RA.FIRMA = D.FIRMA
-    LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
-    LEFT JOIN company_rubicon_data AS R ON RA.NUMER_FV = R.NUMER_FV AND RA.FIRMA = R.COMPANY
-    LEFT JOIN company_settlements AS S ON RA.NUMER_FV = S.NUMER_FV AND RA.FIRMA = S.COMPANY
-    LEFT JOIN company_settlements_description AS SD ON RA.NUMER_FV = SD.NUMER AND RA.FIRMA = SD.COMPANY
-    `);
+    // const [getData] = await connect_SQL.query(`
+    //       SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, 
+    //       RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
+    // RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.LOCALIZATION, JI.AREA, 
+    // JI.OWNER, JI.GUARDIAN, D.DATA_FV, D.VIN, D.DORADCA, 
+    // DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, 
+    // DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, 
+    // DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
+    // S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
+    // FROM company_raportFK_${company}_accountancy AS RA 
+    // LEFT JOIN company_join_items AS JI ON RA.DZIAL = JI.department AND RA.FIRMA = JI.COMPANY
+    // LEFT JOIN company_documents AS D ON RA.NUMER_FV = D.NUMER_FV AND RA.FIRMA = D.FIRMA
+    // LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
+    // LEFT JOIN company_rubicon_data AS R ON RA.NUMER_FV = R.NUMER_FV AND RA.FIRMA = R.COMPANY
+    // LEFT JOIN company_settlements AS S ON RA.NUMER_FV = S.NUMER_FV AND RA.FIRMA = S.COMPANY
+    // LEFT JOIN company_settlements_description AS SD ON RA.NUMER_FV = SD.NUMER AND RA.FIRMA = SD.COMPANY
+    // `);
 
+    const [getData] = await connect_SQL.query(`
+        SELECT RA.TYP_DOKUMENTU, RA.NUMER_FV, RA.KONTRAHENT, 
+        RA.NR_KONTRAHENTA, RA.DO_ROZLICZENIA AS NALEZNOSC_FK, 
+        RA.KONTO, RA.TERMIN_FV, RA.DZIAL, JI.LOCALIZATION, JI.AREA, 
+        JI.OWNER, JI.GUARDIAN, D.DATA_FV, D.VIN, D.DORADCA, D.TYP_PLATNOSCI,
+        DA.DATA_WYDANIA_AUTA, DA.JAKA_KANCELARIA_TU, DA.KWOTA_WINDYKOWANA_BECARED, 
+        DA.INFORMACJA_ZARZAD, DA.HISTORIA_ZMIANY_DATY_ROZLICZENIA, 
+        DA.OSTATECZNA_DATA_ROZLICZENIA, R.STATUS_AKTUALNY, R.FIRMA_ZEWNETRZNA, 
+        S.NALEZNOSC AS NALEZNOSC_AS, SD.OPIS_ROZRACHUNKU, SD.DATA_ROZL_AS 
+        FROM company_raportFK_${company}_accountancy AS RA 
+        LEFT JOIN company_join_items AS JI ON RA.DZIAL = JI.department AND RA.FIRMA = JI.COMPANY
+        LEFT JOIN company_documents AS D ON RA.NUMER_FV = D.NUMER_FV AND RA.FIRMA = D.FIRMA
+        LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
+        LEFT JOIN company_rubicon_data AS R ON RA.NUMER_FV = R.NUMER_FV AND RA.FIRMA = R.COMPANY
+        LEFT JOIN company_settlements AS S ON RA.NUMER_FV = S.NUMER_FV AND RA.FIRMA = S.COMPANY
+        LEFT JOIN company_settlements_description AS SD ON RA.NUMER_FV = SD.NUMER AND RA.FIRMA = SD.COMPANY
+    `);
 
     // const [getAging] = await connect_SQL.query('SELECT firstValue, secondValue, title, type FROM company_aging_items');
     const [getAging] = await connect_SQL.query('SELECT \`FROM_TIME\`, TO_TIME, TITLE, TYPE FROM company_aging_items');
@@ -571,6 +582,14 @@ const generateRaport = async (req, res) => {
       let KWOTA_WPS = CZY_W_KANCELARI === "TAK" ? doc.NALEZNOSC_AS : null;
       KWOTA_WPS = doc.AREA === "BLACHARNIA" && doc.JAKA_KANCELARIA_TU ? doc.KWOTA_WINDYKOWANA_BECARED : null;
 
+      let TYP_PLATNOSCI = doc.TYP_PLATNOSCI;
+
+      if (TYP_PLATNOSCI === null || TYP_PLATNOSCI === undefined || TYP_PLATNOSCI === 'brak') {
+        TYP_PLATNOSCI = 'BRAK';
+      } else if (['PRZELEW', 'PRZELEW 30', 'PRZELEW 60'].includes(TYP_PLATNOSCI)) {
+        TYP_PLATNOSCI = 'PRZELEW';
+      }
+
       return {
         BRAK_DATY_WYSTAWIENIA_FV: doc.DATA_FV ? null : "TAK",
         CZY_SAMOCHOD_WYDANY_AS: CZY_SAMOCHOD_WYDANY,
@@ -603,11 +622,11 @@ const generateRaport = async (req, res) => {
         ROZNICA: ROZNICA_FK_AS,
         TERMIN_PLATNOSCI_FV: doc.TERMIN_FV,
         TYP_DOKUMENTU: doc.TYP_DOKUMENTU,
+        TYP_PLATNOSCI,
         VIN: doc.VIN,
         FIRMA: company
       };
     });
-
 
     await connect_SQL.query(`TRUNCATE TABLE company_fk_raport_${company}`);
 
@@ -644,16 +663,18 @@ const generateRaport = async (req, res) => {
       item.ROZNICA ?? null,
       item.TERMIN_PLATNOSCI_FV ?? null,
       item.TYP_DOKUMENTU ?? null,
+      item.TYP_PLATNOSCI ?? null,
       item.VIN ?? null,
       item.FIRMA
     ]);
 
     const query = `
         INSERT IGNORE INTO company_fk_raport_${company}
-          (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DORADCA, DZIAL, ETAP_SPRAWY, HISTORIA_ZMIANY_DATY_ROZLICZENIA, ILE_DNI_NA_PLATNOSC_FV, INFORMACJA_ZARZAD, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OSTATECZNA_DATA_ROZLICZENIA, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU, VIN, FIRMA) 
+          (BRAK_DATY_WYSTAWIENIA_FV, CZY_SAMOCHOD_WYDANY_AS, CZY_W_KANCELARI, DATA_ROZLICZENIA_AS, DATA_WYDANIA_AUTA, DATA_WYSTAWIENIA_FV, DO_ROZLICZENIA_AS, DORADCA, DZIAL, ETAP_SPRAWY, HISTORIA_ZMIANY_DATY_ROZLICZENIA, ILE_DNI_NA_PLATNOSC_FV, INFORMACJA_ZARZAD, JAKA_KANCELARIA, KONTRAHENT, KWOTA_DO_ROZLICZENIA_FK, KWOTA_WPS, LOKALIZACJA, NR_DOKUMENTU, NR_KLIENTA, OBSZAR, OSTATECZNA_DATA_ROZLICZENIA, OPIEKUN_OBSZARU_CENTRALI, OPIS_ROZRACHUNKU, OWNER, PRZEDZIAL_WIEKOWANIE, PRZETER_NIEPRZETER, RODZAJ_KONTA, ROZNICA, TERMIN_PLATNOSCI_FV, TYP_DOKUMENTU, TYP_PLATNOSCI, VIN, FIRMA) 
         VALUES 
-          ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+          ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
         `;
+
 
     // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
@@ -898,7 +919,6 @@ const addDecisionDate = async (req, res) => {
   try {
     const [raportDate] = await connect_SQL.query(`SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'accountancy' AND COMPANY = ?`, [FIRMA]);
     if (!raportDate[0].DATE) {
-      console.log('brak');
       return res.end();
     }
 
