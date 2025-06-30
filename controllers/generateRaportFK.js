@@ -121,401 +121,668 @@ const getAccountancyDataMsSQL = async (company, res) => {
 
         const endDate = getLastMonthDate();
 
+        // zapytanie przed poprawką z dnia 30-06-2055
+        //     const queryKRT = `
+        //     DECLARE @datado DATE = '${endDate}';
+        //     DECLARE @synt INT = NULL; -- podaj 201 lub 203 lub NULL (NULL = oba)
+
+        //     WITH Kontrahenci AS (
+        //     SELECT
+        //         k.pozycja,
+        //         k.skrot
+        //     FROM fkkomandytowa.FK.fk_kontrahenci AS k
+        //     ),
+        //     Rozrachunki AS (
+        //         SELECT
+        //             transakcja,
+        //             SUM(kwota * SIGN(0 - strona + 0.5)) AS WnMaRozliczono,
+        //             SUM(
+        //                 (CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END) * SIGN(0 - strona + 0.5)
+        //             ) AS WnMaRozliczono_w
+        //         FROM fkkomandytowa.FK.rozrachunki
+        //         WHERE CONVERT(DATE, dataokr) <= @datado
+        //         AND czyRozliczenie = 1
+        //         AND potencjalna = 0
+        //         GROUP BY transakcja
+        //     )
+        //     SELECT
+        //         stanNa,
+        //         dsymbol,
+        //         kontrahent,
+        //         synt,
+        //         poz1,
+        //         poz2,
+        //         termin,
+        //         dniPrzetreminowania,
+        //         przedział,
+        //         płatność,
+        //         ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) AS saldoKontrahent,
+        //         CASE
+        //             WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) > 0 THEN 'N'
+        //             WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) = 0 THEN 'R'
+        //             ELSE 'Z'
+        //         END AS Typ
+        //     FROM (
+        //         -- ZOBOWIĄZANIA 1
+        //         SELECT
+        //             @datado AS stanNa,
+        //             r.dsymbol,
+        //             k.skrot AS kontrahent,
+        //             r.synt,
+        //             r.poz1,
+        //             r.poz2,
+        //             CAST(r.termin AS DATE) AS termin,
+        //             DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+        //             CASE
+        //                 WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+        //                 WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+        //                 WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+        //                 WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+        //                 WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+        //                 WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+        //                 ELSE '> 360'
+        //             END AS przedział,
+        //     ROUND(
+        //         CASE WHEN SUM(r.kwota) > 0 THEN -SUM(r.kwota) ELSE SUM(r.kwota) END
+        //         + SUM(
+        //             CASE
+        //                 WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+        //                 ELSE ISNULL(rr.WnMaRozliczono, 0)
+        //             END
+        //         ), 2
+        //     ) AS płatność
+        //     FROM fkkomandytowa.FK.fk_rozdata r
+        //     LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+        //     LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+        //     WHERE r.potencjalna = 0
+        //     AND r.synt IN (201,203)
+        //     AND (@synt IS NULL OR r.synt = @synt)
+        //     AND r.baza = 2
+        //     AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+        //     AND (
+        //             r.strona = 1
+        //             OR (r.strona = 0 AND r.kwota < 0)
+        //         )
+        //     AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+        //     AND r.strona = 1
+        //     GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+        //     UNION ALL
+        //     -- ZOBOWIĄZANIA 2
+        //     SELECT
+        //     @datado AS stanNa,
+        //     r.dsymbol,
+        //     k.skrot AS kontrahent,
+        //     r.synt,
+        //     r.poz1,
+        //     r.poz2,
+        //     CAST(r.termin AS DATE) AS termin,
+        //     DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+        //     CASE
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+        //         ELSE '> 360'
+        //     END AS przedział,
+        //     ROUND(
+        //         SUM(r.kwota)
+        //         - SUM(
+        //             CASE
+        //                 WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+        //                 ELSE ISNULL(rr.WnMaRozliczono, 0)
+        //             END
+        //         ), 2
+        //     ) AS płatność
+        //     FROM fkkomandytowa.FK.fk_rozdata r
+        //     LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+        //     LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+        //     WHERE r.potencjalna = 0
+        //     AND r.synt IN (201,203)
+        //     AND (@synt IS NULL OR r.synt = @synt)
+        //     AND r.baza = 2
+        //     AND (
+        //             r.strona = 0
+        //             OR (r.strona = 1 AND r.kwota < 0)
+        //         )
+        //     AND r.rozliczona = 0
+        //     AND r.termin BETWEEN '1800-01-01' AND CONVERT(DATE, @datado)
+        //     AND r.strona = 0
+        //     AND r.kwota < 0
+        //     AND r.doRozlZl > 0
+        //     GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+        //     UNION ALL
+        //     -- NALEŻNOŚCI
+        //     SELECT
+        //     @datado AS stanNa,
+        //     r.dsymbol,
+        //     k.skrot AS kontrahent,
+        //     r.synt,
+        //     r.poz1,
+        //     r.poz2,
+        //     CAST(r.termin AS DATE) AS termin,
+        //     DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+        //     CASE
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+        //         WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+        //         ELSE '> 360'
+        //     END AS przedział,
+        //     ROUND(
+        //         SUM(r.kwota)
+        //         + SUM(
+        //             CASE
+        //                 WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+        //                 ELSE ISNULL(rr.WnMaRozliczono, 0)
+        //             END
+        //         ), 2
+        //     ) AS płatność
+        //     FROM fkkomandytowa.FK.fk_rozdata r
+        //     LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+        //     LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+        //     WHERE r.potencjalna = 0
+        //     AND r.synt IN (201,203)
+        //     AND (@synt IS NULL OR r.synt = @synt)
+        //     AND r.baza = 2
+        //     AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+        //     AND (
+        //         r.strona = 0
+        //         OR (r.strona = 1 AND r.kwota < 0)
+        //             )
+        //         AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+        //         AND r.strona = 0
+        //         AND r.orgStrona = 0
+        //         GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+        //     ) as wynik
+        //     WHERE ROUND(płatność,2) <> 0
+        //     ORDER BY poz2;
+        // `;
+
+        //nowe zoptymalizowane zapytanie
         const queryKRT = `
-        DECLARE @datado DATE = '${endDate}';
-        DECLARE @synt INT = NULL; -- podaj 201 lub 203 lub NULL (NULL = oba)
+ DECLARE @datado DATETIME = '${endDate}';
+DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
+DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
 
-        WITH Kontrahenci AS (
-        SELECT
-            k.pozycja,
-            k.skrot
-        FROM fkkomandytowa.FK.fk_kontrahenci AS k
-        ),
-        Rozrachunki AS (
-            SELECT
-                transakcja,
-                SUM(kwota * SIGN(0 - strona + 0.5)) AS WnMaRozliczono,
-                SUM(
-                    (CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END) * SIGN(0 - strona + 0.5)
-                ) AS WnMaRozliczono_w
-            FROM fkkomandytowa.FK.rozrachunki
-            WHERE CONVERT(DATE, dataokr) <= @datado
-            AND czyRozliczenie = 1
-            AND potencjalna = 0
-            GROUP BY transakcja
-        )
-        SELECT
-            stanNa,
-            dsymbol,
-            kontrahent,
-            synt,
-            poz1,
-            poz2,
-            termin,
-            dniPrzetreminowania,
-            przedział,
-            płatność,
-            ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) AS saldoKontrahent,
-            CASE
-                WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) > 0 THEN 'N'
-                WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) = 0 THEN 'R'
-                ELSE 'Z'
-            END AS Typ
-        FROM (
-            -- ZOBOWIĄZANIA 1
-            SELECT
-                @datado AS stanNa,
-                r.dsymbol,
-                k.skrot AS kontrahent,
-                r.synt,
-                r.poz1,
-                r.poz2,
-                CAST(r.termin AS DATE) AS termin,
-                DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
-                CASE
-                    WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
-                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
-                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
-                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
-                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
-                    WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
-                    ELSE '> 360'
-                END AS przedział,
-        ROUND(
-            CASE WHEN SUM(r.kwota) > 0 THEN -SUM(r.kwota) ELSE SUM(r.kwota) END
-            + SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS płatność
-        FROM fkkomandytowa.FK.fk_rozdata r
-        LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-        LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-        WHERE r.potencjalna = 0
-        AND r.synt IN (201,203)
-        AND (@synt IS NULL OR r.synt = @synt)
-        AND r.baza = 2
-        AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
-        AND (
-                r.strona = 1
-                OR (r.strona = 0 AND r.kwota < 0)
-            )
-        AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
-        AND r.strona = 1
-        GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-        UNION ALL
-        -- ZOBOWIĄZANIA 2
-        SELECT
-        @datado AS stanNa,
-        r.dsymbol,
-        k.skrot AS kontrahent,
-        r.synt,
-        r.poz1,
-        r.poz2,
-        CAST(r.termin AS DATE) AS termin,
-        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
-        CASE
-            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
-            ELSE '> 360'
-        END AS przedział,
-        ROUND(
-            SUM(r.kwota)
-            - SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS płatność
-        FROM fkkomandytowa.FK.fk_rozdata r
-        LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-        LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-        WHERE r.potencjalna = 0
-        AND r.synt IN (201,203)
-        AND (@synt IS NULL OR r.synt = @synt)
-        AND r.baza = 2
-        AND (
-                r.strona = 0
-                OR (r.strona = 1 AND r.kwota < 0)
-            )
-        AND r.rozliczona = 0
-        AND r.termin BETWEEN '1800-01-01' AND CONVERT(DATE, @datado)
-        AND r.strona = 0
-        AND r.kwota < 0
-        AND r.doRozlZl > 0
-        GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-        UNION ALL
-        -- NALEŻNOŚCI
-        SELECT
-        @datado AS stanNa,
-        r.dsymbol,
-        k.skrot AS kontrahent,
-        r.synt,
-        r.poz1,
-        r.poz2,
-        CAST(r.termin AS DATE) AS termin,
-        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
-        CASE
-            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
-            ELSE '> 360'
-        END AS przedział,
-        ROUND(
-            SUM(r.kwota)
-            + SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS płatność
-        FROM fkkomandytowa.FK.fk_rozdata r
-        LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-        LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-        WHERE r.potencjalna = 0
-        AND r.synt IN (201,203)
-        AND (@synt IS NULL OR r.synt = @synt)
-        AND r.baza = 2
-        AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
-        AND (
-            r.strona = 0
-            OR (r.strona = 1 AND r.kwota < 0)
-                )
-            AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
-            AND r.strona = 0
-            AND r.orgStrona = 0
-            GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-        ) as wynik
-        WHERE ROUND(płatność,2) <> 0
-        ORDER BY poz2;
-    `;
-
-        const queryKEM = `
-   DECLARE @datado DATE = '${endDate}';
-   WITH RozrachunkiAgg AS (
+WITH
+-- CTE 1: Pre-agregacja rozrachunków.
+cte_Rozrachunki AS (
     SELECT
         transakcja,
-        SUM(kwota * SIGN(0.0 - strona + 0.5)) AS WnMaRozliczono,
-        SUM(
-            (CASE
-                WHEN walutaObca IS NULL THEN kwota_w
-                ELSE rozliczonoWO
-            END) * SIGN(0.0 - strona + 0.5)
-        ) AS WnMaRozliczono_w
-    FROM Krotoski_Electromobility_2023.FK.rozrachunki
-    WHERE CONVERT(DATE, dataokr) <= @datado
-      AND czyRozliczenie = 1
-      AND potencjalna = 0
+        SUM(kwota * SIGN(0.5 - strona)) AS WnMaRozliczono,
+        SUM(CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END * SIGN(0.5 - strona)) AS WnMaRozliczono_w
+    FROM [fkkomandytowa].[FK].[rozrachunki]
+    WHERE dataokr < @DataDoPlusJedenDzien AND czyRozliczenie = 1 AND potencjalna = 0
     GROUP BY transakcja
 ),
--- CTE dla danych kontrahentów
-Kontrahenci AS (
+-- CTE 2: Kompletna, zagnieżdżona agregacja dla ZOBOWIĄZAŃ.
+cte_Zobowiazania_Aggr AS (
     SELECT
-        k."pozycja",
-        k.skrot
-    FROM Krotoski_Electromobility_2023.FK."fk_kontrahenci" AS k
+        t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania,
+        SUM(t.overdue) AS płatność
+    FROM (
+        -- Wewnętrzna podselekcja dla Zobowiązań z UNION
+        SELECT
+            dsymbol, CAST(termin AS DATE) AS termin,
+            DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+            synt, poz1, poz2, kpu.skrot AS kontrahent,
+            ROUND(
+                (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
+                SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+            , 2) AS overdue
+        FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
+        LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+        LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+        WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+          AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+          AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+          AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+          AND rozdata.strona = 1
+        GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.skrot, rozdata.kurs
+        
+        UNION
+        
+        SELECT
+            dSymbol, CAST(termin AS DATE) AS termin,
+            DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+            synt, poz1, poz2, kpu.skrot AS kontrahent,
+            ROUND(
+                SUM(rozdata.kwota) -
+                SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+            , 2) AS overdue
+        FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
+        LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+        LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+        WHERE rozdata.potencjalna = 0 AND rozdata.baza = 2
+          AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+          AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
+          AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
+          AND rozdata.synt IN (201, 203)
+        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+    ) AS t
+    GROUP BY t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania
 ),
--- CTE zbierające surowe transakcje z FK.fk_rozdata z obliczonym 'overdue_val'
-RawTransactions AS (
-    -- ZOBOWIĄZANIA - CZĘŚĆ 1 (strona = 1)
+-- CTE 3: Kompletna agregacja dla NALEŻNOŚCI.
+cte_Naleznosci_Aggr AS (
     SELECT
-        rozdata.dsymbol,
-        rozdata.termin AS termin_orig,
-        rozdata.synt,
-        rozdata.poz1,
-        rozdata.poz2,
-        kpu.skrot AS kontrahent_skrot,
-        ROUND(
-            (CASE WHEN SUM(rozdata.kwota) > 0 THEN -SUM(rozdata.kwota) ELSE SUM(rozdata.kwota) END) +
-            SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS overdue_val
-    FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
-    LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
-    LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
-    WHERE rozdata.potencjalna = 0
-      AND rozdata.synt IN (201, 203)
-      AND CONVERT(DATE, rozdata.dataokr) <= @datado
-      AND rozdata.baza = 2
-      AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
-      AND NOT (rozdata.rozliczona = 1 AND CONVERT(DATE, rozdata.dataOstat) <= @datado)
-      AND rozdata.strona = 1
-    GROUP BY
-        rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
-
+        t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania,
+        SUM(t.overdue) AS płatność
+    FROM (
+        -- Wewnętrzna podselekcja dla Należności
+        SELECT
+            dsymbol, CAST(termin AS DATE) AS termin,
+            DATEDIFF(DAY, termin, @DataDoDate) AS DniPrzetreminowania,
+            synt, poz1, poz2, kpu.skrot AS kontrahent,
+            ROUND(
+                SUM(rozdata.kwota) +
+                SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+            , 2) AS overdue
+        FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
+        LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+        LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+        WHERE rozdata.potencjalna = 0 AND rozdata.dataokr < @DataDoPlusJedenDzien
+          AND rozdata.synt IN (201, 203) AND rozdata.baza = 2
+          AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+          AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+          AND strona = 0 AND rozdata.orgStrona = 0
+        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+    ) AS t
+    GROUP BY t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania
+),
+-- CTE 4: Łączenie gotowych, zagregowanych wyników.
+cte_Combined_Results AS (
+    SELECT * FROM cte_Zobowiazania_Aggr
     UNION ALL
-
-    -- ZOBOWIĄZANIA - CZĘŚĆ 2 (strona = 0, kwota < 0)
+    SELECT * FROM cte_Naleznosci_Aggr
+),
+-- CTE 5: Finałowe obliczenia na połączonym zestawie.
+cte_Final_Calculation AS (
     SELECT
-        rozdata.dsymbol,
-        rozdata.termin AS termin_orig,
-        rozdata.synt,
-        rozdata.poz1,
-        rozdata.poz2,
-        kpu.skrot AS kontrahent_skrot,
+        @DataDoDate AS stanNa,
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, płatność,
+        CASE
+            WHEN DniPrzetreminowania < 1   THEN '< 1'
+            WHEN DniPrzetreminowania <= 30 THEN '1 - 30'
+            WHEN DniPrzetreminowania <= 60 THEN '31 - 60'
+            WHEN DniPrzetreminowania <= 90 THEN '61 - 90'
+            WHEN DniPrzetreminowania <= 180 THEN '91 - 180'
+            WHEN DniPrzetreminowania <= 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        SUM(płatność) OVER (
+            PARTITION BY synt, CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END
+        ) AS saldoKontrahent
+    FROM cte_Combined_Results
+    WHERE ROUND(płatność, 2) <> 0
+)
+-- Końcowy SELECT, który zwraca wynik do aplikacji.
+SELECT
+    stanNa,
+    dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, przedział, płatność,
+    ROUND(saldoKontrahent, 2) AS saldoKontrahent,
+    CASE
+        WHEN ROUND(saldoKontrahent, 2) > 0 THEN 'N'
+        WHEN ROUND(saldoKontrahent, 2) < 0 THEN 'Z'
+        ELSE 'R'
+    END AS Typ
+FROM cte_Final_Calculation
+ORDER BY
+    synt,
+    CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
+    termin;
+`;
+        // zapytanie przed poprawką z dnia 30-06-2055
+        //         const queryKEM = `
+        //    DECLARE @datado DATE = '${endDate}';
+        //    WITH RozrachunkiAgg AS (
+        //     SELECT
+        //         transakcja,
+        //         SUM(kwota * SIGN(0.0 - strona + 0.5)) AS WnMaRozliczono,
+        //         SUM(
+        //             (CASE
+        //                 WHEN walutaObca IS NULL THEN kwota_w
+        //                 ELSE rozliczonoWO
+        //             END) * SIGN(0.0 - strona + 0.5)
+        //         ) AS WnMaRozliczono_w
+        //     FROM Krotoski_Electromobility_2023.FK.rozrachunki
+        //     WHERE CONVERT(DATE, dataokr) <= @datado
+        //       AND czyRozliczenie = 1
+        //       AND potencjalna = 0
+        //     GROUP BY transakcja
+        // ),
+        // -- CTE dla danych kontrahentów
+        // Kontrahenci AS (
+        //     SELECT
+        //         k."pozycja",
+        //         k.skrot
+        //     FROM Krotoski_Electromobility_2023.FK."fk_kontrahenci" AS k
+        // ),
+        // -- CTE zbierające surowe transakcje z FK.fk_rozdata z obliczonym 'overdue_val'
+        // RawTransactions AS (
+        //     -- ZOBOWIĄZANIA - CZĘŚĆ 1 (strona = 1)
+        //     SELECT
+        //         rozdata.dsymbol,
+        //         rozdata.termin AS termin_orig,
+        //         rozdata.synt,
+        //         rozdata.poz1,
+        //         rozdata.poz2,
+        //         kpu.skrot AS kontrahent_skrot,
+        //         ROUND(
+        //             (CASE WHEN SUM(rozdata.kwota) > 0 THEN -SUM(rozdata.kwota) ELSE SUM(rozdata.kwota) END) +
+        //             SUM(
+        //                 CASE
+        //                     WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
+        //                     ELSE ISNULL(rr.WnMaRozliczono, 0)
+        //                 END
+        //             ), 2
+        //         ) AS overdue_val
+        //     FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
+        //     LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
+        //     LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
+        //     WHERE rozdata.potencjalna = 0
+        //       AND rozdata.synt IN (201, 203)
+        //       AND CONVERT(DATE, rozdata.dataokr) <= @datado
+        //       AND rozdata.baza = 2
+        //       AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+        //       AND NOT (rozdata.rozliczona = 1 AND CONVERT(DATE, rozdata.dataOstat) <= @datado)
+        //       AND rozdata.strona = 1
+        //     GROUP BY
+        //         rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
+
+        //     UNION ALL
+
+        //     -- ZOBOWIĄZANIA - CZĘŚĆ 2 (strona = 0, kwota < 0)
+        //     SELECT
+        //         rozdata.dsymbol,
+        //         rozdata.termin AS termin_orig,
+        //         rozdata.synt,
+        //         rozdata.poz1,
+        //         rozdata.poz2,
+        //         kpu.skrot AS kontrahent_skrot,
+        //         ROUND(
+        //             SUM(rozdata.kwota) -
+        //             SUM(
+        //                 CASE
+        //                     WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
+        //                     ELSE ISNULL(rr.WnMaRozliczono, 0)
+        //                 END
+        //             ), 2
+        //         ) AS overdue_val
+        //     FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
+        //     LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
+        //     LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
+        //     WHERE rozdata.potencjalna = 0
+        //       AND rozdata.synt IN (201, 203)
+        //       AND rozdata.baza = 2
+        //       AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+        //       AND rozdata.rozliczona = 0
+        //       AND rozdata.termin >= '1800-01-01' AND CAST(rozdata.termin AS DATE) <= CAST(@datado AS DATE)
+        //       AND rozdata.strona = 0
+        //       AND rozdata.kwota < 0
+        //       AND rozdata.doRozlZl > 0
+        //     GROUP BY
+        //         rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
+
+        //     UNION ALL
+
+        //     -- NALEŻNOŚCI
+        //     SELECT
+        //         rozdata.dsymbol,
+        //         rozdata.termin AS termin_orig,
+        //         rozdata.synt,
+        //         rozdata.poz1,
+        //         rozdata.poz2,
+        //         kpu.skrot AS kontrahent_skrot,
+        //         ROUND(
+        //             SUM(rozdata.kwota) +
+        //             SUM(
+        //                 CASE
+        //                     WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
+        //                     ELSE ISNULL(rr.WnMaRozliczono, 0)
+        //                 END
+        //             ), 2
+        //         ) AS overdue_val
+        //     FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
+        //     LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
+        //     LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
+        //     WHERE rozdata.potencjalna = 0
+        //       AND rozdata.synt IN (201, 203)
+        //       AND CONVERT(DATE, rozdata.dataokr) <= @datado
+        //       AND rozdata.baza = 2
+        //       AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+        //       AND NOT (rozdata.rozliczona = 1 AND CONVERT(DATE, rozdata.dataOstat) <= @datado)
+        //       AND rozdata.strona = 0
+        //       AND rozdata.orgStrona = 0
+        //     GROUP BY
+        //         rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
+        // ),
+        // -- Agregacja transakcji do poziomu wymaganego przez oryginalne zapytanie
+        // AggregatedTransactions AS (
+        //     SELECT
+        //         CAST(@datado AS DATE) AS stanNa,
+        //         rt.dsymbol,
+        //         rt.kontrahent_skrot AS kontrahent,
+        //         rt.synt,
+        //         rt.poz1,
+        //         rt.poz2,
+        //         CAST(rt.termin_orig AS DATE) AS termin,
+        //         DATEDIFF(DAY, rt.termin_orig, @datado) AS dniPrzetreminowania,
+        //         SUM(rt.overdue_val) AS płatność
+        //     FROM RawTransactions rt
+        //     GROUP BY
+        //         rt.dsymbol,
+        //         rt.kontrahent_skrot,
+        //         rt.synt,
+        //         rt.poz1,
+        //         rt.poz2,
+        //         CAST(rt.termin_orig AS DATE),
+        //         DATEDIFF(DAY, rt.termin_orig, @datado)
+        // ),
+        // -- Dodanie przedziału wiekowania i odfiltrowanie płatności zerowych
+        // ProcessedTransactions AS (
+        //     SELECT
+        //         stanNa,
+        //         dsymbol,
+        //         kontrahent,
+        //         synt,
+        //         poz1,
+        //         poz2,
+        //         termin,
+        //         dniPrzetreminowania,
+        //         CASE
+        //             WHEN DniPrzetreminowania < 1 THEN '< 1'       -- Obejmuje dni <= 0 (DniPrzetreminowania to INT)
+        //             WHEN DniPrzetreminowania BETWEEN 0 AND 30 THEN ' 1 - 30' -- W praktyce dla dni 1-30, bo 0 jest już objęte przez <1
+        //             WHEN DniPrzetreminowania BETWEEN 31 AND 60 THEN ' 31 - 60'
+        //             WHEN DniPrzetreminowania BETWEEN 61 AND 90 THEN ' 61 - 90'
+        //             WHEN DniPrzetreminowania BETWEEN 91 AND 180 THEN ' 91 - 180'
+        //             WHEN DniPrzetreminowania BETWEEN 181 AND 360 THEN ' 181 - 360'
+        //             ELSE '> 360'
+        //         END AS [przedział],
+        //         płatność
+        //     FROM AggregatedTransactions
+        //     WHERE ROUND(płatność, 2) <> 0.00
+        // )
+        // -- Finalny SELECT z funkcjami okna do obliczenia salda i typu
+        // SELECT
+        //     pt.stanNa,
+        //     pt.dsymbol,
+        //     pt.kontrahent,
+        //     pt.synt,
+        //     pt.poz1,
+        //     pt.poz2,
+        //     pt.termin,
+        //     pt.dniPrzetreminowania,
+        //     pt.przedział,
+        //     pt.płatność,
+        //     CASE
+        //         WHEN pt.synt = 201 THEN
+        //             ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2)
+        //         WHEN pt.synt = 203 THEN
+        //             ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2)
+        //         ELSE NULL
+        //     END AS saldoKontrahent,
+        //     CASE
+        //         WHEN pt.synt = 201 THEN
+        //             CASE
+        //                 WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2) > 0 THEN 'N'
+        //                 WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2) = 0 THEN 'R'
+        //                 ELSE 'Z'
+        //             END
+        //         WHEN pt.synt = 203 THEN
+        //             CASE
+        //                 WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2) > 0 THEN 'N'
+        //                 WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2) = 0 THEN 'R'
+        //                 ELSE 'Z'
+        //             END
+        //         ELSE NULL
+        //     END AS [Typ]
+        // FROM ProcessedTransactions pt
+        // ORDER BY
+        //     pt.synt,
+        //     CASE
+        //         WHEN pt.synt = 201 THEN CAST(pt.poz2 AS SQL_VARIANT)
+        //         WHEN pt.synt = 203 THEN CAST(pt.poz1 AS SQL_VARIANT)
+        //         ELSE NULL
+        //     END,
+        //     pt.termin,
+        //     pt.dsymbol;
+        // `;
+
+
+        const queryKEM = `
+DECLARE @datado DATETIME = '${endDate}';
+DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
+DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
+
+WITH
+-- Krok 1: Pre-agregacja rozrachunków.
+cte_Rozrachunki AS (
+    SELECT
+        transakcja,
+        SUM(kwota * SIGN(0.5 - strona)) AS WnMaRozliczono,
+        SUM(CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END * SIGN(0.5 - strona)) AS WnMaRozliczono_w
+    FROM [Krotoski_Electromobility_2023].[FK].[rozrachunki]
+    WHERE dataokr < @DataDoPlusJedenDzien AND czyRozliczenie = 1 AND potencjalna = 0
+    GROUP BY transakcja
+),
+-- Krok 2: Przygotowanie trzech podstawowych bloków danych z wstępną agregacją.
+-- Blok A: Zobowiązania - część 1
+cte_Zobowiazania_Blok_A AS (
+    SELECT
+        dsymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM [Krotoski_Electromobility_2023].[FK].[fk_rozdata] AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN [Krotoski_Electromobility_2023].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+      AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND rozdata.strona = 1
+    GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.skrot, rozdata.kurs
+),
+-- Blok B: Zobowiązania - część 2
+cte_Zobowiazania_Blok_B AS (
+    SELECT
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
         ROUND(
             SUM(rozdata.kwota) -
-            SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS overdue_val
-    FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
-    LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
-    LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
-    WHERE rozdata.potencjalna = 0
-      AND rozdata.synt IN (201, 203)
-      AND rozdata.baza = 2
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM [Krotoski_Electromobility_2023].[FK].[fk_rozdata] AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN [Krotoski_Electromobility_2023].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.baza = 2 AND rozdata.synt IN (201, 203)
       AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
-      AND rozdata.rozliczona = 0
-      AND rozdata.termin >= '1800-01-01' AND CAST(rozdata.termin AS DATE) <= CAST(@datado AS DATE)
-      AND rozdata.strona = 0
-      AND rozdata.kwota < 0
-      AND rozdata.doRozlZl > 0
-    GROUP BY
-        rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
-
-    UNION ALL
-
-    -- NALEŻNOŚCI
+      AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
+      AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+),
+-- Blok C: Należności
+cte_Naleznosci_Blok_C AS (
     SELECT
-        rozdata.dsymbol,
-        rozdata.termin AS termin_orig,
-        rozdata.synt,
-        rozdata.poz1,
-        rozdata.poz2,
-        kpu.skrot AS kontrahent_skrot,
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
         ROUND(
             SUM(rozdata.kwota) +
-            SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND rozdata.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS overdue_val
-    FROM Krotoski_Electromobility_2023.FK.fk_rozdata AS rozdata
-    LEFT JOIN RozrachunkiAgg AS rr ON rr.transakcja = rozdata.id
-    LEFT JOIN Kontrahenci AS kpu ON rozdata."kontrahent" = kpu."pozycja"
-    WHERE rozdata.potencjalna = 0
-      AND rozdata.synt IN (201, 203)
-      AND CONVERT(DATE, rozdata.dataokr) <= @datado
-      AND rozdata.baza = 2
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM [Krotoski_Electromobility_2023].[FK].[fk_rozdata] AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN [Krotoski_Electromobility_2023].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
       AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
-      AND NOT (rozdata.rozliczona = 1 AND CONVERT(DATE, rozdata.dataOstat) <= @datado)
-      AND rozdata.strona = 0
-      AND rozdata.orgStrona = 0
-    GROUP BY
-        rozdata.dsymbol, rozdata.termin, rozdata.synt, rozdata.poz1, rozdata.poz2, kpu.skrot
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND strona = 0 AND rozdata.orgStrona = 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
 ),
--- Agregacja transakcji do poziomu wymaganego przez oryginalne zapytanie
-AggregatedTransactions AS (
-    SELECT
-        CAST(@datado AS DATE) AS stanNa,
-        rt.dsymbol,
-        rt.kontrahent_skrot AS kontrahent,
-        rt.synt,
-        rt.poz1,
-        rt.poz2,
-        CAST(rt.termin_orig AS DATE) AS termin,
-        DATEDIFF(DAY, rt.termin_orig, @datado) AS dniPrzetreminowania,
-        SUM(rt.overdue_val) AS płatność
-    FROM RawTransactions rt
-    GROUP BY
-        rt.dsymbol,
-        rt.kontrahent_skrot,
-        rt.synt,
-        rt.poz1,
-        rt.poz2,
-        CAST(rt.termin_orig AS DATE),
-        DATEDIFF(DAY, rt.termin_orig, @datado)
+-- Krok 3: Połączenie wstępnie zagregowanych bloków.
+cte_Wszystkie_Transakcje AS (
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_A
+    UNION
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_B
+    UNION ALL
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Naleznosci_Blok_C
 ),
--- Dodanie przedziału wiekowania i odfiltrowanie płatności zerowych
-ProcessedTransactions AS (
+-- Krok 4: Końcowa, spłaszczona agregacja.
+cte_Zagregowane AS (
     SELECT
-        stanNa,
-        dsymbol,
-        kontrahent,
-        synt,
-        poz1,
-        poz2,
-        termin,
-        dniPrzetreminowania,
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania,
+        SUM(overdue) AS płatność
+    FROM cte_Wszystkie_Transakcje
+    GROUP BY
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania
+),
+-- Krok 5: Finałowe obliczenia i filtrowanie zer.
+cte_WynikKoncowy AS (
+    SELECT
+        @DataDoDate AS stanNa,
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, płatność,
         CASE
-            WHEN DniPrzetreminowania < 1 THEN '< 1'       -- Obejmuje dni <= 0 (DniPrzetreminowania to INT)
-            WHEN DniPrzetreminowania BETWEEN 0 AND 30 THEN ' 1 - 30' -- W praktyce dla dni 1-30, bo 0 jest już objęte przez <1
-            WHEN DniPrzetreminowania BETWEEN 31 AND 60 THEN ' 31 - 60'
-            WHEN DniPrzetreminowania BETWEEN 61 AND 90 THEN ' 61 - 90'
-            WHEN DniPrzetreminowania BETWEEN 91 AND 180 THEN ' 91 - 180'
-            WHEN DniPrzetreminowania BETWEEN 181 AND 360 THEN ' 181 - 360'
+            WHEN DniPrzetreminowania < 1   THEN '< 1'
+            WHEN DniPrzetreminowania <= 30 THEN '1 - 30'
+            WHEN DniPrzetreminowania <= 60 THEN '31 - 60'
+            WHEN DniPrzetreminowania <= 90 THEN '61 - 90'
+            WHEN DniPrzetreminowania <= 180 THEN '91 - 180'
+            WHEN DniPrzetreminowania <= 360 THEN '181 - 360'
             ELSE '> 360'
-        END AS [przedział],
-        płatność
-    FROM AggregatedTransactions
-    WHERE ROUND(płatność, 2) <> 0.00
+        END AS przedział,
+        SUM(płatność) OVER (
+            PARTITION BY synt, CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END
+        ) AS saldoKontrahent
+    FROM cte_Zagregowane
+    WHERE ROUND(płatność, 2) <> 0
 )
--- Finalny SELECT z funkcjami okna do obliczenia salda i typu
+-- Końcowy SELECT, który zwraca wynik do aplikacji.
 SELECT
-    pt.stanNa,
-    pt.dsymbol,
-    pt.kontrahent,
-    pt.synt,
-    pt.poz1,
-    pt.poz2,
-    pt.termin,
-    pt.dniPrzetreminowania,
-    pt.przedział,
-    pt.płatność,
+    stanNa,
+    dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, przedział, płatność,
+    ROUND(saldoKontrahent, 2) AS saldoKontrahent,
     CASE
-        WHEN pt.synt = 201 THEN
-            ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2)
-        WHEN pt.synt = 203 THEN
-            ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2)
-        ELSE NULL
-    END AS saldoKontrahent,
-    CASE
-        WHEN pt.synt = 201 THEN
-            CASE
-                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2) > 0 THEN 'N'
-                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz2 ORDER BY pt.poz2 ROWS UNBOUNDED PRECEDING), 2) = 0 THEN 'R'
-                ELSE 'Z'
-            END
-        WHEN pt.synt = 203 THEN
-            CASE
-                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2) > 0 THEN 'N'
-                WHEN ROUND(SUM(pt.płatność) OVER (PARTITION BY pt.poz1 ORDER BY pt.poz1 ROWS UNBOUNDED PRECEDING), 2) = 0 THEN 'R'
-                ELSE 'Z'
-            END
-        ELSE NULL
-    END AS [Typ]
-FROM ProcessedTransactions pt
+        WHEN ROUND(saldoKontrahent, 2) > 0 THEN 'N'
+        WHEN ROUND(saldoKontrahent, 2) < 0 THEN 'Z'
+        ELSE 'R'
+    END AS Typ
+FROM cte_WynikKoncowy
 ORDER BY
-    pt.synt,
-    CASE
-        WHEN pt.synt = 201 THEN CAST(pt.poz2 AS SQL_VARIANT)
-        WHEN pt.synt = 203 THEN CAST(pt.poz1 AS SQL_VARIANT)
-        ELSE NULL
-    END,
-    pt.termin,
-    pt.dsymbol;
+    synt,
+    CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
+    termin;
 `;
+
         const query = company === 'KRT' ? queryKRT : queryKEM;
 
         const accountancyData = await msSqlQuery(query);
@@ -974,6 +1241,7 @@ const getRaportData = async (req, res) => {
         });
         const getDifferencesFK_AS = await differencesAS_FK(company);
 
+
         await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ?WHERE TITLE = ? AND COMPANY = ?`,
             [checkDate(new Date()), 'raport', company]
         );
@@ -1320,4 +1588,5 @@ module.exports = {
     generateNewRaport,
     generateRaportCompany,
     getRaportData,
+    getAccountancyDataMsSQL
 };

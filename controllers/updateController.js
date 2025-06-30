@@ -15,7 +15,7 @@ const getTime = async (req, res) => {
     // await copyDbtoDB();
 
     // await addDocToHistory();
-
+    // await getAccountancyDataMsSQL('KRT', 1);
     // await getAccountancyDataMsSQL('KEM', 1);
 
     // await createAccounts();
