@@ -1078,6 +1078,35 @@ const getOwnersMail = async (company) => {
     }
 };
 
+// zmiana roli użytkownika, jesli posiada FK to będzie zmieniony na FK_KRT
+const changeUserRole = async () => {
+    try {
+
+        const [owners] = await connect_SQL.query(
+            `SELECT id_user, roles FROM company_users`);
+
+        // Zmieniamy "FK" na "FK_KRT" w każdym obiekcie
+        const updatedFilteredData = owners
+            .filter(obj => obj.roles.hasOwnProperty('FK'))
+            .map(obj => {
+                obj.roles['FK_KRT'] = obj.roles['FK'];
+                delete obj.roles['FK'];
+                return obj;
+            });
+
+        for (const owner of updatedFilteredData) {
+            await connect_SQL.query(
+                'UPDATE company_users SET roles = ? WHERE id_user = ?', [JSON.stringify(owner.roles), owner.id_user]);
+            console.log(owner.roles);
+        }
+
+
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
@@ -1091,5 +1120,6 @@ module.exports = {
     usersDepartmentsCompany,
     testAddDocumentToDatabase,
     addDocToHistory,
-    getOwnersMail
+    getOwnersMail,
+    changeUserRole
 };
