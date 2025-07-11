@@ -303,6 +303,7 @@ const getAccountancyDataMsSQL = async (company, res) => {
         // `;
 
         //nowe zoptymalizowane zapytanie
+
         const queryKRT = `
  DECLARE @datado DATETIME = '${endDate}';
 DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
@@ -651,7 +652,6 @@ ORDER BY
         //     pt.termin,
         //     pt.dsymbol;
         // `;
-
 
         const queryKEM = `
 DECLARE @datado DATETIME = '${endDate}';
@@ -1590,3 +1590,25 @@ module.exports = {
     getRaportData,
     getAccountancyDataMsSQL
 };
+
+// przed zmianą programu na automatyczny raport:
+// - uruchomić funkcję changeUserRole z repairController
+
+// w mysql
+// UPDATE testy_windykacja.company_settings
+// SET roles = JSON_ARRAY(
+//     JSON_OBJECT(
+//         'FK_KRT', 200,
+//          'FK_KEM', 201,
+//           'FK_RAC', 202,
+//         'Nora', 300,
+//         'Root', 5000,
+//         'User', 100,
+//         'Admin', 1000,
+//         'Start', 1,
+//         'Editor', 110,
+//         'Controller', 120,
+//         'SuperAdmin', 2000
+//     )
+// )
+// WHERE id_setting = 1;
