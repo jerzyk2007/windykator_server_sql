@@ -4,6 +4,8 @@ const { connect_SQL } = require("../config/dbConn");
 const ExcelJS = require('exceljs');
 const path = require('path');
 
+const { generateExcelRaport } = require('./generateExcelRaport');
+
 // pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
   const { id_user } = req.params;
@@ -80,71 +82,147 @@ const getExcelRaport = async (data) => {
 
 
 // pobiera dane do raportu z obszarów
+// const getRaportArea = async (req, res) => {
+
+//   const { raportData } = req.body;
+//   console.log(raportData);
+//   try {
+
+//     const query = `SELECT  
+//      C_D.NUMER_FV, 
+//   C_D.DATA_FV, 
+//   C_D.TERMIN, 
+//   ROUND(C_D.BRUTTO, 2) AS BRUTTO, 
+//   ROUND(IFNULL(C_S.NALEZNOSC, 0), 2) AS NALEZNOSC, 
+//   C_D.KONTRAHENT, 
+//   C_D.NIP, 
+//   C_S_D.DATA_ROZL_AS, 
+//   C_J_I.AREA, 
+//   DATEDIFF(NOW(), C_D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+//   CASE 
+//     WHEN C_R_D_H.NUMER_FV IS NOT NULL THEN 'TAK'
+//     ELSE 'NIE'
+//   END AS CZY_PRZEKAZANO_DO_WP, 
+//   DATEDIFF(C_D.TERMIN, C_D.DATA_FV) AS ILE_DNI_NA_PLATNOSC, 
+//   C_D.TYP_PLATNOSCI, 
+//   DATEDIFF(C_S_D.DATA_ROZL_AS, C_D.TERMIN) AS PLATNOSC_PO_TERMINIE,
+//   C_D.TYP_PLATNOSCI, 
+//   C_D.DZIAL
+// FROM 
+//   company_documents AS C_D
+// LEFT JOIN company_join_items AS C_J_I 
+//   ON C_D.DZIAL = C_J_I.DEPARTMENT
+// LEFT JOIN company_rubicon_data_history AS C_R_D_H 
+//   ON C_D.NUMER_FV = C_R_D_H.NUMER_FV
+// LEFT JOIN company_settlements AS C_S 
+//   ON C_D.NUMER_FV = C_S.NUMER_FV 
+// LEFT JOIN company_settlements_description AS C_S_D 
+//   ON C_S_D.NUMER = C_D.NUMER_FV 
+// WHERE 
+//   C_D.FIRMA = 'KRT'
+//   AND C_D.DATA_FV BETWEEN ? AND ?
+//   AND (C_J_I.AREA IN (?) OR C_J_I.AREA IS NULL)
+// `;
+
+
+//     //     const query = `SELECT C_D.NUMER_FV, C_D.DATA_FV, C_D.TERMIN, ROUND(C_D.BRUTTO, 2) AS BRUTTO,;
+//     // ROUND(IFNULL(C_S.NALEZNOSC, 0), 2) AS NALEZNOSC, C_D.KONTRAHENT, C_D.NIP, C_S_D.DATA_ROZL_AS, C_J_I.AREA, 
+//     // datediff(NOW(), C_D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
+//     // CASE 
+//     //   WHEN C_R_D_H.NUMER_FV IS NOT NULL THEN 'TAK'
+//     //   ELSE 'NIE'
+//     // END AS CZY_PRZEKAZANO_DO_WP, 
+//     // datediff(C_D.TERMIN, C_D.DATA_FV ) AS ILE_DNI_NA_PLATNOSC, C_D.TYP_PLATNOSCI, datediff( C_S_D.DATA_ROZL_AS, C_D.TERMIN) AS PLATNOSC_PO_TERMINIE,
+//     // C_D.TYP_PLATNOSCI, C_D.DZIAL
+//     // FROM company_documents AS C_D
+//     // LEFT JOIN company_join_items AS C_J_I ON C_D.DZIAL = C_J_I.DEPARTMENT
+//     // LEFT JOIN company_rubicon_data_history AS C_R_D_H ON C_D.NUMER_FV = C_R_D_H.NUMER_FV
+//     // LEFT JOIN company_settlements AS C_S ON C_D.NUMER_FV = C_S.NUMER_FV AND C_D.FIRMA = C_S.COMPANY
+//     // JOIN company_settlements_description AS C_S_D 
+//     //   ON C_S_D.NUMER = C_D.NUMER_FV AND C_S_D.COMPANY = C_D.FIRMA
+//     // WHERE C_D.FIRMA IN (?)
+//     //   AND C_D.DATA_FV BETWEEN ? AND ?
+//     //   AND C_J_I.AREA IN (?)`;
+
+
+//     const [result] = await connect_SQL.query(query, [
+//       raportData.docDateFrom, raportData.docDateTo, raportData.areas]);
+
+//     const convertToDateIfPossible = (value, addDays = 0) => {
+//       const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+//       if (typeof value === 'string' && datePattern.test(value)) {
+//         const date = new Date(value);
+//         if (!isNaN(date.getTime())) {
+//           // Dodaj dni jeśli podano
+//           date.setDate(date.getDate() + addDays);
+//           return date;
+//         }
+//       }
+
+//       // Zwróć "BRAK", jeśli niepoprawna data
+//       return "BRAK";
+//     };
+
+//     const filteredData = result.map(item => {
+
+//       return {
+//         ...item,
+//         NUMER_FV: item.NUMER_FV,
+//         DATA_FV: convertToDateIfPossible(item.DATA_FV),
+//         TERMIN: convertToDateIfPossible(item.TERMIN),
+//         TERMIN_8: convertToDateIfPossible(item.TERMIN, 8),
+//         BRUTTO: item.BRUTTO,
+//         NALEZNOSC: item.NALEZNOSC,
+//         KONTRAHENT: item.KONTRAHENT,
+//         NIP: item?.NIP ? item.NIP : " ",
+//         DATA_ROZL_AS: convertToDateIfPossible(item.DATA_ROZL_AS),
+//         AREA: item.AREA,
+//         ILE_DNI_PO_TERMINIE: item.NALEZNOSC !== 0 ? item.ILE_DNI_PO_TERMINIE : 0,
+//         CZY_PRZEKAZANO_DO_WP: item.CZY_PRZEKAZANO_DO_WP,
+//         ILE_DNI_NA_PLATNOSC: item.ILE_DNI_NA_PLATNOSC,
+//         TYP_PLATNOSCI: item?.TYP_PLATNOSCI ? item.TYP_PLATNOSCI : " ",
+//         CZY_FV_ROZLICZONA: item.NALEZNOSC === 0 ? "NIE" : "TAK",
+//         PLATNOSC_PO_TERMINIE: item?.PLATNOSC_PO_TERMINIE ? item.PLATNOSC_PO_TERMINIE : " ",
+//         CZY_FV_ROZLICZONA: item.NALEZNOSC === 0 ? "TAK" : "NIE"
+//       };
+//     });
+
+
+//     const excelBuffer = await getExcelRaport(filteredData);
+
+//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+//     res.setHeader('Content-Disposition', 'attachment; filename=raport.xlsx');
+//     res.send(excelBuffer);
+//     // res.end();
+//   }
+//   catch (error) {
+//     logEvents(
+//       `raportsController, getRaportArea: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
+
+// nowy zrobiony na chwile dla Marty
 const getRaportArea = async (req, res) => {
 
-  const { raportData } = req.body;
 
   try {
 
-    const query = `SELECT  
-     C_D.NUMER_FV, 
-  C_D.DATA_FV, 
-  C_D.TERMIN, 
-  ROUND(C_D.BRUTTO, 2) AS BRUTTO, 
-  ROUND(IFNULL(C_S.NALEZNOSC, 0), 2) AS NALEZNOSC, 
-  C_D.KONTRAHENT, 
-  C_D.NIP, 
-  C_S_D.DATA_ROZL_AS, 
-  C_J_I.AREA, 
-  DATEDIFF(NOW(), C_D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
-  CASE 
-    WHEN C_R_D_H.NUMER_FV IS NOT NULL THEN 'TAK'
-    ELSE 'NIE'
-  END AS CZY_PRZEKAZANO_DO_WP, 
-  DATEDIFF(C_D.TERMIN, C_D.DATA_FV) AS ILE_DNI_NA_PLATNOSC, 
-  C_D.TYP_PLATNOSCI, 
-  DATEDIFF(C_S_D.DATA_ROZL_AS, C_D.TERMIN) AS PLATNOSC_PO_TERMINIE,
-  C_D.TYP_PLATNOSCI, 
-  C_D.DZIAL
-FROM 
-  company_documents AS C_D
-LEFT JOIN company_join_items AS C_J_I 
-  ON C_D.DZIAL = C_J_I.DEPARTMENT
-LEFT JOIN company_rubicon_data_history AS C_R_D_H 
-  ON C_D.NUMER_FV = C_R_D_H.NUMER_FV
-LEFT JOIN company_settlements AS C_S 
-  ON C_D.NUMER_FV = C_S.NUMER_FV 
-LEFT JOIN company_settlements_description AS C_S_D 
-  ON C_S_D.NUMER = C_D.NUMER_FV 
-WHERE 
-  C_D.FIRMA = 'KRT'
-  AND C_D.DATA_FV BETWEEN ? AND ?
-  AND (C_J_I.AREA IN (?) OR C_J_I.AREA IS NULL)
+    const query = `
+SELECT CD.NUMER_FV, CDA.NUMER_SPRAWY_BECARED, CD.BRUTTO, CD.NR_REJESTRACYJNY, CD.NR_SZKODY, IFNULL(CS.NALEZNOSC, 0) AS FV_NALEZNOSC, CSD.OPIS_ROZRACHUNKU, CSD.DATA_ROZL_AS
+FROM company_windykacja.company_documents AS CD
+LEFT JOIN company_windykacja.company_join_items AS CJI ON CD.DZIAL = CJI.DEPARTMENT
+LEFT JOIN company_windykacja.company_settlements_description AS CSD ON CD.NUMER_FV = CSD.NUMER
+LEFT JOIN company_windykacja.company_settlements AS CS ON CD.NUMER_FV = CS.NUMER_FV
+LEFT JOIN company_documents_actions AS CDA ON CD.id_document = CDA.document_id 
+WHERE CJI.AREA = "BLACHARNIA" AND DATA_ROZL_AS >= '2025-01-01' AND CD.DATA_FV < '2024-01-01' AND CD.NUMER_FV LIKE 'FV%' AND CDA.NUMER_SPRAWY_BECARED IS NOT NULL
 `;
 
+    const [result] = await connect_SQL.query(query);
 
-    //     const query = `SELECT C_D.NUMER_FV, C_D.DATA_FV, C_D.TERMIN, ROUND(C_D.BRUTTO, 2) AS BRUTTO,;
-    // ROUND(IFNULL(C_S.NALEZNOSC, 0), 2) AS NALEZNOSC, C_D.KONTRAHENT, C_D.NIP, C_S_D.DATA_ROZL_AS, C_J_I.AREA, 
-    // datediff(NOW(), C_D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
-    // CASE 
-    //   WHEN C_R_D_H.NUMER_FV IS NOT NULL THEN 'TAK'
-    //   ELSE 'NIE'
-    // END AS CZY_PRZEKAZANO_DO_WP, 
-    // datediff(C_D.TERMIN, C_D.DATA_FV ) AS ILE_DNI_NA_PLATNOSC, C_D.TYP_PLATNOSCI, datediff( C_S_D.DATA_ROZL_AS, C_D.TERMIN) AS PLATNOSC_PO_TERMINIE,
-    // C_D.TYP_PLATNOSCI, C_D.DZIAL
-    // FROM company_documents AS C_D
-    // LEFT JOIN company_join_items AS C_J_I ON C_D.DZIAL = C_J_I.DEPARTMENT
-    // LEFT JOIN company_rubicon_data_history AS C_R_D_H ON C_D.NUMER_FV = C_R_D_H.NUMER_FV
-    // LEFT JOIN company_settlements AS C_S ON C_D.NUMER_FV = C_S.NUMER_FV AND C_D.FIRMA = C_S.COMPANY
-    // JOIN company_settlements_description AS C_S_D 
-    //   ON C_S_D.NUMER = C_D.NUMER_FV AND C_S_D.COMPANY = C_D.FIRMA
-    // WHERE C_D.FIRMA IN (?)
-    //   AND C_D.DATA_FV BETWEEN ? AND ?
-    //   AND C_J_I.AREA IN (?)`;
-
-
-    const [result] = await connect_SQL.query(query, [
-      raportData.docDateFrom, raportData.docDateTo, raportData.areas]);
 
     const convertToDateIfPossible = (value, addDays = 0) => {
       const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -166,33 +244,23 @@ WHERE
 
       return {
         ...item,
-        NUMER_FV: item.NUMER_FV,
-        DATA_FV: convertToDateIfPossible(item.DATA_FV),
-        TERMIN: convertToDateIfPossible(item.TERMIN),
-        TERMIN_8: convertToDateIfPossible(item.TERMIN, 8),
-        BRUTTO: item.BRUTTO,
-        NALEZNOSC: item.NALEZNOSC,
-        KONTRAHENT: item.KONTRAHENT,
-        NIP: item?.NIP ? item.NIP : " ",
+        FV_NALEZNOSC: item.FV_NALEZNOSC ? item.FV_NALEZNOSC : 0,
+        OPIS_ROZRACHUNKU: Array.isArray(item.OPIS_ROZRACHUNKU)
+          ? item.OPIS_ROZRACHUNKU.join("\n\n")
+          : "NULL",
         DATA_ROZL_AS: convertToDateIfPossible(item.DATA_ROZL_AS),
-        AREA: item.AREA,
-        ILE_DNI_PO_TERMINIE: item.NALEZNOSC !== 0 ? item.ILE_DNI_PO_TERMINIE : 0,
-        CZY_PRZEKAZANO_DO_WP: item.CZY_PRZEKAZANO_DO_WP,
-        ILE_DNI_NA_PLATNOSC: item.ILE_DNI_NA_PLATNOSC,
-        TYP_PLATNOSCI: item?.TYP_PLATNOSCI ? item.TYP_PLATNOSCI : " ",
-        CZY_FV_ROZLICZONA: item.NALEZNOSC === 0 ? "NIE" : "TAK",
-        PLATNOSC_PO_TERMINIE: item?.PLATNOSC_PO_TERMINIE ? item.PLATNOSC_PO_TERMINIE : " ",
-        CZY_FV_ROZLICZONA: item.NALEZNOSC === 0 ? "TAK" : "NIE"
       };
     });
+    //     const excelBuffer = await getExcelRaport(filteredData);
 
+    // console.log(filteredData);
 
-    const excelBuffer = await getExcelRaport(filteredData);
+    const excelBuffer = await generateExcelRaport(filteredData);
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=raport.xlsx');
     res.send(excelBuffer);
-    // res.end();
+    res.end();
   }
   catch (error) {
     logEvents(
