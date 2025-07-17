@@ -830,6 +830,7 @@ ORDER BY
     }
     catch (error) {
         logEvents(`generateRaportFK, getAccountancyDataMsSQL: ${error}`, "reqServerErrors.txt");
+        return null;
     }
 };
 
@@ -1552,11 +1553,14 @@ const generateNewRaport = async (req, res) => {
 
     try {
         // pobieram nowe dane wiekowania 
+
         const accountancyData = await getAccountancyDataMsSQL(company, res);
 
-        if (accountancyData?.length === 0) {
-            return;
+        if (accountancyData?.length === 0 || !accountancyData) {
+
+            return res.json({ message: "Brak danych SQL - skontaktuj się J. Komorowskim" });
         }
+
         //generuję historię wpisów uwzględniając 
         // await generateHistoryDocuments(company);
 

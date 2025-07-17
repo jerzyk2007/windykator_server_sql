@@ -1107,6 +1107,41 @@ const changeUserRole = async () => {
     }
 };
 
+const prepareToNewCompany = async () => {
+    try {
+
+        // zmiana roli użytkownika, jesli posiada FK to będzie zmieniony na FK_KRT
+        await changeUserRole();
+
+        //dopasowanie bazy danych do rozszerzenia ról FK
+        await connect_SQL.query(
+            `UPDATE testy_windykacja.company_settings 
+SET roles = JSON_ARRAY(
+    JSON_OBJECT(
+        'FK_KRT', 200,
+         'FK_KEM', 201,
+          'FK_RAC', 202,
+        'Nora', 300,
+        'Root', 5000,
+        'User', 100,
+        'Admin', 1000,
+        'Start', 1,
+        'Editor', 110,
+        'Controller', 120,
+        'SuperAdmin', 2000
+    )
+)
+WHERE id_setting = 1`);
+
+
+
+
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
@@ -1121,5 +1156,5 @@ module.exports = {
     testAddDocumentToDatabase,
     addDocToHistory,
     getOwnersMail,
-    changeUserRole
+    prepareToNewCompany
 };
