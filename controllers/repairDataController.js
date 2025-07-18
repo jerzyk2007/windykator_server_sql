@@ -1134,6 +1134,11 @@ SET roles = JSON_ARRAY(
 WHERE id_setting = 1`);
 
 
+        //dodanie dodatkowej firmy RAC
+        await connect_SQL.query(
+            `UPDATE testy_windykacja.company_settings 
+            SET company = JSON_ARRAY("KRT", "KEM", "RAC")
+            WHERE id_setting = 1`);
 
 
     }
