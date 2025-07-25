@@ -47,6 +47,17 @@ const getDataDocuments = async (id_user, info) => {
       }
 
     }
+    else if (info === "critical") {
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND ${sqlCondition}`
+          // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND AND D.DORADCA =  '${DORADCA}'`);
+      }
+
+    }
     else if (info === "obligations") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(
@@ -299,7 +310,6 @@ const getDataTable = async (req, res) => {
     return res.status(400).json({ message: "Id and info are required." });
   }
   try {
-
     const result = await getDataDocuments(id_user, info);
 
     res.json(result.data);
