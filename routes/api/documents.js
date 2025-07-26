@@ -1,12 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
 const Documents = require("../../controllers/documentsController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
-
-// const storage = multer.memoryStorage(); // Przechowuje plik w buforze pamięci
-// const upload = multer({ storage: storage });
 
 // pobiera wszytskie faktury wg uprawnień oraz actula/archive/all
 router
@@ -37,11 +33,6 @@ router
 router
   .route("/get-columns-name")
   .get(verifyRoles(ROLES_LIST.User), Documents.getColumnsName);
-
-// pobiera dane dla danych Kredytu Kupieckiego
-// router
-//   .route("/get-data-credit-trade")
-//   .get(verifyRoles(ROLES_LIST.User), Documents.getTradeCreditData);
 
 // zapisuje zmiany w chat kontroli dokuemntacji
 router

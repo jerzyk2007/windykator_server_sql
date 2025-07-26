@@ -21,98 +21,12 @@ const formatDate = (date) => {
 
 //pobieram dokumenty z bazy mssql AS
 const addDocumentToDatabase = async (type) => {
-  //   const queryKRT = `SELECT 
-  //        fv.[NUMER],
-  // 	    CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
-  // 	CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
-  //        fv.[KONTR_NAZWA],
-  //        fv.[KONTR_NIP],
-  //        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
-  //        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
-  //        fv.[NR_SZKODY],
-  //        fv.[NR_AUTORYZACJI],
-  //        fv.[UWAGI],
-  //        fv.[KOREKTA_NUMER],
-  //        zap.[NAZWA] AS TYP_PLATNOSCI,
-  //        us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
-  //        auto.[REJESTRACJA],
-  //        auto.[NR_NADWOZIA],
-  //        tr.[WARTOSC_NAL]
-  // FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
-  // LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
-  // WHERE fv.[NUMER] != 'POTEM' 
-  //   AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
-  // GROUP BY 
-  //        fv.[NUMER],
-  // 	   CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
-  // 	   CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
-  //            fv.[KONTR_NAZWA],
-  //        fv.[KONTR_NIP],
-  //        fv.[NR_SZKODY],
-  //        fv.[NR_AUTORYZACJI],
-  //        fv.[UWAGI],
-  //        fv.[KOREKTA_NUMER],
-  //        zap.[NAZWA],
-  //        us.[NAZWA] + ' ' + us.[IMIE],
-  //        auto.[REJESTRACJA],
-  //        auto.[NR_NADWOZIA],
-  //        tr.[WARTOSC_NAL];
-  // `;
 
-  //   const queryKEM = `SELECT 
-  // fv.[NUMER],
-  //  CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
-  // CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
-  // fv.[KONTR_NAZWA],
-  // fv.[KONTR_NIP],
-  // SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
-  // SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
-  // fv.[NR_SZKODY],
-  // fv.[NR_AUTORYZACJI],
-  // fv.[UWAGI],
-  // fv.[KOREKTA_NUMER],
-  // zap.[NAZWA] AS TYP_PLATNOSCI,
-  // us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
-  // auto.[REJESTRACJA],
-  // auto.[NR_NADWOZIA],
-  // tr.[WARTOSC_NAL]
-  // FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[FAKTDOC] AS fv
-  // LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
-  // LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-  // LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
-  // LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
-  // LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
-  // WHERE fv.[NUMER] != 'POTEM' 
-  // AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
-  // GROUP BY 
-  // fv.[NUMER],
-  // CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
-  // CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
-  //     fv.[KONTR_NAZWA],
-  // fv.[KONTR_NIP],
-  // fv.[NR_SZKODY],
-  // fv.[NR_AUTORYZACJI],
-  // fv.[UWAGI],
-  // fv.[KOREKTA_NUMER],
-  // zap.[NAZWA],
-  // us.[NAZWA] + ' ' + us.[IMIE],
-  // auto.[REJESTRACJA],
-  // auto.[NR_NADWOZIA],
-  // tr.[WARTOSC_NAL];
-  // `;
-  // const twoDaysAgo = '2024-01-01';
   const query = addDocumentToDatabaseQuery(type, twoDaysAgo);
-  // console.log(query);
 
-  // const query = type === "KRT" ? queryKRT : type === "KEM" ? queryKEM : "";
-  // const firma = type;
   try {
     const documents = await msSqlQuery(query);
-    console.log(documents.length);
+
     // dodaje nazwy działów
     const addDep = addDepartment(documents);
 
@@ -158,10 +72,10 @@ const addDocumentToDatabase = async (type) => {
 };
 
 // pobieram fv zaliczkowe, nazwy i kwoty dla KRT i KEM
-const updateDocZal = async () => {
+const updateDocZal = async (companies) => {
   try {
 
-    const companies = ['KRT', 'KEM', 'RAC'];
+    // const companies = ['KRT', 'KEM', 'RAC'];
 
     const documents = (
       await Promise.all(
@@ -201,50 +115,12 @@ const updateDocZal = async () => {
   }
 };
 
-// aktualizuję daty wydania dla KEM i KRT
-const updateCarReleaseDates = async () => {
+// aktualizuję daty wydania dla KRT, KEM i innych
+const updateCarReleaseDates = async (companies) => {
   const twoDaysAgo = '2024-01-01';
-  //   const queryMsSqlKRT = `
-  //   SELECT 
-  //       [NUMER], 
-  //       CONVERT(VARCHAR(10), [DATA_WYDANIA], 23) AS DATA_WYDANIA 
-  //   FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] 
-  //   WHERE [DATA_WYDANIA] IS NOT NULL 
-  //     AND [DATA_WYSTAWIENIA] > '${twoDaysAgo}' 
-  //     AND [NUMER] != 'POTEM'
-  // `;
-
-  //   const queryMsSqlKEM = `
-  //   SELECT 
-  //       [NUMER], 
-  //       CONVERT(VARCHAR(10), [DATA_WYDANIA], 23) AS DATA_WYDANIA 
-  //   FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[FAKTDOC] 
-  //   WHERE [DATA_WYDANIA] IS NOT NULL 
-  //     AND [DATA_WYSTAWIENIA] > '${twoDaysAgo}' 
-  //     AND [NUMER] != 'POTEM'
-  // `;
   try {
 
-    // const carReleaseDatesKRT = await msSqlQuery(updateCarReleaseDatesQuery('KRT'));
-    // const carReleaseDatesKEM = await msSqlQuery(updateCarReleaseDatesQuery('KEM'));
-    // const carReleaseDatesRAC = await msSqlQuery(updateCarReleaseDatesQuery('RAC'));
-
-    // const updateCarReleaseDatesKRT = carReleaseDatesKRT.map(doc => ({
-    //   ...doc,
-    //   COMPANY: 'KRT'
-    // }));
-    // const updateCarReleaseDatesKEM = carReleaseDatesKEM.map(doc => ({
-    //   ...doc,
-    //   COMPANY: 'KEM'
-    // }));
-    // const updateCarReleaseDatesRAC = carReleaseDatesRAC.map(doc => ({
-    //   ...doc,
-    //   COMPANY: 'RAC'
-    // }));
-
-    // const carReleaseDates = [...updateCarReleaseDatesKRT, ...updateCarReleaseDatesKEM, ...updateCarReleaseDatesRAC];
-
-    const companies = ['KRT', 'KEM', 'RAC'];
+    // const companies = ['KRT', 'KEM', 'RAC'];
 
     const carReleaseDates = (
       await Promise.all(
@@ -293,137 +169,10 @@ const updateCarReleaseDates = async () => {
   }
 };
 
-const updateSettlements = async () => {
+const updateSettlements = async (companies) => {
   try {
-    //     const queryMsSqlKRT = `
-    // DECLARE @IS_BILANS BIT = 1;
-    // DECLARE @IS_ROZLICZONY BIT = 0;
-    // DECLARE @DATA_KONIEC DATETIME = GETDATE();
 
-    // SELECT 
-    //    T.OPIS,
-    //  T.WARTOSC_SALDO,
-    // CONVERT(VARCHAR(10),  T.DATA, 23) AS DATA_FV
-    // FROM [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] T WITH(NOLOCK)
-    // WHERE T.IS_BILANS = @IS_BILANS
-    //  AND T.IS_ROZLICZONY = @IS_ROZLICZONY
-    //  AND T.DATA <= @DATA_KONIEC
-    //  AND T.WARTOSC_SALDO IS NOT NULL
-    //  AND T.TERMIN IS NOT NULL
-    //        `;
-
-    //     const queryMsSqlKEM = `
-    // DECLARE @IS_BILANS BIT = 1;
-    // DECLARE @IS_ROZLICZONY BIT = 0;
-    // DECLARE @DATA_KONIEC DATETIME = GETDATE();
-
-    // SELECT 
-    //    T.OPIS,
-    //  T.WARTOSC_SALDO,
-    // CONVERT(VARCHAR(10),  T.DATA, 23) AS DATA_FV
-    // FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[TRANSDOC] T WITH(NOLOCK)
-    // WHERE T.IS_BILANS = @IS_BILANS
-    //  AND T.IS_ROZLICZONY = @IS_ROZLICZONY
-    //  AND T.DATA <= @DATA_KONIEC
-    //  AND T.WARTOSC_SALDO IS NOT NULL
-    //  AND T.TERMIN IS NOT NULL
-    //        `;
-
-    // const settlementsKRT = await msSqlQuery(updateSettlementsQuery('KRT'));
-
-    // const settlementsKEM = await msSqlQuery(updateSettlementsQuery('KEM'));
-
-    // const settlementsRAC = await msSqlQuery(updateSettlementsQuery('RAC'));
-
-    // const filteredDataKRT = settlementsKRT.map(item => {
-    //   const cleanDoc = item.OPIS.split(" ")[0];
-    //   return {
-    //     NUMER_FV: cleanDoc,
-    //     DATA_FV: item.DATA_FV,
-    //     DO_ROZLICZENIA: -(item.WARTOSC_SALDO),
-    //     COMPANY: 'KRT'
-    //   };
-    // });
-
-    // const checkDuplicateKRT = Object.values(
-    //   filteredDataKRT.reduce((acc, item) => {
-    //     if (acc[item.NUMER_FV]) {
-    //       // Jeśli NUMER_FV już istnieje, dodaj wartość DO_ROZLICZENIA
-    //       acc[item.NUMER_FV].DO_ROZLICZENIA += item.DO_ROZLICZENIA;
-    //     } else {
-    //       // Jeśli NUMER_FV nie istnieje, dodaj nowy rekord z zachowaniem DATA_FV
-    //       acc[item.NUMER_FV] = {
-    //         NUMER_FV: item.NUMER_FV,
-    //         DATA_FV: item.DATA_FV,
-    //         DO_ROZLICZENIA: item.DO_ROZLICZENIA,
-    //         COMPANY: item.COMPANY
-    //       };
-    //     }
-    //     return acc;
-    //   }, {})
-    // );
-
-    // const filteredDataKEM = settlementsKEM.map(item => {
-    //   const cleanDoc = item.OPIS.split(" ")[0];
-    //   return {
-    //     NUMER_FV: cleanDoc,
-    //     DATA_FV: item.DATA_FV,
-    //     DO_ROZLICZENIA: -(item.WARTOSC_SALDO),
-    //     COMPANY: 'KEM'
-    //   };
-    // });
-
-    // const checkDuplicateKEM = Object.values(
-    //   filteredDataKEM.reduce((acc, item) => {
-    //     if (acc[item.NUMER_FV]) {
-    //       // Jeśli NUMER_FV już istnieje, dodaj wartość DO_ROZLICZENIA
-    //       acc[item.NUMER_FV].DO_ROZLICZENIA += item.DO_ROZLICZENIA;
-    //     } else {
-    //       // Jeśli NUMER_FV nie istnieje, dodaj nowy rekord z zachowaniem DATA_FV
-    //       acc[item.NUMER_FV] = {
-    //         NUMER_FV: item.NUMER_FV,
-    //         DATA_FV: item.DATA_FV,
-    //         DO_ROZLICZENIA: item.DO_ROZLICZENIA,
-    //         COMPANY: item.COMPANY
-    //       };
-    //     }
-    //     return acc;
-    //   }, {})
-    // );
-
-
-    // const filteredDataRAC = settlementsRAC.map(item => {
-    //   const cleanDoc = item.OPIS.split(" ")[0];
-    //   return {
-    //     NUMER_FV: cleanDoc,
-    //     DATA_FV: item.DATA_FV,
-    //     DO_ROZLICZENIA: -(item.WARTOSC_SALDO),
-    //     COMPANY: 'RAC'
-    //   };
-    // });
-
-    // const checkDuplicateRAC = Object.values(
-    //   filteredDataRAC.reduce((acc, item) => {
-    //     if (acc[item.NUMER_FV]) {
-    //       // Jeśli NUMER_FV już istnieje, dodaj wartość DO_ROZLICZENIA
-    //       acc[item.NUMER_FV].DO_ROZLICZENIA += item.DO_ROZLICZENIA;
-    //     } else {
-    //       // Jeśli NUMER_FV nie istnieje, dodaj nowy rekord z zachowaniem DATA_FV
-    //       acc[item.NUMER_FV] = {
-    //         NUMER_FV: item.NUMER_FV,
-    //         DATA_FV: item.DATA_FV,
-    //         DO_ROZLICZENIA: item.DO_ROZLICZENIA,
-    //         COMPANY: item.COMPANY
-    //       };
-    //     }
-    //     return acc;
-    //   }, {})
-    // );
-
-
-    // const checkDuplicate = [...checkDuplicateKRT, ...checkDuplicateKEM, ...checkDuplicateRAC];
-
-    const companies = ['KRT', 'KEM', 'RAC'];
+    // const companies = ['KRT', 'KEM', 'RAC'];
 
     const settlementsData = await Promise.all(
       companies.map(async (company) => {
@@ -486,18 +235,6 @@ const updateSettlements = async () => {
 
 // pobranie opisów rozrachunków dla KRT
 const updateSettlementDescriptionCompany = async (company) => {
-  // const queryMsSql = `SELECT 
-  //    CASE 
-  //         WHEN CHARINDEX(' ', tr.[OPIS]) > 0 THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS]) - 1) 
-  //         ELSE tr.[OPIS] 
-  //     END AS NUMER_FV,
-  // rozl.[OPIS] AS NUMER_OPIS,
-  // CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], 
-  // CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, 
-  // rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI
-  // FROM     [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr 
-  // LEFT JOIN    [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] 
-  // WHERE rozl.[WARTOSC_SALDO] IS NOT NULL`;
 
   try {
     const settlementDescription = await msSqlQuery(updateSettlementDescriptionQuery(company));
@@ -636,19 +373,31 @@ const updateSettlementDescriptionCompany = async (company) => {
 // };
 
 // aktualizacja opisów rozrachunków
-const updateSettlementDescription = async () => {
-  const dataKRT = await updateSettlementDescriptionCompany('KRT');
-  const dataKEM = await updateSettlementDescriptionCompany('KEM');
-  const dataRAC = await updateSettlementDescriptionCompany('RAC');
-  // const dataKEM = await updateSettlementDescriptionKEM();
-  // const dataRAC = await updateSettlementDescriptionRAC();
+const updateSettlementDescription = async (companies) => {
+  // const dataKRT = await updateSettlementDescriptionCompany('KRT');
+  // const dataKEM = await updateSettlementDescriptionCompany('KEM');
+  // const dataRAC = await updateSettlementDescriptionCompany('RAC');
 
-  // Sprawdzenie czy dane zostały poprawnie zwrócone
-  if (!dataKRT || !dataKEM || !dataRAC) {
+  // // Sprawdzenie czy dane zostały poprawnie zwrócone
+  // if (!dataKRT || !dataKEM || !dataRAC) {
+  //   return false;
+  // }
+
+  // const updatedSettlements = [...dataKRT, ...dataKEM, ...dataRAC];
+
+  const allData = await Promise.all(
+    companies.map(company => updateSettlementDescriptionCompany(company))
+  );
+
+  // Sprawdzenie czy wszystkie wyniki są prawidłowe (czy nie ma np. null lub undefined)
+  const isValid = allData.every(data => Array.isArray(data) && data.length >= 0);
+  if (!isValid) {
     return false;
   }
 
-  const updatedSettlements = [...dataKRT, ...dataKEM, ...dataRAC];
+  // Łączenie wszystkich danych w jedną tablicę
+  const updatedSettlements = allData.flat();
+
   try {
     //dodawanie do mysql dużych pakietów danych, podzielonych na części
     const batchInsert = async (connection, data, batchSize = 50000) => {
@@ -690,13 +439,19 @@ const updateSettlementDescription = async () => {
 
 
 //uruchamiam po kolei aktualizację faktur dla KRT, KEM, RAC
-const updateDocuments = async () => {
+const updateDocuments = async (companies) => {
   try {
-    const resultKRT = await addDocumentToDatabase("KRT");
-    const resultKEM = await addDocumentToDatabase("KEM");
-    const resultRAC = await addDocumentToDatabase("RAC");
+    // const resultKRT = await addDocumentToDatabase("KRT");
+    // const resultKEM = await addDocumentToDatabase("KEM");
+    // const resultRAC = await addDocumentToDatabase("RAC");
 
-    const success = resultKRT && resultKEM && resultRAC;
+    // const success = resultKRT && resultKEM && resultRAC;
+
+    const results = await Promise.all(
+      companies.map(company => addDocumentToDatabase(company))
+    );
+
+    const success = results.every(result => result);
 
     connect_SQL.query(
       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
@@ -716,6 +471,14 @@ const updateDocuments = async () => {
 
 //wykonuje po kolei aktualizację danych i zapisuje daty i statusy
 const updateData = async () => {
+
+  // wylogowanie wszytskich użytkowników
+  await connect_SQL.query(
+    "UPDATE company_users SET refreshToken = null"
+  );
+
+  // const companies = ['KRT', 'KEM', 'RAC'];
+  const companies = ['KRT', 'KEM'];
 
   try {
     const [getUpdatesData] = await connect_SQL.query(
@@ -747,26 +510,13 @@ const updateData = async () => {
     }
 
     // dodanie faktur do DB
-    updateDocuments();
+    updateDocuments(companies);
 
-    // updateDocuments().then((result) => {
-    //   connect_SQL.query(
-    //     "UPDATE updates SET  date = ?, hour = ?, update_success = ? WHERE data_name = ?",
-    //     [
-    //       checkDate(new Date()),
-    //       checkTime(new Date()),
-    //       result ? "Zaktualizowano." : "Błąd aktualizacji",
-    //       'Faktury'
-    //     ]);
-    // }).catch((error) => {
-    //   logEvents(`getDataFromMSSQL - updateCarReleaseDates, getData: ${error}`, "reqServerErrors.txt");
-    // });
-
-    // dodanie fv zaliczkowych
-    updateDocZal();
+    // dodanie faktur zaliczkowych
+    updateDocZal(companies);
 
     // dodanie dat wydania samochodów 
-    updateCarReleaseDates().then((result) => {
+    updateCarReleaseDates(companies).then((result) => {
       connect_SQL.query(
         "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
         [
@@ -781,7 +531,7 @@ const updateData = async () => {
 
 
     // // aktualizacja rozrachunków
-    updateSettlements().then((result) => {
+    updateSettlements(companies).then((result) => {
       connect_SQL.query(
         "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
         [
@@ -795,7 +545,7 @@ const updateData = async () => {
     });
 
     // aktualizacja opisu rozrachunków
-    updateSettlementDescription().then((result) => {
+    updateSettlementDescription(companies).then((result) => {
       connect_SQL.query(
         "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
         [
@@ -831,5 +581,4 @@ module.exports = {
   updateCarReleaseDates,
   updateSettlements,
   updateSettlementDescriptionCompany
-  // updateDocZal
 };

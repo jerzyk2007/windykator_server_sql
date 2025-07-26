@@ -24,7 +24,7 @@ const getTime = async (req, res) => {
     // await getOwnersMail('KRT');
 
 
-    // await addDocumentToDatabase("KEM");
+    // await addDocumentToDatabase("KRT");
 
     // await updateSettlements();
 
