@@ -1115,7 +1115,7 @@ const prepareToNewCompany = async () => {
 
         //dopasowanie bazy danych do rozszerzenia ról FK
         await connect_SQL.query(
-            `UPDATE testy_windykacja.company_settings 
+            `UPDATE company_settings 
 SET roles = JSON_ARRAY(
     JSON_OBJECT(
         'FK_KRT', 200,
@@ -1141,7 +1141,7 @@ WHERE id_setting = 1`);
         //     WHERE id_setting = 1`);
 
         await connect_SQL.query(
-            `UPDATE testy_windykacja.company_settings 
+            `UPDATE company_settings 
             SET company = JSON_ARRAY("KRT", "KEM")
             WHERE id_setting = 1`);
 
