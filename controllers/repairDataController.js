@@ -1135,9 +1135,14 @@ WHERE id_setting = 1`);
 
 
         //dodanie dodatkowej firmy RAC
+        // await connect_SQL.query(
+        //     `UPDATE testy_windykacja.company_settings 
+        //     SET company = JSON_ARRAY("KRT", "KEM", "RAC")
+        //     WHERE id_setting = 1`);
+
         await connect_SQL.query(
             `UPDATE testy_windykacja.company_settings 
-            SET company = JSON_ARRAY("KRT", "KEM", "RAC")
+            SET company = JSON_ARRAY("KRT", "KEM")
             WHERE id_setting = 1`);
 
 

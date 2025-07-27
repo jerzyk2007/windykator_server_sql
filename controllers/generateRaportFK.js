@@ -1553,16 +1553,14 @@ const generateNewRaport = async (req, res) => {
 
     try {
         // pobieram nowe dane wiekowania 
-
         const accountancyData = await getAccountancyDataMsSQL(company, res);
 
         if (accountancyData?.length === 0 || !accountancyData) {
-
             return res.json({ message: "Brak danych SQL - skontaktuj się J. Komorowskim" });
         }
 
         //generuję historię wpisów uwzględniając 
-        // await generateHistoryDocuments(company);
+        await generateHistoryDocuments(company);
 
         //usuwam znaczniki dokumentów
         await connect_SQL.query('DELETE FROM company_mark_documents WHERE COMPANY = ?', [company]);
