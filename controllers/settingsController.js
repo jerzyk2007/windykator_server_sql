@@ -89,11 +89,21 @@ const getSettings = async (req, res) => {
       }
     });
 
+    // const rolesOrder = [
+    //   "User",
+    //   "Editor",
+    //   "Controller",
+    //   "FK",
+    //   "Nora",
+    //   "Admin",
+    // ];
     const rolesOrder = [
       "User",
       "Editor",
       "Controller",
-      "FK",
+      "FK_KRT",
+      "FK_KEM",
+      "FK_RAC",
       "Nora",
       "Admin",
     ];

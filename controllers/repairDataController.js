@@ -461,8 +461,8 @@ const createAccounts = async (req, res) => {
 
                 const mailOptions = {
                     from: "powiadomienia-raportbl@krotoski.com",
-                    // to: `${user.userlogin}`,
-                    to: `jerzy.komorowski@krotoski.com`,
+                    to: `${user.userlogin}`,
+                    // to: `jerzy.komorowski@krotoski.com`,
                     subject: "Zostało założone konto dla Ciebie",
                     // text: "Treść wiadomości testowej",
                     html: `
@@ -482,7 +482,7 @@ const createAccounts = async (req, res) => {
                     Dział Nadzoru i Kontroli Należności <br>
                 `,
                 };
-
+                console.log(mailOptions);
 
                 await sendEmail(mailOptions);
 
@@ -490,7 +490,7 @@ const createAccounts = async (req, res) => {
 
         }
 
-
+        console.log(result.length);
         // wyciągnięcie wszystkich maili;
         // const userLoginsString = [...new Set(result.map(user => user.userlogin))].sort().join('; ');
 
@@ -1050,6 +1050,108 @@ LEFT JOIN company_documents AS C_D ON C_D.id_document = C_D_A.document_id `);
     }
 };
 
+//do wyciągnięcia maili ownerów 
+const getOwnersMail = async (company) => {
+    try {
+        const [owners] = await connect_SQL.query(
+            `SELECT OWNER FROM company_join_items
+            WHERE COMPANY = ?`, [company]);
+
+        const uniqueOwners = [
+            ...new Set(owners.flatMap(obj => obj.OWNER))
+        ].sort((a, b) => a.localeCompare(b, 'pl', { sensitivity: 'base' }));
+
+
+        let mailArray = [];
+        for (const owner of uniqueOwners) {
+            const [mailOwner] = await connect_SQL.query(
+                `SELECT OWNER_MAIL FROM company_owner_items
+            WHERE OWNER = ?`, [owner]);
+            // console.log(owner);
+            mailArray.push(mailOwner[0].OWNER_MAIL);
+        }
+
+        console.log(mailArray.join('; '));
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
+// zmiana roli użytkownika, jesli posiada FK to będzie zmieniony na FK_KRT
+const changeUserRole = async () => {
+    try {
+
+        const [owners] = await connect_SQL.query(
+            `SELECT id_user, roles FROM company_users`);
+
+        // Zmieniamy "FK" na "FK_KRT" w każdym obiekcie
+        const updatedFilteredData = owners
+            .filter(obj => obj.roles.hasOwnProperty('FK'))
+            .map(obj => {
+                obj.roles['FK_KRT'] = obj.roles['FK'];
+                delete obj.roles['FK'];
+                return obj;
+            });
+
+        for (const owner of updatedFilteredData) {
+            await connect_SQL.query(
+                'UPDATE company_users SET roles = ? WHERE id_user = ?', [JSON.stringify(owner.roles), owner.id_user]);
+            console.log(owner.roles);
+        }
+
+
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
+const prepareToNewCompany = async () => {
+    try {
+
+        // zmiana roli użytkownika, jesli posiada FK to będzie zmieniony na FK_KRT
+        await changeUserRole();
+
+        //dopasowanie bazy danych do rozszerzenia ról FK
+        await connect_SQL.query(
+            `UPDATE company_settings 
+SET roles = JSON_ARRAY(
+    JSON_OBJECT(
+        'FK_KRT', 200,
+         'FK_KEM', 201,
+          'FK_RAC', 202,
+        'Nora', 300,
+        'Root', 5000,
+        'User', 100,
+        'Admin', 1000,
+        'Start', 1,
+        'Editor', 110,
+        'Controller', 120,
+        'SuperAdmin', 2000
+    )
+)
+WHERE id_setting = 1`);
+
+
+        //dodanie dodatkowej firmy RAC
+        // await connect_SQL.query(
+        //     `UPDATE testy_windykacja.company_settings 
+        //     SET company = JSON_ARRAY("KRT", "KEM", "RAC")
+        //     WHERE id_setting = 1`);
+
+        await connect_SQL.query(
+            `UPDATE company_settings 
+            SET company = JSON_ARRAY("KRT", "KEM")
+            WHERE id_setting = 1`);
+
+
+    }
+    catch (error) {
+        console.error(error);
+    }
+};
+
 module.exports = {
     repairAdvisersName,
     changeUserSettings,
@@ -1062,5 +1164,7 @@ module.exports = {
     repairManagementDecisionFK,
     usersDepartmentsCompany,
     testAddDocumentToDatabase,
-    addDocToHistory
+    addDocToHistory,
+    getOwnersMail,
+    prepareToNewCompany
 };

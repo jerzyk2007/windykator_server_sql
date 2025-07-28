@@ -11,7 +11,7 @@ const upload = multer({ storage: storage });
 router
     .route("/send-documents/:type")
     .post(
-        verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK),
+        verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC),
         upload.single("excelFile"),
         AddData.documentsFromFile
     );
@@ -19,7 +19,7 @@ router
 router
     .route("/send-documents-accountancy/:company")
     .post(
-        verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK),
+        verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC),
         upload.single("excelFile"),
         AddData.accountancyFile
     );

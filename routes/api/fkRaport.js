@@ -1,46 +1,56 @@
 const express = require("express");
 const router = express.Router();
 const fKRaport = require("../../controllers/fkRaportController");
+const generateRaport = require("../../controllers/generateRaportFK");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
 // pobieranie danych do raportu FK v2 wg wstępnego filtrowania
 router
   .route("/get-raport-data/:company")
-  .post(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getRaportData);
+  .post(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC),
+    generateRaport.getRaportData);
 
 // pobieram daty  aktualizacji plików excel dla raportu FK
 router
   .route("/get-date-counter/:company")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getDateCounter);
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC),
+    generateRaport.getDateCounter);
 
 // usuwam wszystkie dane wczytanych plików excel raportu FK
-router
-  .route("/delete-data-raport/:company")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.deleteDataRaport);
+// router
+// .route("/delete-data-raport/:company")
+// .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.deleteDataRaport);
 
 // generowanie raportu FK wersja 2 i zapisanie w tabeli
 router
   .route("/generate-raport/:company")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.generateRaport);
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC),
+    generateRaport.generateNewRaport);
 
 // usuwanie znacznika na wybranym dokumencie dla raportu fk 
 router
   .route("/change-mark-document")
   .patch(
-    verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC),
     fKRaport.changeMark
   );
 
 // dane do raportu kontroli dokumentów BL
 router
   .route("/get-data-raports-control-BL")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Controller, ROLES_LIST.Admin), fKRaport.getRaportDocumentsControlBL);
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC), fKRaport.getRaportDocumentsControlBL);
 
 // dane struktury orgaznizacji
 router
   .route("/get-organization-structure")
-  .get(verifyRoles(ROLES_LIST.FK, ROLES_LIST.Admin), fKRaport.getStructureOrganization);
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.FK_KRT, ROLES_LIST.FK_KEM, ROLES_LIST.FK_RAC),
+    fKRaport.getStructureOrganization);
 
 //dodaje ostateczną decyzję i datę do osobnej tabeli, dla wygenerowania historii w raporcie FK
 router

@@ -5,7 +5,6 @@ const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
 router.route("/change-pass/:id_user").patch(
-  // verifyRoles(ROLES_LIST.User || ROLES_LIST.FK),
   usersController.changePassword
 );
 

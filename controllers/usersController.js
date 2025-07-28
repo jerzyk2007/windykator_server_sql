@@ -512,7 +512,6 @@ const getUsersData = async (req, res) => {
 const changeRoles = async (req, res) => {
   const { id_user } = req.params;
   const { roles } = req.body;
-
   const newRoles = { ...ROLES_LIST };
   const filteredRoles = Object.fromEntries(
     Object.entries(newRoles).filter(([key]) => roles.includes(key))

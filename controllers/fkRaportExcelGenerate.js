@@ -183,7 +183,6 @@ const columnsName = [
 
 
 const getExcelRaport = async (cleanData, raportInfo) => {
-
     // od którego wiersza mają się zaczynać dane w arkuszu
     const startRow = 6;
     try {

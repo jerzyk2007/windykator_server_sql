@@ -47,6 +47,17 @@ const getDataDocuments = async (id_user, info) => {
       }
 
     }
+    else if (info === "critical") {
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND ${sqlCondition}`
+          // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND AND D.DORADCA =  '${DORADCA}'`);
+      }
+
+    }
     else if (info === "obligations") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(
@@ -299,7 +310,6 @@ const getDataTable = async (req, res) => {
     return res.status(400).json({ message: "Id and info are required." });
   }
   try {
-
     const result = await getDataDocuments(id_user, info);
 
     res.json(result.data);
@@ -412,41 +422,8 @@ const getColumnsName = async (req, res) => {
   }
 };
 
-// const getTradeCreditData = async (req, res) => {
-//   try {
-//     // const [tradeCreditData] = await connect_SQL.query(
-//     //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.zgoda_na_platnosci_opoznione = 'TAK'"
-//     // );
-//     // const [tradeCreditData] = await connect_SQL.query(
-//     //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer WHERE  tcd.sposob_zaplaty = 'PRZELEW'"
-//     // );
-//     // const [tradeCreditData] = await connect_SQL.query(
-//     //   "SELECT tcd.*, tcs.po_terminie, tcs.rozliczono FROM trade_credit_data AS tcd LEFT JOIN trade_credit_settlements AS tcs ON tcd.numer = tcs.numer LIMIT 10000"
-//     // );
-//     const [tradeCreditData] = await connect_SQL.query(
-//       "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01'"
-//     );
-//     // const [tradeCreditData] = await connect_SQL.query(
-//     //   "SELECT *, DATEDIFF(termin, data_wystawienia) AS days_difference FROM trade_credit_data WHERE data_wystawienia >= '2023-10-01' AND segment='SAMOCHODY NOWE' AND kontrahent_nip = '5252800978'"
-//     // );
-
-//     const [areaCreditData] = await connect_SQL.query(
-//       "SELECT * FROM area_data_credit_trade"
-//     );
-//     console.log("finish");
-//     res.json({ tradeCreditData, areaCreditData });
-//   } catch (error) {
-//     logEvents(
-//       `documentsController, getTradeCreditData: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
 
 // zapis chatu z kontroli dokumentacji
-
-
 const changeControlChat = async (req, res) => {
   const { NUMER_FV, chat, FIRMA } = req.body;
 
@@ -568,7 +545,6 @@ module.exports = {
   getDataDocuments,
   getSingleDocument,
   getColumnsName,
-  // getTradeCreditData,
   changeControlChat,
   getDataDocumentsControl,
   changeDocumentControl
