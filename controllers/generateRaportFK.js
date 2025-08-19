@@ -148,7 +148,7 @@ cte_Zobowiazania_Aggr AS (
         SELECT
             dsymbol, CAST(termin AS DATE) AS termin,
             DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
-            synt, poz1, poz2, kpu.skrot AS kontrahent,
+            synt, poz1, poz2, kpu.nazwa AS kontrahent,
             ROUND(
                 (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
                 SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
@@ -161,14 +161,14 @@ cte_Zobowiazania_Aggr AS (
           AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
           AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
           AND rozdata.strona = 1
-        GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.skrot, rozdata.kurs
+        GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.nazwa, rozdata.kurs
         
         UNION
         
         SELECT
             dSymbol, CAST(termin AS DATE) AS termin,
             DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
-            synt, poz1, poz2, kpu.skrot AS kontrahent,
+            synt, poz1, poz2, kpu.nazwa AS kontrahent,
             ROUND(
                 SUM(rozdata.kwota) -
                 SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
@@ -181,7 +181,7 @@ cte_Zobowiazania_Aggr AS (
           AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
           AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
           AND rozdata.synt IN (201, 203)
-        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.nazwa
     ) AS t
     GROUP BY t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania
 ),
@@ -195,7 +195,7 @@ cte_Naleznosci_Aggr AS (
         SELECT
             dsymbol, CAST(termin AS DATE) AS termin,
             DATEDIFF(DAY, termin, @DataDoDate) AS DniPrzetreminowania,
-            synt, poz1, poz2, kpu.skrot AS kontrahent,
+            synt, poz1, poz2, kpu.nazwa AS kontrahent,
             ROUND(
                 SUM(rozdata.kwota) +
                 SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
@@ -208,7 +208,7 @@ cte_Naleznosci_Aggr AS (
           AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
           AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
           AND strona = 0 AND rozdata.orgStrona = 0
-        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.nazwa
     ) AS t
     GROUP BY t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania
 ),
@@ -278,7 +278,7 @@ cte_Zobowiazania_Blok_A AS (
     SELECT
         dsymbol, CAST(termin AS DATE) AS termin,
         DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
-        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        synt, poz1, poz2, kpu.nazwa AS kontrahent,
         ROUND(
             (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
             SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
@@ -291,14 +291,14 @@ cte_Zobowiazania_Blok_A AS (
       AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
       AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
       AND rozdata.strona = 1
-    GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.skrot, rozdata.kurs
+    GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.nazwa, rozdata.kurs
 ),
 -- Blok B: Zobowiązania - część 2
 cte_Zobowiazania_Blok_B AS (
     SELECT
         dSymbol, CAST(termin AS DATE) AS termin,
         DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
-        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        synt, poz1, poz2, kpu.nazwa AS kontrahent,
         ROUND(
             SUM(rozdata.kwota) -
             SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
@@ -310,14 +310,14 @@ cte_Zobowiazania_Blok_B AS (
       AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
       AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
       AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
-    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.nazwa
 ),
 -- Blok C: Należności
 cte_Naleznosci_Blok_C AS (
     SELECT
         dSymbol, CAST(termin AS DATE) AS termin,
         DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
-        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        synt, poz1, poz2, kpu.nazwa AS kontrahent,
         ROUND(
             SUM(rozdata.kwota) +
             SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
@@ -330,7 +330,7 @@ cte_Naleznosci_Blok_C AS (
       AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
       AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
       AND strona = 0 AND rozdata.orgStrona = 0
-    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.nazwa
 ),
 -- Krok 3: Połączenie wstępnie zagregowanych bloków.
 cte_Wszystkie_Transakcje AS (
