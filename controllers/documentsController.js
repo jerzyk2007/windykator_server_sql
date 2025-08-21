@@ -109,13 +109,13 @@ const getDataDocuments = async (id_user, info) => {
     }
     else if (info === "control-bl") {
       if (truePermissions[0] === "Standard") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE JI.area = 'BLACHARNIA' AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)`);
+        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE JI.area = 'BLACHARNIA' AND  ${sqlCondition} AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)`);
       }
       else if (truePermissions[0] === "Basic") {
-        // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
         filteredData = [];
       }
     }
+
     return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
     logEvents(
