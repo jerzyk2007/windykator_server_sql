@@ -1,9 +1,9 @@
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
-const { connect_SQL } = require("../config/dbConn");
+const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { checkDate, checkTime } = require('./manageDocumentAddition');
 const { addDepartment, documentsType } = require('./manageDocumentAddition');
-
+const ExcelJS = require("exceljs");
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
 const isExcelFile = (data) => {
@@ -327,38 +327,117 @@ const accountancyFile = async (req, res) => {
   }
 };
 
+const getExcelRaport = async (data) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Raport");
+
+  // kolumny na podstawie kluczy pierwszego obiektu, początkowo szerokość 10
+  worksheet.columns = Object.keys(data[0]).map((key) => ({
+    header: key,
+    key: key,
+    width: 10, // tymczasowa szerokość
+    style: { alignment: { wrapText: true } } // zawijanie tekstu
+  }));
+
+  // dodajemy dane
+  data.forEach((row) => {
+    const addedRow = worksheet.addRow(row);
+    addedRow.alignment = { wrapText: true, vertical: "top" };
+  });
+
+  // formatowanie nagłówków
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.alignment = { horizontal: "center", vertical: "middle" };
+
+  // zablokowanie pierwszego wiersza
+  worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+  // automatyczny filtr
+  worksheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: worksheet.columns.length }
+  };
+
+  // auto dopasowanie szerokości kolumn do zawartości, max 25
+  worksheet.columns.forEach((col) => {
+    let maxLength = col.header.length;
+    col.eachCell({ includeEmpty: true }, (cell) => {
+      const cellValue = cell.value ? cell.value.toString() : "";
+      if (cellValue.length > maxLength) maxLength = cellValue.length;
+    });
+    col.width = Math.min(maxLength + 2, 25); // +2 dla trochę luzu, max 25
+  });
+
+  return await workbook.xlsx.writeBuffer();
+};
+
+
+
 const randomFile = async (rows, res) => {
   try {
 
-    const filteredData = rows.map(item => {
-      const DATA_DODANIA = isExcelDate(item.data)
-        ? excelDateToISODate(item.data)
+   const fiteredData = rows.map(row=>{
+         const WPROWADZONO = isExcelDate(row.WPROWADZONO)
+        ? excelDateToISODate(row.WPROWADZONO)
         : null;
-      return {
-        NUMER_FV: item.faktura,
-        KANCELARIA: item.firma,
-        DATA_DODANIA,
-        FIRMA: 'KRT'
-      };
+         const TERMIN = isExcelDate(row.TERMIN)
+        ? excelDateToISODate(row.TERMIN)
+        : null;
+    return {
+      ...row,
+      WPROWADZONO,
+TERMIN,
+    }
+   })
+
+   const newData = [];
+
+for (const doc of fiteredData) {
+  const query = `
+    SELECT 
+        fv.[NUMER] AS NUMER_FV,
+        rozl.[OPIS] AS NUMER_OPIS
+    FROM 
+        [AS3_KROTOSKI_PRACA].[dbo].TRANSDOC AS tr
+    LEFT JOIN 
+        [AS3_KROTOSKI_PRACA].[dbo].FAKTDOC AS fv
+        ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+    LEFT JOIN 
+        [AS3_KROTOSKI_PRACA].[dbo].[TRANSDOC] AS rozl 
+        ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID]
+    WHERE
+        fv.[NUMER] IS NOT NULL
+        AND tr.[OPIS] LIKE '${doc["TYTUŁ"]}'
+  `;
+
+  const opis = await msSqlQuery(query);
+
+  // kopiujemy obiekt, żeby nie nadpisywać oryginału
+  const newDoc = { ...doc };
+
+  if (opis.length > 0) {
+    opis.forEach((row, index) => {
+      const key = index === 0 ? "OPIS_ROZR" : `OPIS_ROZR${index + 1}`;
+      newDoc[key] = row.NUMER_OPIS;
     });
+  }
 
-    const values = filteredData.map(item => [
-      item.NUMER_FV,
-      item.DATA_DODANIA,
-      item.KANCELARIA,
-      item.FIRMA
-    ]);
+  newData.push(newDoc);
+}
+console.log(newData[1])
+ const excelBuffer = await getExcelRaport(newData, "opisy");
 
-    const query = `
-      INSERT IGNORE INTO company_rubicon_data_history
-        (NUMER_FV, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA, COMPANY) 
-      VALUES 
-        ${values.map(() => "(?, ?, ?, ?)").join(", ")}
-    `;
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=raport.xlsx"
+    );
 
-    await connect_SQL.query(query, values.flat());
-    console.log(filteredData);
-    res.end();
+    res.send(excelBuffer);
   } catch (error) {
     logEvents(
       `addDataFromExcelFileController, randomFile: ${error}`,

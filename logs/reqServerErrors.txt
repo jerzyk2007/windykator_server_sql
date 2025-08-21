@@ -1,0 +1,4 @@
+20250821	14:18:57	addDataFromExcelFileController, randomFile: ReferenceError: newDoc is not defined
+20250821	14:21:12	addDataFromExcelFileController, randomFile: TypeError: Cannot convert undefined or null to object
+20250821	14:21:25	addDataFromExcelFileController, randomFile: TypeError: Cannot convert undefined or null to object
+20250821	14:21:38	addDataFromExcelFileController, randomFile: TypeError: Cannot convert undefined or null to object
