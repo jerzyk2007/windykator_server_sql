@@ -377,7 +377,6 @@ const getSingleDocument = async (req, res) => {
     const [controlDoc] = await connect_SQL.query(`SELECT * FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?`,
       [singleDoc[0].NUMER_FV, singleDoc[0].FIRMA]
     );
-
     res.json({
       singleDoc: singleDoc[0],
       controlDoc: controlDoc[0] ? controlDoc[0] : {},
