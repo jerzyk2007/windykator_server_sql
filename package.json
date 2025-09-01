@@ -30,5 +30,11 @@
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.4",
     "xlsx": "^0.18.5"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": false,
+    "tabWidth": 2,
+    "trailingComma": "es5"
   }
 }
