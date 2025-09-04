@@ -1285,29 +1285,188 @@ const getRacDataTime = async () => {
 // testowe rozrachunki dla RAC
 const settlementsRAC = async () => {
   try {
-    const query = `SELECT  
-    [faktn_fakt_nr_caly] AS NUMER_FV
-	    ,([faktp_og_brutto]-[faktn_zaplata_kwota]) AS NALEZNOSC
-    ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_WYSTAWIENIA
-	,'RAC' AS COMPANY
-  FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
-    WHERE [faktn_zaplata_status] != 'Zapłacono całkowicie'`;
+    await connect_SQL.query(
+      ` DELETE FROM company_settlements WHERE COMPANY = 'RAC'`
+    );
 
+    const today = new Date();
+    const year =
+      today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+    const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
+
+    // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
+    const lastDay = new Date(year, month, 0);
+    const yyyy = lastDay.getFullYear();
+    const mm = String(lastDay.getMonth() + 1).padStart(2, "0"); // getMonth() zwraca 0-11
+    const dd = String(lastDay.getDate()).padStart(2, "0");
+
+    // const endDate = `${yyyy}-${mm}-${dd}`;
+    const endDate = `2025-09-03`;
+
+    const query = `
+DECLARE @datado DATETIME = '2025-09-04';
+DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
+DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
+
+WITH
+-- Krok 1: Pre-agregacja rozrachunków. To jest najlepsza praktyka i pozostaje bez zmian.
+cte_Rozrachunki AS (
+    SELECT
+        transakcja,
+        SUM(kwota * SIGN(0.5 - strona)) AS WnMaRozliczono,
+        SUM(CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END * SIGN(0.5 - strona)) AS WnMaRozliczono_w
+    FROM FK_Rent_SK.FK.rozrachunki
+    WHERE dataokr < @DataDoPlusJedenDzien AND czyRozliczenie = 1 AND potencjalna = 0
+    GROUP BY transakcja
+),
+-- Krok 2: Przygotowanie trzech podstawowych bloków danych z wstępną agregacją.
+-- Blok A: Zobowiązania - część 1
+cte_Zobowiazania_Blok_A AS (
+    SELECT
+        dsymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+      AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND rozdata.strona = 1
+    GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.skrot, rozdata.kurs
+),
+-- Blok B: Zobowiązania - część 2
+cte_Zobowiazania_Blok_B AS (
+    SELECT
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            SUM(rozdata.kwota) -
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.baza = 2 AND rozdata.synt IN (201, 203)
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
+      AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+),
+-- Blok C: Należności
+cte_Naleznosci_Blok_C AS (
+    SELECT
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            SUM(rozdata.kwota) +
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND strona = 0 AND rozdata.orgStrona = 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+),
+-- Krok 3: Połączenie wstępnie zagregowanych bloków z zachowaniem oryginalnej logiki UNION / UNION ALL
+cte_Wszystkie_Transakcje AS (
+    -- Tutaj odtwarzamy oryginalny UNION, który usuwa duplikaty między dwoma blokami zobowiązań
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_A
+    UNION
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_B
+    UNION ALL
+    -- A następnie dodajemy należności
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Naleznosci_Blok_C
+),
+-- Krok 4: Końcowa, spłaszczona agregacja. To jest znacznie wydajniejsze niż wielopoziomowe grupowanie.
+cte_Zagregowane AS (
+    SELECT
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania,
+        SUM(overdue) AS płatność
+    FROM cte_Wszystkie_Transakcje
+    GROUP BY
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania
+),
+-- Krok 5: Finałowe obliczenia (funkcje okna, przedziały) i filtrowanie zer
+cte_WynikKoncowy AS (
+    SELECT
+        @DataDoDate AS stanNa,
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, płatność,
+        CASE
+            WHEN DniPrzetreminowania < 1   THEN '< 1'
+            WHEN DniPrzetreminowania <= 30 THEN '1 - 30'
+            WHEN DniPrzetreminowania <= 60 THEN '31 - 60'
+            WHEN DniPrzetreminowania <= 90 THEN '61 - 90'
+            WHEN DniPrzetreminowania <= 180 THEN '91 - 180'
+            WHEN DniPrzetreminowania <= 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        -- Warunkowe obliczanie salda
+        SUM(płatność) OVER (
+            PARTITION BY synt, CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END
+        ) AS saldoKontrahent
+    FROM cte_Zagregowane
+    WHERE ROUND(płatność, 2) <> 0
+)
+-- Końcowy SELECT
+SELECT
+    stanNa,
+    dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, przedział, płatność,
+    ROUND(saldoKontrahent, 2) AS saldoKontrahent,
+    CASE
+        WHEN ROUND(saldoKontrahent, 2) > 0 THEN 'N'
+        WHEN ROUND(saldoKontrahent, 2) < 0 THEN 'Z'
+        ELSE 'R'
+    END AS Typ
+FROM cte_WynikKoncowy
+ORDER BY
+    synt,
+    CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
+    termin;
+    `;
     const documents = await msSqlQuery(query);
+    console.log(documents);
+    console.log(documents.length);
+    //     const query = `SELECT
+    //     [dSymbol] AS NUMER_FV
+    //     ,[doRozlZl] AS NALEZNOSC
+    //      ,CONVERT(VARCHAR(10), [datawpr], 23) AS DATA_WYSTAWIENIA
+    //      ,'RAC' AS COMPANY
+    //   FROM [FK_Rent_SK].[FK].[rozrachunki]
+    // WHERE czyRozliczenie = 0 AND kontrahent IS NOT NULL `;
+
+    //   const query = `SELECT
+    //   [faktn_fakt_nr_caly] AS NUMER_FV
+    //     ,([faktp_og_brutto]-[faktn_zaplata_kwota]) AS NALEZNOSC
+    //   ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_WYSTAWIENIA
+    // ,'RAC' AS COMPANY
+    // FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+    //   WHERE [faktn_zaplata_status] != 'Zapłacono całkowicie'`;
 
     const values = documents.map((item) => [
-      item.NUMER_FV,
-      item.DATA_WYSTAWIENIA,
-      item.NALEZNOSC,
-      item.COMPANY,
+      item.dsymbol,
+      item.termin,
+      item["płatność"],
+      "RAC",
     ]);
 
     const queryIns = `
-       INSERT IGNORE INTO company_settlements
-         ( NUMER_FV, DATA_FV, NALEZNOSC, COMPANY) 
-       VALUES 
-         ${values.map(() => "(?, ?, ?, ?)").join(", ")}
-     `;
+         INSERT IGNORE INTO company_settlements
+           ( NUMER_FV, DATA_FV, NALEZNOSC, COMPANY)
+         VALUES
+           ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+       `;
     // Wykonanie zapytania INSERT
     await connect_SQL.query(queryIns, values.flat());
 
@@ -1330,12 +1489,54 @@ const addRacCompany = async () => {
   }
 };
 
+const tableColumnsForRAC = async () => {
+  try {
+    const [columns] = await connect_SQL.query(
+      "SELECT * FROM company_table_columns"
+    );
+
+    columns.forEach((column) => {
+      const areas = column.areas;
+
+      // Liczymy ile jest available: true
+      const availableCount = areas.filter((area) => area.available).length;
+
+      // Jeśli więcej niż 3, ustawiamy RAC na available: true
+      if (availableCount > 3) {
+        const racArea = areas.find((area) => area.name === "RAC");
+        if (racArea) {
+          racArea.available = true;
+        }
+      }
+    });
+
+    // const test = columns.map((item) => {
+    //   console.log(item);
+    // });
+
+    for (const col of columns) {
+      await connect_SQL.query(
+        `
+            UPDATE company_table_columns SET areas = ?
+    WHERE id_table_columns = ?;
+      `,
+        [JSON.stringify(col.areas), col.id_table_columns]
+      );
+    }
+    console.log("finish columns");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const prepareRac = async () => {
   try {
-    await addRacCompany();
-    await getRacData();
-    await getRacDataTime();
+    // await addRacCompany();
+    // await getRacData();
+    // await getRacDataTime();
     await settlementsRAC();
+    // await tableColumnsForRAC();
+
     console.log("prepare RAC");
   } catch (error) {
     console.error(error);
