@@ -416,7 +416,6 @@ ORDER BY
     const query = company === "KRT" ? queryKRT : queryKEM;
 
     const accountancyData = await msSqlQuery(query);
-
     const changeNameColumns = accountancyData.map((item) => {
       const rawDate = item["termin"];
       const formattedDate = rawDate
@@ -460,6 +459,7 @@ ORDER BY
       });
       return [];
     }
+
     return addDep;
   } catch (error) {
     logEvents(
@@ -918,7 +918,6 @@ const gerReportDate = async (company) => {
 
 const generateRaportData = async (req, res) => {
   const { company } = req.params;
-
   try {
     await generateRaportCompany(company);
 
@@ -929,7 +928,6 @@ const generateRaportData = async (req, res) => {
             FROM company_fk_raport_${company} AS FK 
             LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`
     );
-
     // usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach((item) => {
       delete item.id_fk_raport;
@@ -1335,7 +1333,6 @@ const generateNewRaport = async (req, res) => {
       "DELETE FROM company_mark_documents WHERE COMPANY = ?",
       [company]
     );
-
     // czyszczę tabelę z wiekowaniem
     await connect_SQL.query(`TRUNCATE company_raportFK_${company}_accountancy`);
 
@@ -1373,7 +1370,72 @@ const getMainRaportFK = async (req, res) => {
 
     const reportInfo = await gerReportDate(company);
 
-    const excelBuffer = await getExcelRaport(getData, reportInfo);
+    const changeData = getData.map((item) => {
+      if (item.name === "KSIĘGOWOŚĆ") {
+        const data = [...item.data];
+        const documentsType = [
+          "Faktura",
+          "Faktura zaliczkowa",
+          "Korekta",
+          "Korekta zaliczki",
+          "Nota",
+        ];
+
+        const agingDate = new Date(reportInfo.agingDate);
+
+        const filteredData1 = data.filter((item) => {
+          // 1. Warunek DO_ROZLICZENIA_AS
+          const validRozliczenie =
+            item.DO_ROZLICZENIA_AS === null ||
+            item.DO_ROZLICZENIA_AS === "NULL";
+
+          // 2. Warunek TYP_DOKUMENTU
+          const validType = documentsType.includes(item.TYP_DOKUMENTU);
+
+          // 3. Warunek DATA_ROZLICZENIA_AS <= reportInfo.agingDate
+          const itemDate = new Date(item.DATA_ROZLICZENIA_AS);
+          const validDate = itemDate <= agingDate;
+
+          return validRozliczenie && validType && validDate;
+        });
+
+        const filteredData2 = data.filter((item) => {
+          const kwotaFK = Number(item.KWOTA_DO_ROZLICZENIA_FK);
+          const kwotaAS = Number(item.DO_ROZLICZENIA_AS);
+
+          const validKwotaFK = isFinite(kwotaFK) && kwotaFK !== 0;
+          const validKwotaAS = isFinite(kwotaAS) && kwotaAS !== 0;
+          const notEqual = kwotaFK !== kwotaAS;
+
+          const validType = documentsType.includes(item.TYP_DOKUMENTU);
+
+          // OPIS_ROZRACHUNKU
+          let validOpis = false;
+          if (item.OPIS_ROZRACHUNKU) {
+            const entries = item.OPIS_ROZRACHUNKU.split("\n")
+              .map((e) => e.trim())
+              .filter(Boolean);
+
+            validOpis = entries.some((entry) => {
+              const dateStr = entry.slice(0, 10); // format YYYY-MM-DD
+              const entryDate = new Date(dateStr);
+              return entryDate <= agingDate;
+            });
+          }
+
+          return (
+            validKwotaFK && validKwotaAS && notEqual && validType && validOpis
+          );
+        });
+
+        return {
+          name: item.name,
+          data: [...filteredData1, ...filteredData2],
+        };
+      }
+      return item;
+    });
+    const excelBuffer = await getExcelRaport(changeData, reportInfo);
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
