@@ -1,4 +1,5 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
+const { logEvents } = require("../middleware/logEvents");
 const { verifyUserTableConfig } = require("./usersController");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
@@ -1217,7 +1218,7 @@ const getRacData = async () => {
            .join(", ")}
      `;
 
-    await connect_SQL.query(queryIns, values.flat());
+    // await connect_SQL.query(queryIns, values.flat());
 
     console.log("finish getRacData");
   } catch (error) {
@@ -1282,29 +1283,11 @@ const getRacDataTime = async () => {
   }
 };
 
-// testowe rozrachunki dla RAC
-const settlementsRAC = async () => {
-  try {
-    await connect_SQL.query(
-      ` DELETE FROM company_settlements WHERE COMPANY = 'RAC'`
-    );
-
-    const today = new Date();
-    const year =
-      today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-    const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
-
-    // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
-    const lastDay = new Date(year, month, 0);
-    const yyyy = lastDay.getFullYear();
-    const mm = String(lastDay.getMonth() + 1).padStart(2, "0"); // getMonth() zwraca 0-11
-    const dd = String(lastDay.getDate()).padStart(2, "0");
-
-    // const endDate = `${yyyy}-${mm}-${dd}`;
-    const endDate = `2025-09-03`;
-
-    const query = `
-DECLARE @datado DATETIME = '2025-09-04';
+// zapytanie o rozliczenia RAC do Symfoni
+const today = new Date();
+const todayDate = today.toISOString().split("T")[0];
+const querySettlementsFK = `
+DECLARE @datado DATETIME = '${todayDate}';
 DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
 DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
 
@@ -1435,24 +1418,14 @@ ORDER BY
     CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
     termin;
     `;
-    const documents = await msSqlQuery(query);
-    console.log(documents);
-    console.log(documents.length);
-    //     const query = `SELECT
-    //     [dSymbol] AS NUMER_FV
-    //     ,[doRozlZl] AS NALEZNOSC
-    //      ,CONVERT(VARCHAR(10), [datawpr], 23) AS DATA_WYSTAWIENIA
-    //      ,'RAC' AS COMPANY
-    //   FROM [FK_Rent_SK].[FK].[rozrachunki]
-    // WHERE czyRozliczenie = 0 AND kontrahent IS NOT NULL `;
+// testowe rozrachunki dla RAC
+const settlementsRAC = async () => {
+  try {
+    await connect_SQL.query(
+      ` DELETE FROM company_settlements WHERE COMPANY = 'RAC'`
+    );
 
-    //   const query = `SELECT
-    //   [faktn_fakt_nr_caly] AS NUMER_FV
-    //     ,([faktp_og_brutto]-[faktn_zaplata_kwota]) AS NALEZNOSC
-    //   ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_WYSTAWIENIA
-    // ,'RAC' AS COMPANY
-    // FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
-    //   WHERE [faktn_zaplata_status] != 'Zapłacono całkowicie'`;
+    const documents = await msSqlQuery(querySettlementsFK);
 
     const values = documents.map((item) => [
       item.dsymbol,
@@ -1529,13 +1502,146 @@ const tableColumnsForRAC = async () => {
   }
 };
 
+const unpaidDocuments = async () => {
+  try {
+    const documents = await msSqlQuery(querySettlementsFK);
+
+    const filteredData = documents.map((doc) => {
+      return {
+        NUMER_FV: doc.dsymbol,
+        DATA_FV: "2025-01-01",
+        NALEZNOSC: doc["płatność"],
+        COMPANY: "RAC",
+      };
+    });
+
+    const uniqueInvoices = [
+      ...new Set(filteredData.map((doc) => doc.NUMER_FV)),
+    ];
+
+    const sqlCondition =
+      uniqueInvoices.length > 0
+        ? `(${uniqueInvoices.map((inv) => `'${inv}'`).join(", ")})`
+        : null;
+
+    const query = `
+      SELECT
+          [faktn_fakt_nr_caly] AS NUMER_FV,
+          [faktp_og_brutto] AS BRUTTO,
+          [faktp_og_netto] AS NETTO,
+          [faktn_zaplata_kwota] AS DO_ROZLICZENIA,
+          CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_FV,
+          CONVERT(VARCHAR(10), [terminPlatnosci], 23) AS TERMIN,
+          [kl_nazwa] AS KONTRAHENT,
+          [faktn_wystawil] AS DORADCA,
+          [faktp_rejestr] AS NR_REJESTRACYJNY,
+          [uwagiFaktura] AS UWAGI_Z_FAKTURY,
+          [typSprzedazy] AS TYP_PLATNOSCI,
+          [kl_nip] AS NIP
+      FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+      WHERE [faktn_fakt_nr_caly] IN ${sqlCondition};
+    `;
+
+    const unpaidDocs = await msSqlQuery(query);
+
+    //wyszukanie ilości powtórzeń dokumentów z RAC
+    // grupujemy po NUMER_FV
+    // const grouped = unpaidDocs.reduce((acc, doc) => {
+    //   if (!acc[doc.NUMER_FV]) {
+    //     acc[doc.NUMER_FV] = [];
+    //   }
+    //   acc[doc.NUMER_FV].push(doc);
+    //   return acc;
+    // }, {});
+
+    // // sprawdzamy które faktury mają różne wartości w innych polach
+    // const duplicates = Object.entries(grouped)
+    //   .map(([numer, docs]) => {
+    //     // sprawdzamy unikalne JSON-y (usuwa identyczne kopie)
+    //     const unique = new Set(docs.map((d) => JSON.stringify(d)));
+    //     if (unique.size > 1) {
+    //       return {
+    //         NUMER_FV: numer,
+    //         "Ilość powtórzeń": docs.length,
+    //       };
+    //     }
+    //     return null;
+    //   })
+    //   .filter(Boolean);
+
+    // console.log(duplicates);
+
+    // console.log(query);
+    // logEvents(JSON.stringify(duplicates, null, 2), "data.txt");
+
+    // unpaidDocs - Twoja tablica obiektów
+    const duplicates = unpaidDocs.reduce(
+      (acc, doc) => {
+        if (!acc.map.has(doc.NUMER_FV)) {
+          acc.map.set(doc.NUMER_FV, []);
+        }
+        acc.map.get(doc.NUMER_FV).push(doc);
+        return acc;
+      },
+      { map: new Map() }
+    ).map; // map: NUMER_FV => [wszystkie obiekty]
+
+    const result = [];
+    for (const [numer, items] of duplicates.entries()) {
+      if (items.length > 1) {
+        // tylko te, które się powtarzają
+        result.push(...items);
+      }
+    }
+    // console.log(result);
+
+    const values = unpaidDocs.map((item) => [
+      item.NUMER_FV,
+      item.BRUTTO,
+      item.NETTO,
+      "RAC",
+      item.DO_ROZLICZENIA,
+      item.DATA_FV,
+      item.TERMIN,
+      item.KONTRAHENT,
+      item.DORADCA || "Brak danych",
+      item.NR_REJESTRACYJNY,
+      null,
+      item.UWAGI_Z_FAKTURY,
+      item.TYP_PLATNOSCI,
+      item.NIP,
+      null,
+      null,
+      null,
+      "RAC",
+    ]);
+
+    const queryIns = `
+           INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA)
+           VALUES
+             ${values
+               .map(
+                 () => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+               )
+               .join(", ")}
+         `;
+
+    await connect_SQL.query(queryIns, values.flat());
+
+    console.log("finish unpaidDocuments");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const prepareRac = async () => {
   try {
     // await addRacCompany();
     // await getRacData();
     // await getRacDataTime();
-    await settlementsRAC();
+    // await settlementsRAC();
     // await tableColumnsForRAC();
+    await unpaidDocuments();
 
     console.log("prepare RAC");
   } catch (error) {
