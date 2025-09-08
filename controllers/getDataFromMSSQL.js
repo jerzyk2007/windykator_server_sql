@@ -1,10 +1,16 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
-const cron = require('node-cron');
+const cron = require("node-cron");
 const { logEvents } = require("../middleware/logEvents");
-const { addDepartment } = require('./manageDocumentAddition');
-const { checkDate, checkTime } = require('./manageDocumentAddition');
-const { allUpdate } = require('./copyDBtoDB');
-const { addDocumentToDatabaseQuery, updateDocZaLQuery, updateCarReleaseDatesQuery, updateSettlementsQuery, updateSettlementDescriptionQuery } = require('./sqlQueryForGetDataFromMSSQL');
+const { addDepartment } = require("./manageDocumentAddition");
+const { checkDate, checkTime } = require("./manageDocumentAddition");
+const { allUpdate } = require("./copyDBtoDB");
+const {
+  addDocumentToDatabaseQuery,
+  updateDocZaLQuery,
+  updateCarReleaseDatesQuery,
+  updateSettlementsQuery,
+  updateSettlementDescriptionQuery,
+} = require("./sqlQueryForGetDataFromMSSQL");
 
 const today = new Date();
 today.setDate(today.getDate() - 2); // Odejmujemy 2 dni
@@ -14,14 +20,13 @@ const twoDaysAgo = today.toISOString().split("T")[0];
 // zamienia na krótki format daty
 const formatDate = (date) => {
   if (date instanceof Date) {
-    return date.toISOString().split('T')[0]; // Wyciąga tylko część daty, np. "2024-11-08"
+    return date.toISOString().split("T")[0]; // Wyciąga tylko część daty, np. "2024-11-08"
   }
   return date;
 };
 
 //pobieram dokumenty z bazy mssql AS
 const addDocumentToDatabase = async (type) => {
-
   const query = addDocumentToDatabaseQuery(type, twoDaysAgo);
 
   try {
@@ -30,14 +35,12 @@ const addDocumentToDatabase = async (type) => {
     // dodaje nazwy działów
     const addDep = addDepartment(documents);
 
-    addDep.forEach(row => {
+    addDep.forEach((row) => {
       row.DATA_WYSTAWIENIA = formatDate(row.DATA_WYSTAWIENIA);
       row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
     });
 
-
     for (const doc of addDep) {
-
       await connect_SQL.query(
         "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
@@ -58,15 +61,17 @@ const addDocumentToDatabase = async (type) => {
           doc.NR_NADWOZIA,
           doc.NR_AUTORYZACJI || null,
           doc.KOREKTA_NUMER,
-          type
+          type,
         ]
       );
     }
 
     return true;
-  }
-  catch (error) {
-    logEvents(`getDataFromMSSQL, addDocumentToDatabase: ${error}`, "reqServerErrors.txt");
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, addDocumentToDatabase: ${error}`,
+      "reqServerErrors.txt"
+    );
     return false;
   }
 };
@@ -74,14 +79,25 @@ const addDocumentToDatabase = async (type) => {
 // pobieram fv zaliczkowe, nazwy i kwoty dla KRT i KEM
 const updateDocZal = async (companies) => {
   try {
-
     // const companies = ['KRT', 'KEM', 'RAC'];
+
+    // const documents = (
+    //   await Promise.all(
+    //     companies.map(async (company) => {
+    //       const docs = await msSqlQuery(updateDocZaLQuery(company));
+    //       return docs.map((doc) => ({ ...doc, COMPANY: company }));
+    //     })
+    //   )
+    // ).flat();
 
     const documents = (
       await Promise.all(
         companies.map(async (company) => {
+          if (company === "RAC") {
+            return [];
+          }
           const docs = await msSqlQuery(updateDocZaLQuery(company));
-          return docs.map(doc => ({ ...doc, COMPANY: company }));
+          return docs.map((doc) => ({ ...doc, COMPANY: company }));
         })
       )
     ).flat();
@@ -89,11 +105,11 @@ const updateDocZal = async (companies) => {
     await connect_SQL.query("TRUNCATE TABLE company_fv_zaliczkowe");
 
     // //     // // Teraz przygotuj dane do wstawienia
-    const values = documents.map(item => [
+    const values = documents.map((item) => [
       item.NUMER_FV,
       item.FV_ZALICZKOWA,
       item.WARTOSC_BRUTTO,
-      item.COMPANY
+      item.COMPANY,
     ]);
 
     // Przygotowanie zapytania SQL z wieloma wartościami
@@ -108,29 +124,37 @@ const updateDocZal = async (companies) => {
     await connect_SQL.query(query, values.flat());
 
     return true;
-  }
-  catch (error) {
-    logEvents(`getDataFromMSSQL, updateDocZal: ${error}`, "reqServerErrors.txt");
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, updateDocZal: ${error}`,
+      "reqServerErrors.txt"
+    );
     return false;
   }
 };
 
 // aktualizuję daty wydania dla KRT, KEM i innych
 const updateCarReleaseDates = async (companies) => {
-  const twoDaysAgo = '2024-01-01';
+  const twoDaysAgo = "2024-01-01";
   try {
-
     // const companies = ['KRT', 'KEM', 'RAC'];
 
     const carReleaseDates = (
       await Promise.all(
         companies.map(async (company) => {
-          const docs = await msSqlQuery(updateCarReleaseDatesQuery(company, twoDaysAgo));
-          return docs.map(doc => ({ ...doc, COMPANY: company }));
+          if (company === "RAC") {
+            // dla RAC nic nie robimy, zwracamy pustą tablicę
+            return [];
+          }
+
+          // tylko dla pozostałych firm wykonuje się zapytanie
+          const docs = await msSqlQuery(
+            updateCarReleaseDatesQuery(company, twoDaysAgo)
+          );
+          return docs.map((doc) => ({ ...doc, COMPANY: company }));
         })
       )
     ).flat();
-
 
     const queryMySql = `
     SELECT fv.id_document, fv.NUMER_FV, fv.FIRMA
@@ -142,12 +166,20 @@ const updateCarReleaseDates = async (companies) => {
     const [findDoc] = await connect_SQL.query(queryMySql);
 
     const filteredFindDoc = findDoc
-      .filter(doc => carReleaseDates.some(car => car.NUMER === doc.NUMER_FV && car.COMPANY === doc.FIRMA))
-      .map(doc => {
-        const carDate = carReleaseDates.find(car => car.NUMER === doc.NUMER_FV && car.COMPANY === doc.FIRMA);
+      .filter((doc) =>
+        carReleaseDates.some(
+          (car) => car.NUMER === doc.NUMER_FV && car.COMPANY === doc.FIRMA
+        )
+      )
+      .map((doc) => {
+        const carDate = carReleaseDates.find(
+          (car) => car.NUMER === doc.NUMER_FV && car.COMPANY === doc.FIRMA
+        );
         return {
           ...doc,
-          DATA_WYDANIA: carDate?.DATA_WYDANIA ? formatDate(carDate.DATA_WYDANIA) : null
+          DATA_WYDANIA: carDate?.DATA_WYDANIA
+            ? formatDate(carDate.DATA_WYDANIA)
+            : null,
         };
       });
 
@@ -162,29 +194,38 @@ const updateCarReleaseDates = async (companies) => {
     }
 
     return true;
-  }
-  catch (error) {
-    logEvents(`getDataFromMSSQL, updateCarReleaseDates: ${error}`, "reqServerErrors.txt");
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, updateCarReleaseDates: ${error}`,
+      "reqServerErrors.txt"
+    );
     return false;
   }
 };
 
 const updateSettlements = async (companies) => {
   try {
-
-    // const companies = ['KRT', 'KEM', 'RAC'];
-
     const settlementsData = await Promise.all(
       companies.map(async (company) => {
         const rows = await msSqlQuery(updateSettlementsQuery(company));
-
-        const mapped = rows.map(item => ({
-          NUMER_FV: item.OPIS.split(" ")[0],
-          DATA_FV: item.DATA_FV,
-          DO_ROZLICZENIA: -item.WARTOSC_SALDO,
-          COMPANY: company
-        }));
-
+        let mapped = [];
+        if (company !== "RAC") {
+          mapped = rows.map((item) => ({
+            NUMER_FV: item.OPIS.split(" ")[0],
+            DATA_FV: item.DATA_FV,
+            DO_ROZLICZENIA: -item.WARTOSC_SALDO,
+            COMPANY: company,
+          }));
+        } else {
+          mapped = rows.map((item) => {
+            return {
+              NUMER_FV: item.dsymbol,
+              DATA_FV: item.termin,
+              DO_ROZLICZENIA: item["płatność"],
+              COMPANY: "RAC",
+            };
+          });
+        }
         const merged = Object.values(
           mapped.reduce((acc, item) => {
             if (acc[item.NUMER_FV]) {
@@ -195,23 +236,21 @@ const updateSettlements = async (companies) => {
             return acc;
           }, {})
         );
-
         return merged;
       })
     );
 
     const checkDuplicate = settlementsData.flat();
 
-
     // Najpierw wyczyść tabelę settlements
     await connect_SQL.query("TRUNCATE TABLE company_settlements");
 
     // Teraz przygotuj dane do wstawienia
-    const values = checkDuplicate.map(item => [
+    const values = checkDuplicate.map((item) => [
       item.NUMER_FV,
       item.DATA_FV,
       item.DO_ROZLICZENIA,
-      item.COMPANY
+      item.COMPANY,
     ]);
 
     const query = `
@@ -224,34 +263,41 @@ const updateSettlements = async (companies) => {
     await connect_SQL.query(query, values.flat());
 
     return true;
-  }
-
-  catch (error) {
-    logEvents(`getDataFromMSSQL, uspdateSettlements: ${error}`, "reqServerErrors.txt");
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, uspdateSettlements: ${error}`,
+      "reqServerErrors.txt"
+    );
     return false;
   }
 };
 
-
 // pobranie opisów rozrachunków dla KRT
 const updateSettlementDescriptionCompany = async (company) => {
-
   try {
-    const settlementDescription = await msSqlQuery(updateSettlementDescriptionQuery(company));
+    const settlementDescription = await msSqlQuery(
+      updateSettlementDescriptionQuery(company)
+    );
 
     const updatedSettlements = Object.values(
       settlementDescription.reduce((acc, item) => {
         // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
-        const formattedAmount = (typeof item.WARTOSC_OPERACJI === 'number' && !isNaN(item.WARTOSC_OPERACJI))
-          ? item.WARTOSC_OPERACJI.toLocaleString('pl-PL', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-            useGrouping: true
-          })
-          : 'brak danych';
+        const formattedAmount =
+          typeof item.WARTOSC_OPERACJI === "number" &&
+          !isNaN(item.WARTOSC_OPERACJI)
+            ? item.WARTOSC_OPERACJI.toLocaleString("pl-PL", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+                useGrouping: true,
+              })
+            : "brak danych";
 
         // Pomijanie wpisów, jeśli wszystkie dane są null lub brak danych
-        if (item.DATA_OPERACJI === null && item.NUMER_OPIS === null && formattedAmount === 'brak danych') {
+        if (
+          item.DATA_OPERACJI === null &&
+          item.NUMER_OPIS === null &&
+          formattedAmount === "brak danych"
+        ) {
           return acc;
         }
 
@@ -265,15 +311,20 @@ const updateSettlementDescriptionCompany = async (company) => {
             NUMER_FV: item.NUMER_FV,
             DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
             OPIS_ROZRACHUNKU: [description],
-            COMPANY: company
+            COMPANY: company,
           };
         } else {
           // Jeśli już istnieje obiekt, dodajemy opis
           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
 
           // Porównujemy daty i aktualizujemy na najnowszą (najbliższą dzisiejszej)
-          const currentDataRozliczenia = new Date(acc[item.NUMER_FV].DATA_ROZLICZENIA);
-          if (new Date(DATA_OPERACJI) > newDataRozliczenia && !item.DATA_ROZLICZENIA) {
+          const currentDataRozliczenia = new Date(
+            acc[item.NUMER_FV].DATA_ROZLICZENIA
+          );
+          if (
+            new Date(DATA_OPERACJI) > newDataRozliczenia &&
+            !item.DATA_ROZLICZENIA
+          ) {
             acc[item.NUMER_FV].DATA_ROZLICZENIA = null;
           } else if (newDataRozliczenia > currentDataRozliczenia) {
             acc[item.NUMER_FV].DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
@@ -281,8 +332,8 @@ const updateSettlementDescriptionCompany = async (company) => {
 
           // Sortowanie opisów według daty
           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
-            const dateA = new Date(a.split(' - ')[0]);
-            const dateB = new Date(b.split(' - ')[0]);
+            const dateA = new Date(a.split(" - ")[0]);
+            const dateB = new Date(b.split(" - ")[0]);
             return dateB - dateA;
           });
         }
@@ -291,24 +342,26 @@ const updateSettlementDescriptionCompany = async (company) => {
       }, {})
     );
     return updatedSettlements;
-  }
-  catch (error) {
-    logEvents(`getDataFromMSSQL, updateSettlementDescriptionKRT: ${error}`, "reqServerErrors.txt");
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, updateSettlementDescription_${company}: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 // pobranie opisów rozrachunków dla KEM
 // const updateSettlementDescriptionKEM = async () => {
-//   const queryMsSql = `SELECT 
-//      CASE 
-//           WHEN CHARINDEX(' ', tr.[OPIS]) > 0 THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS]) - 1) 
-//           ELSE tr.[OPIS] 
+//   const queryMsSql = `SELECT
+//      CASE
+//           WHEN CHARINDEX(' ', tr.[OPIS]) > 0 THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS]) - 1)
+//           ELSE tr.[OPIS]
 //       END AS NUMER_FV,
 //   rozl.[OPIS] AS NUMER_OPIS,
-//   CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA], 
-//   CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI, 
+//   CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA],
+//   CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI,
 //   rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI
-//   FROM     [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].TRANSDOC AS tr 
-//   LEFT JOIN    [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID] 
+//   FROM     [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].TRANSDOC AS tr
+//   LEFT JOIN    [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID]
 //   WHERE rozl.[WARTOSC_SALDO] IS NOT NULL`;
 
 //   try {
@@ -373,24 +426,28 @@ const updateSettlementDescriptionCompany = async (company) => {
 // };
 
 // aktualizacja opisów rozrachunków
-const updateSettlementDescription = async (companies) => {
-  // const dataKRT = await updateSettlementDescriptionCompany('KRT');
-  // const dataKEM = await updateSettlementDescriptionCompany('KEM');
-  // const dataRAC = await updateSettlementDescriptionCompany('RAC');
-
-  // // Sprawdzenie czy dane zostały poprawnie zwrócone
-  // if (!dataKRT || !dataKEM || !dataRAC) {
-  //   return false;
-  // }
-
-  // const updatedSettlements = [...dataKRT, ...dataKEM, ...dataRAC];
-
+// const updateSettlementDescription = async (companies) => {
+const updateSettlementDescription = async () => {
+  const companies = ["KRT", "KEM"];
   const allData = await Promise.all(
-    companies.map(company => updateSettlementDescriptionCompany(company))
+    companies.map((company) => updateSettlementDescriptionCompany(company))
   );
 
+  // const allData = await Promise.all(
+  //   companies.map((company) => {
+  //     if (company === "RAC") {
+  //       // dla RAC nic nie robimy, zwracamy pustą tablicę
+  //       return [];
+  //     }
+  //     return updateSettlementDescriptionCompany(company);
+  //   })
+  // );
+
   // Sprawdzenie czy wszystkie wyniki są prawidłowe (czy nie ma np. null lub undefined)
-  const isValid = allData.every(data => Array.isArray(data) && data.length >= 0);
+  const isValid = allData.every(
+    (data) => Array.isArray(data) && data.length >= 0
+  );
+
   if (!isValid) {
     return false;
   }
@@ -404,7 +461,7 @@ const updateSettlementDescription = async (companies) => {
       for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize);
 
-        const values = batch.map(item => [
+        const values = batch.map((item) => [
           item.COMPANY,
           item.NUMER_FV,
           JSON.stringify(item.OPIS_ROZRACHUNKU),
@@ -426,17 +483,20 @@ const updateSettlementDescription = async (companies) => {
       await connect_SQL.query("TRUNCATE TABLE company_settlements_description");
       await batchInsert(connect_SQL, updatedSettlements);
     } catch (error) {
-      logEvents(`getDataFromMSSQL, updateSettlementDescription, addMany settlements description: ${error}`, "reqServerErrors.txt");
+      logEvents(
+        `getDataFromMSSQL, updateSettlementDescription, addMany settlements description: ${error}`,
+        "reqServerErrors.txt"
+      );
     }
     return true;
-  }
-  catch (error) {
-    logEvents(`getDataFromMSSQL, updateSettlementDescription: ${error}`, "reqServerErrors.txt");
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, updateSettlementDescription: ${error}`,
+      "reqServerErrors.txt"
+    );
     return false;
   }
 };
-
-
 
 //uruchamiam po kolei aktualizację faktur dla KRT, KEM, RAC
 const updateDocuments = async (companies) => {
@@ -448,10 +508,10 @@ const updateDocuments = async (companies) => {
     // const success = resultKRT && resultKEM && resultRAC;
 
     const results = await Promise.all(
-      companies.map(company => addDocumentToDatabase(company))
+      companies.map((company) => addDocumentToDatabase(company))
     );
 
-    const success = results.every(result => result);
+    const success = results.every((result) => result);
 
     connect_SQL.query(
       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
@@ -459,40 +519,44 @@ const updateDocuments = async (companies) => {
         checkDate(new Date()),
         checkTime(new Date()),
         success ? "Zaktualizowano." : "Błąd aktualizacji",
-        'Faktury'
+        "Faktury",
       ]
     );
   } catch (error) {
-    logEvents(`getDataFromMSSQL - updateCarReleaseDates (KRT/KEM): ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `getDataFromMSSQL - updateCarReleaseDates (KRT/KEM): ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
-
-
 //wykonuje po kolei aktualizację danych i zapisuje daty i statusy
 const updateData = async () => {
-
   // wylogowanie wszytskich użytkowników
-  await connect_SQL.query(
-    "UPDATE company_users SET refreshToken = null"
-  );
+  await connect_SQL.query("UPDATE company_users SET refreshToken = null");
 
-  // const companies = ['KRT', 'KEM', 'RAC'];
-  const companies = ['KRT', 'KEM'];
+  // const companies = ["RAC"];
+  const companies = ["KRT", "KEM", "RAC"];
 
   try {
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
     );
 
-    const filteredUpdatesData = getUpdatesData.filter(item => item.DATA_NAME !== 'Rubicon' && item.DATA_NAME !== 'BeCared' && item.DATA_NAME !== "Dokumenty Raportu FK - KRT" && item.DATA_NAME !== "Dokumenty Raportu FK - KEM");
+    const filteredUpdatesData = getUpdatesData.filter(
+      (item) =>
+        item.DATA_NAME !== "Rubicon" &&
+        item.DATA_NAME !== "BeCared" &&
+        item.DATA_NAME !== "Dokumenty Raportu FK - KRT" &&
+        item.DATA_NAME !== "Dokumenty Raportu FK - KEM"
+    );
 
-    const updateProgress = filteredUpdatesData.map(item => {
+    const updateProgress = filteredUpdatesData.map((item) => {
       return {
         ...item,
-        DATE: '',
-        HOUR: '',
-        UPDATE_SUCCESS: "Trwa aktualizacja ..."
+        DATE: "",
+        HOUR: "",
+        UPDATE_SUCCESS: "Trwa aktualizacja ...",
       };
     });
     for (const item of updateProgress) {
@@ -509,56 +573,72 @@ const updateData = async () => {
       await connect_SQL.query(queryUpdate);
     }
 
-    // dodanie faktur do DB
+    // // dodanie faktur do DB
     updateDocuments(companies);
 
     // dodanie faktur zaliczkowych
     updateDocZal(companies);
 
-    // dodanie dat wydania samochodów 
-    updateCarReleaseDates(companies).then((result) => {
-      connect_SQL.query(
-        "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
-        [
-          checkDate(new Date()),
-          checkTime(new Date()),
-          result ? "Zaktualizowano." : "Błąd aktualizacji",
-          'Wydania samochodów'
-        ]);
-    }).catch((error) => {
-      logEvents(`getDataFromMSSQL - updateCarReleaseDates, getData: ${error}`, "reqServerErrors.txt");
-    });
+    // dodanie dat wydania samochodów
+    updateCarReleaseDates(companies)
+      .then((result) => {
+        connect_SQL.query(
+          "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+          [
+            checkDate(new Date()),
+            checkTime(new Date()),
+            result ? "Zaktualizowano." : "Błąd aktualizacji",
+            "Wydania samochodów",
+          ]
+        );
+      })
+      .catch((error) => {
+        logEvents(
+          `getDataFromMSSQL - updateCarReleaseDates, getData: ${error}`,
+          "reqServerErrors.txt"
+        );
+      });
 
-
-    // // aktualizacja rozrachunków
-    updateSettlements(companies).then((result) => {
-      connect_SQL.query(
-        "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
-        [
-          checkDate(new Date()),
-          checkTime(new Date()),
-          result ? "Zaktualizowano." : "Błąd aktualizacji",
-          'Rozrachunki'
-        ]);
-    }).catch((error) => {
-      logEvents(`getDataFromMSSQL - updateSettlements, getData: ${error}`, "reqServerErrors.txt");
-    });
+    // aktualizacja rozrachunków
+    updateSettlements(companies)
+      .then((result) => {
+        connect_SQL.query(
+          "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+          [
+            checkDate(new Date()),
+            checkTime(new Date()),
+            result ? "Zaktualizowano." : "Błąd aktualizacji",
+            "Rozrachunki",
+          ]
+        );
+      })
+      .catch((error) => {
+        logEvents(
+          `getDataFromMSSQL - updateSettlements, getData: ${error}`,
+          "reqServerErrors.txt"
+        );
+      });
 
     // aktualizacja opisu rozrachunków
-    updateSettlementDescription(companies).then((result) => {
-      connect_SQL.query(
-        "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
-        [
-          checkDate(new Date()),
-          checkTime(new Date()),
-          result ? "Zaktualizowano." : "Błąd aktualizacji",
-          'Opisy rozrachunków'
-        ]);
-    }).catch((error) => {
-      logEvents(`getDataFromMSSQL - updateSettlementDescription, getData: ${error}`, "reqServerErrors.txt");
-    });
-
-
+    updateSettlementDescription(companies)
+      .then((result) => {
+        connect_SQL.query(
+          "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+          [
+            checkDate(new Date()),
+            checkTime(new Date()),
+            result ? "Zaktualizowano." : "Błąd aktualizacji",
+            "Opisy rozrachunków",
+          ]
+        );
+      })
+      .catch((error) => {
+        logEvents(
+          `getDataFromMSSQL - updateSettlementDescription, getData: ${error}`,
+          "reqServerErrors.txt"
+        );
+      });
+    console.log("koniec");
   } catch (error) {
     logEvents(`getDataFromMSSQL , getData: ${error}`, "reqServerErrors.txt");
   }
@@ -567,10 +647,9 @@ const updateData = async () => {
 // cron.schedule('27 12 * * *', allUpdate, {
 //   timezone: "Europe/Warsaw"
 // });
-cron.schedule('40 06 * * *', updateData, {
-  timezone: "Europe/Warsaw"
+cron.schedule("40 06 * * *", updateData, {
+  timezone: "Europe/Warsaw",
 });
-
 
 module.exports = {
   updateData,
@@ -580,5 +659,5 @@ module.exports = {
   updateDocZal,
   updateCarReleaseDates,
   updateSettlements,
-  updateSettlementDescriptionCompany
+  updateSettlementDescriptionCompany,
 };
