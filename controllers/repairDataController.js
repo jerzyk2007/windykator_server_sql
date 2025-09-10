@@ -1,4 +1,5 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
+const { logEvents } = require("../middleware/logEvents");
 const { verifyUserTableConfig } = require("./usersController");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
@@ -38,7 +39,9 @@ const repairAdvisersName = async (req, res) => {
 
     const documents = await msSqlQuery(query);
 
-    console.log("start doradca");
+    // const addDep = addDepartment(documents);
+
+    console.log(addDep);
     for (const doc of documents) {
       await connect_SQL.query(
         "UPDATE company_documents SET DORADCA = ? WHERE NUMER_FV = ?",
@@ -1169,22 +1172,41 @@ WHERE id_setting = 1`
 
 // pobranie poczatkowych faktur RAC, nierozliczonych w całym okresie
 const getRacData = async () => {
+  console.log("start getRacData");
   try {
+    //   const query = `SELECT
+    //   [faktn_fakt_nr_caly] AS NUMER_FV
+    // ,[faktp_og_brutto] AS BRUTTO
+    //   ,[faktp_og_netto] AS NETTO
+    //  ,[faktn_zaplata_kwota] AS DO_ROZLICZENIA
+    //   ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_FV
+    //   	  ,CONVERT(VARCHAR(10), [terminPlatnosci], 23) AS TERMIN
+    //    ,[kl_nazwa] AS KONTRAHENT
+    //       ,[faktn_wystawil] AS DORADCA
+    // ,null AS NR_REJESTRACYJNY
+    //   ,null AS UWAGI_Z_FAKTURY
+    //     ,[typSprzedazy] AS TYP_PLATNOSCI
+    //       ,[kl_nip] AS NIP
+    // FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+    //   WHERE faktn_zaplata_status != 'Zapłacono całkowicie'`;
+
     const query = `SELECT  
-    [faktn_fakt_nr_caly] AS NUMER_FV
-  ,[faktp_og_brutto] AS BRUTTO
-    ,[faktp_og_netto] AS NETTO
-	 ,[faktn_zaplata_kwota] AS DO_ROZLICZENIA
-	  ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_FV
-	  	  ,CONVERT(VARCHAR(10), [terminPlatnosci], 23) AS TERMIN
-	   ,[kl_nazwa] AS KONTRAHENT
-	      ,[faktn_wystawil] AS DORADCA
-  ,[faktp_rejestr] AS NR_REJESTRACYJNY
-    ,[uwagiFaktura] AS UWAGI_Z_FAKTURY
-	    ,[typSprzedazy] AS TYP_PLATNOSCI
-	      ,[kl_nip] AS NIP
-  FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
-    WHERE faktn_zaplata_status != 'Zapłacono całkowicie'`;
+    [faktn_fakt_nr_caly] AS NUMER_FV,
+    SUM([faktp_og_brutto]) AS BRUTTO,
+    SUM([faktp_og_netto]) AS NETTO,
+    SUM([faktn_zaplata_kwota]) AS DO_ROZLICZENIA,
+    CONVERT(VARCHAR(10), MIN([dataWystawienia]), 23) AS DATA_FV,
+    CONVERT(VARCHAR(10), MIN([terminPlatnosci]), 23) AS TERMIN,
+    MAX([kl_nazwa]) AS KONTRAHENT,
+    MAX([faktn_wystawil]) AS DORADCA,
+    NULL AS NR_REJESTRACYJNY,
+    NULL AS UWAGI_Z_FAKTURY,
+    MAX([typSprzedazy]) AS TYP_PLATNOSCI,
+    MAX([kl_nip]) AS NIP   
+FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+WHERE faktn_zaplata_status != 'Zapłacono całkowicie'
+GROUP BY [faktn_fakt_nr_caly];
+`;
 
     const documents = await msSqlQuery(query);
 
@@ -1218,7 +1240,6 @@ const getRacData = async () => {
      `;
 
     await connect_SQL.query(queryIns, values.flat());
-
     console.log("finish getRacData");
   } catch (error) {
     console.error(error);
@@ -1226,22 +1247,41 @@ const getRacData = async () => {
 };
 // pobranie  faktur RAC od 01-01-2024
 const getRacDataTime = async () => {
+  console.log("start getRacDataTime");
+
   try {
+    //   const query = `SELECT
+    //   [faktn_fakt_nr_caly] AS NUMER_FV
+    // ,[faktp_og_brutto] AS BRUTTO
+    //   ,[faktp_og_netto] AS NETTO
+    //  ,[faktn_zaplata_kwota] AS DO_ROZLICZENIA
+    //   ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_FV
+    //   	  ,CONVERT(VARCHAR(10), [terminPlatnosci], 23) AS TERMIN
+    //    ,[kl_nazwa] AS KONTRAHENT
+    //       ,[faktn_wystawil] AS DORADCA
+    // ,[faktp_rejestr] AS NR_REJESTRACYJNY
+    //   ,[uwagiFaktura] AS UWAGI_Z_FAKTURY
+    //     ,[typSprzedazy] AS TYP_PLATNOSCI
+    //       ,[kl_nip] AS NIP
+    // FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+    //   WHERE [dataWystawienia] >= '2024-01-01'`;
     const query = `SELECT  
-    [faktn_fakt_nr_caly] AS NUMER_FV
-  ,[faktp_og_brutto] AS BRUTTO
-    ,[faktp_og_netto] AS NETTO
-	 ,[faktn_zaplata_kwota] AS DO_ROZLICZENIA
-	  ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_FV
-	  	  ,CONVERT(VARCHAR(10), [terminPlatnosci], 23) AS TERMIN
-	   ,[kl_nazwa] AS KONTRAHENT
-	      ,[faktn_wystawil] AS DORADCA
-  ,[faktp_rejestr] AS NR_REJESTRACYJNY
-    ,[uwagiFaktura] AS UWAGI_Z_FAKTURY
-	    ,[typSprzedazy] AS TYP_PLATNOSCI
-	      ,[kl_nip] AS NIP
-  FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
-    WHERE [dataWystawienia] >= '2024-01-01'`;
+    [faktn_fakt_nr_caly] AS NUMER_FV,
+    SUM([faktp_og_brutto]) AS BRUTTO,
+    SUM([faktp_og_netto]) AS NETTO,
+    SUM([faktn_zaplata_kwota]) AS DO_ROZLICZENIA,
+    CONVERT(VARCHAR(10), MIN([dataWystawienia]), 23) AS DATA_FV,
+    CONVERT(VARCHAR(10), MIN([terminPlatnosci]), 23) AS TERMIN,
+    MAX([kl_nazwa]) AS KONTRAHENT,
+    MAX([faktn_wystawil]) AS DORADCA,
+    MAX([faktp_rejestr]) AS NR_REJESTRACYJNY,
+    MAX([uwagiFaktura]) AS UWAGI_Z_FAKTURY,
+    MAX([typSprzedazy]) AS TYP_PLATNOSCI,
+    MAX([kl_nip]) AS NIP
+FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+WHERE [dataWystawienia] >= '2024-01-01'
+GROUP BY [faktn_fakt_nr_caly];
+`;
 
     const documents = await msSqlQuery(query);
 
@@ -1282,32 +1322,165 @@ const getRacDataTime = async () => {
   }
 };
 
+// zapytanie o rozliczenia RAC do Symfoni
+const today = new Date();
+const todayDate = today.toISOString().split("T")[0];
+const querySettlementsFK = `
+DECLARE @datado DATETIME = '${todayDate}';
+DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
+DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
+
+WITH
+-- Krok 1: Pre-agregacja rozrachunków. To jest najlepsza praktyka i pozostaje bez zmian.
+cte_Rozrachunki AS (
+    SELECT
+        transakcja,
+        SUM(kwota * SIGN(0.5 - strona)) AS WnMaRozliczono,
+        SUM(CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END * SIGN(0.5 - strona)) AS WnMaRozliczono_w
+    FROM FK_Rent_SK.FK.rozrachunki
+    WHERE dataokr < @DataDoPlusJedenDzien AND czyRozliczenie = 1 AND potencjalna = 0
+    GROUP BY transakcja
+),
+-- Krok 2: Przygotowanie trzech podstawowych bloków danych z wstępną agregacją.
+-- Blok A: Zobowiązania - część 1
+cte_Zobowiazania_Blok_A AS (
+    SELECT
+        dsymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+      AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND rozdata.strona = 1
+    GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.skrot, rozdata.kurs
+),
+-- Blok B: Zobowiązania - część 2
+cte_Zobowiazania_Blok_B AS (
+    SELECT
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            SUM(rozdata.kwota) -
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.baza = 2 AND rozdata.synt IN (201, 203)
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
+      AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+),
+-- Blok C: Należności
+cte_Naleznosci_Blok_C AS (
+    SELECT
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            SUM(rozdata.kwota) +
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND strona = 0 AND rozdata.orgStrona = 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+),
+-- Krok 3: Połączenie wstępnie zagregowanych bloków z zachowaniem oryginalnej logiki UNION / UNION ALL
+cte_Wszystkie_Transakcje AS (
+    -- Tutaj odtwarzamy oryginalny UNION, który usuwa duplikaty między dwoma blokami zobowiązań
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_A
+    UNION
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_B
+    UNION ALL
+    -- A następnie dodajemy należności
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Naleznosci_Blok_C
+),
+-- Krok 4: Końcowa, spłaszczona agregacja. To jest znacznie wydajniejsze niż wielopoziomowe grupowanie.
+cte_Zagregowane AS (
+    SELECT
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania,
+        SUM(overdue) AS płatność
+    FROM cte_Wszystkie_Transakcje
+    GROUP BY
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania
+),
+-- Krok 5: Finałowe obliczenia (funkcje okna, przedziały) i filtrowanie zer
+cte_WynikKoncowy AS (
+    SELECT
+        @DataDoDate AS stanNa,
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, płatność,
+        CASE
+            WHEN DniPrzetreminowania < 1   THEN '< 1'
+            WHEN DniPrzetreminowania <= 30 THEN '1 - 30'
+            WHEN DniPrzetreminowania <= 60 THEN '31 - 60'
+            WHEN DniPrzetreminowania <= 90 THEN '61 - 90'
+            WHEN DniPrzetreminowania <= 180 THEN '91 - 180'
+            WHEN DniPrzetreminowania <= 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        -- Warunkowe obliczanie salda
+        SUM(płatność) OVER (
+            PARTITION BY synt, CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END
+        ) AS saldoKontrahent
+    FROM cte_Zagregowane
+    WHERE ROUND(płatność, 2) <> 0
+)
+-- Końcowy SELECT
+SELECT
+    stanNa,
+    dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, przedział, płatność,
+    ROUND(saldoKontrahent, 2) AS saldoKontrahent,
+    CASE
+        WHEN ROUND(saldoKontrahent, 2) > 0 THEN 'N'
+        WHEN ROUND(saldoKontrahent, 2) < 0 THEN 'Z'
+        ELSE 'R'
+    END AS Typ
+FROM cte_WynikKoncowy
+ORDER BY
+    synt,
+    CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
+    termin;
+    `;
 // testowe rozrachunki dla RAC
 const settlementsRAC = async () => {
-  try {
-    const query = `SELECT  
-    [faktn_fakt_nr_caly] AS NUMER_FV
-	    ,([faktp_og_brutto]-[faktn_zaplata_kwota]) AS NALEZNOSC
-    ,CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_WYSTAWIENIA
-	,'RAC' AS COMPANY
-  FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
-    WHERE [faktn_zaplata_status] != 'Zapłacono całkowicie'`;
+  console.log("start settlementsRAC");
 
-    const documents = await msSqlQuery(query);
+  try {
+    await connect_SQL.query(
+      ` DELETE FROM company_settlements WHERE COMPANY = 'RAC'`
+    );
+
+    const documents = await msSqlQuery(querySettlementsFK);
 
     const values = documents.map((item) => [
-      item.NUMER_FV,
-      item.DATA_WYSTAWIENIA,
-      item.NALEZNOSC,
-      item.COMPANY,
+      item.dsymbol,
+      item.termin,
+      item["płatność"],
+      "RAC",
     ]);
 
     const queryIns = `
-       INSERT IGNORE INTO company_settlements
-         ( NUMER_FV, DATA_FV, NALEZNOSC, COMPANY) 
-       VALUES 
-         ${values.map(() => "(?, ?, ?, ?)").join(", ")}
-     `;
+         INSERT IGNORE INTO company_settlements
+           ( NUMER_FV, DATA_FV, NALEZNOSC, COMPANY)
+         VALUES
+           ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+       `;
     // Wykonanie zapytania INSERT
     await connect_SQL.query(queryIns, values.flat());
 
@@ -1319,12 +1492,260 @@ const settlementsRAC = async () => {
 
 const addRacCompany = async () => {
   try {
+    console.log("start addRacCompany");
     await connect_SQL.query(
       `UPDATE company_settings 
             SET company = JSON_ARRAY("KRT", "KEM", "RAC")
             WHERE id_setting = 1`
     );
-    console.log("addRacCompany");
+    console.log("finish addRacCompany");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const tableColumnsForRAC = async () => {
+  console.log("start columns");
+
+  try {
+    const [columns] = await connect_SQL.query(
+      "SELECT * FROM company_table_columns"
+    );
+
+    columns.forEach((column) => {
+      const areas = column.areas;
+
+      // Liczymy ile jest available: true
+      const availableCount = areas.filter((area) => area.available).length;
+
+      // Jeśli więcej niż 3, ustawiamy RAC na available: true
+      if (availableCount > 3) {
+        const racArea = areas.find((area) => area.name === "RAC");
+        if (racArea) {
+          racArea.available = true;
+        }
+      }
+    });
+
+    // const test = columns.map((item) => {
+    //   console.log(item);
+    // });
+
+    for (const col of columns) {
+      await connect_SQL.query(
+        `
+            UPDATE company_table_columns SET areas = ?
+    WHERE id_table_columns = ?;
+      `,
+        [JSON.stringify(col.areas), col.id_table_columns]
+      );
+    }
+    console.log("finish columns");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const unpaidDocuments = async () => {
+  console.log("start unpaidDocuments");
+
+  try {
+    const documents = await msSqlQuery(querySettlementsFK);
+
+    const filteredData = documents.map((doc) => {
+      return {
+        NUMER_FV: doc.dsymbol,
+        DATA_FV: "2025-01-01",
+        NALEZNOSC: doc["płatność"],
+        COMPANY: "RAC",
+      };
+    });
+
+    const uniqueInvoices = [
+      ...new Set(filteredData.map((doc) => doc.NUMER_FV)),
+    ];
+
+    const sqlCondition =
+      uniqueInvoices.length > 0
+        ? `(${uniqueInvoices.map((inv) => `'${inv}'`).join(", ")})`
+        : null;
+
+    // const query = `
+    //   SELECT
+    //       [faktn_fakt_nr_caly] AS NUMER_FV,
+    //       [faktp_og_brutto] AS BRUTTO,
+    //       [faktp_og_netto] AS NETTO,
+    //       [faktn_zaplata_kwota] AS DO_ROZLICZENIA,
+    //       CONVERT(VARCHAR(10), [dataWystawienia], 23) AS DATA_FV,
+    //       CONVERT(VARCHAR(10), [terminPlatnosci], 23) AS TERMIN,
+    //       [kl_nazwa] AS KONTRAHENT,
+    //       [faktn_wystawil] AS DORADCA,
+    //       [faktp_rejestr] AS NR_REJESTRACYJNY,
+    //       [uwagiFaktura] AS UWAGI_Z_FAKTURY,
+    //       [typSprzedazy] AS TYP_PLATNOSCI,
+    //       [kl_nip] AS NIP
+    //   FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+    //   WHERE [faktn_fakt_nr_caly] IN ${sqlCondition};
+    // `;
+    const query = `
+   SELECT  
+    [faktn_fakt_nr_caly] AS NUMER_FV,
+    SUM([faktp_og_brutto]) AS BRUTTO,
+    SUM([faktp_og_netto]) AS NETTO,
+    SUM([faktn_zaplata_kwota]) AS DO_ROZLICZENIA,
+    CONVERT(VARCHAR(10), MIN([dataWystawienia]), 23) AS DATA_FV,
+    CONVERT(VARCHAR(10), MIN([terminPlatnosci]), 23) AS TERMIN,
+    MAX([kl_nazwa]) AS KONTRAHENT,
+    MAX([faktn_wystawil]) AS DORADCA,
+    MAX([faktp_rejestr]) AS NR_REJESTRACYJNY,
+    MAX([uwagiFaktura]) AS UWAGI_Z_FAKTURY,
+    MAX([typSprzedazy]) AS TYP_PLATNOSCI,
+    MAX([kl_nip]) AS NIP
+FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+      WHERE [faktn_fakt_nr_caly] IN ${sqlCondition}
+      GROUP BY [faktn_fakt_nr_caly];
+    `;
+
+    const unpaidDocs = await msSqlQuery(query);
+
+    //wyszukanie ilości powtórzeń dokumentów z RAC
+    // grupujemy po NUMER_FV
+    // const grouped = unpaidDocs.reduce((acc, doc) => {
+    //   if (!acc[doc.NUMER_FV]) {
+    //     acc[doc.NUMER_FV] = [];
+    //   }
+    //   acc[doc.NUMER_FV].push(doc);
+    //   return acc;
+    // }, {});
+
+    // // sprawdzamy które faktury mają różne wartości w innych polach
+    // const duplicates = Object.entries(grouped)
+    //   .map(([numer, docs]) => {
+    //     // sprawdzamy unikalne JSON-y (usuwa identyczne kopie)
+    //     const unique = new Set(docs.map((d) => JSON.stringify(d)));
+    //     if (unique.size > 1) {
+    //       return {
+    //         NUMER_FV: numer,
+    //         "Ilość powtórzeń": docs.length,
+    //       };
+    //     }
+    //     return null;
+    //   })
+    //   .filter(Boolean);
+
+    // console.log(duplicates);
+
+    // console.log(query);
+    // logEvents(JSON.stringify(duplicates, null, 2), "data.txt");
+
+    // unpaidDocs - Twoja tablica obiektów
+    // const duplicates = unpaidDocs.reduce(
+    //   (acc, doc) => {
+    //     if (!acc.map.has(doc.NUMER_FV)) {
+    //       acc.map.set(doc.NUMER_FV, []);
+    //     }
+    //     acc.map.get(doc.NUMER_FV).push(doc);
+    //     return acc;
+    //   },
+    //   { map: new Map() }
+    // ).map; // map: NUMER_FV => [wszystkie obiekty]
+
+    // const result = [];
+    // for (const [numer, items] of duplicates.entries()) {
+    //   if (items.length > 1) {
+    //     // tylko te, które się powtarzają
+    //     result.push(...items);
+    //   }
+    // }
+    // console.log(result);
+
+    const values = unpaidDocs.map((item) => [
+      item.NUMER_FV,
+      item.BRUTTO,
+      item.NETTO,
+      "RAC",
+      item.DO_ROZLICZENIA,
+      item.DATA_FV,
+      item.TERMIN,
+      item.KONTRAHENT,
+      item.DORADCA || "Brak danych",
+      item.NR_REJESTRACYJNY,
+      null,
+      item.UWAGI_Z_FAKTURY,
+      item.TYP_PLATNOSCI,
+      item.NIP,
+      null,
+      null,
+      null,
+      "RAC",
+    ]);
+
+    const queryIns = `
+           INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA)
+           VALUES
+             ${values
+               .map(
+                 () => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+               )
+               .join(", ")}
+         `;
+
+    await connect_SQL.query(queryIns, values.flat());
+
+    console.log("finish unpaidDocuments");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const organizationStructure = async () => {
+  console.log("start organizationStructure");
+  try {
+    await connect_SQL.query(
+      `INSERT INTO company_join_items (DEPARTMENT, COMPANY, LOCALIZATION, AREA, OWNER, GUARDIAN) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        "RAC",
+        "RAC",
+        "RAC",
+        "RAC",
+        JSON.stringify(["Brak danych"]),
+        JSON.stringify(["Brak danych"]),
+      ]
+    );
+    console.log("finish organizationStructure");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const twoDaysDocs = async () => {
+  try {
+    const twoDaysAgo = "2025-09-07";
+
+    const query = `    
+    SELECT  
+    [faktn_fakt_nr_caly] AS NUMER_FV,
+    SUM([faktp_og_brutto]) AS BRUTTO,
+    SUM([faktp_og_netto]) AS NETTO,
+    SUM([faktn_zaplata_kwota]) AS DO_ROZLICZENIA,
+    CONVERT(VARCHAR(10), MIN([dataWystawienia]), 23) AS DATA_FV,
+    CONVERT(VARCHAR(10), MIN([terminPlatnosci]), 23) AS TERMIN,
+    MAX([kl_nazwa]) AS KONTRAHENT,
+    MAX([faktn_wystawil]) AS DORADCA,
+    NULL AS NR_REJESTRACYJNY,
+    NULL AS UWAGI_Z_FAKTURY,
+    MAX([typSprzedazy]) AS TYP_PLATNOSCI,
+    MAX([kl_nip]) AS NIP   ,
+    'RAC' AS MARKER
+FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+   WHERE [dataWystawienia]> '${twoDaysAgo}'
+GROUP BY [faktn_fakt_nr_caly];
+    `;
+    const documents = await msSqlQuery(query);
+
+    const addDep = addDepartment(documents);
+
+    console.log(addDep);
   } catch (error) {
     console.error(error);
   }
@@ -1332,10 +1753,14 @@ const addRacCompany = async () => {
 
 const prepareRac = async () => {
   try {
-    await addRacCompany();
-    await getRacData();
-    await getRacDataTime();
-    await settlementsRAC();
+    // await addRacCompany();
+    // await getRacData();
+    // await getRacDataTime();
+    // await settlementsRAC();
+    // await tableColumnsForRAC();
+    // await organizationStructure();
+    // await unpaidDocuments();
+    // await twoDaysDocs();
     console.log("prepare RAC");
   } catch (error) {
     console.error(error);

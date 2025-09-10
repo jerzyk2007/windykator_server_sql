@@ -2,7 +2,6 @@ const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 // const { addDepartment } = require('./manageDocumentAddition');
 
-
 const getAllDocumentsSQL =
   "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department";
 
@@ -15,14 +14,19 @@ const getDataDocuments = async (id_user, info) => {
       [id_user]
     );
 
-    const { permissions = {}, username, usersurname, departments = [] } = findUser[0] || {};
-
+    const {
+      permissions = {},
+      username,
+      usersurname,
+      departments = [],
+    } = findUser[0] || {};
 
     // jeśli użytkownik nie ma nadanych dostępów i działów to zwraca puste dane
     if (
-      !permissions || typeof permissions !== "object" ||
-      Object.keys(permissions).length === 0 &&
-      (!Array.isArray(departments) || departments.length === 0)
+      !permissions ||
+      typeof permissions !== "object" ||
+      (Object.keys(permissions).length === 0 &&
+        (!Array.isArray(departments) || departments.length === 0))
     ) {
       return { data: [], permission: [] };
     }
@@ -31,9 +35,16 @@ const getDataDocuments = async (id_user, info) => {
       (permission) => permissions[permission]
     );
 
-
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
-    const sqlCondition = departments?.length > 0 ? `(${departments.map(dep => `D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}' `).join(' OR ')})` : null;
+    const sqlCondition =
+      departments?.length > 0
+        ? `(${departments
+            .map(
+              (dep) =>
+                `D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}' `
+            )
+            .join(" OR ")})`
+        : null;
 
     const DORADCA = `${usersurname} ${username}`;
 
@@ -43,75 +54,76 @@ const getDataDocuments = async (id_user, info) => {
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
         );
       } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND D.DORADCA =  '${DORADCA}'`);
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND D.DORADCA =  '${DORADCA}'`
+        );
       }
-
-    }
-    else if (info === "critical") {
+    } else if (info === "critical") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND ${sqlCondition}`
           // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
         );
       } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND AND D.DORADCA =  '${DORADCA}'`);
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND AND D.DORADCA =  '${DORADCA}'`
+        );
       }
-
-    }
-    else if (info === "obligations") {
+    } else if (info === "obligations") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) < 0 AND ${sqlCondition}`
           // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
         );
       } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) < 0 AND D.DORADCA =  '${DORADCA}'`);
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) < 0 AND D.DORADCA =  '${DORADCA}'`
+        );
       }
-
-    }
-    else if (info === "archive") {
+    } else if (info === "archive") {
       if (truePermissions[0] === "Standard") {
-
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0 AND ${sqlCondition}`
         );
       } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0 AND D.DORADCA =  '${DORADCA}'`);
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0 AND D.DORADCA =  '${DORADCA}'`
+        );
       }
-
-    }
-    else if (info === "all") {
+    } else if (info === "all") {
       if (truePermissions[0] === "Standard") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE ${sqlCondition}`);
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`
+        );
       }
-      else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
-      }
-    }
-
-    else if (info === "raport_fk") {
+    } else if (info === "raport_fk") {
       if (truePermissions[0] === "Standard") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 1 AND ${sqlCondition}`);
-      }
-      else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 1 AND ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
         // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
         filteredData = [];
       }
-    }
-    else if (info === "disabled_fk") {
+    } else if (info === "disabled_fk") {
       if (truePermissions[0] === "Standard") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 0 AND ${sqlCondition}`);
-      }
-      else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 0 AND ${sqlCondition}`
+        );
+      } else if (truePermissions[0] === "Basic") {
         // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
         filteredData = [];
       }
-    }
-    else if (info === "control-bl") {
+    } else if (info === "control-bl") {
       if (truePermissions[0] === "Standard") {
-        [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE JI.area = 'BLACHARNIA' AND  ${sqlCondition} AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)`);
-      }
-      else if (truePermissions[0] === "Basic") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE JI.area = 'BLACHARNIA' AND  ${sqlCondition} AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)`
+        );
+      } else if (truePermissions[0] === "Basic") {
         filteredData = [];
       }
     }
@@ -261,34 +273,74 @@ const changeSingleDocument = async (req, res) => {
       await connect_SQL.query(
         "UPDATE company_documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ?, INFORMACJA_ZARZAD = ?  WHERE document_id = ?",
         [
-          documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK" ? documentItem.DZIALANIA : null,
-          documentItem.JAKA_KANCELARIA_TU && documentItem.JAKA_KANCELARIA_TU !== "BRAK" ? documentItem.JAKA_KANCELARIA_TU : null,
+          documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK"
+            ? documentItem.DZIALANIA
+            : null,
+          documentItem.JAKA_KANCELARIA_TU &&
+          documentItem.JAKA_KANCELARIA_TU !== "BRAK"
+            ? documentItem.JAKA_KANCELARIA_TU
+            : null,
           documentItem.POBRANO_VAT,
-          documentItem.ZAZNACZ_KONTRAHENTA && documentItem.ZAZNACZ_KONTRAHENTA === "TAK" ? documentItem.ZAZNACZ_KONTRAHENTA : null,
+          documentItem.ZAZNACZ_KONTRAHENTA &&
+          documentItem.ZAZNACZ_KONTRAHENTA === "TAK"
+            ? documentItem.ZAZNACZ_KONTRAHENTA
+            : null,
           JSON.stringify(documentItem.UWAGI_ASYSTENT),
-          documentItem.BLAD_DORADCY && documentItem.BLAD_DORADCY === "TAK" ? documentItem.BLAD_DORADCY : null,
-          documentItem.DATA_WYDANIA_AUTA && documentItem.DATA_WYDANIA_AUTA !== "BRAK" ? documentItem.DATA_WYDANIA_AUTA : null,
-          documentItem?.OSTATECZNA_DATA_ROZLICZENIA && documentItem.OSTATECZNA_DATA_ROZLICZENIA !== "BRAK" ? documentItem.OSTATECZNA_DATA_ROZLICZENIA : null,
-          documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA) : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-          documentItem.INFORMACJA_ZARZAD ? JSON.stringify(documentItem.INFORMACJA_ZARZAD) : null,
+          documentItem.BLAD_DORADCY && documentItem.BLAD_DORADCY === "TAK"
+            ? documentItem.BLAD_DORADCY
+            : null,
+          documentItem.DATA_WYDANIA_AUTA &&
+          documentItem.DATA_WYDANIA_AUTA !== "BRAK"
+            ? documentItem.DATA_WYDANIA_AUTA
+            : null,
+          documentItem?.OSTATECZNA_DATA_ROZLICZENIA &&
+          documentItem.OSTATECZNA_DATA_ROZLICZENIA !== "BRAK"
+            ? documentItem.OSTATECZNA_DATA_ROZLICZENIA
+            : null,
+          documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+            ? JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA)
+            : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+          documentItem.INFORMACJA_ZARZAD
+            ? JSON.stringify(documentItem.INFORMACJA_ZARZAD)
+            : null,
           id_document,
         ]
       );
     } else {
       await connect_SQL.query(
         "INSERT INTO company_documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA_TU, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY, DATA_WYDANIA_AUTA,OSTATECZNA_DATA_ROZLICZENIA, HISTORIA_ZMIANY_DATY_ROZLICZENIA, INFORMACJA_ZARZAD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [id_document,
-          documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK" ? documentItem.DZIALANIA : null,
-          documentItem.JAKA_KANCELARIA_TU && documentItem.JAKA_KANCELARIA_TU !== "BRAK" ? documentItem.JAKA_KANCELARIA_TU : null,
+        [
+          id_document,
+          documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK"
+            ? documentItem.DZIALANIA
+            : null,
+          documentItem.JAKA_KANCELARIA_TU &&
+          documentItem.JAKA_KANCELARIA_TU !== "BRAK"
+            ? documentItem.JAKA_KANCELARIA_TU
+            : null,
           documentItem.POBRANO_VAT,
-          documentItem.ZAZNACZ_KONTRAHENTA && documentItem.ZAZNACZ_KONTRAHENTA === "TAK" ? documentItem.ZAZNACZ_KONTRAHENTA : null,
+          documentItem.ZAZNACZ_KONTRAHENTA &&
+          documentItem.ZAZNACZ_KONTRAHENTA === "TAK"
+            ? documentItem.ZAZNACZ_KONTRAHENTA
+            : null,
           JSON.stringify(documentItem.UWAGI_ASYSTENT),
-          documentItem.BLAD_DORADCY && documentItem.BLAD_DORADCY === "TAK" ? documentItem.BLAD_DORADCY : null,
-          documentItem.DATA_WYDANIA_AUTA && documentItem.DATA_WYDANIA_AUTA !== "BRAK" ? documentItem.DATA_WYDANIA_AUTA : null,
-          documentItem?.OSTATECZNA_DATA_ROZLICZENIA && documentItem.OSTATECZNA_DATA_ROZLICZENIA !== "BRAK" ? documentItem.OSTATECZNA_DATA_ROZLICZENIA : null,
-          documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA ? JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA) : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-          documentItem.INFORMACJA_ZARZAD ? JSON.stringify(documentItem.INFORMACJA_ZARZAD) : null,
-
+          documentItem.BLAD_DORADCY && documentItem.BLAD_DORADCY === "TAK"
+            ? documentItem.BLAD_DORADCY
+            : null,
+          documentItem.DATA_WYDANIA_AUTA &&
+          documentItem.DATA_WYDANIA_AUTA !== "BRAK"
+            ? documentItem.DATA_WYDANIA_AUTA
+            : null,
+          documentItem?.OSTATECZNA_DATA_ROZLICZENIA &&
+          documentItem.OSTATECZNA_DATA_ROZLICZENIA !== "BRAK"
+            ? documentItem.OSTATECZNA_DATA_ROZLICZENIA
+            : null,
+          documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+            ? JSON.stringify(documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA)
+            : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+          documentItem.INFORMACJA_ZARZAD
+            ? JSON.stringify(documentItem.INFORMACJA_ZARZAD)
+            : null,
         ]
       );
     }
@@ -328,7 +380,6 @@ const getSettingsColumnsTable = async (req, res) => {
     return res.status(400).json({ message: "Id and info are required." });
   }
   try {
-
     const findUser = await connect_SQL.query(
       "SELECT  tableSettings, columns  FROM company_users WHERE id_user = ?",
       [id_user]
@@ -353,7 +404,6 @@ const getSettingsColumnsTable = async (req, res) => {
 const getSingleDocument = async (req, res) => {
   const { id_document } = req.params;
   try {
-
     const [singleDoc] = await connect_SQL.query(
       `SELECT D.id_document, D.NUMER_FV, D.BRUTTO, S.NALEZNOSC AS DO_ROZLICZENIA, D.TERMIN, 
     D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, 
@@ -374,7 +424,8 @@ const getSingleDocument = async (req, res) => {
       [id_document]
     );
 
-    const [controlDoc] = await connect_SQL.query(`SELECT * FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?`,
+    const [controlDoc] = await connect_SQL.query(
+      `SELECT * FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?`,
       [singleDoc[0].NUMER_FV, singleDoc[0].FIRMA]
     );
     res.json({
@@ -395,7 +446,6 @@ const getSingleDocument = async (req, res) => {
 // SQL pobieram nazwy kolumn do sutawień tabeli
 const getColumnsName = async (req, res) => {
   try {
-
     const [result] = await connect_SQL.query(
       "SELECT D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, D.TYP_PLATNOSCI, D.NIP, D.VIN, DA.*, SD.OPIS_ROZRACHUNKU,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,  S.NALEZNOSC AS DO_ROZLICZENIA FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements_description AS SD ON D.NUMER_FV = SD.NUMER AND D.FIRMA = SD.COMPANY LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LIMIT 1"
     );
@@ -421,36 +471,28 @@ const getColumnsName = async (req, res) => {
   }
 };
 
-
 // zapis chatu z kontroli dokumentacji
 const changeControlChat = async (req, res) => {
   const { NUMER_FV, chat, FIRMA } = req.body;
 
   try {
     const [findDoc] = await connect_SQL.query(
-      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?", [NUMER_FV, FIRMA]
+      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?",
+      [NUMER_FV, FIRMA]
     );
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
         "UPDATE company_control_documents SET CONTROL_UWAGI = ? WHERE NUMER_FV = ?",
-        [
-          JSON.stringify(chat),
-          NUMER_FV
-        ]
+        [JSON.stringify(chat), NUMER_FV]
       );
-
     } else {
       await connect_SQL.query(
         "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UWAGI, COMPANY) VALUES (?, ?, ?)",
-        [NUMER_FV,
-          JSON.stringify(chat),
-          FIRMA
-        ]
+        [NUMER_FV, JSON.stringify(chat), FIRMA]
       );
     }
     res.end();
-  }
-  catch (error) {
+  } catch (error) {
     logEvents(
       `documentsController, changeControlChat: ${error}`,
       "reqServerErrors.txt"
@@ -463,15 +505,15 @@ const getDataDocumentsControl = async (req, res) => {
   try {
     const { doc_nr } = req.params;
     const [doc_control] = await connect_SQL.query(
-      "SELECT * FROM company_control_documents WHERE NUMER_FV = ?", [doc_nr]
+      "SELECT * FROM company_control_documents WHERE NUMER_FV = ?",
+      [doc_nr]
     );
     if (doc_control.length) {
       res.json(doc_control[0]);
     } else {
       res.json(doc_control);
     }
-  }
-  catch (error) {
+  } catch (error) {
     logEvents(
       `documentsController, getControlChat: ${error}`,
       "reqServerErrors.txt"
@@ -479,55 +521,75 @@ const getDataDocumentsControl = async (req, res) => {
   }
 };
 
-
 // zapis chatu z kontroli dokumentacji
 const changeDocumentControl = async (req, res) => {
   const { NUMER_FV, documentControlBL, FIRMA } = req.body;
   try {
     const [findDoc] = await connect_SQL.query(
-      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ?", [NUMER_FV]
+      "SELECT NUMER_FV FROM company_control_documents WHERE NUMER_FV = ?",
+      [NUMER_FV]
     );
 
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
         "UPDATE company_control_documents SET CONTROL_UPOW = ?, CONTROL_OSW_VAT = ?, CONTROL_PR_JAZ = ?, CONTROL_DOW_REJ = ?, CONTROL_POLISA = ?, CONTROL_DECYZJA = ?, CONTROL_FV = ?, CONTROL_ODPOWIEDZIALNOSC = ?, CONTROL_PLATNOSC_VAT = ?, CONTROL_BRAK_DZIALAN_OD_OST = ?, COMPANY = ?  WHERE NUMER_FV = ? AND COMPANY = ?",
         [
-          documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
-          documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
+          documentControlBL.upowaznienie
+            ? documentControlBL.upowaznienie
+            : null,
+          documentControlBL.oswiadczenieVAT
+            ? documentControlBL.oswiadczenieVAT
+            : null,
           documentControlBL.prawoJazdy ? documentControlBL.prawoJazdy : null,
-          documentControlBL.dowodRejestr ? documentControlBL.dowodRejestr : null,
+          documentControlBL.dowodRejestr
+            ? documentControlBL.dowodRejestr
+            : null,
           documentControlBL.polisaAC ? documentControlBL.polisaAC : null,
           documentControlBL.decyzja ? documentControlBL.decyzja : null,
           documentControlBL.faktura ? documentControlBL.faktura : null,
-          documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
+          documentControlBL.odpowiedzialnosc
+            ? documentControlBL.odpowiedzialnosc
+            : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
-          documentControlBL.zmianyOstatniaKontrola ? documentControlBL.zmianyOstatniaKontrola : null,
+          documentControlBL.zmianyOstatniaKontrola
+            ? documentControlBL.zmianyOstatniaKontrola
+            : null,
           FIRMA,
           NUMER_FV,
-          FIRMA
+          FIRMA,
         ]
       );
     } else {
       await connect_SQL.query(
         "INSERT INTO company_control_documents (NUMER_FV, CONTROL_UPOW, CONTROL_OSW_VAT, CONTROL_PR_JAZ, CONTROL_DOW_REJ, CONTROL_POLISA, CONTROL_DECYZJA = ?, CONTROL_FV, CONTROL_ODPOWIEDZIALNOSC, CONTROL_PLATNOSC_VAT, CONTROL_BRAK_DZIALAN_OD_OST, COMPANY) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [NUMER_FV,
-          documentControlBL.upowaznienie ? documentControlBL.upowaznienie : null,
-          documentControlBL.oswiadczenieVAT ? documentControlBL.oswiadczenieVAT : null,
+        [
+          NUMER_FV,
+          documentControlBL.upowaznienie
+            ? documentControlBL.upowaznienie
+            : null,
+          documentControlBL.oswiadczenieVAT
+            ? documentControlBL.oswiadczenieVAT
+            : null,
           documentControlBL.prawoJazdy ? documentControlBL.prawoJazdy : null,
-          documentControlBL.dowodRejestr ? documentControlBL.dowodRejestr : null,
+          documentControlBL.dowodRejestr
+            ? documentControlBL.dowodRejestr
+            : null,
           documentControlBL.polisaAC ? documentControlBL.polisaAC : null,
           documentControlBL.decyzja ? documentControlBL.decyzja : null,
           documentControlBL.faktura ? documentControlBL.faktura : null,
-          documentControlBL.odpowiedzialnosc ? documentControlBL.odpowiedzialnosc : null,
+          documentControlBL.odpowiedzialnosc
+            ? documentControlBL.odpowiedzialnosc
+            : null,
           documentControlBL.platnoscVAT ? documentControlBL.platnoscVAT : null,
-          documentControlBL.zmianyOstatniaKontrola ? documentControlBL.zmianyOstatniaKontrola : null,
-          FIRMA
+          documentControlBL.zmianyOstatniaKontrola
+            ? documentControlBL.zmianyOstatniaKontrola
+            : null,
+          FIRMA,
         ]
       );
     }
     res.end();
-  }
-  catch (error) {
+  } catch (error) {
     logEvents(
       `documentsController, changeDocumentControl: ${error}`,
       "reqServerErrors.txt"
@@ -546,5 +608,5 @@ module.exports = {
   getColumnsName,
   changeControlChat,
   getDataDocumentsControl,
-  changeDocumentControl
+  changeDocumentControl,
 };
