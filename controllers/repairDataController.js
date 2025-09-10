@@ -39,7 +39,9 @@ const repairAdvisersName = async (req, res) => {
 
     const documents = await msSqlQuery(query);
 
-    console.log("start doradca");
+    // const addDep = addDepartment(documents);
+
+    console.log(addDep);
     for (const doc of documents) {
       await connect_SQL.query(
         "UPDATE company_documents SET DORADCA = ? WHERE NUMER_FV = ?",
@@ -1716,6 +1718,39 @@ const organizationStructure = async () => {
   }
 };
 
+const twoDaysDocs = async () => {
+  try {
+    const twoDaysAgo = "2025-09-07";
+
+    const query = `    
+    SELECT  
+    [faktn_fakt_nr_caly] AS NUMER_FV,
+    SUM([faktp_og_brutto]) AS BRUTTO,
+    SUM([faktp_og_netto]) AS NETTO,
+    SUM([faktn_zaplata_kwota]) AS DO_ROZLICZENIA,
+    CONVERT(VARCHAR(10), MIN([dataWystawienia]), 23) AS DATA_FV,
+    CONVERT(VARCHAR(10), MIN([terminPlatnosci]), 23) AS TERMIN,
+    MAX([kl_nazwa]) AS KONTRAHENT,
+    MAX([faktn_wystawil]) AS DORADCA,
+    NULL AS NR_REJESTRACYJNY,
+    NULL AS UWAGI_Z_FAKTURY,
+    MAX([typSprzedazy]) AS TYP_PLATNOSCI,
+    MAX([kl_nip]) AS NIP   ,
+    'RAC' AS MARKER
+FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
+   WHERE [dataWystawienia]> '${twoDaysAgo}'
+GROUP BY [faktn_fakt_nr_caly];
+    `;
+    const documents = await msSqlQuery(query);
+
+    const addDep = addDepartment(documents);
+
+    console.log(addDep);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const prepareRac = async () => {
   try {
     // await addRacCompany();
@@ -1725,7 +1760,7 @@ const prepareRac = async () => {
     // await tableColumnsForRAC();
     // await organizationStructure();
     // await unpaidDocuments();
-
+    // await twoDaysDocs();
     console.log("prepare RAC");
   } catch (error) {
     console.error(error);

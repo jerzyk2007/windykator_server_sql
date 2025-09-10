@@ -65,7 +65,8 @@ GROUP BY
     NULL AS NR_REJESTRACYJNY,
     NULL AS UWAGI_Z_FAKTURY,
     MAX([typSprzedazy]) AS TYP_PLATNOSCI,
-    MAX([kl_nip]) AS NIP   
+    MAX([kl_nip]) AS NIP,  
+    'RAC' AS MARKER
 FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
    WHERE [dataWystawienia]> '${twoDaysAgo}'
 GROUP BY [faktn_fakt_nr_caly];
