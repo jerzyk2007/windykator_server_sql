@@ -916,6 +916,7 @@ const gerReportDate = async (company) => {
   }
 };
 
+// generuje raport na podstawie już wczesniej pobranych danych wiekowania
 const generateRaportData = async (req, res) => {
   const { company } = req.params;
   try {
