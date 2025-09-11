@@ -12,10 +12,16 @@ const {
 } = require("./getDataFromMSSQL");
 const { testMail } = require("./mailController");
 // const { getAccountancyDataMsSQL } = require("./fkRaportController");
-const { prepareRac } = require("./repairDataController");
+const {
+  prepareRac,
+  copy_fk_raport_KRT,
+  checkAccountancyData,
+} = require("./repairDataController");
 const {
   getAccountancyDataMsSQL,
   generateRaportCompany,
+  generateRaportData,
+  getMainRaportFK,
 } = require("./generateRaportFK");
 
 const getTime = async (req, res) => {
@@ -30,6 +36,14 @@ const getTime = async (req, res) => {
     // await getAccountancyDataMsSQL('KEM', 1);
 
     // await prepareRac();
+
+    // await copy_fk_raport_KRT();
+
+    // await generateRaportData();
+    // await getMainRaportFK();
+    // console.log("generateRaportData");
+
+    // await checkAccountancyData();
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
