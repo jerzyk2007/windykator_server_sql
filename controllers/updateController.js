@@ -16,7 +16,6 @@ const {
   prepareRac,
   copy_fk_raport_KRT,
   checkAccountancyData,
-  copy_fk_accountancy_KRT,
 } = require("./repairDataController");
 const {
   getAccountancyDataMsSQL,
@@ -45,10 +44,6 @@ const getTime = async (req, res) => {
     // console.log("generateRaportData");
 
     // await checkAccountancyData();
-
-    // await copy_fk_accountancy_KRT();
-
-    // await generateRaportCompany("KRT");
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
