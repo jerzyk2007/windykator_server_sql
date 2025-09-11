@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { addDepartment } = require("./manageDocumentAddition");
+const { getAccountancyDataMsSQL } = require("./generateRaportFK");
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -1767,6 +1768,143 @@ const prepareRac = async () => {
   }
 };
 
+const copy_fk_raport_KRT = async () => {
+  try {
+    await connect_SQL.query("TRUNCATE testy_windykacja.company_fk_raport_KRT");
+
+    const [reports] = await connect_SQL.query(`
+    INSERT INTO testy_windykacja.company_fk_raport_KRT (
+      BRAK_DATY_WYSTAWIENIA_FV,
+      CZY_SAMOCHOD_WYDANY_AS,
+      CZY_W_KANCELARI,
+      DATA_ROZLICZENIA_AS,
+      DATA_WYDANIA_AUTA,
+      DATA_WYSTAWIENIA_FV,
+      DO_ROZLICZENIA_AS,
+      DZIAL,
+      ETAP_SPRAWY,
+      HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+      ILE_DNI_NA_PLATNOSC_FV,
+      INFORMACJA_ZARZAD,
+      JAKA_KANCELARIA,
+      KONTRAHENT,
+      KWOTA_DO_ROZLICZENIA_FK,
+      KWOTA_WPS,
+      LOKALIZACJA,
+      NR_DOKUMENTU,
+      DORADCA,
+      NR_KLIENTA,
+      OBSZAR,
+      OPIEKUN_OBSZARU_CENTRALI,
+      OPIS_ROZRACHUNKU,
+      OSTATECZNA_DATA_ROZLICZENIA,
+      OWNER,
+      PRZEDZIAL_WIEKOWANIE,
+      PRZETER_NIEPRZETER,
+      RODZAJ_KONTA,
+      ROZNICA,
+      TERMIN_PLATNOSCI_FV,
+      TYP_DOKUMENTU,
+      TYP_PLATNOSCI,
+      VIN,
+      FIRMA
+    )
+    SELECT
+      BRAK_DATY_WYSTAWIENIA_FV,
+      CZY_SAMOCHOD_WYDANY_AS,
+      CZY_W_KANCELARI,
+      DATA_ROZLICZENIA_AS,
+      DATA_WYDANIA_AUTA,
+      DATA_WYSTAWIENIA_FV,
+      DO_ROZLICZENIA_AS,
+      DZIAL,
+      ETAP_SPRAWY,
+      HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+      ILE_DNI_NA_PLATNOSC_FV,
+      INFORMACJA_ZARZAD,
+      JAKA_KANCELARIA,
+      KONTRAHENT,
+      KWOTA_DO_ROZLICZENIA_FK,
+      KWOTA_WPS,
+      LOKALIZACJA,
+      NR_DOKUMENTU,
+      DORADCA,
+      NR_KLIENTA,
+      OBSZAR,
+      OPIEKUN_OBSZARU_CENTRALI,
+      OPIS_ROZRACHUNKU,
+      OSTATECZNA_DATA_ROZLICZENIA,
+      OWNER,
+      PRZEDZIAL_WIEKOWANIE,
+      PRZETER_NIEPRZETER,
+      RODZAJ_KONTA,
+      ROZNICA,
+      TERMIN_PLATNOSCI_FV,
+      TYP_DOKUMENTU,
+      TYP_PLATNOSCI,
+      VIN,
+      FIRMA
+    FROM company_windykacja.company_fk_raport_KRT
+  `);
+
+    console.log(reports);
+    console.log("reports");
+  } catch (error) {
+    console.error(error);
+  }
+};
+const copy_fk_accountancy_KRT = async () => {
+  try {
+    await connect_SQL.query(
+      "TRUNCATE testy_windykacja.company_raportFK_KRT_accountancy"
+    );
+
+    const [reports] = await connect_SQL.query(`
+    INSERT INTO testy_windykacja.company_raportFK_KRT_accountancy (
+      NUMER_FV,
+      KONTRAHENT,
+      NR_KONTRAHENTA,
+      DO_ROZLICZENIA,
+      TERMIN_FV,
+      KONTO,
+      TYP_DOKUMENTU,
+      DZIAL,
+      FIRMA
+    )
+    SELECT
+       NUMER_FV,
+      KONTRAHENT,
+      NR_KONTRAHENTA,
+      DO_ROZLICZENIA,
+      TERMIN_FV,
+      KONTO,
+      TYP_DOKUMENTU,
+      DZIAL,
+      FIRMA
+    FROM company_windykacja.company_raportFK_KRT_accountancy
+  `);
+
+    console.log(reports);
+    console.log("reports");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const checkAccountancyData = async (req, res) => {
+  try {
+    const accountancyData = await getAccountancyDataMsSQL("KRT", res);
+    const test = accountancyData.map((item) => {
+      if (item.NUMER === "FV/BL/48/25/A/D78") {
+        console.log(item);
+      }
+    });
+    // console.log(accountancyData);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 module.exports = {
   repairAdvisersName,
   changeUserSettings,
@@ -1786,4 +1924,7 @@ module.exports = {
   getRacDataTime,
   settlementsRAC,
   prepareRac,
+  copy_fk_raport_KRT,
+  checkAccountancyData,
+  copy_fk_accountancy_KRT,
 };
