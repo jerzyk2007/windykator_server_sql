@@ -1312,7 +1312,8 @@ const generateRaportData = async (req, res) => {
   }
 };
 
-const generateNewRaport = async (req, res) => {
+//pobieranie danych wiekowania do nowego raportu, generowanie historii wpisów, czyszczenie tabeli z wiekowaniem i zapisywanie nowych danych
+const getDataToNewRaport = async (req, res) => {
   const { company } = req.params;
 
   try {
@@ -1342,7 +1343,7 @@ const generateNewRaport = async (req, res) => {
     res.end();
   } catch (error) {
     logEvents(
-      `generateRaportFK, generateNewRaport: ${error}`,
+      `generateRaportFK, getDataToNewRaport: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -1363,6 +1364,7 @@ const getDataAfterGenerate = async (company) => {
   }
 };
 
+// generuje dane do pliku raportu głónego
 const getMainRaportFK = async (req, res) => {
   const { company } = req.params;
   try {
@@ -1435,6 +1437,7 @@ const getMainRaportFK = async (req, res) => {
       }
       return item;
     });
+
     const excelBuffer = await getExcelRaport(changeData, reportInfo);
     res.setHeader(
       "Content-Type",
@@ -1443,7 +1446,7 @@ const getMainRaportFK = async (req, res) => {
     res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
     res.send(excelBuffer);
 
-    // res.end();
+    res.end();
   } catch (error) {
     logEvents(
       `generateRaportFK, getMainRaportFK: ${error}`,
@@ -1451,6 +1454,8 @@ const getMainRaportFK = async (req, res) => {
     );
   }
 };
+
+//generuje dane do pliku raportu biznesowego
 const getBusinessRaportFK = async (req, res) => {
   const { company } = req.params;
   try {
@@ -1578,10 +1583,11 @@ const getBusinessRaportFK = async (req, res) => {
 
 module.exports = {
   getDateCounter,
-  generateNewRaport,
+  getDataToNewRaport,
   generateRaportCompany,
   generateRaportData,
   getAccountancyDataMsSQL,
   getMainRaportFK,
   getBusinessRaportFK,
+  getMainRaportFK,
 };

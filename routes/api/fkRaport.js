@@ -72,7 +72,7 @@ router
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC
     ),
-    generateRaport.generateNewRaport
+    generateRaport.getDataToNewRaport
   );
 
 // usuwanie znacznika na wybranym dokumencie dla raportu fk
