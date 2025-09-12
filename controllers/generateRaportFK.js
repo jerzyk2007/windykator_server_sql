@@ -2,9 +2,6 @@ const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { addDepartment, documentsType } = require("./manageDocumentAddition");
 const { checkDate, checkTime } = require("./manageDocumentAddition");
 const { getExcelRaport } = require("./fkRaportExcelGenerate");
-const { addDepartment, documentsType } = require("./manageDocumentAddition");
-const { checkDate, checkTime } = require("./manageDocumentAddition");
-const { getExcelRaport } = require("./fkRaportExcelGenerate");
 const { logEvents } = require("../middleware/logEvents");
 
 // pobieram daty  aktualizacji plików excel dla raportu FK !!!
@@ -24,41 +21,7 @@ const getDateCounter = async (req, res) => {
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates WHERE DATA_NAME = 'Rozrachunki'"
     );
-  const { company } = req.params;
-  try {
-    const [result] = await connect_SQL.query(
-      `SELECT TITLE, DATE FROM company_fk_updates_date WHERE COMPANY = ?`,
-      [company]
-    );
-    const updateData = result.reduce((acc, item) => {
-      acc[item.TITLE] = {
-        date: item.DATE, // Przypisanie `date` jako `hour`
-      };
-      return acc;
-    }, {});
-    const [getUpdatesData] = await connect_SQL.query(
-      "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates WHERE DATA_NAME = 'Rozrachunki'"
-    );
 
-    const dms = {
-      date:
-        getUpdatesData[0]?.UPDATE_SUCCESS === "Zaktualizowano."
-          ? getUpdatesData[0].DATE
-          : "Błąd aktualizacji",
-      hour:
-        getUpdatesData[0]?.UPDATE_SUCCESS === "Zaktualizowano."
-          ? getUpdatesData[0].HOUR
-          : "Błąd aktualizacji",
-    };
-    updateData.dms = dms;
-    res.json({ updateData });
-  } catch (error) {
-    logEvents(
-      `generateRaportFK, getDateCounter: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
     const dms = {
       date:
         getUpdatesData[0]?.UPDATE_SUCCESS === "Zaktualizowano."
@@ -88,11 +51,6 @@ const generateHistoryDocuments = async (company) => {
       `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
       [company]
     );
-  try {
-    const [raportDate] = await connect_SQL.query(
-      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'generate' AND COMPANY = ?`,
-      [company]
-    );
 
     const [markDocuments] = await connect_SQL.query(
       `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
@@ -105,31 +63,13 @@ const generateHistoryDocuments = async (company) => {
         `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
         [item.NUMER_FV, raportDate[0].DATE, company]
       );
-    for (item of markDocuments) {
-      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
-      const [getDoc] = await connect_SQL.query(
-        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
-        [item.NUMER_FV, raportDate[0].DATE, company]
-      );
 
       //szukam czy jest wpis histori w tabeli history_fk_documents
       const [getDocHist] = await connect_SQL.query(
         `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
         [item.NUMER_FV, company]
       );
-      //szukam czy jest wpis histori w tabeli history_fk_documents
-      const [getDocHist] = await connect_SQL.query(
-        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
-        [item.NUMER_FV, company]
-      );
 
-      //jesli nie ma historycznych wpisów tworzę nowy
-      if (!getDocHist.length) {
-        const newHistory = {
-          info: `1 raport utworzono ${raportDate[0].DATE}`,
-          historyDate: [],
-          historyText: [],
-        };
       //jesli nie ma historycznych wpisów tworzę nowy
       if (!getDocHist.length) {
         const newHistory = {
