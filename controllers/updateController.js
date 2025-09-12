@@ -16,7 +16,6 @@ const {
   prepareRac,
   copy_fk_raport_KRT,
   checkAccountancyData,
-  copy_fk_accountancy_KRT,
   repairHistory,
   generateHistoryDocumentsRepair,
   repairManagementDecision,
@@ -48,16 +47,6 @@ const getTime = async (req, res) => {
     // console.log("generateRaportData");
 
     // await checkAccountancyData();
-
-    // await copy_fk_accountancy_KRT();
-
-    // await generateRaportCompany("KRT");
-
-    // await repairHistory();
-
-    // await generateHistoryDocumentsRepair("KRT");
-
-    // await repairManagementDecision();
 
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
