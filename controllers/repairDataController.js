@@ -42,7 +42,7 @@ const repairAdvisersName = async (req, res) => {
 
     // const addDep = addDepartment(documents);
 
-    console.log(addDep);
+    // console.log(addDep);
     for (const doc of documents) {
       await connect_SQL.query(
         "UPDATE company_documents SET DORADCA = ? WHERE NUMER_FV = ?",
@@ -497,303 +497,219 @@ const createAccounts = async (req, res) => {
 
 const repairHistory = async () => {
   try {
-    const [getRaportFK] = await connect_SQL.query(
-      `SELECT NR_DOKUMENTU, TERMIN_PLATNOSCI_FV FROM company_fk_raport_KRT WHERE OBSZAR != 'KSIĘGOWOŚĆ' AND TYP_DOKUMENTU IN ('Faktura', 'Faktura zaliczkowa', 'Korekta', 'Nota') AND CZY_W_KANCELARI = 'NIE' AND DO_ROZLICZENIA_AS > 0`
+    const [dataHistory] = await connect_SQL.query(
+      "SELECT * FROM company_windykacja.company_history_management"
     );
 
-    const [getDateHistory] = await connect_SQL.query(
-      "SELECT DISTINCT WYKORZYSTANO_RAPORT_FK FROM management_decision_FK"
-    );
-
-    const [getDateDecision] = await connect_SQL.query(
-      "SELECT * FROM management_decision_FK"
-    );
-
-    const subtractDays = (dateString, days) => {
-      const date = new Date(dateString);
-      date.setDate(date.getDate() + days);
-      return date.toISOString().split("T")[0]; // zwraca z powrotem w formacie yyyy-mm-dd
-    };
-
-    // łączę dane z management_decision_FK HISTORIA_ZMIANY_DATY_ROZLICZENIA i INFORMACJA_ZARZADw jeden obiekt
-    const merged = [];
-
-    getDateDecision.forEach((item) => {
-      const existing = merged.find(
-        (el) =>
-          el.NUMER_FV === item.NUMER_FV &&
-          el.WYKORZYSTANO_RAPORT_FK === item.WYKORZYSTANO_RAPORT_FK
-      );
-
-      if (existing) {
-        // Uzupełnij brakujące pola tylko jeśli są null
-        if (!existing.INFORMACJA_ZARZAD && item.INFORMACJA_ZARZAD) {
-          existing.INFORMACJA_ZARZAD = item.INFORMACJA_ZARZAD;
-        }
-
-        if (
-          !existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA &&
-          item.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-        ) {
-          existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA =
-            item.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
-        }
-      } else {
-        // Brak duplikatu, dodaj nowy obiekt
-        merged.push({ ...item });
+    const test = dataHistory.map((item) => {
+      if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
+        console.log(item);
       }
     });
 
-    // szukam duplikatów faktur i grupuję
-    const grouped = merged.reduce(
-      (
-        acc,
-        {
-          NUMER_FV,
-          INFORMACJA_ZARZAD,
-          HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-          WYKORZYSTANO_RAPORT_FK,
-        }
-      ) => {
-        // Sprawdzamy, czy już istnieje taki NUMER_FV w zgromadzonych danych
-        const existingEntry = acc.find((entry) => entry.NUMER_FV === NUMER_FV);
+    const targetDate = "2025-09-11";
 
-        if (existingEntry) {
-          // Jeśli istnieje, dodajemy nowy obiekt do tablicy DATA
-          existingEntry.DATA.push({
-            INFORMACJA_ZARZAD,
-            HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-            WYKORZYSTANO_RAPORT_FK,
-          });
-        } else {
-          // Jeśli nie istnieje, tworzymy nowy obiekt
-          acc.push({
-            NUMER_FV,
-            DATA: [
-              {
-                INFORMACJA_ZARZAD,
-                HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-                WYKORZYSTANO_RAPORT_FK,
-              },
-            ],
-          });
-        }
-
-        return acc;
-      },
-      []
-    );
-
-    // sprawdzam ile razy dana faktura powinna pojawic się w raportach
-    const filteredData = getRaportFK.map((doc) => {
-      const newTermin = doc.TERMIN_PLATNOSCI_FV;
-      // const newMaxDay = subtractDays(doc.TERMIN_PLATNOSCI_FV, 8);
-
-      const dateObj = new Date(newTermin);
-      dateObj.setDate(dateObj.getDate() + 8);
-
-      const newMaxDay = dateObj.toISOString().slice(0, 10); // string yyyy-mm-dd
-
-      const matchingDates = getDateHistory
-        .map((d) => d.WYKORZYSTANO_RAPORT_FK) // wyciągamy tylko daty jako stringi
-        .filter((dateStr) => dateStr >= newMaxDay) // szukamy dat, które są większe niż newMaxDay
-        .sort(); // sortujemy rosnąco (najmłodsza na początku)
-
-      // if (doc.NR_DOKUMENTU === 'FV/M/INT/1466/25/A/D27') {
-      //     console.log(doc);
-      //     console.log(newMaxDay);
-      //     console.log(matchingDates);
-
-      // }
-
+    const filteredDataHistory = dataHistory.map((doc) => {
       return {
-        NUMER_FV: doc.NR_DOKUMENTU,
-        ILE_WYSTAPIEN: matchingDates ? matchingDates : [],
+        ...doc,
+        HISTORY_DOC: doc.HISTORY_DOC.filter(
+          (historyItem) => !historyItem.info.includes(`utworzono ${targetDate}`)
+        ),
       };
     });
 
-    // tworzę historię wpisó na podstawie danych wpisanych przez użytkowników i tych których nie uzupełnili
-    const newHistory = filteredData.map((item) => {
-      const searchDoc = grouped.filter((doc) => doc.NUMER_FV === item.NUMER_FV);
-
-      if (searchDoc[0]?.NUMER_FV) {
-        // if (searchDoc[0].NUMER_FV === 'FV/M/INT/1466/25/A/D27') {
-        // console.log(item);
-        // console.log(item.ILE_WYSTAPIEN);
-        // console.log(searchDoc[0].DATA);
-
-        const dataHistory = item?.ILE_WYSTAPIEN?.map((dataDoc, index) => {
-          const searchHistory = searchDoc[0].DATA.filter(
-            (filtrDoc) => filtrDoc.WYKORZYSTANO_RAPORT_FK === dataDoc
-          );
-
-          return {
-            info: `${index + 1} raport utworzono ${dataDoc}`,
-            historyDate: searchHistory[0]?.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-              ? [searchHistory[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA]
-              : [],
-            historyText: searchHistory[0]?.INFORMACJA_ZARZAD
-              ? [searchHistory[0].INFORMACJA_ZARZAD]
-              : [],
-          };
-        });
-        // console.log(dataHistory);
-
-        // }
-
-        return {
-          NUMER_FV: searchDoc[0].NUMER_FV,
-          DATA: dataHistory,
-        };
-      } else {
-        const dataHistory = item?.ILE_WYSTAPIEN?.map((dataDoc, index) => {
-          return {
-            info: `${index + 1} raport utworzono ${dataDoc}`,
-            historyDate: [],
-            historyText: [],
-          };
-        });
-        return {
-          NUMER_FV: item.NUMER_FV,
-          DATA: dataHistory,
-        };
+    const test2 = filteredDataHistory.map((item) => {
+      if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
+        console.log(item);
       }
     });
+    await connect_SQL.query(
+      "TRUNCATE company_windykacja.company_history_management"
+    );
 
-    const emptyData = newHistory.filter((item) => item.DATA.length > 0);
+    for (const doc of filteredDataHistory) {
+      // console.log(doc);
+      await connect_SQL.query(
+        `INSERT INTO company_windykacja.company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+        [doc.NUMER_FV, JSON.stringify(doc.HISTORY_DOC), doc.COMPANY]
+      );
+    }
+    console.log("nic");
+    // *************
+    // const [getRaportFK] = await connect_SQL.query(
+    //   `SELECT NR_DOKUMENTU, TERMIN_PLATNOSCI_FV FROM company_fk_raport_KRT WHERE OBSZAR != 'KSIĘGOWOŚĆ' AND TYP_DOKUMENTU IN ('Faktura', 'Faktura zaliczkowa', 'Korekta', 'Nota') AND CZY_W_KANCELARI = 'NIE' AND DO_ROZLICZENIA_AS > 0`
+    // );
+
+    // const [getDateHistory] = await connect_SQL.query(
+    //   "SELECT DISTINCT WYKORZYSTANO_RAPORT_FK FROM management_decision_FK"
+    // );
+
+    // const [getDateDecision] = await connect_SQL.query(
+    //   "SELECT * FROM management_decision_FK"
+    // );
+
+    // const subtractDays = (dateString, days) => {
+    //   const date = new Date(dateString);
+    //   date.setDate(date.getDate() + days);
+    //   return date.toISOString().split("T")[0]; // zwraca z powrotem w formacie yyyy-mm-dd
+    // };
+
+    // // łączę dane z management_decision_FK HISTORIA_ZMIANY_DATY_ROZLICZENIA i INFORMACJA_ZARZADw jeden obiekt
+    // const merged = [];
+
+    // getDateDecision.forEach((item) => {
+    //   const existing = merged.find(
+    //     (el) =>
+    //       el.NUMER_FV === item.NUMER_FV &&
+    //       el.WYKORZYSTANO_RAPORT_FK === item.WYKORZYSTANO_RAPORT_FK
+    //   );
+
+    //   if (existing) {
+    //     // Uzupełnij brakujące pola tylko jeśli są null
+    //     if (!existing.INFORMACJA_ZARZAD && item.INFORMACJA_ZARZAD) {
+    //       existing.INFORMACJA_ZARZAD = item.INFORMACJA_ZARZAD;
+    //     }
+
+    //     if (
+    //       !existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA &&
+    //       item.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+    //     ) {
+    //       existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA =
+    //         item.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
+    //     }
+    //   } else {
+    //     // Brak duplikatu, dodaj nowy obiekt
+    //     merged.push({ ...item });
+    //   }
+    // });
+
+    // // szukam duplikatów faktur i grupuję
+    // const grouped = merged.reduce(
+    //   (
+    //     acc,
+    //     {
+    //       NUMER_FV,
+    //       INFORMACJA_ZARZAD,
+    //       HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+    //       WYKORZYSTANO_RAPORT_FK,
+    //     }
+    //   ) => {
+    //     // Sprawdzamy, czy już istnieje taki NUMER_FV w zgromadzonych danych
+    //     const existingEntry = acc.find((entry) => entry.NUMER_FV === NUMER_FV);
+
+    //     if (existingEntry) {
+    //       // Jeśli istnieje, dodajemy nowy obiekt do tablicy DATA
+    //       existingEntry.DATA.push({
+    //         INFORMACJA_ZARZAD,
+    //         HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+    //         WYKORZYSTANO_RAPORT_FK,
+    //       });
+    //     } else {
+    //       // Jeśli nie istnieje, tworzymy nowy obiekt
+    //       acc.push({
+    //         NUMER_FV,
+    //         DATA: [
+    //           {
+    //             INFORMACJA_ZARZAD,
+    //             HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+    //             WYKORZYSTANO_RAPORT_FK,
+    //           },
+    //         ],
+    //       });
+    //     }
+
+    //     return acc;
+    //   },
+    //   []
+    // );
+
+    // // sprawdzam ile razy dana faktura powinna pojawic się w raportach
+    // const filteredData = getRaportFK.map((doc) => {
+    //   const newTermin = doc.TERMIN_PLATNOSCI_FV;
+    //   // const newMaxDay = subtractDays(doc.TERMIN_PLATNOSCI_FV, 8);
+
+    //   const dateObj = new Date(newTermin);
+    //   dateObj.setDate(dateObj.getDate() + 8);
+
+    //   const newMaxDay = dateObj.toISOString().slice(0, 10); // string yyyy-mm-dd
+
+    //   const matchingDates = getDateHistory
+    //     .map((d) => d.WYKORZYSTANO_RAPORT_FK) // wyciągamy tylko daty jako stringi
+    //     .filter((dateStr) => dateStr >= newMaxDay) // szukamy dat, które są większe niż newMaxDay
+    //     .sort(); // sortujemy rosnąco (najmłodsza na początku)
+
+    //   // if (doc.NR_DOKUMENTU === 'FV/M/INT/1466/25/A/D27') {
+    //   //     console.log(doc);
+    //   //     console.log(newMaxDay);
+    //   //     console.log(matchingDates);
+
+    //   // }
+
+    //   return {
+    //     NUMER_FV: doc.NR_DOKUMENTU,
+    //     ILE_WYSTAPIEN: matchingDates ? matchingDates : [],
+    //   };
+    // });
+
+    // // tworzę historię wpisó na podstawie danych wpisanych przez użytkowników i tych których nie uzupełnili
+    // const newHistory = filteredData.map((item) => {
+    //   const searchDoc = grouped.filter((doc) => doc.NUMER_FV === item.NUMER_FV);
+
+    //   if (searchDoc[0]?.NUMER_FV) {
+    //     // if (searchDoc[0].NUMER_FV === 'FV/M/INT/1466/25/A/D27') {
+    //     // console.log(item);
+    //     // console.log(item.ILE_WYSTAPIEN);
+    //     // console.log(searchDoc[0].DATA);
+
+    //     const dataHistory = item?.ILE_WYSTAPIEN?.map((dataDoc, index) => {
+    //       const searchHistory = searchDoc[0].DATA.filter(
+    //         (filtrDoc) => filtrDoc.WYKORZYSTANO_RAPORT_FK === dataDoc
+    //       );
+
+    //       return {
+    //         info: `${index + 1} raport utworzono ${dataDoc}`,
+    //         historyDate: searchHistory[0]?.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+    //           ? [searchHistory[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA]
+    //           : [],
+    //         historyText: searchHistory[0]?.INFORMACJA_ZARZAD
+    //           ? [searchHistory[0].INFORMACJA_ZARZAD]
+    //           : [],
+    //       };
+    //     });
+    //     console.log(dataHistory);
+
+    //     // }
+
+    //     return {
+    //       NUMER_FV: searchDoc[0].NUMER_FV,
+    //       DATA: dataHistory,
+    //     };
+    //   } else {
+    //     const dataHistory = item?.ILE_WYSTAPIEN?.map((dataDoc, index) => {
+    //       return {
+    //         info: `${index + 1} raport utworzono ${dataDoc}`,
+    //         historyDate: [],
+    //         historyText: [],
+    //       };
+    //     });
+    //     return {
+    //       NUMER_FV: item.NUMER_FV,
+    //       DATA: dataHistory,
+    //     };
+    //   }
+    // });
+
+    // const emptyData = newHistory.filter((item) => item.DATA.length > 0);
 
     // console.log(emptyData.length);
 
-    await connect_SQL.query("TRUNCATE history_fk_documents");
-    for (const doc of emptyData) {
-      console.log(doc);
-      await connect_SQL.query(
-        `INSERT INTO history_fk_documents (NUMER_FV, HISTORY_DOC) VALUES (?, ?)`,
-        [doc.NUMER_FV, JSON.stringify(doc.DATA)]
-      );
-    }
-
-    // const test2 = newHistory.map(item => {
-
-    //     if (item.NUMER_FV === 'FV/UP/5189/24/A/D86') {
-    //         console.log(item);
-
-    //     }
-    // });
-
-    // FV/UP/5189/24/A/D86
-    // FV/M/INT/1466/25/A/D27
-
-    // const mergedData = filteredData.map(filteredItem => {
-    //     const findDoc = merged.filter(doc => doc.NUMER_FV === filteredItem.NUMER_FV);
-    //     if (findDoc.length) {
-    //         return {
-    //             NUMER_FV: filteredItem.NUMER_FV,
-    //             historyDate: [findDoc.HISTORIA_ZMIANY_DATY_ROZLICZENIA],
-    //             historyText: [findDoc.INFORMACJA_ZARZAD],
-    //             WYKORZYSTANO_RAPORT_FK: filteredItem.WYKORZYSTANO_RAPORT_FK
-    //         };
-    //     } else {
-    //         return {
-    //             NUMER_FV: filteredItem.NUMER_FV,
-    //             historyDate: [],
-    //             historyText: [],
-    //             WYKORZYSTANO_RAPORT_FK: filteredItem.WYKORZYSTANO_RAPORT_FK
-    //         };
-    //     }
-
-    // });
-    // console.log(mergedData);
-
-    // const test2 = mergedData.map(item => {
-    //     if (item.NUMER_FV === 'FV/M/INT/1466/25/A/D27') {
-    //         console.log(item);
-
-    //     }
-    // });
-
-    // const filteredData = getRaportFK.flatMap(item => {
-    //     // if (item.NR_DOKUMENTU === 'FV/M/INT/1466/25/A/D27') {
-    //     //     console.log(item);
-    //     // }
-    //     return getDateHistory
-    //         .filter(prev => subtractDays(item.TERMIN_PLATNOSCI_FV, 8) < prev.WYKORZYSTANO_RAPORT_FK)
-    //         .map(prev => {
-    //             // console.log(prev);
-    //             return {
-    //                 NUMER_FV: item.NR_DOKUMENTU,
-    //                 WYKORZYSTANO: prev.WYKORZYSTANO_RAPORT_FK,
-    //             };
-    //         });
-    // });
-
-    // const test = getRaportFK.map(item => {
-    //     if (item.NR_DOKUMENTU === 'FV/M/INT/1466/25/A/D27') {
-    //         console.log(item);
-    //     }
-    // });
-    // console.log(getDateDecision);
-
-    // console.log(filteredData[0]);
-
-    // console.log(getDateHistory);
-    // console.log(getRaportFK);
-
-    // const resultMap = {};
-
-    // getDateHistory
-    //     .sort((a, b) => new Date(a.WYKORZYSTANO_RAPORT_FK) - new Date(b.WYKORZYSTANO_RAPORT_FK))
-    //     .forEach(dateObj => {
-    //         const currentDate = dateObj.WYKORZYSTANO_RAPORT_FK;
-
-    //         // Szukamy faktur z filteredData dla tej daty
-    //         const matches = filteredData.filter(fd => fd.WYKORZYSTANO === currentDate);
-
-    //         matches.forEach(match => {
-    //             const numerFV = match.NUMER_FV;
-
-    //             if (!resultMap[numerFV]) {
-    //                 resultMap[numerFV] = {
-    //                     NUMER_FV: numerFV,
-    //                     DATA: []
-    //                 };
-    //             }
-
-    //             // Znajdź odpowiadający rekord w merged
-    //             const mergedMatch = merged.find(m =>
-    //                 m.NUMER_FV === numerFV && m.WYKORZYSTANO_RAPORT_FK === currentDate
-    //             );
-
-    //             const historyDate = mergedMatch?.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-    //                 ? [mergedMatch.HISTORIA_ZMIANY_DATY_ROZLICZENIA]
-    //                 : [];
-
-    //             const historyText = mergedMatch?.INFORMACJA_ZARZAD
-    //                 ? [mergedMatch.INFORMACJA_ZARZAD]
-    //                 : [];
-
-    //             resultMap[numerFV].DATA.push({
-    //                 info: `${resultMap[numerFV].DATA.length + 1} raport utworzono ${currentDate}`,
-    //                 historyDate,
-    //                 historyText
-    //             });
-    //         });
-    //     });
-
-    // const finalResult = Object.values(resultMap);
-    // console.log(finalResult);
-    // const test = finalResult.map(item => {
-    //     if (item.NUMER_FV === 'FV/M/INT/1466/25/A/D27') {
-    //         console.log(item);
-
-    //     }
-    // });
-
-    // console.log(finalResult);
-    // await connect_SQL.query('TRUNCATE history_fk_documents');
-    // for (const doc of finalResult) {
-    //     await connect_SQL.query(`INSERT INTO history_fk_documents (NUMER_FV, HISTORY_DOC) VALUES (?, ?)`,
-    //         [doc.NUMER_FV, JSON.stringify(doc.DATA)]);
+    // await connect_SQL.query("TRUNCATE history_fk_documents");
+    // for (const doc of emptyData) {
+    //   console.log(doc);
+    //   await connect_SQL.query(
+    //     `INSERT INTO history_fk_documents (NUMER_FV, HISTORY_DOC) VALUES (?, ?)`,
+    //     [doc.NUMER_FV, JSON.stringify(doc.DATA)]
+    //   );
     // }
   } catch (err) {
     console.error(err);
@@ -1905,6 +1821,117 @@ const checkAccountancyData = async (req, res) => {
   }
 };
 
+const generateHistoryDocumentsRepair = async (company) => {
+  try {
+    const [raportDate] = await connect_SQL.query(
+      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'generate' AND COMPANY = ?`,
+      [company]
+    );
+    const [markDocuments] = await connect_SQL.query(
+      `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
+      [company]
+    );
+
+    for (item of markDocuments) {
+      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+      const [getDoc] = await connect_SQL.query(
+        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
+        [item.NUMER_FV, raportDate[0].DATE, company]
+      );
+
+      //szukam czy jest wpis histori w tabeli history_fk_documents
+      const [getDocHist] = await connect_SQL.query(
+        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
+        [item.NUMER_FV, company]
+      );
+      // console.log(getDocHist, " - ", item);
+
+      if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
+        console.log(item);
+        console.log(getDocHist[0].HISTORY_DOC);
+      }
+
+      //jesli nie ma historycznych wpisów tworzę nowy
+      if (!getDocHist.length) {
+        const newHistory = {
+          info: `1 raport utworzono ${raportDate[0].DATE}`,
+          historyDate: [],
+          historyText: [],
+        };
+
+        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+        getDoc.forEach((doc) => {
+          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+            newHistory.historyDate.push(
+              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+            );
+          }
+          if (doc.INFORMACJA_ZARZAD) {
+            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+          }
+        });
+
+        // await connect_SQL.query(
+        //   `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+        //   [item.NUMER_FV, JSON.stringify([newHistory]), company]
+        // );
+      } else {
+        const newHistory = {
+          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
+            raportDate[0].DATE
+          }`,
+          historyDate: [],
+          historyText: [],
+        };
+        getDoc.forEach((doc) => {
+          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+            newHistory.historyDate.push(
+              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+            );
+          }
+          if (doc.INFORMACJA_ZARZAD) {
+            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+          }
+        });
+        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
+
+        if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
+          console.log(item);
+          console.log(prepareArray);
+        }
+
+        // await connect_SQL.query(
+        //   `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
+        //   [JSON.stringify(prepareArray), item.NUMER_FV, company]
+        // );
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const repairManagementDecision = async () => {
+  try {
+    await connect_SQL.query(
+      "TRUNCATE company_windykacja.company_history_management"
+    );
+    const [result] = await connect_SQL.query(
+      "INSERT INTO company_windykacja.company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) SELECT NUMER_FV, HISTORY_DOC, COMPANY FROM testy_windykacja.company_history_management"
+    );
+
+    console.log(result);
+
+    // const test = result.map((item) => {
+    //   if (item.NUMER_FV === "FV/UP/696/25/V/D6") {
+    //     console.log(item);
+    //   }
+    // });
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 module.exports = {
   repairAdvisersName,
   changeUserSettings,
@@ -1927,4 +1954,6 @@ module.exports = {
   copy_fk_raport_KRT,
   checkAccountancyData,
   copy_fk_accountancy_KRT,
+  generateHistoryDocumentsRepair,
+  repairManagementDecision,
 };

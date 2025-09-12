@@ -69,441 +69,441 @@ const differencesAS_FK = async (company) => {
 };
 
 //funkcja pobiera dane do raportu FK, filtrując je na podstawie wyboru użytkonika, wersja poprawiona
-const getRaportData = async (req, res) => {
-  const { company } = req.params;
-  const { raportInfo } = req.body;
+// const getRaportData = async (req, res) => {
+//   const { company } = req.params;
+//   const { raportInfo } = req.body;
 
-  try {
-    const [dataRaport] = await connect_SQL.query(
-      `SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK.* 
-      FROM company_fk_raport_${company} AS FK 
-      LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`
-    );
+//   try {
+//     const [dataRaport] = await connect_SQL.query(
+//       `SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK.*
+//       FROM company_fk_raport_${company} AS FK
+//       LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`
+//     );
 
-    // usuwam z każdego obiektu klucz id_fk_raport
-    dataRaport.forEach((item) => {
-      delete item.id_fk_raport;
-    });
-    const getDifferencesFK_AS = await differencesAS_FK(company);
+//     // usuwam z każdego obiektu klucz id_fk_raport
+//     dataRaport.forEach((item) => {
+//       delete item.id_fk_raport;
+//     });
+//     const getDifferencesFK_AS = await differencesAS_FK(company);
 
-    await connect_SQL.query(
-      `UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
-      [checkDate(new Date()), 0, "raport", company]
-    );
+//     await connect_SQL.query(
+//       `UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
+//       [checkDate(new Date()), 0, "raport", company]
+//     );
 
-    const accountArray = [
-      ...new Set(
-        dataRaport
-          .filter((item) => item.RODZAJ_KONTA)
-          .map((item) => item.OBSZAR)
-      ),
-    ].sort();
+//     const accountArray = [
+//       ...new Set(
+//         dataRaport
+//           .filter((item) => item.RODZAJ_KONTA)
+//           .map((item) => item.OBSZAR)
+//       ),
+//     ].sort();
 
-    //zamieniam daty w stringu na typ Date, jeżeli zapis jest odpowiedni
-    const convertToDateIfPossible = (value) => {
-      // Sprawdź, czy wartość jest stringiem w formacie yyyy-mm-dd
-      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-      if (typeof value === "string" && datePattern.test(value)) {
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-      // Jeśli nie spełnia warunku lub nie jest datą, zwróć oryginalną wartość
-      return "NULL";
-    };
+//     //zamieniam daty w stringu na typ Date, jeżeli zapis jest odpowiedni
+//     const convertToDateIfPossible = (value) => {
+//       // Sprawdź, czy wartość jest stringiem w formacie yyyy-mm-dd
+//       const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+//       if (typeof value === "string" && datePattern.test(value)) {
+//         const date = new Date(value);
+//         if (!isNaN(date.getTime())) {
+//           return date;
+//         }
+//       }
+//       // Jeśli nie spełnia warunku lub nie jest datą, zwróć oryginalną wartość
+//       return "NULL";
+//     };
 
-    // // usuwam wartości null, bo excel ma z tym problem
-    const eraseNull = dataRaport.map((item) => {
-      const historyDoc = (value) => {
-        const raportCounter = `Dokument pojawił się w raporcie ${value.length} raz.`;
+//     // // usuwam wartości null, bo excel ma z tym problem
+//     const eraseNull = dataRaport.map((item) => {
+//       const historyDoc = (value) => {
+//         const raportCounter = `Dokument pojawił się w raporcie ${value.length} raz.`;
 
-        const infoFK = value.map((item) => {
-          return [
-            " ",
-            item.info,
-            "Daty rozliczenia: ",
-            ...(Array.isArray(item.historyDate) && item.historyDate.length
-              ? item.historyDate
-              : ["brak daty rozliczenia"]),
-            "Decyzja: ",
-            ...(Array.isArray(item.historyText) && item.historyText.length
-              ? item.historyText
-              : ["brak decyzji biznesu"]),
-          ];
-        });
+//         const infoFK = value.map((item) => {
+//           return [
+//             " ",
+//             item.info,
+//             "Daty rozliczenia: ",
+//             ...(Array.isArray(item.historyDate) && item.historyDate.length
+//               ? item.historyDate
+//               : ["brak daty rozliczenia"]),
+//             "Decyzja: ",
+//             ...(Array.isArray(item.historyText) && item.historyText.length
+//               ? item.historyText
+//               : ["brak decyzji biznesu"]),
+//           ];
+//         });
 
-        const mergedInfoFK = infoFK.flat();
+//         const mergedInfoFK = infoFK.flat();
 
-        mergedInfoFK.unshift(raportCounter);
-        return mergedInfoFK.join("\n");
-      };
-      return {
-        ...item,
-        ILE_DNI_NA_PLATNOSC_FV: item.ILE_DNI_NA_PLATNOSC_FV,
-        RODZAJ_KONTA: item.RODZAJ_KONTA,
-        NR_KLIENTA: item.NR_KLIENTA,
-        DO_ROZLICZENIA_AS: item.DO_ROZLICZENIA_AS
-          ? item.DO_ROZLICZENIA_AS
-          : "NULL",
-        DORADCA_FV: item.DORADCA ? item.DORADCA : "Brak danych",
-        ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
-        DATA_ROZLICZENIA_AS: item.DATA_ROZLICZENIA_AS
-          ? convertToDateIfPossible(item.DATA_ROZLICZENIA_AS)
-          : "NULL",
-        BRAK_DATY_WYSTAWIENIA_FV: item.BRAK_DATY_WYSTAWIENIA_FV
-          ? item.BRAK_DATY_WYSTAWIENIA_FV
-          : " ",
-        JAKA_KANCELARIA: item.JAKA_KANCELARIA ? item.JAKA_KANCELARIA : " ",
-        ETAP_SPRAWY: item.ETAP_SPRAWY ? item.ETAP_SPRAWY : " ",
-        KWOTA_WPS: item.KWOTA_WPS ? item.KWOTA_WPS : " ",
-        CZY_SAMOCHOD_WYDANY_AS: item.CZY_SAMOCHOD_WYDANY_AS
-          ? item.CZY_SAMOCHOD_WYDANY_AS
-          : " ",
-        DATA_WYDANIA_AUTA: item.DATA_WYDANIA_AUTA
-          ? convertToDateIfPossible(item.DATA_WYDANIA_AUTA)
-          : " ",
-        OPIEKUN_OBSZARU_CENTRALI: Array.isArray(item.OPIEKUN_OBSZARU_CENTRALI)
-          ? item.OPIEKUN_OBSZARU_CENTRALI.join("\n")
-          : item.OPIEKUN_OBSZARU_CENTRALI,
-        OPIS_ROZRACHUNKU: Array.isArray(item.OPIS_ROZRACHUNKU)
-          ? item.OPIS_ROZRACHUNKU.join("\n\n")
-          : "NULL",
-        OWNER: Array.isArray(item.OWNER) ? item.OWNER.join("\n") : item.OWNER,
-        DATA_WYSTAWIENIA_FV: convertToDateIfPossible(item.DATA_WYSTAWIENIA_FV),
-        TERMIN_PLATNOSCI_FV: convertToDateIfPossible(item.TERMIN_PLATNOSCI_FV),
-        INFORMACJA_ZARZAD: Array.isArray(item.INFORMACJA_ZARZAD)
-          ? // ? item.INFORMACJA_ZARZAD.join("\n\n")
-            item.INFORMACJA_ZARZAD[item.INFORMACJA_ZARZAD.length - 1]
-          : " ",
-        HISTORIA_ZMIANY_DATY_ROZLICZENIA:
-          item?.HISTORIA_ZMIANY_DATY_ROZLICZENIA > 0
-            ? item.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            : " ",
-        OSTATECZNA_DATA_ROZLICZENIA: item.OSTATECZNA_DATA_ROZLICZENIA
-          ? convertToDateIfPossible(item.OSTATECZNA_DATA_ROZLICZENIA)
-          : " ",
-        VIN: item?.VIN ? item.VIN : " ",
-        HISTORIA_WPISÓW_W_RAPORCIE: item?.HISTORIA_WPISOW
-          ? historyDoc(item.HISTORIA_WPISOW)
-          : null,
-      };
-    });
+//         mergedInfoFK.unshift(raportCounter);
+//         return mergedInfoFK.join("\n");
+//       };
+//       return {
+//         ...item,
+//         ILE_DNI_NA_PLATNOSC_FV: item.ILE_DNI_NA_PLATNOSC_FV,
+//         RODZAJ_KONTA: item.RODZAJ_KONTA,
+//         NR_KLIENTA: item.NR_KLIENTA,
+//         DO_ROZLICZENIA_AS: item.DO_ROZLICZENIA_AS
+//           ? item.DO_ROZLICZENIA_AS
+//           : "NULL",
+//         DORADCA_FV: item.DORADCA ? item.DORADCA : "Brak danych",
+//         ROZNICA: item.ROZNICA !== 0 ? item.ROZNICA : "NULL",
+//         DATA_ROZLICZENIA_AS: item.DATA_ROZLICZENIA_AS
+//           ? convertToDateIfPossible(item.DATA_ROZLICZENIA_AS)
+//           : "NULL",
+//         BRAK_DATY_WYSTAWIENIA_FV: item.BRAK_DATY_WYSTAWIENIA_FV
+//           ? item.BRAK_DATY_WYSTAWIENIA_FV
+//           : " ",
+//         JAKA_KANCELARIA: item.JAKA_KANCELARIA ? item.JAKA_KANCELARIA : " ",
+//         ETAP_SPRAWY: item.ETAP_SPRAWY ? item.ETAP_SPRAWY : " ",
+//         KWOTA_WPS: item.KWOTA_WPS ? item.KWOTA_WPS : " ",
+//         CZY_SAMOCHOD_WYDANY_AS: item.CZY_SAMOCHOD_WYDANY_AS
+//           ? item.CZY_SAMOCHOD_WYDANY_AS
+//           : " ",
+//         DATA_WYDANIA_AUTA: item.DATA_WYDANIA_AUTA
+//           ? convertToDateIfPossible(item.DATA_WYDANIA_AUTA)
+//           : " ",
+//         OPIEKUN_OBSZARU_CENTRALI: Array.isArray(item.OPIEKUN_OBSZARU_CENTRALI)
+//           ? item.OPIEKUN_OBSZARU_CENTRALI.join("\n")
+//           : item.OPIEKUN_OBSZARU_CENTRALI,
+//         OPIS_ROZRACHUNKU: Array.isArray(item.OPIS_ROZRACHUNKU)
+//           ? item.OPIS_ROZRACHUNKU.join("\n\n")
+//           : "NULL",
+//         OWNER: Array.isArray(item.OWNER) ? item.OWNER.join("\n") : item.OWNER,
+//         DATA_WYSTAWIENIA_FV: convertToDateIfPossible(item.DATA_WYSTAWIENIA_FV),
+//         TERMIN_PLATNOSCI_FV: convertToDateIfPossible(item.TERMIN_PLATNOSCI_FV),
+//         INFORMACJA_ZARZAD: Array.isArray(item.INFORMACJA_ZARZAD)
+//           ? // ? item.INFORMACJA_ZARZAD.join("\n\n")
+//             item.INFORMACJA_ZARZAD[item.INFORMACJA_ZARZAD.length - 1]
+//           : " ",
+//         HISTORIA_ZMIANY_DATY_ROZLICZENIA:
+//           item?.HISTORIA_ZMIANY_DATY_ROZLICZENIA > 0
+//             ? item.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+//             : " ",
+//         OSTATECZNA_DATA_ROZLICZENIA: item.OSTATECZNA_DATA_ROZLICZENIA
+//           ? convertToDateIfPossible(item.OSTATECZNA_DATA_ROZLICZENIA)
+//           : " ",
+//         VIN: item?.VIN ? item.VIN : " ",
+//         HISTORIA_WPISÓW_W_RAPORCIE: item?.HISTORIA_WPISOW
+//           ? historyDoc(item.HISTORIA_WPISOW)
+//           : null,
+//       };
+//     });
 
-    const cleanDifferences = getDifferencesFK_AS.map((item) => {
-      return {
-        ...item,
-        OWNER: Array.isArray(item.OWNER) ? item.OWNER.join("\n") : item.OWNER,
-        OPIEKUN_OBSZARU_CENTRALI: Array.isArray(item.OPIEKUN_OBSZARU_CENTRALI)
-          ? item.OPIEKUN_OBSZARU_CENTRALI.join("\n")
-          : item.OPIEKUN_OBSZARU_CENTRALI,
-        TERMIN_PLATNOSCI_FV: convertToDateIfPossible(item.TERMIN_PLATNOSCI_FV),
-        DATA_WYSTAWIENIA_FV: convertToDateIfPossible(item.DATA_WYSTAWIENIA_FV),
-        DO_ROZLICZENIA_AS: Number(item.DO_ROZLICZENIA_AS),
-        KONTROLA_DOC:
-          item.NR_DOKUMENTU &&
-          !["PO", "NO"].includes(item.NR_DOKUMENTU.slice(0, 2)) &&
-          item.DO_ROZLICZENIA_AS > 0
-            ? "TAK"
-            : "NIE",
-      };
-    });
+//     const cleanDifferences = getDifferencesFK_AS.map((item) => {
+//       return {
+//         ...item,
+//         OWNER: Array.isArray(item.OWNER) ? item.OWNER.join("\n") : item.OWNER,
+//         OPIEKUN_OBSZARU_CENTRALI: Array.isArray(item.OPIEKUN_OBSZARU_CENTRALI)
+//           ? item.OPIEKUN_OBSZARU_CENTRALI.join("\n")
+//           : item.OPIEKUN_OBSZARU_CENTRALI,
+//         TERMIN_PLATNOSCI_FV: convertToDateIfPossible(item.TERMIN_PLATNOSCI_FV),
+//         DATA_WYSTAWIENIA_FV: convertToDateIfPossible(item.DATA_WYSTAWIENIA_FV),
+//         DO_ROZLICZENIA_AS: Number(item.DO_ROZLICZENIA_AS),
+//         KONTROLA_DOC:
+//           item.NR_DOKUMENTU &&
+//           !["PO", "NO"].includes(item.NR_DOKUMENTU.slice(0, 2)) &&
+//           item.DO_ROZLICZENIA_AS > 0
+//             ? "TAK"
+//             : "NIE",
+//       };
+//     });
 
-    // // rozdziela dane na poszczególne obszary BLACHARNIA, CZĘŚCI itd
-    const resultArray = accountArray.reduce((acc, area) => {
-      // Filtrujemy obiekty, które mają odpowiedni OBSZAR
-      const filteredData = eraseNull.filter((item) => item.OBSZAR === area);
+//     // // rozdziela dane na poszczególne obszary BLACHARNIA, CZĘŚCI itd
+//     const resultArray = accountArray.reduce((acc, area) => {
+//       // Filtrujemy obiekty, które mają odpowiedni OBSZAR
+//       const filteredData = eraseNull.filter((item) => item.OBSZAR === area);
 
-      // Jeśli są dane, dodajemy obiekt do wynikowej tablicy
-      if (filteredData.length > 0) {
-        // acc.push({ [area]: filteredData });
-        acc.push({ name: area, data: filteredData });
-      }
+//       // Jeśli są dane, dodajemy obiekt do wynikowej tablicy
+//       if (filteredData.length > 0) {
+//         // acc.push({ [area]: filteredData });
+//         acc.push({ name: area, data: filteredData });
+//       }
 
-      return acc;
-    }, []);
+//       return acc;
+//     }, []);
 
-    // /// tworzę osobny element tablicy dla arkusza WYDANE/NIEZAPŁACONE z warunkami, jest data wydania i nie jest rozliczone w AS
-    const carDataSettlement = eraseNull
-      .map((item) => {
-        if (
-          (item.OBSZAR === "SAMOCHODY NOWE" ||
-            item.OBSZAR === "SAMOCHODY UŻYWANE") &&
-          item.DO_ROZLICZENIA_AS > 0 &&
-          item.CZY_SAMOCHOD_WYDANY_AS === "TAK"
-        ) {
-          return item;
-        }
-      })
-      .filter(Boolean);
+//     // /// tworzę osobny element tablicy dla arkusza WYDANE/NIEZAPŁACONE z warunkami, jest data wydania i nie jest rozliczone w AS
+//     const carDataSettlement = eraseNull
+//       .map((item) => {
+//         if (
+//           (item.OBSZAR === "SAMOCHODY NOWE" ||
+//             item.OBSZAR === "SAMOCHODY UŻYWANE") &&
+//           item.DO_ROZLICZENIA_AS > 0 &&
+//           item.CZY_SAMOCHOD_WYDANY_AS === "TAK"
+//         ) {
+//           return item;
+//         }
+//       })
+//       .filter(Boolean);
 
-    // // Dodajemy obiekt RAPORT na początku tablicy i  dodtkowy arkusz z róznicami księgowosć AS-FK
-    const finalResult = [
-      { name: "ALL", data: eraseNull },
-      { name: "KSIĘGOWOŚĆ AS", data: cleanDifferences },
-      { name: "WYDANE - NIEZAPŁACONE", data: carDataSettlement },
-      ...resultArray,
-    ];
+//     // // Dodajemy obiekt RAPORT na początku tablicy i  dodtkowy arkusz z róznicami księgowosć AS-FK
+//     const finalResult = [
+//       { name: "ALL", data: eraseNull },
+//       { name: "KSIĘGOWOŚĆ AS", data: cleanDifferences },
+//       { name: "WYDANE - NIEZAPŁACONE", data: carDataSettlement },
+//       ...resultArray,
+//     ];
 
-    // usuwam wiekowanie starsze niż < 0, 1 - 7 z innych niż arkusza RAPORT
-    const updateAging = finalResult.map((element) => {
-      if (
-        element.name !== "ALL" &&
-        element.name !== "KSIĘGOWOŚĆ" &&
-        element.name !== "KSIĘGOWOŚĆ AS" &&
-        element.data
-      ) {
-        const updatedData = element.data.filter((item) => {
-          return (
-            item.PRZEDZIAL_WIEKOWANIE !== "1 - 7" &&
-            item.PRZEDZIAL_WIEKOWANIE !== "< 0" &&
-            item.DO_ROZLICZENIA_AS > 0 &&
-            (item.TYP_DOKUMENTU === "Faktura" ||
-              item.TYP_DOKUMENTU === "Faktura zaliczkowa" ||
-              item.TYP_DOKUMENTU === "Korekta" ||
-              item.TYP_DOKUMENTU === "Nota")
-          );
-        });
-        return { ...element, data: updatedData }; // Zwracamy zaktualizowany element
-      } else {
-        const updatedData = element.data.map((item) => {
-          const { HISTORIA_WPISÓW_W_RAPORCIE, ...rest } = item;
-          return rest; // Zwróć obiekt bez tych dwóch kluczy
-        });
-        return { ...element, data: updatedData };
-      }
-    });
+//     // usuwam wiekowanie starsze niż < 0, 1 - 7 z innych niż arkusza RAPORT
+//     const updateAging = finalResult.map((element) => {
+//       if (
+//         element.name !== "ALL" &&
+//         element.name !== "KSIĘGOWOŚĆ" &&
+//         element.name !== "KSIĘGOWOŚĆ AS" &&
+//         element.data
+//       ) {
+//         const updatedData = element.data.filter((item) => {
+//           return (
+//             item.PRZEDZIAL_WIEKOWANIE !== "1 - 7" &&
+//             item.PRZEDZIAL_WIEKOWANIE !== "< 0" &&
+//             item.DO_ROZLICZENIA_AS > 0 &&
+//             (item.TYP_DOKUMENTU === "Faktura" ||
+//               item.TYP_DOKUMENTU === "Faktura zaliczkowa" ||
+//               item.TYP_DOKUMENTU === "Korekta" ||
+//               item.TYP_DOKUMENTU === "Nota")
+//           );
+//         });
+//         return { ...element, data: updatedData }; // Zwracamy zaktualizowany element
+//       } else {
+//         const updatedData = element.data.map((item) => {
+//           const { HISTORIA_WPISÓW_W_RAPORCIE, ...rest } = item;
+//           return rest; // Zwróć obiekt bez tych dwóch kluczy
+//         });
+//         return { ...element, data: updatedData };
+//       }
+//     });
 
-    //usuwam kolumny CZY_SAMOCHOD_WYDANY_AS, DATA_WYDANIA_AUTA z innych arkuszy niż Raport, SAMOCHODY NOWE, SAMOCHODY UŻYWANE
-    const updateCar = updateAging.map((element) => {
-      if (
-        element.name !== "ALL" &&
-        element.name !== "SAMOCHODY NOWE" &&
-        element.name !== "SAMOCHODY UŻYWANE" &&
-        element.name !== "WYDANE - NIEZAPŁACONE"
-      ) {
-        const updatedData = element.data.map((item) => {
-          const { CZY_SAMOCHOD_WYDANY_AS, DATA_WYDANIA_AUTA, ...rest } = item;
-          return rest; // Zwróć obiekt bez tych dwóch kluczy
-        });
-        return { ...element, data: updatedData };
-      }
-      return element;
-    });
+//     //usuwam kolumny CZY_SAMOCHOD_WYDANY_AS, DATA_WYDANIA_AUTA z innych arkuszy niż Raport, SAMOCHODY NOWE, SAMOCHODY UŻYWANE
+//     const updateCar = updateAging.map((element) => {
+//       if (
+//         element.name !== "ALL" &&
+//         element.name !== "SAMOCHODY NOWE" &&
+//         element.name !== "SAMOCHODY UŻYWANE" &&
+//         element.name !== "WYDANE - NIEZAPŁACONE"
+//       ) {
+//         const updatedData = element.data.map((item) => {
+//           const { CZY_SAMOCHOD_WYDANY_AS, DATA_WYDANIA_AUTA, ...rest } = item;
+//           return rest; // Zwróć obiekt bez tych dwóch kluczy
+//         });
+//         return { ...element, data: updatedData };
+//       }
+//       return element;
+//     });
 
-    const updateVIN = updateCar.map((element) => {
-      if (element.name === "BLACHARNIA" || element.name === "CZĘŚCI") {
-        const updatedData = element.data.map((item) => {
-          const { VIN, ...rest } = item;
-          return rest; // Zwróć obiekt bez tych dwóch kluczy
-        });
-        return { ...element, data: updatedData };
-      }
-      return element;
-    });
+//     const updateVIN = updateCar.map((element) => {
+//       if (element.name === "BLACHARNIA" || element.name === "CZĘŚCI") {
+//         const updatedData = element.data.map((item) => {
+//           const { VIN, ...rest } = item;
+//           return rest; // Zwróć obiekt bez tych dwóch kluczy
+//         });
+//         return { ...element, data: updatedData };
+//       }
+//       return element;
+//     });
 
-    // usuwam kolumnę BRAK DATY WYSTAWIENIA FV ze wszytskich arkuszy oprócz RAPORT
-    const updateFvDate = updateVIN.map((element) => {
-      if (element.name !== "ALL" && element.name !== "KSIĘGOWOŚĆ AS") {
-        const filteredData = element.data.filter(
-          (item) => item.CZY_W_KANCELARI === "NIE"
-        );
+//     // usuwam kolumnę BRAK DATY WYSTAWIENIA FV ze wszytskich arkuszy oprócz RAPORT
+//     const updateFvDate = updateVIN.map((element) => {
+//       if (element.name !== "ALL" && element.name !== "KSIĘGOWOŚĆ AS") {
+//         const filteredData = element.data.filter(
+//           (item) => item.CZY_W_KANCELARI === "NIE"
+//         );
 
-        const updatedData = filteredData.map((item) => {
-          const {
-            BRAK_DATY_WYSTAWIENIA_FV,
-            ROZNICA,
-            JAKA_KANCELARIA,
-            CZY_W_KANCELARI,
-            KWOTA_WPS,
-            ETAP_SPRAWY,
-            DATA_ROZLICZENIA_AS,
-            OPIS_ROZRACHUNKU,
-            ILE_DNI_NA_PLATNOSC_FV,
-            RODZAJ_KONTA,
-            NR_KLIENTA,
-            ...rest
-          } = item;
-          return rest;
-        });
-        return { ...element, data: updatedData };
-      }
-      return element;
-    });
+//         const updatedData = filteredData.map((item) => {
+//           const {
+//             BRAK_DATY_WYSTAWIENIA_FV,
+//             ROZNICA,
+//             JAKA_KANCELARIA,
+//             CZY_W_KANCELARI,
+//             KWOTA_WPS,
+//             ETAP_SPRAWY,
+//             DATA_ROZLICZENIA_AS,
+//             OPIS_ROZRACHUNKU,
+//             ILE_DNI_NA_PLATNOSC_FV,
+//             RODZAJ_KONTA,
+//             NR_KLIENTA,
+//             ...rest
+//           } = item;
+//           return rest;
+//         });
+//         return { ...element, data: updatedData };
+//       }
+//       return element;
+//     });
 
-    // usuwam kolumnę KONTROLA ze wszytskich arkuszy oprócz KSIĘGOWOŚĆ AS
-    const updateControlColumn = updateFvDate.map((element) => {
-      if (element.name !== "KSIĘGOWOŚĆ AS") {
-        const updatedData = element.data.map((item) => {
-          const { KONTROLA, ...rest } = item;
-          return rest;
-        });
-        return { ...element, data: updatedData };
-      }
-      return element;
-    });
+//     // usuwam kolumnę KONTROLA ze wszytskich arkuszy oprócz KSIĘGOWOŚĆ AS
+//     const updateControlColumn = updateFvDate.map((element) => {
+//       if (element.name !== "KSIĘGOWOŚĆ AS") {
+//         const updatedData = element.data.map((item) => {
+//           const { KONTROLA, ...rest } = item;
+//           return rest;
+//         });
+//         return { ...element, data: updatedData };
+//       }
+//       return element;
+//     });
 
-    // usuwam kolumnę DORADCA ze wszytskich arkuszy oprócz BLACHARNIA
-    const updateAdvisersColumn = updateFvDate.map((element) => {
-      if (element.name !== "BLACHARNIA") {
-        const updatedData = element.data.map((item) => {
-          const { DORADCA_FV, ...rest } = item;
-          return rest;
-        });
-        return { ...element, data: updatedData };
-      }
-      return element;
-    });
+//     // usuwam kolumnę DORADCA ze wszytskich arkuszy oprócz BLACHARNIA
+//     const updateAdvisersColumn = updateFvDate.map((element) => {
+//       if (element.name !== "BLACHARNIA") {
+//         const updatedData = element.data.map((item) => {
+//           const { DORADCA_FV, ...rest } = item;
+//           return rest;
+//         });
+//         return { ...element, data: updatedData };
+//       }
+//       return element;
+//     });
 
-    // obrabiam tylko dane działu KSIĘGOWOŚĆ
-    const accountingData = updateAdvisersColumn.map((item) => {
-      if (item.name === "KSIĘGOWOŚĆ") {
-        // pierwsze filtrowanie wszytskich danych
-        const dataDoc = eraseNull.filter(
-          (doc) =>
-            doc.TYP_DOKUMENTU !== "PK" &&
-            doc.TYP_DOKUMENTU !== "Inne" &&
-            doc.TYP_DOKUMENTU !== "Korekta" &&
-            doc.ROZNICA !== "NULL" &&
-            doc.DATA_ROZLICZENIA_AS !== "NULL" &&
-            doc.DATA_ROZLICZENIA_AS <= new Date(raportInfo.accountingDate)
-        );
+//     // obrabiam tylko dane działu KSIĘGOWOŚĆ
+//     const accountingData = updateAdvisersColumn.map((item) => {
+//       if (item.name === "KSIĘGOWOŚĆ") {
+//         // pierwsze filtrowanie wszytskich danych
+//         const dataDoc = eraseNull.filter(
+//           (doc) =>
+//             doc.TYP_DOKUMENTU !== "PK" &&
+//             doc.TYP_DOKUMENTU !== "Inne" &&
+//             doc.TYP_DOKUMENTU !== "Korekta" &&
+//             doc.ROZNICA !== "NULL" &&
+//             doc.DATA_ROZLICZENIA_AS !== "NULL" &&
+//             doc.DATA_ROZLICZENIA_AS <= new Date(raportInfo.accountingDate)
+//         );
 
-        // drugie filtrowanie wszytskich danych
-        const dataDoc2 = eraseNull.filter(
-          (doc) =>
-            doc.TYP_DOKUMENTU === "Korekta" &&
-            doc.DO_ROZLICZENIA_AS !== "NULL" &&
-            doc.ROZNICA !== "NULL"
-        );
-        const joinData = [...dataDoc, ...dataDoc2];
-        const updateDataDoc = joinData.map((prev) => {
-          const {
-            INFORMACJA_ZARZAD,
-            OSTATECZNA_DATA_ROZLICZENIA,
-            HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-            HISTORIA_WPISÓW_W_RAPORCIE,
-            ...rest
-          } = prev;
-          return rest;
-        });
-        return {
-          name: item.name,
-          data: updateDataDoc,
-        };
-      }
-      return item;
-    });
+//         // drugie filtrowanie wszytskich danych
+//         const dataDoc2 = eraseNull.filter(
+//           (doc) =>
+//             doc.TYP_DOKUMENTU === "Korekta" &&
+//             doc.DO_ROZLICZENIA_AS !== "NULL" &&
+//             doc.ROZNICA !== "NULL"
+//         );
+//         const joinData = [...dataDoc, ...dataDoc2];
+//         const updateDataDoc = joinData.map((prev) => {
+//           const {
+//             INFORMACJA_ZARZAD,
+//             OSTATECZNA_DATA_ROZLICZENIA,
+//             HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+//             HISTORIA_WPISÓW_W_RAPORCIE,
+//             ...rest
+//           } = prev;
+//           return rest;
+//         });
+//         return {
+//           name: item.name,
+//           data: updateDataDoc,
+//         };
+//       }
+//       return item;
+//     });
 
-    //wyciągam tylko nr documentów do tablicy, żeby postawić znacznik przy danej fakturze, żeby mozna było pobrać do tabeli wyfiltrowane dane z tabeli
-    const excludedNames = [
-      "ALL",
-      "KSIĘGOWOŚĆ",
-      "WYDANE - NIEZAPŁACONE",
-      "KSIĘGOWOŚĆ AS",
-    ];
+//     //wyciągam tylko nr documentów do tablicy, żeby postawić znacznik przy danej fakturze, żeby mozna było pobrać do tabeli wyfiltrowane dane z tabeli
+//     const excludedNames = [
+//       "ALL",
+//       "KSIĘGOWOŚĆ",
+//       "WYDANE - NIEZAPŁACONE",
+//       "KSIĘGOWOŚĆ AS",
+//     ];
 
-    const markDocuments = updateControlColumn
-      .filter((doc) => !excludedNames.includes(doc.name)) // Filtruj obiekty o nazwach do wykluczenia
-      .flatMap((doc) => doc.data) // Rozbij tablice data na jedną tablicę
-      .map((item) => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU
+//     const markDocuments = updateControlColumn
+//       .filter((doc) => !excludedNames.includes(doc.name)) // Filtruj obiekty o nazwach do wykluczenia
+//       .flatMap((doc) => doc.data) // Rozbij tablice data na jedną tablicę
+//       .map((item) => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU
 
-    saveMark(markDocuments, company);
-    // res.json({ dataRaport, differences: getDifferencesFK_AS });
+//     saveMark(markDocuments, company);
+//     // res.json({ dataRaport, differences: getDifferencesFK_AS });
 
-    //sortowanie obiektów wg kolejności, żeby arkusze w excel były odpowiednio posortowane
-    const sortOrder = [
-      "ALL",
-      "WYDANE - NIEZAPŁACONE",
-      "BLACHARNIA",
-      "CZĘŚCI",
-      "F&I",
-      "KSIĘGOWOŚĆ",
-      "KSIĘGOWOŚĆ AS",
-      "SAMOCHODY NOWE",
-      "SAMOCHODY UŻYWANE",
-      "SERWIS",
-      "WDT",
-    ];
+//     //sortowanie obiektów wg kolejności, żeby arkusze w excel były odpowiednio posortowane
+//     const sortOrder = [
+//       "ALL",
+//       "WYDANE - NIEZAPŁACONE",
+//       "BLACHARNIA",
+//       "CZĘŚCI",
+//       "F&I",
+//       "KSIĘGOWOŚĆ",
+//       "KSIĘGOWOŚĆ AS",
+//       "SAMOCHODY NOWE",
+//       "SAMOCHODY UŻYWANE",
+//       "SERWIS",
+//       "WDT",
+//     ];
 
-    // sortowanie w tablicach data po TERMIN_PLATNOSCI_FV rosnąco
-    const sortedData = accountingData.map((item) => {
-      if (Array.isArray(item.data)) {
-        item.data.sort(
-          (a, b) =>
-            new Date(a.DATA_WYSTAWIENIA_FV) - new Date(b.DATA_WYSTAWIENIA_FV)
-        );
-      }
-      return item;
-    });
+//     // sortowanie w tablicach data po TERMIN_PLATNOSCI_FV rosnąco
+//     const sortedData = accountingData.map((item) => {
+//       if (Array.isArray(item.data)) {
+//         item.data.sort(
+//           (a, b) =>
+//             new Date(a.DATA_WYSTAWIENIA_FV) - new Date(b.DATA_WYSTAWIENIA_FV)
+//         );
+//       }
+//       return item;
+//     });
 
-    //sortowanie wg kolejności arkuszy do excela
-    const sortedArray = sortedData.sort(
-      (a, b) => sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
-    );
+//     //sortowanie wg kolejności arkuszy do excela
+//     const sortedArray = sortedData.sort(
+//       (a, b) => sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
+//     );
 
-    const excelBuffer = await getExcelRaport(sortedArray, raportInfo);
+//     const excelBuffer = await getExcelRaport(sortedArray, raportInfo);
 
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
-    res.send(excelBuffer);
-  } catch (error) {
-    logEvents(
-      `fkRaportController, getRaportData: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.setHeader(
+//       "Content-Type",
+//       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+//     );
+//     res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
+//     res.send(excelBuffer);
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, getRaportData: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 // pobieram daty  aktualizacji plików excel dla raportu FK !!!
-const getDateCounter = async (req, res) => {
-  const { company } = req.params;
-  try {
-    const [result] = await connect_SQL.query(
-      `SELECT TITLE, DATE, COUNTER FROM company_fk_updates_date WHERE COMPANY = ?`,
-      [company]
-    );
-    const updateData = result.reduce((acc, item) => {
-      acc[item.TITLE] = {
-        date: item.DATE, // Przypisanie `date` jako `hour`
-        counter: item.COUNTER,
-      };
-      return acc;
-    }, {});
-    const [getUpdatesData] = await connect_SQL.query(
-      "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates WHERE DATA_NAME = 'Rozrachunki'"
-    );
+// const getDateCounter = async (req, res) => {
+//   const { company } = req.params;
+//   try {
+//     const [result] = await connect_SQL.query(
+//       `SELECT TITLE, DATE, COUNTER FROM company_fk_updates_date WHERE COMPANY = ?`,
+//       [company]
+//     );
+//     const updateData = result.reduce((acc, item) => {
+//       acc[item.TITLE] = {
+//         date: item.DATE, // Przypisanie `date` jako `hour`
+//         counter: item.COUNTER,
+//       };
+//       return acc;
+//     }, {});
+//     const [getUpdatesData] = await connect_SQL.query(
+//       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates WHERE DATA_NAME = 'Rozrachunki'"
+//     );
 
-    const dms = {
-      date:
-        getUpdatesData[0]?.UPDATE_SUCCESS === "Zaktualizowano."
-          ? getUpdatesData[0].DATE
-          : "Błąd aktualizacji",
-      hour:
-        getUpdatesData[0]?.UPDATE_SUCCESS === "Zaktualizowano."
-          ? getUpdatesData[0].HOUR
-          : "Błąd aktualizacji",
-    };
+//     const dms = {
+//       date:
+//         getUpdatesData[0]?.UPDATE_SUCCESS === "Zaktualizowano."
+//           ? getUpdatesData[0].DATE
+//           : "Błąd aktualizacji",
+//       hour:
+//         getUpdatesData[0]?.UPDATE_SUCCESS === "Zaktualizowano."
+//           ? getUpdatesData[0].HOUR
+//           : "Błąd aktualizacji",
+//     };
 
-    // await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
-    //   [checkDate(new Date()), 0, 'raport', company]
-    // );
+//     // await connect_SQL.query(`UPDATE company_fk_updates_date SET  DATE = ?, COUNTER = ? WHERE TITLE = ? AND COMPANY = ?`,
+//     //   [checkDate(new Date()), 0, 'raport', company]
+//     // );
 
-    updateData.dms = dms;
+//     updateData.dms = dms;
 
-    res.json({ updateData });
-  } catch (error) {
-    logEvents(
-      `fkRaportController, getDateCounter: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.json({ updateData });
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, getDateCounter: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //funckja kasuje przygotwane dane do raportu, czas dodania pliki i ilość danych
 // const deleteDataRaport = async (req, res) => {
@@ -956,88 +956,88 @@ const getStructureOrganization = async (req, res) => {
   }
 };
 
-const generateHistoryDocuments = async (company) => {
-  try {
-    const [raportDate] = await connect_SQL.query(
-      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'accountancy' AND COMPANY = ?`,
-      [company]
-    );
+// const generateHistoryDocuments = async (company) => {
+//   try {
+//     const [raportDate] = await connect_SQL.query(
+//       `SELECT DATE FROM  company_fk_updates_date WHERE title = 'accountancy' AND COMPANY = ?`,
+//       [company]
+//     );
 
-    const [markDocuments] = await connect_SQL.query(
-      `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
-      [company]
-    );
+//     const [markDocuments] = await connect_SQL.query(
+//       `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
+//       [company]
+//     );
 
-    for (item of markDocuments) {
-      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
-      const [getDoc] = await connect_SQL.query(
-        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
-        [item.NUMER_FV, raportDate[0].DATE, company]
-      );
+//     for (item of markDocuments) {
+//       // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+//       const [getDoc] = await connect_SQL.query(
+//         `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
+//         [item.NUMER_FV, raportDate[0].DATE, company]
+//       );
 
-      //szukam czy jest wpis histori w tabeli history_fk_documents
-      const [getDocHist] = await connect_SQL.query(
-        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
-        [item.NUMER_FV, company]
-      );
+//       //szukam czy jest wpis histori w tabeli history_fk_documents
+//       const [getDocHist] = await connect_SQL.query(
+//         `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
+//         [item.NUMER_FV, company]
+//       );
 
-      //jesli nie ma historycznych wpisów tworzę nowy
-      if (!getDocHist.length) {
-        const newHistory = {
-          info: `1 raport utworzono ${raportDate[0].DATE}`,
-          historyDate: [],
-          historyText: [],
-        };
+//       //jesli nie ma historycznych wpisów tworzę nowy
+//       if (!getDocHist.length) {
+//         const newHistory = {
+//           info: `1 raport utworzono ${raportDate[0].DATE}`,
+//           historyDate: [],
+//           historyText: [],
+//         };
 
-        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
-        });
+//         // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+//         getDoc.forEach((doc) => {
+//           if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+//             newHistory.historyDate.push(
+//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+//             );
+//           }
+//           if (doc.INFORMACJA_ZARZAD) {
+//             newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+//           }
+//         });
 
-        await connect_SQL.query(
-          `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-          [item.NUMER_FV, JSON.stringify([newHistory]), company]
-        );
-      } else {
-        const newHistory = {
-          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
-            raportDate[0].DATE
-          }`,
-          historyDate: [],
-          historyText: [],
-        };
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
-        });
-        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
+//         await connect_SQL.query(
+//           `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+//           [item.NUMER_FV, JSON.stringify([newHistory]), company]
+//         );
+//       } else {
+//         const newHistory = {
+//           info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
+//             raportDate[0].DATE
+//           }`,
+//           historyDate: [],
+//           historyText: [],
+//         };
+//         getDoc.forEach((doc) => {
+//           if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+//             newHistory.historyDate.push(
+//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+//             );
+//           }
+//           if (doc.INFORMACJA_ZARZAD) {
+//             newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+//           }
+//         });
+//         const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
 
-        await connect_SQL.query(
-          `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
-          [JSON.stringify(prepareArray), item.NUMER_FV, company]
-        );
-      }
-    }
-  } catch (error) {
-    logEvents(
-      `fkRaportController, generateHistoryDocuments: ${error}`,
-      "reqServerErrors.txt"
-    );
-  }
-};
+//         await connect_SQL.query(
+//           `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
+//           [JSON.stringify(prepareArray), item.NUMER_FV, company]
+//         );
+//       }
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, generateHistoryDocuments: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//   }
+// };
 
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, FIRMA, data } = req.body;
@@ -1109,225 +1109,224 @@ const addDecisionDate = async (req, res) => {
   }
 };
 
-const getAccountancyDataMsSQL = async () => {
-  try {
-    // const endDate = '2025-04-30';
+// const getAccountancyDataMsSQL = async () => {
+//   try {
+//     // const endDate = '2025-04-30';
 
-    // szukam daty jako ostatni dzień poprzedniego miesiąca
-    const today = new Date();
-    const year =
-      today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-    const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
+//     // szukam daty jako ostatni dzień poprzedniego miesiąca
+//     const today = new Date();
+//     const year =
+//       today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+//     const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
 
-    // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
-    const lastDay = new Date(year, month, 0);
-    const yyyy = lastDay.getFullYear();
-    const mm = String(lastDay.getMonth() + 1).padStart(2, "0"); // getMonth() zwraca 0-11
-    const dd = String(lastDay.getDate()).padStart(2, "0");
+//     // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
+//     const lastDay = new Date(year, month, 0);
+//     const yyyy = lastDay.getFullYear();
+//     const mm = String(lastDay.getMonth() + 1).padStart(2, "0"); // getMonth() zwraca 0-11
+//     const dd = String(lastDay.getDate()).padStart(2, "0");
 
-    const endDate = `${yyyy}-${mm}-${dd}`;
+//     const endDate = `${yyyy}-${mm}-${dd}`;
 
-    const query = `
- DECLARE @datado DATE = '${endDate}';
-DECLARE @synt INT = NULL; -- podaj 201 lub 203 lub NULL (NULL = oba)
+//     const query = `
+//  DECLARE @datado DATE = '${endDate}';
+// DECLARE @synt INT = NULL; -- podaj 201 lub 203 lub NULL (NULL = oba)
 
-WITH Kontrahenci AS (
-    SELECT
-        k.pozycja,
-        k.skrot
-    FROM fkkomandytowa.FK.fk_kontrahenci AS k
-),
-Rozrachunki AS (
-    SELECT
-        transakcja,
-        SUM(kwota * SIGN(0 - strona + 0.5)) AS WnMaRozliczono,
-        SUM(
-            (CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END) * SIGN(0 - strona + 0.5)
-        ) AS WnMaRozliczono_w
-    FROM fkkomandytowa.FK.rozrachunki
-    WHERE CONVERT(DATE, dataokr) <= @datado
-      AND czyRozliczenie = 1
-      AND potencjalna = 0
-    GROUP BY transakcja
-)
-SELECT
-    stanNa,
-    dsymbol,
-    kontrahent,
-    synt,
-    poz1,
-    poz2,
-    termin,
-    dniPrzetreminowania,
-    przedział,
-    płatność,
-    ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) AS saldoKontrahent,
-    CASE
-        WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) > 0 THEN 'N'
-        WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) = 0 THEN 'R'
-        ELSE 'Z'
-    END AS Typ
-FROM (
-    -- ZOBOWIĄZANIA 1
-    SELECT
-        @datado AS stanNa,
-        r.dsymbol,
-        k.skrot AS kontrahent,
-        r.synt,
-        r.poz1,
-        r.poz2,
-        CAST(r.termin AS DATE) AS termin,
-        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
-        CASE
-            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
-            ELSE '> 360'
-        END AS przedział,
-        ROUND(
-            CASE WHEN SUM(r.kwota) > 0 THEN -SUM(r.kwota) ELSE SUM(r.kwota) END
-            + SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS płatność
-    FROM fkkomandytowa.FK.fk_rozdata r
-    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-    WHERE r.potencjalna = 0
-      AND r.synt IN (201,203)
-      AND (@synt IS NULL OR r.synt = @synt)
-      AND r.baza = 2
-      AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
-      AND (
-            r.strona = 1
-            OR (r.strona = 0 AND r.kwota < 0)
-          )
-      AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
-      AND r.strona = 1
-    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-    UNION ALL
-    -- ZOBOWIĄZANIA 2
-    SELECT
-        @datado AS stanNa,
-        r.dsymbol,
-        k.skrot AS kontrahent,
-        r.synt,
-        r.poz1,
-        r.poz2,
-        CAST(r.termin AS DATE) AS termin,
-        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
-        CASE
-            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
-            ELSE '> 360'
-        END AS przedział,
-        ROUND(
-            SUM(r.kwota)
-            - SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS płatność
-    FROM fkkomandytowa.FK.fk_rozdata r
-    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-    WHERE r.potencjalna = 0
-      AND r.synt IN (201,203)
-      AND (@synt IS NULL OR r.synt = @synt)
-      AND r.baza = 2
-      AND (
-            r.strona = 0
-            OR (r.strona = 1 AND r.kwota < 0)
-          )
-      AND r.rozliczona = 0
-      AND r.termin BETWEEN '1800-01-01' AND CONVERT(DATE, @datado)
-      AND r.strona = 0
-      AND r.kwota < 0
-      AND r.doRozlZl > 0
-    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-    UNION ALL
-    -- NALEŻNOŚCI
-    SELECT
-        @datado AS stanNa,
-        r.dsymbol,
-        k.skrot AS kontrahent,
-        r.synt,
-        r.poz1,
-        r.poz2,
-        CAST(r.termin AS DATE) AS termin,
-        DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
-        CASE
-            WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
-            WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
-            ELSE '> 360'
-        END AS przedział,
-        ROUND(
-            SUM(r.kwota)
-            + SUM(
-                CASE
-                    WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
-                    ELSE ISNULL(rr.WnMaRozliczono, 0)
-                END
-            ), 2
-        ) AS płatność
-    FROM fkkomandytowa.FK.fk_rozdata r
-    LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
-    LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
-    WHERE r.potencjalna = 0
-      AND r.synt IN (201,203)
-      AND (@synt IS NULL OR r.synt = @synt)
-      AND r.baza = 2
-      AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
-      AND (
-            r.strona = 0
-            OR (r.strona = 1 AND r.kwota < 0)
-          )
-      AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
-      AND r.strona = 0
-      AND r.orgStrona = 0
-    GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
-) as wynik
-WHERE ROUND(płatność,2) <> 0
-ORDER BY poz2;
+// WITH Kontrahenci AS (
+//     SELECT
+//         k.pozycja,
+//         k.skrot
+//     FROM fkkomandytowa.FK.fk_kontrahenci AS k
+// ),
+// Rozrachunki AS (
+//     SELECT
+//         transakcja,
+//         SUM(kwota * SIGN(0 - strona + 0.5)) AS WnMaRozliczono,
+//         SUM(
+//             (CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END) * SIGN(0 - strona + 0.5)
+//         ) AS WnMaRozliczono_w
+//     FROM fkkomandytowa.FK.rozrachunki
+//     WHERE CONVERT(DATE, dataokr) <= @datado
+//       AND czyRozliczenie = 1
+//       AND potencjalna = 0
+//     GROUP BY transakcja
+// )
+// SELECT
+//     stanNa,
+//     dsymbol,
+//     kontrahent,
+//     synt,
+//     poz1,
+//     poz2,
+//     termin,
+//     dniPrzetreminowania,
+//     przedział,
+//     płatność,
+//     ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) AS saldoKontrahent,
+//     CASE
+//         WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) > 0 THEN 'N'
+//         WHEN ROUND(SUM(płatność) OVER (PARTITION BY poz2 ORDER BY poz2), 2) = 0 THEN 'R'
+//         ELSE 'Z'
+//     END AS Typ
+// FROM (
+//     -- ZOBOWIĄZANIA 1
+//     SELECT
+//         @datado AS stanNa,
+//         r.dsymbol,
+//         k.skrot AS kontrahent,
+//         r.synt,
+//         r.poz1,
+//         r.poz2,
+//         CAST(r.termin AS DATE) AS termin,
+//         DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+//         CASE
+//             WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+//             ELSE '> 360'
+//         END AS przedział,
+//         ROUND(
+//             CASE WHEN SUM(r.kwota) > 0 THEN -SUM(r.kwota) ELSE SUM(r.kwota) END
+//             + SUM(
+//                 CASE
+//                     WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+//                     ELSE ISNULL(rr.WnMaRozliczono, 0)
+//                 END
+//             ), 2
+//         ) AS płatność
+//     FROM fkkomandytowa.FK.fk_rozdata r
+//     LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+//     LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+//     WHERE r.potencjalna = 0
+//       AND r.synt IN (201,203)
+//       AND (@synt IS NULL OR r.synt = @synt)
+//       AND r.baza = 2
+//       AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+//       AND (
+//             r.strona = 1
+//             OR (r.strona = 0 AND r.kwota < 0)
+//           )
+//       AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+//       AND r.strona = 1
+//     GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+//     UNION ALL
+//     -- ZOBOWIĄZANIA 2
+//     SELECT
+//         @datado AS stanNa,
+//         r.dsymbol,
+//         k.skrot AS kontrahent,
+//         r.synt,
+//         r.poz1,
+//         r.poz2,
+//         CAST(r.termin AS DATE) AS termin,
+//         DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+//         CASE
+//             WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+//             ELSE '> 360'
+//         END AS przedział,
+//         ROUND(
+//             SUM(r.kwota)
+//             - SUM(
+//                 CASE
+//                     WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+//                     ELSE ISNULL(rr.WnMaRozliczono, 0)
+//                 END
+//             ), 2
+//         ) AS płatność
+//     FROM fkkomandytowa.FK.fk_rozdata r
+//     LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+//     LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+//     WHERE r.potencjalna = 0
+//       AND r.synt IN (201,203)
+//       AND (@synt IS NULL OR r.synt = @synt)
+//       AND r.baza = 2
+//       AND (
+//             r.strona = 0
+//             OR (r.strona = 1 AND r.kwota < 0)
+//           )
+//       AND r.rozliczona = 0
+//       AND r.termin BETWEEN '1800-01-01' AND CONVERT(DATE, @datado)
+//       AND r.strona = 0
+//       AND r.kwota < 0
+//       AND r.doRozlZl > 0
+//     GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+//     UNION ALL
+//     -- NALEŻNOŚCI
+//     SELECT
+//         @datado AS stanNa,
+//         r.dsymbol,
+//         k.skrot AS kontrahent,
+//         r.synt,
+//         r.poz1,
+//         r.poz2,
+//         CAST(r.termin AS DATE) AS termin,
+//         DATEDIFF(DAY, r.termin, @datado) AS dniPrzetreminowania,
+//         CASE
+//             WHEN DATEDIFF(DAY, r.termin, @datado) < 1 THEN '< 1'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 0 AND 30 THEN '1 - 30'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 31 AND 60 THEN '31 - 60'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 61 AND 90 THEN '61 - 90'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 91 AND 180 THEN '91 - 180'
+//             WHEN DATEDIFF(DAY, r.termin, @datado) BETWEEN 181 AND 360 THEN '181 - 360'
+//             ELSE '> 360'
+//         END AS przedział,
+//         ROUND(
+//             SUM(r.kwota)
+//             + SUM(
+//                 CASE
+//                     WHEN rr.WnMaRozliczono < 0 AND r.kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * r.kurs
+//                     ELSE ISNULL(rr.WnMaRozliczono, 0)
+//                 END
+//             ), 2
+//         ) AS płatność
+//     FROM fkkomandytowa.FK.fk_rozdata r
+//     LEFT JOIN Rozrachunki rr ON rr.transakcja = r.id
+//     LEFT JOIN Kontrahenci k ON r.kontrahent = k.pozycja
+//     WHERE r.potencjalna = 0
+//       AND r.synt IN (201,203)
+//       AND (@synt IS NULL OR r.synt = @synt)
+//       AND r.baza = 2
+//       AND CONVERT(DATE, r.dataokr) BETWEEN '1800-01-01' AND @datado
+//       AND (
+//             r.strona = 0
+//             OR (r.strona = 1 AND r.kwota < 0)
+//           )
+//       AND NOT (r.rozliczona = 1 AND CONVERT(DATE, r.dataOstat) <= @datado)
+//       AND r.strona = 0
+//       AND r.orgStrona = 0
+//     GROUP BY r.dsymbol, r.termin, r.synt, r.poz1, r.poz2, k.skrot
+// ) as wynik
+// WHERE ROUND(płatność,2) <> 0
+// ORDER BY poz2;
 
+//     `;
 
-    `;
-
-    const accountancyData = await msSqlQuery(query);
-    console.log(accountancyData.length);
-  } catch (error) {
-    logEvents(
-      `fkRaportController, getAccountancyDataMsSQL: ${error}`,
-      "reqServerErrors.txt"
-    );
-  }
-};
+//     const accountancyData = await msSqlQuery(query);
+//     console.log(accountancyData.length);
+//   } catch (error) {
+//     logEvents(
+//       `fkRaportController, getAccountancyDataMsSQL: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//   }
+// };
 
 module.exports = {
-  getRaportData,
-  getDateCounter,
+  // getRaportData,
+  // getDateCounter,
   // deleteDataRaport,
   // generateRaport,
   changeMark,
   getRaportDocumentsControlBL,
   getStructureOrganization,
-  generateHistoryDocuments,
+  // generateHistoryDocuments,
   addDecisionDate,
-  getAccountancyDataMsSQL,
+  // getAccountancyDataMsSQL,
 };

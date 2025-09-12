@@ -45,9 +45,10 @@ const getDateCounter = async (req, res) => {
 
 // generuję historię decyzji i ostatecznej daty rozliczenia
 const generateHistoryDocuments = async (company) => {
+  console.log("history");
   try {
     const [raportDate] = await connect_SQL.query(
-      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'generate' AND COMPANY = ?`,
+      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
       [company]
     );
 
@@ -750,10 +751,10 @@ const generateRaportCompany = async (company) => {
     await connect_SQL.query(query, values.flat());
 
     // // dodanie daty wygenerowania raportu
-    await connect_SQL.query(
-      `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
-      [checkDate(new Date()), "generate", company]
-    );
+    // await connect_SQL.query(
+    //   `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
+    //   [checkDate(new Date()), "generate", company]
+    // );
   } catch (error) {
     console.error(error);
     logEvents(
@@ -946,7 +947,7 @@ const generateRaportData = async (req, res) => {
 
     await connect_SQL.query(
       `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
-      [checkDate(new Date()), "raport", company]
+      [checkDate(new Date()), "generate", company]
     );
 
     //zamieniam daty w stringu na typ Date, jeżeli zapis jest odpowiedni
@@ -1090,7 +1091,6 @@ const generateRaportData = async (req, res) => {
       })
       .filter(Boolean);
 
-    // console.log(carDataSettlement);
     // // Dodajemy obiekt RAPORT na początku tablicy i  dodtkowy arkusz z róznicami księgowosć AS-FK
     const finalResult = [
       { name: "ALL", data: eraseNull },
@@ -1208,10 +1208,19 @@ const generateRaportData = async (req, res) => {
       return element;
     });
 
+    // console.log(updateAdvisersColumn);
+
     // obrabiam tylko dane działu KSIĘGOWOŚĆ
     const accountingData = updateAdvisersColumn.map((item) => {
       if (item.name === "KSIĘGOWOŚĆ") {
         // pierwsze filtrowanie wszytskich danych
+
+        // const filteredData = eraseNull.map((doc) => {
+        //   if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
+        //     console.log(doc);
+        //     console.log(item.name);
+        //   }
+        // });
         const dataDoc = eraseNull.filter(
           (doc) =>
             doc.TYP_DOKUMENTU !== "PK" &&
@@ -1228,6 +1237,13 @@ const generateRaportData = async (req, res) => {
             doc.DO_ROZLICZENIA_AS !== "NULL" &&
             doc.ROZNICA !== "NULL"
         );
+
+        const filteredData = dataDoc2.map((doc) => {
+          if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
+            console.log(doc);
+            // console.log(item.name);
+          }
+        });
         const joinData = [...dataDoc, ...dataDoc2];
         const updateDataDoc = joinData.map((prev) => {
           const {
@@ -1246,6 +1262,16 @@ const generateRaportData = async (req, res) => {
       }
       return item;
     });
+
+    // const test = accountingData.map((item) => {
+    //   const data = [...item.data];
+    //   const filteredData = data.map((doc) => {
+    //     if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
+    //       // console.log(doc);
+    //       console.log(item.name);
+    //     }
+    //   });
+    // });
 
     //wyciągam tylko nr documentów do tablicy, żeby postawić znacznik przy danej fakturze, żeby mozna było pobrać do tabeli wyfiltrowane dane z tabeli
     const excludedNames = [
@@ -1340,6 +1366,11 @@ const getDataToNewRaport = async (req, res) => {
 
     // zapisuję dane wiekowania do tabeli
     await saveAccountancyData(accountancyData, company);
+
+    await connect_SQL.query(
+      `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
+      [checkDate(new Date()), "raport", company]
+    );
 
     res.end();
   } catch (error) {
