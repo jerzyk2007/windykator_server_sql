@@ -1215,36 +1215,87 @@ const generateRaportData = async (req, res) => {
       if (item.name === "KSIĘGOWOŚĆ") {
         // pierwsze filtrowanie wszytskich danych
 
-        // const filteredData = eraseNull.map((doc) => {
-        //   if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
-        //     console.log(doc);
-        //     console.log(item.name);
+        //  const test = eraseNull.map((item) => {
+        //   if (item.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
+        //     console.log(item);
         //   }
         // });
-        const dataDoc = eraseNull.filter(
-          (doc) =>
-            doc.TYP_DOKUMENTU !== "PK" &&
-            doc.TYP_DOKUMENTU !== "Inne" &&
-            doc.TYP_DOKUMENTU !== "Korekta" &&
-            doc.ROZNICA !== "NULL" &&
-            doc.DATA_ROZLICZENIA_AS !== "NULL"
-        );
 
-        // drugie filtrowanie wszytskich danych
-        const dataDoc2 = eraseNull.filter(
-          (doc) =>
-            doc.TYP_DOKUMENTU === "Korekta" &&
-            doc.DO_ROZLICZENIA_AS !== "NULL" &&
-            doc.ROZNICA !== "NULL"
-        );
+        // const dataDoc = eraseNull.filter(
+        //   (doc) =>
+        //     doc.TYP_DOKUMENTU !== "PK" &&
+        //     doc.TYP_DOKUMENTU !== "Inne" &&
+        //     doc.TYP_DOKUMENTU !== "Korekta" &&
+        //     doc.ROZNICA !== "NULL" &&
+        //     doc.DATA_ROZLICZENIA_AS !== "NULL"
+        // );
 
-        const filteredData = dataDoc2.map((doc) => {
-          if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
-            console.log(doc);
-            // console.log(item.name);
-          }
+        // // drugie filtrowanie wszytskich danych
+        // const dataDoc2 = eraseNull.filter(
+        //   (doc) =>
+        //     doc.TYP_DOKUMENTU === "Korekta" &&
+        //     doc.DO_ROZLICZENIA_AS !== "NULL" &&
+        //     doc.ROZNICA !== "NULL"
+        // );
+
+        // const joinData = [...dataDoc, ...dataDoc2];
+
+        const documentsType = [
+          "Faktura",
+          "Faktura zaliczkowa",
+          "Korekta",
+          "Korekta zaliczki",
+          "Nota",
+        ];
+
+        const agingDate = new Date(reportInfo.agingDate);
+
+        const filteredData1 = eraseNull.filter((item) => {
+          // 1. Warunek DO_ROZLICZENIA_AS
+          const validRozliczenie =
+            item.DO_ROZLICZENIA_AS === null ||
+            item.DO_ROZLICZENIA_AS === "NULL";
+
+          // 2. Warunek TYP_DOKUMENTU
+          const validType = documentsType.includes(item.TYP_DOKUMENTU);
+
+          // 3. Warunek DATA_ROZLICZENIA_AS <= reportInfo.agingDate
+          const itemDate = new Date(item.DATA_ROZLICZENIA_AS);
+          const validDate = itemDate <= agingDate;
+
+          return validRozliczenie && validType && validDate;
         });
-        const joinData = [...dataDoc, ...dataDoc2];
+
+        const filteredData2 = eraseNull.filter((item) => {
+          const kwotaFK = Number(item.KWOTA_DO_ROZLICZENIA_FK);
+          const kwotaAS = Number(item.DO_ROZLICZENIA_AS);
+
+          const validKwotaFK = isFinite(kwotaFK) && kwotaFK !== 0;
+          const validKwotaAS = isFinite(kwotaAS) && kwotaAS !== 0;
+          const notEqual = kwotaFK !== kwotaAS;
+
+          const validType = documentsType.includes(item.TYP_DOKUMENTU);
+
+          // OPIS_ROZRACHUNKU
+          let validOpis = false;
+          if (item.OPIS_ROZRACHUNKU) {
+            const entries = item.OPIS_ROZRACHUNKU.split("\n")
+              .map((e) => e.trim())
+              .filter(Boolean);
+
+            validOpis = entries.some((entry) => {
+              const dateStr = entry.slice(0, 10); // format YYYY-MM-DD
+              const entryDate = new Date(dateStr);
+              return entryDate <= agingDate;
+            });
+          }
+
+          return (
+            validKwotaFK && validKwotaAS && notEqual && validType && validOpis
+          );
+        });
+        const joinData = [...filteredData1, ...filteredData2];
+
         const updateDataDoc = joinData.map((prev) => {
           const {
             INFORMACJA_ZARZAD,
@@ -1262,16 +1313,6 @@ const generateRaportData = async (req, res) => {
       }
       return item;
     });
-
-    // const test = accountingData.map((item) => {
-    //   const data = [...item.data];
-    //   const filteredData = data.map((doc) => {
-    //     if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
-    //       // console.log(doc);
-    //       console.log(item.name);
-    //     }
-    //   });
-    // });
 
     //wyciągam tylko nr documentów do tablicy, żeby postawić znacznik przy danej fakturze, żeby mozna było pobrać do tabeli wyfiltrowane dane z tabeli
     const excludedNames = [
@@ -1404,73 +1445,73 @@ const getMainRaportFK = async (req, res) => {
 
     const reportInfo = await gerReportDate(company);
 
-    const changeData = getData.map((item) => {
-      if (item.name === "KSIĘGOWOŚĆ") {
-        const data = [...item.data];
-        const documentsType = [
-          "Faktura",
-          "Faktura zaliczkowa",
-          "Korekta",
-          "Korekta zaliczki",
-          "Nota",
-        ];
+    // const changeData = getData.map((item) => {
+    //   if (item.name === "KSIĘGOWOŚĆ") {
+    //     const data = [...item.data];
+    //     const documentsType = [
+    //       "Faktura",
+    //       "Faktura zaliczkowa",
+    //       "Korekta",
+    //       "Korekta zaliczki",
+    //       "Nota",
+    //     ];
 
-        const agingDate = new Date(reportInfo.agingDate);
+    //     const agingDate = new Date(reportInfo.agingDate);
 
-        const filteredData1 = data.filter((item) => {
-          // 1. Warunek DO_ROZLICZENIA_AS
-          const validRozliczenie =
-            item.DO_ROZLICZENIA_AS === null ||
-            item.DO_ROZLICZENIA_AS === "NULL";
+    //     const filteredData1 = data.filter((item) => {
+    //       // 1. Warunek DO_ROZLICZENIA_AS
+    //       const validRozliczenie =
+    //         item.DO_ROZLICZENIA_AS === null ||
+    //         item.DO_ROZLICZENIA_AS === "NULL";
 
-          // 2. Warunek TYP_DOKUMENTU
-          const validType = documentsType.includes(item.TYP_DOKUMENTU);
+    //       // 2. Warunek TYP_DOKUMENTU
+    //       const validType = documentsType.includes(item.TYP_DOKUMENTU);
 
-          // 3. Warunek DATA_ROZLICZENIA_AS <= reportInfo.agingDate
-          const itemDate = new Date(item.DATA_ROZLICZENIA_AS);
-          const validDate = itemDate <= agingDate;
+    //       // 3. Warunek DATA_ROZLICZENIA_AS <= reportInfo.agingDate
+    //       const itemDate = new Date(item.DATA_ROZLICZENIA_AS);
+    //       const validDate = itemDate <= agingDate;
 
-          return validRozliczenie && validType && validDate;
-        });
+    //       return validRozliczenie && validType && validDate;
+    //     });
 
-        const filteredData2 = data.filter((item) => {
-          const kwotaFK = Number(item.KWOTA_DO_ROZLICZENIA_FK);
-          const kwotaAS = Number(item.DO_ROZLICZENIA_AS);
+    //     const filteredData2 = data.filter((item) => {
+    //       const kwotaFK = Number(item.KWOTA_DO_ROZLICZENIA_FK);
+    //       const kwotaAS = Number(item.DO_ROZLICZENIA_AS);
 
-          const validKwotaFK = isFinite(kwotaFK) && kwotaFK !== 0;
-          const validKwotaAS = isFinite(kwotaAS) && kwotaAS !== 0;
-          const notEqual = kwotaFK !== kwotaAS;
+    //       const validKwotaFK = isFinite(kwotaFK) && kwotaFK !== 0;
+    //       const validKwotaAS = isFinite(kwotaAS) && kwotaAS !== 0;
+    //       const notEqual = kwotaFK !== kwotaAS;
 
-          const validType = documentsType.includes(item.TYP_DOKUMENTU);
+    //       const validType = documentsType.includes(item.TYP_DOKUMENTU);
 
-          // OPIS_ROZRACHUNKU
-          let validOpis = false;
-          if (item.OPIS_ROZRACHUNKU) {
-            const entries = item.OPIS_ROZRACHUNKU.split("\n")
-              .map((e) => e.trim())
-              .filter(Boolean);
+    //       // OPIS_ROZRACHUNKU
+    //       let validOpis = false;
+    //       if (item.OPIS_ROZRACHUNKU) {
+    //         const entries = item.OPIS_ROZRACHUNKU.split("\n")
+    //           .map((e) => e.trim())
+    //           .filter(Boolean);
 
-            validOpis = entries.some((entry) => {
-              const dateStr = entry.slice(0, 10); // format YYYY-MM-DD
-              const entryDate = new Date(dateStr);
-              return entryDate <= agingDate;
-            });
-          }
+    //         validOpis = entries.some((entry) => {
+    //           const dateStr = entry.slice(0, 10); // format YYYY-MM-DD
+    //           const entryDate = new Date(dateStr);
+    //           return entryDate <= agingDate;
+    //         });
+    //       }
 
-          return (
-            validKwotaFK && validKwotaAS && notEqual && validType && validOpis
-          );
-        });
+    //       return (
+    //         validKwotaFK && validKwotaAS && notEqual && validType && validOpis
+    //       );
+    //     });
 
-        return {
-          name: item.name,
-          data: [...filteredData1, ...filteredData2],
-        };
-      }
-      return item;
-    });
+    //     return {
+    //       name: item.name,
+    //       data: [...filteredData1, ...filteredData2],
+    //     };
+    //   }
+    //   return item;
+    // });
 
-    const excelBuffer = await getExcelRaport(changeData, reportInfo);
+    const excelBuffer = await getExcelRaport(getData, reportInfo);
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -1535,7 +1576,7 @@ const getBusinessRaportFK = async (req, res) => {
 
     const areaData = [
       "TOTAL",
-      "WYDANE - NIEZAPŁACONE",
+      //   "WYDANE - NIEZAPŁACONE",
       "BLACHARNIA",
       "SERWIS",
       "CZĘŚCI",

@@ -1429,19 +1429,33 @@ const tableColumnsForRAC = async () => {
       "SELECT * FROM company_table_columns"
     );
 
+    // columns.forEach((column) => {
+    //   const areas = column.areas;
+    //   console.log(areas);
+
+    //   // Liczymy ile jest available: true
+    //   const availableCount = areas.filter((area) => area.available).length;
+    //   // Jeśli więcej niż 3, ustawiamy RAC na available: true
+    //   if (availableCount > 3) {
+    //     const racArea = areas.find((area) => area.name === "RAC");
+
+    //     if (racArea) {
+    //       racArea.available = true;
+    //     }
+    //   }
+    // });
     columns.forEach((column) => {
       const areas = column.areas;
 
       // Liczymy ile jest available: true
       const availableCount = areas.filter((area) => area.available).length;
 
-      // Jeśli więcej niż 3, ustawiamy RAC na available: true
-      if (availableCount > 3) {
-        const racArea = areas.find((area) => area.name === "RAC");
-        if (racArea) {
-          racArea.available = true;
-        }
-      }
+      // Dodajemy nowy obiekt RAC
+      areas.push({
+        hide: false,
+        name: "RAC",
+        available: availableCount >= 3, // true jeśli >= 3, w przeciwnym razie false
+      });
     });
 
     // const test = columns.map((item) => {
@@ -1449,11 +1463,12 @@ const tableColumnsForRAC = async () => {
     // });
 
     for (const col of columns) {
+      console.log(col);
       await connect_SQL.query(
         `
-            UPDATE company_table_columns SET areas = ?
-    WHERE id_table_columns = ?;
-      `,
+              UPDATE company_table_columns SET areas = ?
+      WHERE id_table_columns = ?;
+        `,
         [JSON.stringify(col.areas), col.id_table_columns]
       );
     }
