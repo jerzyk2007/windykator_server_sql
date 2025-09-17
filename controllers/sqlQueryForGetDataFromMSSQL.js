@@ -54,26 +54,25 @@ GROUP BY
   } else {
     return `    
     SELECT  
-    [faktn_fakt_nr_caly] AS NUMER_FV,
-    SUM([faktp_og_brutto]) AS BRUTTO,
-    SUM([faktp_og_netto]) AS NETTO,
-    SUM([faktn_zaplata_kwota]) AS DO_ROZLICZENIA,
-    CONVERT(VARCHAR(10), MIN([dataWystawienia]), 23) AS DATA_FV,
-    CONVERT(VARCHAR(10), MIN([terminPlatnosci]), 23) AS TERMIN,
-    MAX([kl_nazwa]) AS KONTRAHENT,
-    MAX([faktn_wystawil]) AS DORADCA,
-    NULL AS NR_REJESTRACYJNY,
-    NULL AS UWAGI_Z_FAKTURY,
+    [faktn_fakt_nr_caly] AS NUMER,
+    SUM([faktp_og_brutto]) AS WARTOSC_BRUTTO,
+    SUM([faktp_og_netto]) AS WARTOSC_NETTO,
+    SUM([faktn_zaplata_kwota]) AS WARTOSC_NAL,
+    CONVERT(VARCHAR(10), MIN([dataWystawienia]), 23) AS DATA_WYSTAWIENIA,
+    CONVERT(VARCHAR(10), MIN([terminPlatnosci]), 23) AS DATA_ZAPLATA,
+    MAX([kl_nazwa]) AS KONTR_NAZWA,
+    MAX([faktn_wystawil]) AS PRZYGOTOWAL,
+    NULL AS REJESTRACJA,
+    NULL AS UWAGI,
     MAX([typSprzedazy]) AS TYP_PLATNOSCI,
-    MAX([kl_nip]) AS NIP,  
+    MAX([kl_nip]) AS KONTR_NIP,  
     'RAC' AS MARKER
 FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
-   WHERE [dataWystawienia]> '${twoDaysAgo}'
+ WHERE [dataWystawienia]> '${twoDaysAgo}'
 GROUP BY [faktn_fakt_nr_caly];
     `;
   }
 };
-
 // zapytanie fv zaliczkowe, nazwy i kwoty
 const updateDocZaLQuery = (company) => {
   const dbCompany = companyDbMap[company];

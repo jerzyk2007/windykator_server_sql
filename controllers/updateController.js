@@ -21,6 +21,7 @@ const {
 const getTime = async (req, res) => {
   try {
     // await updateData();
+    // await updateDocuments();
     // await updateSettlementDescription();
     // await generateHistoryDocuments('KRT');
     // await copyDbtoDB();
