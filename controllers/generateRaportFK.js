@@ -45,7 +45,6 @@ const getDateCounter = async (req, res) => {
 
 // generuję historię decyzji i ostatecznej daty rozliczenia
 const generateHistoryDocuments = async (company) => {
-  console.log("history");
   try {
     const [raportDate] = await connect_SQL.query(
       `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
@@ -417,6 +416,7 @@ ORDER BY
     const query = company === "KRT" ? queryKRT : queryKEM;
 
     const accountancyData = await msSqlQuery(query);
+
     const changeNameColumns = accountancyData.map((item) => {
       const rawDate = item["termin"];
       const formattedDate = rawDate
@@ -460,7 +460,6 @@ ORDER BY
       });
       return [];
     }
-
     return addDep;
   } catch (error) {
     logEvents(
@@ -751,10 +750,10 @@ const generateRaportCompany = async (company) => {
     await connect_SQL.query(query, values.flat());
 
     // // dodanie daty wygenerowania raportu
-    // await connect_SQL.query(
-    //   `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
-    //   [checkDate(new Date()), "generate", company]
-    // );
+    await connect_SQL.query(
+      `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
+      [checkDate(new Date()), "generate", company]
+    );
   } catch (error) {
     console.error(error);
     logEvents(
@@ -889,51 +888,38 @@ const saveMark = async (documents, company) => {
   }
 };
 
-//pobieram daty wygenerowania raportu i pobrania danych wiekowania
-const gerReportDate = async (company) => {
-  try {
-    const [reportDate] = await connect_SQL.query(
-      `    
+const getRaportData = async (req, res) => {
+  const { company } = req.params;
+
+  await generateRaportCompany(company);
+
+  const [raportDate] = await connect_SQL.query(
+    `    
         SELECT TITLE, DATE
         FROM company_fk_updates_date
         WHERE COMPANY = ?
         AND TITLE IN ('generate', 'accountancy')`,
-      [company]
-    );
-    const reportInfo = {
-      reportDate:
-        reportDate.find((row) => row.TITLE === "generate")?.DATE || " ",
-      agingDate:
-        reportDate.find((row) => row.TITLE === "accountancy")?.DATE || " ",
-      reportName: "Draft 201 203_należności",
-    };
+    [company]
+  );
 
-    return reportInfo;
-  } catch (error) {
-    logEvents(
-      `generateRaportFK, gerReportDate: ${error}`,
-      "reqServerErrors.txt"
-    );
-  }
-};
-
-// generuje raport na podstawie już wczesniej pobranych danych wiekowania
-const generateRaportData = async (req, res) => {
-  const { company } = req.params;
+  const raportInfo = {
+    reportDate: raportDate.find((row) => row.TITLE === "generate")?.DATE || " ",
+    agingDate:
+      raportDate.find((row) => row.TITLE === "accountancy")?.DATE || " ",
+    reportName: "Draft 201 203_należności",
+  };
   try {
-    await generateRaportCompany(company);
-
-    const reportInfo = await gerReportDate(company);
-
     const [dataRaport] = await connect_SQL.query(
       `SELECT HFD.HISTORY_DOC AS HISTORIA_WPISOW, FK.* 
             FROM company_fk_raport_${company} AS FK 
             LEFT JOIN company_history_management AS HFD ON FK.NR_DOKUMENTU = HFD.NUMER_FV AND FK.FIRMA = HFD.COMPANY`
     );
+
     // usuwam z każdego obiektu klucz id_fk_raport
     dataRaport.forEach((item) => {
       delete item.id_fk_raport;
     });
+    const getDifferencesFK_AS = await differencesAS_FK(company);
 
     const accountArray = [
       ...new Set(
@@ -942,13 +928,6 @@ const generateRaportData = async (req, res) => {
           .map((item) => item.OBSZAR)
       ),
     ].sort();
-
-    const getDifferencesFK_AS = await differencesAS_FK(company);
-
-    await connect_SQL.query(
-      `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
-      [checkDate(new Date()), "generate", company]
-    );
 
     //zamieniam daty w stringu na typ Date, jeżeli zapis jest odpowiedni
     const convertToDateIfPossible = (value) => {
@@ -1083,10 +1062,7 @@ const generateRaportData = async (req, res) => {
           item.DO_ROZLICZENIA_AS > 0 &&
           item.CZY_SAMOCHOD_WYDANY_AS === "TAK"
         ) {
-          return {
-            ...item,
-            AREA: "WYDANE - NIEZAPŁACONE",
-          };
+          return item;
         }
       })
       .filter(Boolean);
@@ -1098,6 +1074,7 @@ const generateRaportData = async (req, res) => {
       { name: "WYDANE - NIEZAPŁACONE", data: carDataSettlement },
       ...resultArray,
     ];
+
     // usuwam wiekowanie starsze niż < 0, 1 - 7 z innych niż arkusza RAPORT
     const updateAging = finalResult.map((element) => {
       if (
@@ -1208,19 +1185,10 @@ const generateRaportData = async (req, res) => {
       return element;
     });
 
-    // console.log(updateAdvisersColumn);
-
     // obrabiam tylko dane działu KSIĘGOWOŚĆ
     const accountingData = updateAdvisersColumn.map((item) => {
       if (item.name === "KSIĘGOWOŚĆ") {
         // pierwsze filtrowanie wszytskich danych
-
-        // const filteredData = eraseNull.map((doc) => {
-        //   if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
-        //     console.log(doc);
-        //     console.log(item.name);
-        //   }
-        // });
         const dataDoc = eraseNull.filter(
           (doc) =>
             doc.TYP_DOKUMENTU !== "PK" &&
@@ -1228,6 +1196,8 @@ const generateRaportData = async (req, res) => {
             doc.TYP_DOKUMENTU !== "Korekta" &&
             doc.ROZNICA !== "NULL" &&
             doc.DATA_ROZLICZENIA_AS !== "NULL"
+          // &&
+          // doc.DATA_ROZLICZENIA_AS <= new Date(raportInfo.accountingDate)
         );
 
         // drugie filtrowanie wszytskich danych
@@ -1237,13 +1207,6 @@ const generateRaportData = async (req, res) => {
             doc.DO_ROZLICZENIA_AS !== "NULL" &&
             doc.ROZNICA !== "NULL"
         );
-
-        const filteredData = dataDoc2.map((doc) => {
-          if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
-            console.log(doc);
-            // console.log(item.name);
-          }
-        });
         const joinData = [...dataDoc, ...dataDoc2];
         const updateDataDoc = joinData.map((prev) => {
           const {
@@ -1263,16 +1226,6 @@ const generateRaportData = async (req, res) => {
       return item;
     });
 
-    // const test = accountingData.map((item) => {
-    //   const data = [...item.data];
-    //   const filteredData = data.map((doc) => {
-    //     if (doc.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
-    //       // console.log(doc);
-    //       console.log(item.name);
-    //     }
-    //   });
-    // });
-
     //wyciągam tylko nr documentów do tablicy, żeby postawić znacznik przy danej fakturze, żeby mozna było pobrać do tabeli wyfiltrowane dane z tabeli
     const excludedNames = [
       "ALL",
@@ -1287,6 +1240,7 @@ const generateRaportData = async (req, res) => {
       .map((item) => item.NR_DOKUMENTU); // Wyciągnij klucz NR_DOKUMENTU
 
     saveMark(markDocuments, company);
+    // res.json({ dataRaport, differences: getDifferencesFK_AS });
 
     //sortowanie obiektów wg kolejności, żeby arkusze w excel były odpowiednio posortowane
     const sortOrder = [
@@ -1303,44 +1257,40 @@ const generateRaportData = async (req, res) => {
       "WDT",
     ];
 
-    const filteredData = accountingData.filter((item) => item.data.length > 0);
-
     // sortowanie w tablicach data po TERMIN_PLATNOSCI_FV rosnąco
-    // const sortedData = filteredData.map((item) => {
-    //   if (Array.isArray(item.data)) {
-    //     item.data.sort(
-    //       (a, b) =>
-    //         new Date(a.DATA_WYSTAWIENIA_FV) - new Date(b.DATA_WYSTAWIENIA_FV)
-    //     );
-    //   }
-    //   return item;
-    // });
+    const sortedData = accountingData.map((item) => {
+      if (Array.isArray(item.data)) {
+        item.data.sort(
+          (a, b) =>
+            new Date(a.DATA_WYSTAWIENIA_FV) - new Date(b.DATA_WYSTAWIENIA_FV)
+        );
+      }
+      return item;
+    });
 
     //sortowanie wg kolejności arkuszy do excela
-    const sortedArray = filteredData.sort(
+    const sortedArray = sortedData.sort(
       (a, b) => sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
     );
 
-    await connect_SQL.query(
-      `UPDATE company_fk_raport_excel set data = ? WHERE company = ?`,
-      [JSON.stringify(sortedArray), company]
-    );
+    const excelBuffer = await getExcelRaport(sortedArray, raportInfo);
 
-    res.json({
-      // date: reportDate.find((row) => row.TITLE === "generate")?.DATE || " ",
-      date: reportInfo.reportDate,
-    });
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
+    res.send(excelBuffer);
   } catch (error) {
     logEvents(
-      `generateRaportFK, generateRaportData: ${error}`,
+      `generateRaportFK, getRaportData: ${error}`,
       "reqServerErrors.txt"
     );
     // res.status(500).json({ error: "Server error" });
   }
 };
 
-//pobieranie danych wiekowania do nowego raportu, generowanie historii wpisów, czyszczenie tabeli z wiekowaniem i zapisywanie nowych danych
-const getDataToNewRaport = async (req, res) => {
+const generateNewRaport = async (req, res) => {
   const { company } = req.params;
 
   try {
@@ -1356,11 +1306,12 @@ const getDataToNewRaport = async (req, res) => {
     //generuję historię wpisów uwzględniając
     await generateHistoryDocuments(company);
 
-    //usuwam znaczniki dokumentów dla danej firmy
+    //usuwam znaczniki dokumentów
     await connect_SQL.query(
       "DELETE FROM company_mark_documents WHERE COMPANY = ?",
       [company]
     );
+
     // czyszczę tabelę z wiekowaniem
     await connect_SQL.query(`TRUNCATE company_raportFK_${company}_accountancy`);
 
@@ -1368,246 +1319,14 @@ const getDataToNewRaport = async (req, res) => {
     await saveAccountancyData(accountancyData, company);
 
     await connect_SQL.query(
-      `UPDATE company_fk_updates_date SET  DATE = ? WHERE TITLE = ? AND COMPANY = ?`,
+      `UPDATE company_fk_updates_date SET  DATE = ?WHERE TITLE = ? AND COMPANY = ?`,
       [checkDate(new Date()), "raport", company]
     );
 
     res.end();
   } catch (error) {
     logEvents(
-      `generateRaportFK, getDataToNewRaport: ${error}`,
-      "reqServerErrors.txt"
-    );
-  }
-};
-
-const getDataAfterGenerate = async (company) => {
-  try {
-    const [data] = await connect_SQL.query(
-      `SELECT data FROM company_fk_raport_excel WHERE company = ?`,
-      [company]
-    );
-    return data[0].data;
-  } catch (error) {
-    logEvents(
-      `generateRaportFK, getDataAfterGenerate: ${error}`,
-      "reqServerErrors.txt"
-    );
-  }
-};
-
-// generuje dane do pliku raportu głónego
-const getMainRaportFK = async (req, res) => {
-  const { company } = req.params;
-  try {
-    const getData = await getDataAfterGenerate(company);
-
-    const reportInfo = await gerReportDate(company);
-
-    const changeData = getData.map((item) => {
-      if (item.name === "KSIĘGOWOŚĆ") {
-        const data = [...item.data];
-        const documentsType = [
-          "Faktura",
-          "Faktura zaliczkowa",
-          "Korekta",
-          "Korekta zaliczki",
-          "Nota",
-        ];
-
-        const agingDate = new Date(reportInfo.agingDate);
-
-        const filteredData1 = data.filter((item) => {
-          // 1. Warunek DO_ROZLICZENIA_AS
-          const validRozliczenie =
-            item.DO_ROZLICZENIA_AS === null ||
-            item.DO_ROZLICZENIA_AS === "NULL";
-
-          // 2. Warunek TYP_DOKUMENTU
-          const validType = documentsType.includes(item.TYP_DOKUMENTU);
-
-          // 3. Warunek DATA_ROZLICZENIA_AS <= reportInfo.agingDate
-          const itemDate = new Date(item.DATA_ROZLICZENIA_AS);
-          const validDate = itemDate <= agingDate;
-
-          return validRozliczenie && validType && validDate;
-        });
-
-        const filteredData2 = data.filter((item) => {
-          const kwotaFK = Number(item.KWOTA_DO_ROZLICZENIA_FK);
-          const kwotaAS = Number(item.DO_ROZLICZENIA_AS);
-
-          const validKwotaFK = isFinite(kwotaFK) && kwotaFK !== 0;
-          const validKwotaAS = isFinite(kwotaAS) && kwotaAS !== 0;
-          const notEqual = kwotaFK !== kwotaAS;
-
-          const validType = documentsType.includes(item.TYP_DOKUMENTU);
-
-          // OPIS_ROZRACHUNKU
-          let validOpis = false;
-          if (item.OPIS_ROZRACHUNKU) {
-            const entries = item.OPIS_ROZRACHUNKU.split("\n")
-              .map((e) => e.trim())
-              .filter(Boolean);
-
-            validOpis = entries.some((entry) => {
-              const dateStr = entry.slice(0, 10); // format YYYY-MM-DD
-              const entryDate = new Date(dateStr);
-              return entryDate <= agingDate;
-            });
-          }
-
-          return (
-            validKwotaFK && validKwotaAS && notEqual && validType && validOpis
-          );
-        });
-
-        return {
-          name: item.name,
-          data: [...filteredData1, ...filteredData2],
-        };
-      }
-      return item;
-    });
-
-    const excelBuffer = await getExcelRaport(changeData, reportInfo);
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
-    res.send(excelBuffer);
-
-    res.end();
-  } catch (error) {
-    logEvents(
-      `generateRaportFK, getMainRaportFK: ${error}`,
-      "reqServerErrors.txt"
-    );
-  }
-};
-
-//generuje dane do pliku raportu biznesowego
-const getBusinessRaportFK = async (req, res) => {
-  const { company } = req.params;
-  try {
-    const getData = await getDataAfterGenerate(company);
-
-    const reportInfo = await gerReportDate(company);
-
-    const rowsColor = getData.map((item) => {
-      const data = item.data.map((doc) => {
-        const date = new Date(doc.DATA_WYSTAWIENIA_FV);
-
-        const year = date.getFullYear();
-        const month = date.getMonth(); // 0 = styczeń, 11 = grudzień
-        const currentYear = new Date().getFullYear();
-
-        let color = "";
-
-        if (year < currentYear) {
-          // color = "red"; // poprzednie lata
-          color = "FFFC4A53"; // poprzednie lata
-          // poprzednie lata
-        } else {
-          if (month >= 0 && month <= 2) {
-            color = "FFFFC000"; // pomarańczowy
-          } else if (month >= 3 && month <= 5) {
-            color = "FFFFFF00"; // żółty
-          } else if (month >= 6 && month <= 8) {
-            color = "FF92D050"; // zielony
-          } else if (month >= 9 && month <= 11) {
-            color = "FF00B0F0"; // niebieski
-          }
-        }
-
-        return {
-          ...doc,
-          KOLOR: color,
-        };
-      });
-
-      return {
-        ...item,
-        data,
-      };
-    });
-
-    const areaData = [
-      "TOTAL",
-      "WYDANE - NIEZAPŁACONE",
-      "BLACHARNIA",
-      "SERWIS",
-      "CZĘŚCI",
-      "F&I",
-      "SAMOCHODY NOWE",
-      "SAMOCHODY UŻYWANE",
-      "WDT",
-    ];
-
-    const filteredRows = rowsColor.filter((item) =>
-      areaData.includes(item.name)
-    );
-
-    // łączę wszytskie data w jedną tablice
-    const mergedData = filteredRows.flatMap((item) => item.data);
-
-    const filterMergedRows = mergedData.map((item) => {
-      return {
-        VIN: item.VIN,
-        DZIAL: item.DZIAL,
-        FIRMA: item.FIRMA,
-        OWNER: item.OWNER,
-        OBSZAR: item.OBSZAR,
-        DORADCA: item.DORADCA,
-        KONTRAHENT: item.KONTRAHENT,
-        LOKALIZACJA: item.LOKALIZACJA,
-        NR_DOKUMENTU: item.NR_DOKUMENTU,
-        TYP_DOKUMENTU: item.TYP_DOKUMENTU,
-        TYP_PLATNOSCI: item.TYP_PLATNOSCI,
-        HISTORIA_WPISOW: item.HISTORIA_WPISOW,
-        DO_ROZLICZENIA_AS: item.DO_ROZLICZENIA_AS,
-        INFORMACJA_ZARZAD: item.INFORMACJA_ZARZAD,
-        PRZETER_NIEPRZETER: item.PRZETER_NIEPRZETER,
-        DATA_WYSTAWIENIA_FV: item.DATA_WYSTAWIENIA_FV,
-        TERMIN_PLATNOSCI_FV: item.TERMIN_PLATNOSCI_FV,
-        PRZEDZIAL_WIEKOWANIE: item.PRZEDZIAL_WIEKOWANIE,
-        KWOTA_DO_ROZLICZENIA_FK: item.KWOTA_DO_ROZLICZENIA_FK,
-        OPIEKUN_OBSZARU_CENTRALI: item.OPIEKUN_OBSZARU_CENTRALI,
-        HISTORIA_WPISÓW_W_RAPORCIE: item["HISTORIA_WPISÓW_W_RAPORCIE"],
-        OSTATECZNA_DATA_ROZLICZENIA: item.OSTATECZNA_DATA_ROZLICZENIA,
-        HISTORIA_ZMIANY_DATY_ROZLICZENIA: item.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
-        KOLOR: item.KOLOR,
-      };
-    });
-
-    const finalResult = [
-      { name: "TOTAL", data: filterMergedRows },
-
-      ...filteredRows,
-    ];
-
-    const cleanedResult = finalResult.map((item) => ({
-      ...item,
-      data: item.data.filter(
-        (doc) => !doc.KONTRAHENT?.toUpperCase().includes("KROTOSKI")
-      ),
-    }));
-
-    const sortedArray = cleanedResult.sort(
-      (a, b) => areaData.indexOf(a.name) - areaData.indexOf(b.name)
-    );
-    const excelBuffer = await getExcelRaport(sortedArray, reportInfo);
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
-    res.send(excelBuffer);
-    res.end();
-  } catch (error) {
-    logEvents(
-      `generateRaportFK, getBusinessRaportFK: ${error}`,
+      `generateRaportFK, generateNewRaport: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -1615,11 +1334,30 @@ const getBusinessRaportFK = async (req, res) => {
 
 module.exports = {
   getDateCounter,
-  getDataToNewRaport,
+  generateNewRaport,
   generateRaportCompany,
-  generateRaportData,
+  getRaportData,
   getAccountancyDataMsSQL,
-  getMainRaportFK,
-  getBusinessRaportFK,
-  getMainRaportFK,
 };
+
+// przed zmianą programu na automatyczny raport:
+// - uruchomić funkcję changeUserRole z repairController
+
+// w mysql
+// UPDATE testy_windykacja.company_settings
+// SET roles = JSON_ARRAY(
+//     JSON_OBJECT(
+//         'FK_KRT', 200,
+//          'FK_KEM', 201,
+//           'FK_RAC', 202,
+//         'Nora', 300,
+//         'Root', 5000,
+//         'User', 100,
+//         'Admin', 1000,
+//         'Start', 1,
+//         'Editor', 110,
+//         'Controller', 120,
+//         'SuperAdmin', 2000
+//     )
+// )
+// WHERE id_setting = 1;
