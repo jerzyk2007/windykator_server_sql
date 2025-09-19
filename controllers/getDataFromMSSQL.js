@@ -3,7 +3,6 @@ const cron = require("node-cron");
 const { logEvents } = require("../middleware/logEvents");
 const { addDepartment } = require("./manageDocumentAddition");
 const { checkDate, checkTime } = require("./manageDocumentAddition");
-const { allUpdate } = require("./copyDBtoDB");
 const {
   addDocumentToDatabaseQuery,
   updateDocZaLQuery,
@@ -638,15 +637,11 @@ const updateData = async () => {
           "reqServerErrors.txt"
         );
       });
-    console.log("koniec");
   } catch (error) {
     logEvents(`getDataFromMSSQL , getData: ${error}`, "reqServerErrors.txt");
   }
 };
 
-// cron.schedule('27 12 * * *', allUpdate, {
-//   timezone: "Europe/Warsaw"
-// });
 cron.schedule("40 06 * * *", updateData, {
   timezone: "Europe/Warsaw",
 });

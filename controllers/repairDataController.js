@@ -6,29 +6,10 @@ const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { addDepartment } = require("./manageDocumentAddition");
-const { getAccountancyDataMsSQL } = require("./generateRaportFK");
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
   try {
-    //         const [getAdvisersName] = await connect_SQL.query(
-    //             `SELECT D.NUMER_FV, D.DORADCA
-    // FROM company_documents as D
-    // LEFT JOIN join_items AS JI ON D.DZIAL = JI.department
-    // WHERE  D.DORADCA != 'Brak danych'`
-    //         );
-    //         console.log(getAdvisersName);
-    // const updatedAdvisersName = getAdvisersName.map(item => {
-    //     const [firstName, lastName] = item.DORADCA.split(' ');
-    //     return { ...item, DORADCA: `${lastName} ${firstName}` };
-    // });
-
-    // for (const adviser of updatedAdvisersName) {
-    //     await connect_SQL.query(
-    //         'UPDATE documents SET DORADCA = ? WHERE NUMER_FV = ?', [adviser.DORADCA, adviser.NUMER_FV]);
-
-    // }
-
     const query = `SELECT 
         fv.[NUMER],
         us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL
