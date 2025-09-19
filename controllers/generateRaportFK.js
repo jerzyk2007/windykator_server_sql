@@ -45,7 +45,6 @@ const getDateCounter = async (req, res) => {
 
 // generuję historię decyzji i ostatecznej daty rozliczenia
 const generateHistoryDocuments = async (company) => {
-  console.log("history");
   try {
     const [raportDate] = await connect_SQL.query(
       `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
@@ -1213,33 +1212,6 @@ const generateRaportData = async (req, res) => {
     // obrabiam tylko dane działu KSIĘGOWOŚĆ
     const accountingData = updateAdvisersColumn.map((item) => {
       if (item.name === "KSIĘGOWOŚĆ") {
-        // pierwsze filtrowanie wszytskich danych
-
-        //  const test = eraseNull.map((item) => {
-        //   if (item.NR_DOKUMENTU === "FV/UBL/463/24/A/D118") {
-        //     console.log(item);
-        //   }
-        // });
-
-        // const dataDoc = eraseNull.filter(
-        //   (doc) =>
-        //     doc.TYP_DOKUMENTU !== "PK" &&
-        //     doc.TYP_DOKUMENTU !== "Inne" &&
-        //     doc.TYP_DOKUMENTU !== "Korekta" &&
-        //     doc.ROZNICA !== "NULL" &&
-        //     doc.DATA_ROZLICZENIA_AS !== "NULL"
-        // );
-
-        // // drugie filtrowanie wszytskich danych
-        // const dataDoc2 = eraseNull.filter(
-        //   (doc) =>
-        //     doc.TYP_DOKUMENTU === "Korekta" &&
-        //     doc.DO_ROZLICZENIA_AS !== "NULL" &&
-        //     doc.ROZNICA !== "NULL"
-        // );
-
-        // const joinData = [...dataDoc, ...dataDoc2];
-
         const documentsType = [
           "Faktura",
           "Faktura zaliczkowa",
@@ -1283,8 +1255,16 @@ const generateRaportData = async (req, res) => {
               .map((e) => e.trim())
               .filter(Boolean);
 
-            validOpis = entries.some((entry) => {
-              const dateStr = entry.slice(0, 10); // format YYYY-MM-DD
+            // validOpis = entries.some((entry) => {
+            //   const dateStr = entry.slice(0, 10); // format YYYY-MM-DD
+            //   if (dateStr === "NULL") return false;
+            //   const entryDate = new Date(dateStr);
+
+            //   return entryDate <= agingDate;
+            // });
+            validOpis = entries.every((entry) => {
+              const dateStr = entry.slice(0, 10);
+              if (dateStr === "NULL") return false;
               const entryDate = new Date(dateStr);
               return entryDate <= agingDate;
             });
@@ -1294,6 +1274,11 @@ const generateRaportData = async (req, res) => {
             validKwotaFK && validKwotaAS && notEqual && validType && validOpis
           );
         });
+
+        for (const doc of filteredData2) {
+          console.log(doc.OPIS_ROZRACHUNKU);
+        }
+
         const joinData = [...filteredData1, ...filteredData2];
 
         const updateDataDoc = joinData.map((prev) => {
@@ -1576,7 +1561,19 @@ const getBusinessRaportFK = async (req, res) => {
 
     const areaData = [
       "TOTAL",
-      //   "WYDANE - NIEZAPŁACONE",
+      "WYDANE - NIEZAPŁACONE",
+      "BLACHARNIA",
+      "SERWIS",
+      "CZĘŚCI",
+      "F&I",
+      "SAMOCHODY NOWE",
+      "SAMOCHODY UŻYWANE",
+      "WDT",
+    ];
+
+    const areaDataForTotal = [
+      "TOTAL",
+      // "WYDANE - NIEZAPŁACONE",
       "BLACHARNIA",
       "SERWIS",
       "CZĘŚCI",
@@ -1590,8 +1587,12 @@ const getBusinessRaportFK = async (req, res) => {
       areaData.includes(item.name)
     );
 
+    const filteredRowsTotal = rowsColor.filter((item) =>
+      areaDataForTotal.includes(item.name)
+    );
+
     // łączę wszytskie data w jedną tablice
-    const mergedData = filteredRows.flatMap((item) => item.data);
+    const mergedData = filteredRowsTotal.flatMap((item) => item.data);
 
     const filterMergedRows = mergedData.map((item) => {
       return {
