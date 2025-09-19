@@ -1,9 +1,8 @@
 const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
-const { checkDate, checkTime } = require('./manageDocumentAddition');
-const { addDepartment, documentsType } = require('./manageDocumentAddition');
-
+const { checkDate, checkTime } = require("./manageDocumentAddition");
+const { addDepartment, documentsType } = require("./manageDocumentAddition");
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
 const isExcelFile = (data) => {
@@ -32,10 +31,8 @@ const isExcelDate = (value) => {
   return false;
 };
 
-
 // SQL funkcja która dodaje dane z becared
 const becaredFile = async (rows, res) => {
-
   if (
     !("Numery Faktur" in rows[0]) ||
     !("Etap Sprawy" in rows[0]) ||
@@ -96,8 +93,9 @@ const becaredFile = async (rows, res) => {
         checkDate(new Date()),
         checkTime(new Date()),
         "Zaktualizowano.",
-        'BeCared'
-      ]);
+        "BeCared",
+      ]
+    );
 
     res.status(201).json({ message: "Documents are updated" });
   } catch (error) {
@@ -107,8 +105,9 @@ const becaredFile = async (rows, res) => {
         checkDate(new Date()),
         checkTime(new Date()),
         "Błąd aktualizacji",
-        'BeCared'
-      ]);
+        "BeCared",
+      ]
+    );
     logEvents(
       `addDataFromExcelFileController, becaredFile: ${error}`,
       "reqServerErrors.txt"
@@ -120,20 +119,20 @@ const becaredFile = async (rows, res) => {
 // SQL dodaje dane z pliku rubicon
 const rubiconFile = async (rows, res) => {
   if (
-    !('Faktura nr' in rows[0]) ||
-    !('Status aktualny' in rows[0]) ||
-    !('data przeniesienia<br>do WP' in rows[0]) ||
-    !('Firma zewnętrzna' in rows[0]) ||
-    !('data przeniesienia<br>do WP' in rows[0])
-
+    !("Faktura nr" in rows[0]) ||
+    !("Status aktualny" in rows[0]) ||
+    !("data przeniesienia<br>do WP" in rows[0]) ||
+    !("Firma zewnętrzna" in rows[0]) ||
+    !("data przeniesienia<br>do WP" in rows[0])
   ) {
     return res.status(500).json({ error: "Error file" });
   }
 
   try {
-    const filteredData = rows.map(row => {
-      const status =
-        row["Status aktualny"] !== "Brak działań" &&
+    const filteredData = rows
+      .map((row) => {
+        const status =
+          row["Status aktualny"] !== "Brak działań" &&
           row["Status aktualny"] !== "Rozliczona" &&
           row["Status aktualny"] !== "sms/mail +3" &&
           row["Status aktualny"] !== "sms/mail -2" &&
@@ -143,22 +142,19 @@ const rubiconFile = async (rows, res) => {
           row["Status aktualny"] !== "Zablokowana KF BL" &&
           row["Status aktualny"] !== "Do decyzji" &&
           row["Status aktualny"] !== "Windykacja zablokowana bezterminowo"
-          ? row["Status aktualny"]
-          : "BRAK";
-      if (status !== "BRAK") {
-        return {
-          NUMER_FV: row['Faktura nr'],
-          STATUS_AKTUALNY: status !== "BRAK" ? status : row.ETAP_SPRAWY,
-          JAKA_KANCELARIA: status !== "BRAK"
-            ? row["Firma zewnętrzna"]
-            : null,
-          DATA_PRZENIESIENIA_DO_WP: row['data przeniesienia<br>do WP'],
-          FIRMA: 'KRT'
-        };
-      }
-
-    }).filter(Boolean);
-
+            ? row["Status aktualny"]
+            : "BRAK";
+        if (status !== "BRAK") {
+          return {
+            NUMER_FV: row["Faktura nr"],
+            STATUS_AKTUALNY: status !== "BRAK" ? status : row.ETAP_SPRAWY,
+            JAKA_KANCELARIA: status !== "BRAK" ? row["Firma zewnętrzna"] : null,
+            DATA_PRZENIESIENIA_DO_WP: row["data przeniesienia<br>do WP"],
+            FIRMA: "KRT",
+          };
+        }
+      })
+      .filter(Boolean);
 
     const query = `
       INSERT INTO company_rubicon_data ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY) 
@@ -170,16 +166,15 @@ const rubiconFile = async (rows, res) => {
         COMPANY = VALUES(COMPANY)
     `;
 
-    const values = filteredData.map(row => [
+    const values = filteredData.map((row) => [
       row.NUMER_FV,
       row.STATUS_AKTUALNY,
       row.JAKA_KANCELARIA,
       row.DATA_PRZENIESIENIA_DO_WP,
-      row.FIRMA
+      row.FIRMA,
     ]);
 
     await connect_SQL.query(query, [values]);
-
 
     const queryHistory = `
     INSERT INTO company_rubicon_data_history ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY) 
@@ -191,12 +186,12 @@ const rubiconFile = async (rows, res) => {
       COMPANY = VALUES(COMPANY)
   `;
 
-    const valuesHistory = filteredData.map(row => [
+    const valuesHistory = filteredData.map((row) => [
       row.NUMER_FV,
       row.STATUS_AKTUALNY,
       row.JAKA_KANCELARIA,
       row.DATA_PRZENIESIENIA_DO_WP,
-      row.FIRMA
+      row.FIRMA,
     ]);
 
     await connect_SQL.query(queryHistory, [valuesHistory]);
@@ -207,20 +202,21 @@ const rubiconFile = async (rows, res) => {
         checkDate(new Date()),
         checkTime(new Date()),
         "Zaktualizowano.",
-        'Rubicon'
-      ]);
+        "Rubicon",
+      ]
+    );
 
     res.end();
   } catch (error) {
-
     await connect_SQL.query(
       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
         checkDate(new Date()),
         checkTime(new Date()),
         "Błąd aktualizacji",
-        'Rubicon'
-      ]);
+        "Rubicon",
+      ]
+    );
     logEvents(
       `addDataFromExcelFileController, rubiconFile: ${error}`,
       "reqServerErrors.txt"
@@ -229,108 +225,105 @@ const rubiconFile = async (rows, res) => {
   }
 };
 
+// const accountancyFile = async (req, res) => {
+//   const { company } = req.params;
+//   if (!req.file) {
+//     return res.status(400).json({ error: "Not delivered file" });
+//   }
+//   try {
+//     const buffer = req.file.buffer;
+//     const data = new Uint8Array(buffer);
 
-const accountancyFile = async (req, res) => {
-  const { company } = req.params;
-  if (!req.file) {
-    return res.status(400).json({ error: "Not delivered file" });
-  }
-  try {
-    const buffer = req.file.buffer;
-    const data = new Uint8Array(buffer);
+//     if (!isExcelFile(data)) {
+//       console.log('error');
+//       return res.status(500).json({ error: "Invalid file" });
+//     }
 
-    if (!isExcelFile(data)) {
-      console.log('error');
-      return res.status(500).json({ error: "Invalid file" });
-    }
+//     const workbook = read(buffer, { type: "buffer" });
+//     const workSheetName = workbook.SheetNames[0];
+//     const workSheet = workbook.Sheets[workSheetName];
+//     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
 
-    const workbook = read(buffer, { type: "buffer" });
-    const workSheetName = workbook.SheetNames[0];
-    const workSheet = workbook.Sheets[workSheetName];
-    const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
+//     if (
+//       !("Nr. dokumentu" in rows[0]) ||
+//       !("Kontrahent" in rows[0]) ||
+//       !("Płatność" in rows[0]) ||
+//       !("Data płatn." in rows[0]) ||
+//       !("Nr kontrahenta" in rows[0]) ||
+//       !("Synt." in rows[0])
+//     ) {
+//       return res.json({ info: "Plik musi zawierać kolumny: 'Nr. dokumentu', 'Kontrahent', 'Płatność', 'Data płatn.', 'Nr kontrahenta', 'Synt.'" });
+//     }
 
-    if (
-      !("Nr. dokumentu" in rows[0]) ||
-      !("Kontrahent" in rows[0]) ||
-      !("Płatność" in rows[0]) ||
-      !("Data płatn." in rows[0]) ||
-      !("Nr kontrahenta" in rows[0]) ||
-      !("Synt." in rows[0])
-    ) {
-      return res.json({ info: "Plik musi zawierać kolumny: 'Nr. dokumentu', 'Kontrahent', 'Płatność', 'Data płatn.', 'Nr kontrahenta', 'Synt.'" });
-    }
+//     const changeNameColumns = rows.map(item => {
+//       return {
+//         NUMER: item["Nr. dokumentu"],
+//         KONTRAHENT: item["Kontrahent"],
+//         NR_KONTRAHENTA: item["Nr kontrahenta"],
+//         DO_ROZLICZENIA: item["Płatność"],
+//         TERMIN: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
+//         KONTO: item["Synt."],
+//         TYP_DOKUMENTU: documentsType(item["Nr. dokumentu"]),
+//         FIRMA: company
+//       };
+//     });
 
-    const changeNameColumns = rows.map(item => {
-      return {
-        NUMER: item["Nr. dokumentu"],
-        KONTRAHENT: item["Kontrahent"],
-        NR_KONTRAHENTA: item["Nr kontrahenta"],
-        DO_ROZLICZENIA: item["Płatność"],
-        TERMIN: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
-        KONTO: item["Synt."],
-        TYP_DOKUMENTU: documentsType(item["Nr. dokumentu"]),
-        FIRMA: company
-      };
-    });
+//     const addDep = addDepartment(changeNameColumns);
+//     const [findItems] = await connect_SQL.query('SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?', [company]);
 
-    const addDep = addDepartment(changeNameColumns);
-    const [findItems] = await connect_SQL.query('SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?', [company]);
+//     // jeśli nie będzie możliwe dopasowanie ownerów, lokalizacji to wyskoczy bład we froncie
+//     let errorDepartments = [];
+//     addDep.forEach(item => {
+//       if (!findItems.some(findItem => findItem.DEPARTMENT === item.DZIAL)) {
+//         // Jeśli DZIAL nie ma odpowiednika, dodaj do errorDepartments
+//         if (!errorDepartments.includes(item.DZIAL)) {
+//           errorDepartments.push(item.DZIAL);
+//         }
+//       }
+//     });
 
+//     if (errorDepartments.length > 0) {
+//       return res.json({ info: `Brak danych o działach: ${errorDepartments}` });
+//     }
+//     await connect_SQL.query(`TRUNCATE TABLE company_raportFK_${company}_accountancy`);
 
-    // jeśli nie będzie możliwe dopasowanie ownerów, lokalizacji to wyskoczy bład we froncie
-    let errorDepartments = [];
-    addDep.forEach(item => {
-      if (!findItems.some(findItem => findItem.DEPARTMENT === item.DZIAL)) {
-        // Jeśli DZIAL nie ma odpowiednika, dodaj do errorDepartments
-        if (!errorDepartments.includes(item.DZIAL)) {
-          errorDepartments.push(item.DZIAL);
-        }
-      }
-    });
+//     const values = addDep.map(item => [
+//       item.NUMER,
+//       item.KONTRAHENT,
+//       item.NR_KONTRAHENTA,
+//       item.DO_ROZLICZENIA,
+//       item.TERMIN,
+//       item.KONTO,
+//       item.TYP_DOKUMENTU,
+//       item.DZIAL,
+//       item.FIRMA
+//     ]);
 
-    if (errorDepartments.length > 0) {
-      return res.json({ info: `Brak danych o działach: ${errorDepartments}` });
-    }
-    await connect_SQL.query(`TRUNCATE TABLE company_raportFK_${company}_accountancy`);
+//     const query = `
+//       INSERT IGNORE INTO company_raportFK_${company}_accountancy
+//         (NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL, FIRMA)
+//       VALUES
+//         ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
+//     `;
 
-    const values = addDep.map(item => [
-      item.NUMER,
-      item.KONTRAHENT,
-      item.NR_KONTRAHENTA,
-      item.DO_ROZLICZENIA,
-      item.TERMIN,
-      item.KONTO,
-      item.TYP_DOKUMENTU,
-      item.DZIAL,
-      item.FIRMA
-    ]);
+//     await connect_SQL.query(query, values.flat());
 
-    const query = `
-      INSERT IGNORE INTO company_raportFK_${company}_accountancy
-        (NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL, FIRMA) 
-      VALUES 
-        ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
-    `;
+//     await connect_SQL.query(`UPDATE company_fk_updates_date SET DATE = ?, COUNTER = ? WHERE TITLE = 'accountancy' AND COMPANY = ?`, [checkDate(new Date()), addDep.length || 0, company]);
 
-    await connect_SQL.query(query, values.flat());
-
-    await connect_SQL.query(`UPDATE company_fk_updates_date SET DATE = ?, COUNTER = ? WHERE TITLE = 'accountancy' AND COMPANY = ?`, [checkDate(new Date()), addDep.length || 0, company]);
-
-    res.json({ info: 'Dane zaktualizowane.' });
-  }
-  catch (error) {
-    logEvents(
-      `addDataFromExcelFileController, accountancyFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.json({ info: 'Dane zaktualizowane.' });
+//   }
+//   catch (error) {
+//     logEvents(
+//       `addDataFromExcelFileController, accountancyFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 const randomFile = async (rows, res) => {
   try {
-
-    const filteredData = rows.map(item => {
+    const filteredData = rows.map((item) => {
       const DATA_DODANIA = isExcelDate(item.data)
         ? excelDateToISODate(item.data)
         : null;
@@ -338,15 +331,15 @@ const randomFile = async (rows, res) => {
         NUMER_FV: item.faktura,
         KANCELARIA: item.firma,
         DATA_DODANIA,
-        FIRMA: 'KRT'
+        FIRMA: "KRT",
       };
     });
 
-    const values = filteredData.map(item => [
+    const values = filteredData.map((item) => [
       item.NUMER_FV,
       item.DATA_DODANIA,
       item.KANCELARIA,
-      item.FIRMA
+      item.FIRMA,
     ]);
 
     const query = `
@@ -357,7 +350,6 @@ const randomFile = async (rows, res) => {
     `;
 
     await connect_SQL.query(query, values.flat());
-    console.log(filteredData);
     res.end();
   } catch (error) {
     logEvents(
@@ -378,7 +370,7 @@ const documentsFromFile = async (req, res) => {
     const data = new Uint8Array(buffer);
 
     if (!isExcelFile(data)) {
-      console.log('error');
+      console.log("error");
       return res.status(500).json({ error: "Invalid file" });
     }
 
@@ -389,18 +381,14 @@ const documentsFromFile = async (req, res) => {
 
     if (type === "becared") {
       return becaredFile(rows, res);
-    }
-    else if (type === "rubicon") {
+    } else if (type === "rubicon") {
       return rubiconFile(rows, res);
-    }
-    else if (type === "random") {
+    } else if (type === "random") {
       return randomFile(rows, res);
-    }
-    else {
+    } else {
       return res.status(500).json({ error: "Invalid file" });
     }
-  }
-  catch (error) {
+  } catch (error) {
     logEvents(
       `addDataFromExcelFileController, documentsFromFile: ${error}`,
       "reqServerErrors.txt"
@@ -411,5 +399,5 @@ const documentsFromFile = async (req, res) => {
 
 module.exports = {
   documentsFromFile,
-  accountancyFile
+  // accountancyFile
 };

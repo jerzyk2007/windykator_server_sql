@@ -110,28 +110,7 @@ const newUserTableSettings = {
   },
 };
 
-// const addDepartment = (documents) => {
-//     return documents
-//         .map((document) => {
-//             const match = document.NUMER?.match(/D(\d+)/);
-//             if (match) {
-//                 const dzialNumber = match[1].padStart(3, "0"); // Wypełnia do trzech cyfr
-//                 return {
-//                     ...document,
-//                     DZIAL: dzialMap[`D${dzialNumber}`]
-//                         ? dzialMap[`D${dzialNumber}`]
-//                         : `D${dzialNumber}`, // Tworzy nową wartość z "D" i trzema cyframi
-//                 };
-//             } else {
-//                 return {
-//                     ...document,
-//                     DZIAL: "KSIĘGOWOŚĆ", // Domyślna wartość, jeśli nie można wygenerować nazwy
-//                 };
-//             }
-//         })
-//         .filter(Boolean); // Usuwa undefined z tablicy
-// };
-
+// rozkodowuje nr działu na podstawie numeru faktury, chyba że RAC
 const addDepartment = (documents) => {
   return documents.map((document) => {
     // Jeśli MARKER = 'RAC', ustaw DZIAL = 'RAC'

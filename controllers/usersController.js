@@ -2,19 +2,27 @@ const { connect_SQL } = require("../config/dbConn");
 const bcryptjs = require("bcryptjs");
 const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
-const { newUserTableSettings, raportSettings } = require('./manageDocumentAddition');
-const { generatePassword } = require('./manageDocumentAddition');
-const { sendEmail } = require('./mailController');
+const {
+  newUserTableSettings,
+  raportSettings,
+} = require("./manageDocumentAddition");
+const { generatePassword } = require("./manageDocumentAddition");
+const { sendEmail } = require("./mailController");
 
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
-const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) => {
+const verifyUserTableConfig = async (
+  id_user,
+  departments,
+  columnsFromSettings
+) => {
   try {
-
     // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
     if (!departments.length) return;
 
-    const whereClauses = departments.map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`).join(' OR ');
-    const values = departments.flatMap(dep => [dep.department, dep.company]);
+    const whereClauses = departments
+      .map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`)
+      .join(" OR ");
+    const values = departments.flatMap((dep) => [dep.department, dep.company]);
 
     const query = `
   SELECT DISTINCT ji.AREA
@@ -34,9 +42,11 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     );
 
     const areaDep = columnsFromSettings.reduce((acc, column) => {
-      column.areas.forEach(area => {
+      column.areas.forEach((area) => {
         if (area.available) {
-          const existingEntry = acc.find(entry => entry.hasOwnProperty(area.name));
+          const existingEntry = acc.find((entry) =>
+            entry.hasOwnProperty(area.name)
+          );
           if (existingEntry) {
             existingEntry[area.name].push({
               accessorKey: column.accessorKey,
@@ -47,13 +57,15 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
             });
           } else {
             acc.push({
-              [area.name]: [{
-                accessorKey: column.accessorKey,
-                header: column.header,
-                filterVariant: column.filterVariant,
-                type: column.type,
-                // hide: area.hide
-              }]
+              [area.name]: [
+                {
+                  accessorKey: column.accessorKey,
+                  header: column.header,
+                  filterVariant: column.filterVariant,
+                  type: column.type,
+                  // hide: area.hide
+                },
+              ],
             });
           }
         }
@@ -62,16 +74,15 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     }, []);
 
     //  obszary(area) do jakich ma dostęp uzytkownik
-    const areaUsers = getUserAreas.map(item => item.AREA);
+    const areaUsers = getUserAreas.map((item) => item.AREA);
 
     // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
-    const filteredAreas = areaDep
-      .filter(area =>
-        Object.keys(area).some(key => areaUsers.includes(key))
-      );
+    const filteredAreas = areaDep.filter((area) =>
+      Object.keys(area).some((key) => areaUsers.includes(key))
+    );
 
     // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
-    const combinedObjects = filteredAreas.flatMap(area =>
+    const combinedObjects = filteredAreas.flatMap((area) =>
       Object.entries(area)
         .filter(([key]) => areaUsers.includes(key))
         .flatMap(([, values]) => values)
@@ -79,14 +90,16 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
 
     // 3. Usuń duplikaty na podstawie accessorKey.
     const uniqueObjects = combinedObjects.reduce((acc, obj) => {
-      if (!acc.some(item => item.accessorKey === obj.accessorKey)) {
+      if (!acc.some((item) => item.accessorKey === obj.accessorKey)) {
         acc.push(obj);
       }
       return acc;
     }, []);
 
     // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
-    const assignedUserNewColumns = uniqueObjects.map(column => column.accessorKey);
+    const assignedUserNewColumns = uniqueObjects.map(
+      (column) => column.accessorKey
+    );
 
     const newFilteredSize = () => {
       const newSize = assignedUserNewColumns.reduce((acc, key) => {
@@ -102,32 +115,34 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
       return newSize;
     };
 
-
     const newFilteredeOrder = () => {
-
-      const checkOrder = checkDepartments[0]?.tableSettings?.order ? checkDepartments[0].tableSettings.order : [];
+      const checkOrder = checkDepartments[0]?.tableSettings?.order
+        ? checkDepartments[0].tableSettings.order
+        : [];
 
       if (checkOrder.length) {
-        const filteredOrder = checkOrder.filter(item =>
-          assignedUserNewColumns.includes(item) || item === 'mrt-row-spacer'
+        const filteredOrder = checkOrder.filter(
+          (item) =>
+            assignedUserNewColumns.includes(item) || item === "mrt-row-spacer"
         );
 
         // Sprawdzamy, które elementy z `assignedUserNewColumns` są nowe (nie ma ich w `checkDepartments[0].tableSettings.order`)
-        const newColumns = assignedUserNewColumns.filter(item => !checkDepartments[0].tableSettings.order.includes(item));
+        const newColumns = assignedUserNewColumns.filter(
+          (item) => !checkDepartments[0].tableSettings.order.includes(item)
+        );
 
         // Znajdujemy indeks przedostatniego elementu (przed 'mrt-row-spacer')
-        const indexBeforeSpacer = filteredOrder.indexOf('mrt-row-spacer');
+        const indexBeforeSpacer = filteredOrder.indexOf("mrt-row-spacer");
 
         // Tworzymy nową tablicę, dodając nowe elementy przed ostatnim elementem ('mrt-row-spacer')
         const finalOrder = [
           ...filteredOrder.slice(0, indexBeforeSpacer), // Wszystkie elementy przed 'mrt-row-spacer'
           ...newColumns, // Dodajemy nowe elementy
-          'mrt-row-spacer' // Zachowujemy 'mrt-row-spacer' na końcu
+          "mrt-row-spacer", // Zachowujemy 'mrt-row-spacer' na końcu
         ];
         return finalOrder;
-      }
-      else {
-        const finalOrder = [...assignedUserNewColumns, 'mrt-row-spacer'];
+      } else {
+        const finalOrder = [...assignedUserNewColumns, "mrt-row-spacer"];
         return finalOrder;
       }
     };
@@ -147,11 +162,25 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     };
 
     const newTableSettings = {
-      size: checkDepartments[0]?.tableSettings?.size && Object.keys(checkDepartments[0]?.tableSettings?.size).length > 0 ? newFilteredSize() : {},
-      order: checkDepartments[0]?.tableSettings?.order?.length ? newFilteredeOrder() : [],
-      visible: checkDepartments[0]?.tableSettings?.visible && Object.keys(checkDepartments[0]?.tableSettings?.visible).length > 0 ? newFilteredeVisible() : {},
-      pagination: checkDepartments[0]?.tableSettings?.pagination ? checkDepartments[0].tableSettings.pagination : { pageIndex: 0, pageSize: 10 },
-      pinning: checkDepartments[0]?.tableSettings?.pinning ? checkDepartments[0].tableSettings.pinning : { "left": [], "right": [] },
+      size:
+        checkDepartments[0]?.tableSettings?.size &&
+        Object.keys(checkDepartments[0]?.tableSettings?.size).length > 0
+          ? newFilteredSize()
+          : {},
+      order: checkDepartments[0]?.tableSettings?.order?.length
+        ? newFilteredeOrder()
+        : [],
+      visible:
+        checkDepartments[0]?.tableSettings?.visible &&
+        Object.keys(checkDepartments[0]?.tableSettings?.visible).length > 0
+          ? newFilteredeVisible()
+          : {},
+      pagination: checkDepartments[0]?.tableSettings?.pagination
+        ? checkDepartments[0].tableSettings.pagination
+        : { pageIndex: 0, pageSize: 10 },
+      pinning: checkDepartments[0]?.tableSettings?.pinning
+        ? checkDepartments[0].tableSettings.pinning
+        : { left: [], right: [] },
     };
 
     await connect_SQL.query(
@@ -162,9 +191,7 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
       "Update company_users SET columns = ? WHERE id_user = ?",
       [JSON.stringify(uniqueObjects), id_user]
     );
-
-  }
-  catch (error) {
+  } catch (error) {
     logEvents(
       `usersController, verifyUserTableConfig: ${error}`,
       "reqServerErrors.txt"
@@ -172,7 +199,6 @@ const verifyUserTableConfig = async (id_user, departments, columnsFromSettings) 
     // console.error(error);
   }
 };
-
 
 // rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
@@ -201,7 +227,15 @@ const createNewUser = async (req, res) => {
 
     await connect_SQL.query(
       "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [username, usersurname, userlogin, password.hashedPwd, JSON.stringify(roles), JSON.stringify(newUserTableSettings), JSON.stringify(raportSettings)]
+      [
+        username,
+        usersurname,
+        userlogin,
+        password.hashedPwd,
+        JSON.stringify(roles),
+        JSON.stringify(newUserTableSettings),
+        JSON.stringify(raportSettings),
+      ]
     );
 
     const mailOptions = {
@@ -395,9 +429,10 @@ const changeUserDepartments = async (req, res) => {
   const { id_user } = req.params;
   const { departments } = req.body;
   try {
-
     // pobieram wszytskie kolumny dla tabel które sa opisane w programie
-    const [getColumns] = await connect_SQL.query('SELECT * FROM company_table_columns');
+    const [getColumns] = await connect_SQL.query(
+      "SELECT * FROM company_table_columns"
+    );
 
     if (departments?.length > 0) {
       await verifyUserTableConfig(id_user, departments, getColumns);
@@ -490,10 +525,9 @@ const getUsersData = async (req, res) => {
         .map((user) => {
           if (user.roles) {
             user.roles = Object.keys(user.roles).map((role) => role);
-          } if (user.departments) {
-            // user.newDepartments = [...user.departments];
-            user.oldDepartments = user.departments.map(dep => dep.department);
-            // console.log(test);
+          }
+          if (user.departments) {
+            user.oldDepartments = user.departments.map((dep) => dep.department);
           }
           return user;
         })
@@ -627,13 +661,7 @@ const getRaportDepartmentSettings = async (req, res) => {
       result[0]?.raportSettings?.raportDepartments &&
       Object.keys(result[0].raportSettings.raportDepartments).length > 0
     ) {
-      // res.json(JSON.parse(result[0].raportSettings.raportDepartments));
-
-      // console.log(JSON.parse(result[0].raportSettings.raportDepartments));
       return res.json(JSON.parse(result[0].raportSettings.raportDepartments));
-      // return res.json(result[0].raportSettings.raportDepartments);
-      // res.json({});
-
     } else {
       return res.json({});
     }
@@ -713,11 +741,9 @@ const getRaportAdviserSettings = async (req, res) => {
     ) {
       return res.json(JSON.parse(result[0].raportSettings.raportAdvisers));
       // return res.json(result[0].raportSettings.raportAdvisers);
-
     } else {
       return res.json({});
     }
-
   } catch (error) {
     logEvents(
       `usersController, getRaportAdviserSettings: ${error}`,
@@ -744,5 +770,5 @@ module.exports = {
   getRaportDepartmentSettings,
   saveRaporAdviserSettings,
   getRaportAdviserSettings,
-  verifyUserTableConfig
+  verifyUserTableConfig,
 };

@@ -1,34 +1,11 @@
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
-const {
-  updateData,
-  updateDocuments,
-  updateSettlementDescription,
-  addDocumentToDatabase,
-  updateDocZal,
-  updateCarReleaseDates,
-  updateSettlements,
-  updateSettlementDescriptionCompany,
-} = require("./getDataFromMSSQL");
-const { testMail } = require("./mailController");
-// const { getAccountancyDataMsSQL } = require("./fkRaportController");
+const { updateData } = require("./getDataFromMSSQL");
 const { prepareRac } = require("./repairDataController");
-const {
-  getAccountancyDataMsSQL,
-  generateRaportCompany,
-} = require("./generateRaportFK");
 
 const getTime = async (req, res) => {
   try {
     // await updateData();
-    // await updateDocuments();
-    // await updateSettlementDescription();
-    // await generateHistoryDocuments('KRT');
-    // await copyDbtoDB();
-
-    // await addDocToHistory();
-    // await getAccountancyDataMsSQL('KRT', 1);
-    // await getAccountancyDataMsSQL('KEM', 1);
 
     // await prepareRac();
 
