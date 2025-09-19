@@ -13,7 +13,7 @@ const fs = require("fs");
 const app = express();
 const compression = require("compression");
 //wywołuje cykleczne funkcje z pliku getDataFromMSSQL
-require('./controllers/getDataFromMSSQL');
+require("./controllers/getDataFromMSSQL");
 // const http = require("http");
 
 // limit to 10 MB
@@ -42,7 +42,6 @@ app.use("/reset-password", require("./routes/resetPassword"));
 app.use("/login", require("./routes/login"));
 app.use("/refresh", require("./routes/refresh"));
 app.use("/logout", require("./routes/logout"));
-
 
 // // //protected routes
 app.use(verifyJWT);
@@ -76,7 +75,6 @@ const options = {
 //   timezone: "Europe/Warsaw"
 // });
 
-
 //ustawienie servera linux
 // https
 //   .createServer(options, app)
@@ -91,4 +89,3 @@ const options = {
 app.listen(3500, () => {
   console.log(`Server is listening on port 3500`);
 });
-
