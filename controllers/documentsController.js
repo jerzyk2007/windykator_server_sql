@@ -3,7 +3,7 @@ const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 // const { addDepartment } = require('./manageDocumentAddition');
 
 const getAllDocumentsSQL =
-  "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department";
+  "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU, DA.KRD   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department";
 
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info) => {
@@ -13,7 +13,6 @@ const getDataDocuments = async (id_user, info) => {
       "SELECT  permissions, username, usersurname, departments FROM company_users WHERE id_user = ?",
       [id_user]
     );
-
     const {
       permissions = {},
       username,
@@ -126,6 +125,14 @@ const getDataDocuments = async (id_user, info) => {
       } else if (truePermissions[0] === "Basic") {
         filteredData = [];
       }
+    } else if (info === "krd") {
+      if (truePermissions[0] === "Standard") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE  ${sqlCondition} AND DA.KRD IS NOT NULL`
+        );
+      } else if (truePermissions[0] === "Basic") {
+        filteredData = [];
+      }
     }
 
     return { data: filteredData, permission: truePermissions[0] };
@@ -170,108 +177,96 @@ const isExcelDate = (value) => {
 };
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
-const isExcelFile = (data) => {
-  const excelSignature = [0x50, 0x4b, 0x03, 0x04];
-  for (let i = 0; i < excelSignature.length; i++) {
-    if (data[i] !== excelSignature[i]) {
-      return false;
-    }
-  }
-  return true;
-};
+// const isExcelFile = (data) => {
+//   const excelSignature = [0x50, 0x4b, 0x03, 0x04];
+//   for (let i = 0; i < excelSignature.length; i++) {
+//     if (data[i] !== excelSignature[i]) {
+//       return false;
+//     }
+//   }
+//   return true;
+// };
 
 // SQL funkcja która dodaje dane z becared
-const becaredFile = async (rows, res) => {
-  if (
-    !("Numery Faktur" in rows[0]) ||
-    !("Etap Sprawy" in rows[0]) ||
-    !("Ostatni komentarz" in rows[0]) ||
-    !("Data ostatniego komentarza" in rows[0]) ||
-    !("Numer sprawy" in rows[0]) ||
-    !("Suma roszczeń" in rows[0])
-  ) {
-    return res.status(500).json({ error: "Invalid file" });
-  }
+// const becaredFile = async (rows, res) => {
+//   if (
+//     !("Numery Faktur" in rows[0]) ||
+//     !("Etap Sprawy" in rows[0]) ||
+//     !("Ostatni komentarz" in rows[0]) ||
+//     !("Data ostatniego komentarza" in rows[0]) ||
+//     !("Numer sprawy" in rows[0]) ||
+//     !("Suma roszczeń" in rows[0])
+//   ) {
+//     return res.status(500).json({ error: "Invalid file" });
+//   }
 
-  try {
-    for (const row of rows) {
-      const [findDoc] = await connect_SQL.query(
-        "SELECT id_document FROM company_documents WHERE NUMER_FV = ?",
-        [row["Numery Faktur"]]
-      );
-      if (findDoc[0]?.id_document) {
-        const [checkDoc] = await connect_SQL.query(
-          "SELECT document_id FROM company_documents_actions WHERE document_id = ?",
-          [findDoc[0].id_document]
-        );
-        if (checkDoc[0]?.document_id) {
-          const STATUS_SPRAWY_KANCELARIA = row["Etap Sprawy"]
-            ? row["Etap Sprawy"]
-            : "-";
-          const KOMENTARZ_KANCELARIA_BECARED = row["Ostatni komentarz"]
-            ? row["Ostatni komentarz"]
-            : "-";
-          const DATA_KOMENTARZA_BECARED = isExcelDate(
-            row["Data ostatniego komentarza"]
-          )
-            ? excelDateToISODate(row["Data ostatniego komentarza"])
-            : "-";
-          const NUMER_SPRAWY_BECARED = row["Numer sprawy"]
-            ? row["Numer sprawy"]
-            : "-";
-          const KWOTA_WINDYKOWANA_BECARED = row["Suma roszczeń"]
-            ? row["Suma roszczeń"]
-            : 0;
-          await connect_SQL.query(
-            "UPDATE company_documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
-            [
-              STATUS_SPRAWY_KANCELARIA,
-              KOMENTARZ_KANCELARIA_BECARED,
-              NUMER_SPRAWY_BECARED,
-              KWOTA_WINDYKOWANA_BECARED,
-              DATA_KOMENTARZA_BECARED,
-              checkDoc[0].document_id,
-            ]
-          );
-        }
-      }
-    }
+//   try {
+//     for (const row of rows) {
+//       const [findDoc] = await connect_SQL.query(
+//         "SELECT id_document FROM company_documents WHERE NUMER_FV = ?",
+//         [row["Numery Faktur"]]
+//       );
+//       if (findDoc[0]?.id_document) {
+//         const [checkDoc] = await connect_SQL.query(
+//           "SELECT document_id FROM company_documents_actions WHERE document_id = ?",
+//           [findDoc[0].id_document]
+//         );
+//         if (checkDoc[0]?.document_id) {
+//           const STATUS_SPRAWY_KANCELARIA = row["Etap Sprawy"]
+//             ? row["Etap Sprawy"]
+//             : "-";
+//           const KOMENTARZ_KANCELARIA_BECARED = row["Ostatni komentarz"]
+//             ? row["Ostatni komentarz"]
+//             : "-";
+//           const DATA_KOMENTARZA_BECARED = isExcelDate(
+//             row["Data ostatniego komentarza"]
+//           )
+//             ? excelDateToISODate(row["Data ostatniego komentarza"])
+//             : "-";
+//           const NUMER_SPRAWY_BECARED = row["Numer sprawy"]
+//             ? row["Numer sprawy"]
+//             : "-";
+//           const KWOTA_WINDYKOWANA_BECARED = row["Suma roszczeń"]
+//             ? row["Suma roszczeń"]
+//             : 0;
+//           await connect_SQL.query(
+//             "UPDATE company_documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
+//             [
+//               STATUS_SPRAWY_KANCELARIA,
+//               KOMENTARZ_KANCELARIA_BECARED,
+//               NUMER_SPRAWY_BECARED,
+//               KWOTA_WINDYKOWANA_BECARED,
+//               DATA_KOMENTARZA_BECARED,
+//               checkDoc[0].document_id,
+//             ]
+//           );
+//         }
+//       }
+//     }
 
-    res.status(201).json({ message: "Documents are updated" });
-  } catch (error) {
-    logEvents(
-      `documentsController, becaredFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.status(201).json({ message: "Documents are updated" });
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, becaredFile: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //SQL zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
 // funkcja zmieniająca dane w poszczególnym dokumncie (editRowTable)
 const changeSingleDocument = async (req, res) => {
   const { id_document, documentItem } = req.body;
   try {
-    // const [documentsExist] = await connect_SQL.query(
-    //   "SELECT id_document from company_documents WHERE id_document = ?",
-    //   [id_document]
-    // );
-
-    // if (documentsExist[0]?.id_document) {
-    //   await connect_SQL.query(
-    //     "UPDATE documents SET BRUTTO = ?, NETTO = ? WHERE id_document = ?",
-    //     [documentItem.BRUTTO, documentItem.NETTO, id_document]
-    //   );
-    // }
-
-    const [documents_ActionsExist] = await connect_SQL.query(
+    const [documents_actionsExist] = await connect_SQL.query(
       "SELECT id_action from company_documents_actions WHERE document_id = ?",
       [id_document]
     );
 
-    if (documents_ActionsExist[0]?.id_action) {
+    if (documents_actionsExist[0]?.id_action) {
       await connect_SQL.query(
-        "UPDATE company_documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ?, INFORMACJA_ZARZAD = ?  WHERE document_id = ?",
+        "UPDATE company_documents_actions SET DZIALANIA = ?, JAKA_KANCELARIA_TU = ?, POBRANO_VAT = ?, ZAZNACZ_KONTRAHENTA = ?, UWAGI_ASYSTENT = ?, BLAD_DORADCY = ?, DATA_WYDANIA_AUTA = ?, OSTATECZNA_DATA_ROZLICZENIA = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ?, INFORMACJA_ZARZAD = ?, KRD = ?  WHERE document_id = ?",
         [
           documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK"
             ? documentItem.DZIALANIA
@@ -302,6 +297,9 @@ const changeSingleDocument = async (req, res) => {
             : documentItem.HISTORIA_ZMIANY_DATY_ROZLICZENIA,
           documentItem.INFORMACJA_ZARZAD
             ? JSON.stringify(documentItem.INFORMACJA_ZARZAD)
+            : null,
+          documentItem.KRD && documentItem.KRD !== "BRAK"
+            ? documentItem.KRD
             : null,
           id_document,
         ]
@@ -428,6 +426,7 @@ const getSingleDocument = async (req, res) => {
       `SELECT * FROM company_control_documents WHERE NUMER_FV = ? AND COMPANY = ?`,
       [singleDoc[0].NUMER_FV, singleDoc[0].FIRMA]
     );
+
     res.json({
       singleDoc: singleDoc[0],
       controlDoc: controlDoc[0] ? controlDoc[0] : {},
