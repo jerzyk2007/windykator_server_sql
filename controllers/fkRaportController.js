@@ -621,11 +621,19 @@ const generateRaportCompany = async (company) => {
           ? "TAK"
           : null;
       const PRZEDZIAL_WIEKOWANIE = checkAging(doc.TERMIN_FV);
+      // const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA
+      //   ? doc.FIRMA_ZEWNETRZNA
+      //   : doc.JAKA_KANCELARIA_TU && doc.AREA === "BLACHARNIA"
+      //   ? doc.JAKA_KANCELARIA_TU
+      //   : null;
       const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA
         ? doc.FIRMA_ZEWNETRZNA
-        : doc.JAKA_KANCELARIA_TU && doc.AREA === "BLACHARNIA"
+        : doc.AREA === "BLACHARNIA" &&
+          doc.JAKA_KANCELARIA_TU &&
+          doc.JAKA_KANCELARIA_TU !== "WINDYKACJA WEWNĘTRZNA"
         ? doc.JAKA_KANCELARIA_TU
         : null;
+
       const CZY_W_KANCELARI = JAKA_KANCELARIA ? "TAK" : "NIE";
       const HISTORIA_ZMIANY_DATY_ROZLICZENIA = doc
         ?.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length
@@ -1313,17 +1321,6 @@ const generateRaportData = async (req, res) => {
 
     const filteredData = accountingData.filter((item) => item.data.length > 0);
 
-    // sortowanie w tablicach data po TERMIN_PLATNOSCI_FV rosnąco
-    // const sortedData = filteredData.map((item) => {
-    //   if (Array.isArray(item.data)) {
-    //     item.data.sort(
-    //       (a, b) =>
-    //         new Date(a.DATA_WYSTAWIENIA_FV) - new Date(b.DATA_WYSTAWIENIA_FV)
-    //     );
-    //   }
-    //   return item;
-    // });
-
     //sortowanie wg kolejności arkuszy do excela
     const sortedArray = filteredData.sort(
       (a, b) => sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
@@ -1334,10 +1331,12 @@ const generateRaportData = async (req, res) => {
       [JSON.stringify(sortedArray), company]
     );
 
-    res.json({
-      // date: reportDate.find((row) => row.TITLE === "generate")?.DATE || " ",
-      date: reportInfo.reportDate,
-    });
+    // res.json({
+    //   // date: reportDate.find((row) => row.TITLE === "generate")?.DATE || " ",
+    //   date: reportInfo.reportDate,
+    // });
+
+    res.end();
   } catch (error) {
     logEvents(`fKRaport, generateRaportData: ${error}`, "reqServerErrors.txt");
     // res.status(500).json({ error: "Server error" });
