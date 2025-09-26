@@ -770,9 +770,25 @@ const prepareKRD = async () => {
   }
 };
 
+const checkAdminUsers = async () => {
+  try {
+    const [result] = await connect_SQL.query("SELECT * FROM company_users");
+    console.log(result);
+
+    for (const user of result) {
+      if (user.roles?.Admin) {
+        console.log(user.userlogin);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
-    await prepareKRD();
+    // await prepareKRD();
+    await checkAdminUsers();
   } catch (error) {
     console.error(error);
   }

@@ -3,6 +3,7 @@ const ROLES_LIST = {
   User: 100,
   Editor: 110,
   Controller: 120,
+  DNiKN: 150,
   FK_KRT: 200,
   FK_KEM: 201,
   FK_RAC: 202,
