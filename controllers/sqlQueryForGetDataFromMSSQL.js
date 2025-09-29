@@ -68,7 +68,7 @@ GROUP BY
     MAX([kl_nip]) AS KONTR_NIP,  
     'RAC' AS MARKER
 FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
- WHERE [dataWystawienia]> '${twoDaysAgo}'
+ WHERE [dataWystawienia]> '${twoDaysAgo}' AND [faktn_fakt_nr_caly] IS NOT NULL
 GROUP BY [faktn_fakt_nr_caly];
     `;
   }
