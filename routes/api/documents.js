@@ -14,7 +14,12 @@ router
   .route("/change-single-document")
   .patch(verifyRoles(ROLES_LIST.User), Documents.changeSingleDocument);
 
-// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all 
+// pobiera możliwe działy dla danej firmy (tylko dla BL)
+router
+  .route("/get-available-deps/:company")
+  .get(verifyRoles(ROLES_LIST.User), Documents.getAvailableDeps);
+
+// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all
 router
   .route("/get-data-table/:id_user/:info")
   .get(verifyRoles(ROLES_LIST.User), Documents.getDataTable);
@@ -37,16 +42,25 @@ router
 // zapisuje zmiany w chat kontroli dokuemntacji
 router
   .route("/change-control-chat")
-  .patch(verifyRoles(ROLES_LIST.Controller, ROLES_LIST.Admin), Documents.changeControlChat);
+  .patch(
+    verifyRoles(ROLES_LIST.Controller, ROLES_LIST.Admin),
+    Documents.changeControlChat
+  );
 
 // pobieram dane z chata kontroli dokumentacji
 router
   .route("/get-control-document/:doc_nr")
-  .get(verifyRoles(ROLES_LIST.Controller, ROLES_LIST.Admin), Documents.getDataDocumentsControl);
+  .get(
+    verifyRoles(ROLES_LIST.Controller, ROLES_LIST.Admin),
+    Documents.getDataDocumentsControl
+  );
 
 // zapisuje zmiany w  kontroli dokuemntu
 router
   .route("/change-document-control")
-  .patch(verifyRoles(ROLES_LIST.Controller, ROLES_LIST.Admin), Documents.changeDocumentControl);
+  .patch(
+    verifyRoles(ROLES_LIST.Controller, ROLES_LIST.Admin),
+    Documents.changeDocumentControl
+  );
 
 module.exports = router;

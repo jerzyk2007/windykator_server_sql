@@ -163,9 +163,16 @@ const getAllDocuments = async (req, res) => {
 //SQL zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
 // funkcja zmieniająca dane w poszczególnym dokumncie (editRowTable)
 const changeSingleDocument = async (req, res) => {
-  const { id_document, documentItem } = req.body;
+  const { id_document, documentItem, changeDeps } = req.body;
 
   try {
+    if (changeDeps) {
+      await connect_SQL.query(
+        "UPDATE company_documents SET DZIAL = ? WHERE id_document = ?",
+        [changeDeps, id_document]
+      );
+    }
+
     const [documents_actionsExist] = await connect_SQL.query(
       "SELECT id_action from company_documents_actions WHERE document_id = ?",
       [id_document]
@@ -262,6 +269,28 @@ const changeSingleDocument = async (req, res) => {
   }
 };
 
+// pobiera dostępne nazwy działów dla BL - funkcja dla zmiany działu w BL
+const getAvailableDeps = async (req, res) => {
+  // const { id_document, documentItem } = req.body;
+
+  try {
+    const [departments] = await connect_SQL.query(
+      `SELECT distinct DEPARTMENT FROM testy_windykacja.company_join_items WHERE  AREA = 'BLACHARNIA' AND COMPANY = ?`,
+      [req.params.company]
+    );
+    const filteredDeps =
+      Array.isArray(departments) && departments.length > 0
+        ? departments.map((d) => d.DEPARTMENT).filter((dep) => dep !== "D208")
+        : []; // jeśli tablica pusta lub nie istnieje, zwróć pustą tablicę
+
+    res.json(filteredDeps);
+  } catch (error) {
+    logEvents(
+      `documentsController, getAvailableDeps: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
 // SQL pobieram dane do tabeli
 const getDataTable = async (req, res) => {
   const { id_user, info } = req.params;
@@ -517,4 +546,5 @@ module.exports = {
   changeControlChat,
   getDataDocumentsControl,
   changeDocumentControl,
+  getAvailableDeps,
 };
