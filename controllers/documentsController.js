@@ -160,104 +160,11 @@ const getAllDocuments = async (req, res) => {
   }
 };
 
-// Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
-const excelDateToISODate = (excelDate) => {
-  const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
-  return date.toISOString().split("T")[0]; // Pobranie daty w formacie "yyyy-mm-dd"
-};
-
-// funkcja wykonuje sprawdzenie czy data jest sformatowana w excelu czy zwykły string
-const isExcelDate = (value) => {
-  // Sprawdź, czy wartość jest liczbą i jest większa od zera (Excelowa data to liczba większa od zera)
-  if (typeof value === "number" && value > 0) {
-    // Sprawdź, czy wartość mieści się w zakresie typowych wartości dat w Excelu
-    return value >= 0 && value <= 2958465; // Zakres dat w Excelu: od 0 (1900-01-01) do 2958465 (9999-12-31)
-  }
-  return false;
-};
-
-// weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
-// const isExcelFile = (data) => {
-//   const excelSignature = [0x50, 0x4b, 0x03, 0x04];
-//   for (let i = 0; i < excelSignature.length; i++) {
-//     if (data[i] !== excelSignature[i]) {
-//       return false;
-//     }
-//   }
-//   return true;
-// };
-
-// SQL funkcja która dodaje dane z becared
-// const becaredFile = async (rows, res) => {
-//   if (
-//     !("Numery Faktur" in rows[0]) ||
-//     !("Etap Sprawy" in rows[0]) ||
-//     !("Ostatni komentarz" in rows[0]) ||
-//     !("Data ostatniego komentarza" in rows[0]) ||
-//     !("Numer sprawy" in rows[0]) ||
-//     !("Suma roszczeń" in rows[0])
-//   ) {
-//     return res.status(500).json({ error: "Invalid file" });
-//   }
-
-//   try {
-//     for (const row of rows) {
-//       const [findDoc] = await connect_SQL.query(
-//         "SELECT id_document FROM company_documents WHERE NUMER_FV = ?",
-//         [row["Numery Faktur"]]
-//       );
-//       if (findDoc[0]?.id_document) {
-//         const [checkDoc] = await connect_SQL.query(
-//           "SELECT document_id FROM company_documents_actions WHERE document_id = ?",
-//           [findDoc[0].id_document]
-//         );
-//         if (checkDoc[0]?.document_id) {
-//           const STATUS_SPRAWY_KANCELARIA = row["Etap Sprawy"]
-//             ? row["Etap Sprawy"]
-//             : "-";
-//           const KOMENTARZ_KANCELARIA_BECARED = row["Ostatni komentarz"]
-//             ? row["Ostatni komentarz"]
-//             : "-";
-//           const DATA_KOMENTARZA_BECARED = isExcelDate(
-//             row["Data ostatniego komentarza"]
-//           )
-//             ? excelDateToISODate(row["Data ostatniego komentarza"])
-//             : "-";
-//           const NUMER_SPRAWY_BECARED = row["Numer sprawy"]
-//             ? row["Numer sprawy"]
-//             : "-";
-//           const KWOTA_WINDYKOWANA_BECARED = row["Suma roszczeń"]
-//             ? row["Suma roszczeń"]
-//             : 0;
-//           await connect_SQL.query(
-//             "UPDATE company_documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
-//             [
-//               STATUS_SPRAWY_KANCELARIA,
-//               KOMENTARZ_KANCELARIA_BECARED,
-//               NUMER_SPRAWY_BECARED,
-//               KWOTA_WINDYKOWANA_BECARED,
-//               DATA_KOMENTARZA_BECARED,
-//               checkDoc[0].document_id,
-//             ]
-//           );
-//         }
-//       }
-//     }
-
-//     res.status(201).json({ message: "Documents are updated" });
-//   } catch (error) {
-//     logEvents(
-//       `documentsController, becaredFile: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
-
 //SQL zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
 // funkcja zmieniająca dane w poszczególnym dokumncie (editRowTable)
 const changeSingleDocument = async (req, res) => {
   const { id_document, documentItem } = req.body;
+
   try {
     const [documents_actionsExist] = await connect_SQL.query(
       "SELECT id_action from company_documents_actions WHERE document_id = ?",
@@ -306,7 +213,7 @@ const changeSingleDocument = async (req, res) => {
       );
     } else {
       await connect_SQL.query(
-        "INSERT INTO company_documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA_TU, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY, DATA_WYDANIA_AUTA,OSTATECZNA_DATA_ROZLICZENIA, HISTORIA_ZMIANY_DATY_ROZLICZENIA, INFORMACJA_ZARZAD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO company_documents_actions (document_id, DZIALANIA, JAKA_KANCELARIA_TU, POBRANO_VAT, ZAZNACZ_KONTRAHENTA, UWAGI_ASYSTENT, BLAD_DORADCY, DATA_WYDANIA_AUTA,OSTATECZNA_DATA_ROZLICZENIA, HISTORIA_ZMIANY_DATY_ROZLICZENIA, INFORMACJA_ZARZAD, KRD) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           id_document,
           documentItem.DZIALANIA && documentItem.DZIALANIA !== "BRAK"
@@ -339,6 +246,9 @@ const changeSingleDocument = async (req, res) => {
           documentItem.INFORMACJA_ZARZAD
             ? JSON.stringify(documentItem.INFORMACJA_ZARZAD)
             : null,
+          documentItem.KRD && documentItem.KRD !== "BRAK"
+            ? documentItem.KRD
+            : null,
         ]
       );
     }
@@ -349,7 +259,6 @@ const changeSingleDocument = async (req, res) => {
       `documentsController, changeSingleDocument: ${error}`,
       "reqServerErrors.txt"
     );
-    // res.status(500).json({ error: "Server error" });
   }
 };
 
