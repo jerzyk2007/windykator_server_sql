@@ -141,9 +141,11 @@ const rubiconFile = async (rows, res) => {
           row["Status aktualny"] !== "Zablokowana KF" &&
           row["Status aktualny"] !== "Zablokowana KF BL" &&
           row["Status aktualny"] !== "Do decyzji" &&
-          row["Status aktualny"] !== "Windykacja zablokowana bezterminowo"
+          row["Status aktualny"] !== "Windykacja zablokowana bezterminowo" &&
+          row["Status aktualny"] !== "Do wyjaśnienia"
             ? row["Status aktualny"]
             : "BRAK";
+
         if (status !== "BRAK") {
           return {
             NUMER_FV: row["Faktura nr"],
