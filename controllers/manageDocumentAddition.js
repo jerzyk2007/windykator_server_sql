@@ -113,31 +113,25 @@ const newUserTableSettings = {
 // rozkodowuje nr działu na podstawie numeru faktury, chyba że RAC
 const addDepartment = (documents) => {
   return documents.map((document) => {
-    // Jeśli MARKER = 'RAC', ustaw DZIAL = 'RAC'
-    if (document.MARKER === "RAC") {
-      return {
-        ...document,
-        DZIAL: "RAC",
-      };
+    const { FIRMA, NUMER } = document;
+
+    // 1. Jeśli firma RAC i numer kończy się na /xxxx (rok)
+    if (FIRMA === "RAC" && NUMER && /\/\d{4}$/.test(NUMER)) {
+      return { ...document, DZIAL: "RAC" };
     }
 
-    // Jeżeli numer faktury pasuje do wzorca Dxxx
-    const match = document.NUMER?.match(/D(\d+)/);
+    // 2. Jeśli numer zawiera Dxxx
+    const match = NUMER?.match(/D(\d+)/);
     if (match) {
-      const dzialNumber = match[1].padStart(3, "0"); // Wypełnia do trzech cyfr
+      const dzialNumber = match[1].padStart(3, "0");
       return {
         ...document,
-        DZIAL: dzialMap[`D${dzialNumber}`]
-          ? dzialMap[`D${dzialNumber}`]
-          : `D${dzialNumber}`, // np. D001, D118
+        DZIAL: dzialMap[`D${dzialNumber}`] || `D${dzialNumber}`,
       };
     }
 
-    // Domyślna wartość, jeśli nie pasuje żaden warunek
-    return {
-      ...document,
-      DZIAL: "KSIĘGOWOŚĆ",
-    };
+    // 3. Fallback
+    return { ...document, DZIAL: "KSIĘGOWOŚĆ" };
   });
 };
 

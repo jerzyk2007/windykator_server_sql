@@ -178,26 +178,6 @@ const rubiconFile = async (rows, res) => {
 
     await connect_SQL.query(query, [values]);
 
-    const queryHistory = `
-    INSERT INTO company_rubicon_data_history ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY) 
-    VALUES ?
-    ON DUPLICATE KEY UPDATE
-      STATUS_AKTUALNY = VALUES(STATUS_AKTUALNY),
-      FIRMA_ZEWNETRZNA = VALUES(FIRMA_ZEWNETRZNA),
-      DATA_PRZENIESIENIA_DO_WP = VALUES(DATA_PRZENIESIENIA_DO_WP),
-      COMPANY = VALUES(COMPANY)
-  `;
-
-    const valuesHistory = filteredData.map((row) => [
-      row.NUMER_FV,
-      row.STATUS_AKTUALNY,
-      row.JAKA_KANCELARIA,
-      row.DATA_PRZENIESIENIA_DO_WP,
-      row.FIRMA,
-    ]);
-
-    await connect_SQL.query(queryHistory, [valuesHistory]);
-
     await connect_SQL.query(
       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
@@ -325,33 +305,33 @@ const rubiconFile = async (rows, res) => {
 
 const randomFile = async (rows, res) => {
   try {
-    const filteredData = rows.map((item) => {
-      const DATA_DODANIA = isExcelDate(item.data)
-        ? excelDateToISODate(item.data)
-        : null;
-      return {
-        NUMER_FV: item.faktura,
-        KANCELARIA: item.firma,
-        DATA_DODANIA,
-        FIRMA: "KRT",
-      };
-    });
+    // const filteredData = rows.map((item) => {
+    //   const DATA_DODANIA = isExcelDate(item.data)
+    //     ? excelDateToISODate(item.data)
+    //     : null;
+    //   return {
+    //     NUMER_FV: item.faktura,
+    //     KANCELARIA: item.firma,
+    //     DATA_DODANIA,
+    //     FIRMA: "KRT",
+    //   };
+    // });
 
-    const values = filteredData.map((item) => [
-      item.NUMER_FV,
-      item.DATA_DODANIA,
-      item.KANCELARIA,
-      item.FIRMA,
-    ]);
+    // const values = filteredData.map((item) => [
+    //   item.NUMER_FV,
+    //   item.DATA_DODANIA,
+    //   item.KANCELARIA,
+    //   item.FIRMA,
+    // ]);
 
-    const query = `
-      INSERT IGNORE INTO company_rubicon_data_history
-        (NUMER_FV, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA, COMPANY) 
-      VALUES 
-        ${values.map(() => "(?, ?, ?, ?)").join(", ")}
-    `;
+    // const query = `
+    //   INSERT IGNORE INTO company_rubicon_data_history
+    //     (NUMER_FV, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA, COMPANY)
+    //   VALUES
+    //     ${values.map(() => "(?, ?, ?, ?)").join(", ")}
+    // `;
 
-    await connect_SQL.query(query, values.flat());
+    // await connect_SQL.query(query, values.flat());
     res.end();
   } catch (error) {
     logEvents(

@@ -785,10 +785,50 @@ const checkAdminUsers = async () => {
   }
 };
 
+const reportFK_RAC = async () => {
+  try {
+    //     await connect_SQL.query(`
+    //           CREATE TABLE company_raportFK_RAC_accountancy
+    //     LIKE company_raportFK_KEM_accountancy;
+    //           `);
+
+    //     await connect_SQL.query(`
+    //       CREATE TABLE company_fk_raport_RAC
+    // LIKE company_fk_raport_KEM;
+    //       `);
+
+    const data = [
+      {
+        title: "accountancy",
+        company: "RAC",
+      },
+      {
+        title: "generate",
+        company: "RAC",
+      },
+      {
+        title: "raport",
+        company: "RAC",
+      },
+    ];
+
+    for (const doc of data) {
+      await connect_SQL.query(
+        "INSERT INTO company_fk_updates_date (TITLE, COMPANY) VALUES (?, ?)",
+        [doc.title, doc.company]
+      );
+    }
+
+    console.log("rac");
+  } catch (error) {
+    console.error(error);
+  }
+};
 const repair = async () => {
   try {
     // await prepareKRD();
-    await checkAdminUsers();
+    // await checkAdminUsers();
+    // await reportFK_RAC();
   } catch (error) {
     console.error(error);
   }

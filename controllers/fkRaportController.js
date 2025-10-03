@@ -409,10 +409,151 @@ ORDER BY
     CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
     termin;
 `;
+    //nowe zoptymalizowane zapytanie RAC
+    const queryRAC = `
+DECLARE @datado DATETIME = '${endDate}';
+DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
+DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
 
-    const query = company === "KRT" ? queryKRT : queryKEM;
+WITH
+-- Krok 1: Pre-agregacja rozrachunków. To jest najlepsza praktyka i pozostaje bez zmian.
+cte_Rozrachunki AS (
+    SELECT
+        transakcja,
+        SUM(kwota * SIGN(0.5 - strona)) AS WnMaRozliczono,
+        SUM(CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END * SIGN(0.5 - strona)) AS WnMaRozliczono_w
+    FROM FK_Rent_SK.FK.rozrachunki
+    WHERE dataokr < @DataDoPlusJedenDzien AND czyRozliczenie = 1 AND potencjalna = 0
+    GROUP BY transakcja
+),
+-- Krok 2: Przygotowanie trzech podstawowych bloków danych z wstępną agregacją.
+-- Blok A: Zobowiązania - część 1
+cte_Zobowiazania_Blok_A AS (
+    SELECT
+        dsymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+      AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND rozdata.strona = 1
+    GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.skrot, rozdata.kurs
+),
+-- Blok B: Zobowiązania - część 2
+cte_Zobowiazania_Blok_B AS (
+    SELECT
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            SUM(rozdata.kwota) -
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.baza = 2 AND rozdata.synt IN (201, 203)
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
+      AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+),
+-- Blok C: Należności
+cte_Naleznosci_Blok_C AS (
+    SELECT
+        dSymbol, CAST(termin AS DATE) AS termin,
+        DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+        synt, poz1, poz2, kpu.skrot AS kontrahent,
+        ROUND(
+            SUM(rozdata.kwota) +
+            SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+        , 2) AS overdue
+    FROM FK_Rent_SK.FK.fk_rozdata AS rozdata
+    LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+    LEFT JOIN FK_Rent_SK.FK.fk_kontrahenci AS kpu ON rozdata.kontrahent = kpu.pozycja
+    WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
+      AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+      AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+      AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+      AND strona = 0 AND rozdata.orgStrona = 0
+    GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.skrot
+),
+-- Krok 3: Połączenie wstępnie zagregowanych bloków z zachowaniem oryginalnej logiki UNION / UNION ALL
+cte_Wszystkie_Transakcje AS (
+    -- Tutaj odtwarzamy oryginalny UNION, który usuwa duplikaty między dwoma blokami zobowiązań
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_A
+    UNION
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Zobowiazania_Blok_B
+    UNION ALL
+    -- A następnie dodajemy należności
+    SELECT dsymbol, termin, dniPrzetreminowania, synt, poz1, poz2, kontrahent, overdue FROM cte_Naleznosci_Blok_C
+),
+-- Krok 4: Końcowa, spłaszczona agregacja. To jest znacznie wydajniejsze niż wielopoziomowe grupowanie.
+cte_Zagregowane AS (
+    SELECT
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania,
+        SUM(overdue) AS płatność
+    FROM cte_Wszystkie_Transakcje
+    GROUP BY
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania
+),
+-- Krok 5: Finałowe obliczenia (funkcje okna, przedziały) i filtrowanie zer
+cte_WynikKoncowy AS (
+    SELECT
+        @DataDoDate AS stanNa,
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, płatność,
+        CASE
+            WHEN DniPrzetreminowania < 1   THEN '< 1'
+            WHEN DniPrzetreminowania <= 30 THEN '1 - 30'
+            WHEN DniPrzetreminowania <= 60 THEN '31 - 60'
+            WHEN DniPrzetreminowania <= 90 THEN '61 - 90'
+            WHEN DniPrzetreminowania <= 180 THEN '91 - 180'
+            WHEN DniPrzetreminowania <= 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        -- Warunkowe obliczanie salda
+        SUM(płatność) OVER (
+            PARTITION BY synt, CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END
+        ) AS saldoKontrahent
+    FROM cte_Zagregowane
+    WHERE ROUND(płatność, 2) <> 0
+)
+-- Końcowy SELECT
+SELECT
+    stanNa,
+    dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, przedział, płatność,
+    ROUND(saldoKontrahent, 2) AS saldoKontrahent,
+    CASE
+        WHEN ROUND(saldoKontrahent, 2) > 0 THEN 'N'
+        WHEN ROUND(saldoKontrahent, 2) < 0 THEN 'Z'
+        ELSE 'R'
+    END AS Typ
+FROM cte_WynikKoncowy
+ORDER BY
+    synt,
+    CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
+    termin
+`;
+
+    // const query = company === "KRT" ? queryKRT : queryKEM;
+    const queries = {
+      KRT: queryKRT,
+      KEM: queryKEM,
+      RAC: queryRAC,
+    };
+
+    const query = queries[company];
 
     const accountancyData = await msSqlQuery(query);
+
     const changeNameColumns = accountancyData.map((item) => {
       const rawDate = item["termin"];
       const formattedDate = rawDate
@@ -433,6 +574,7 @@ ORDER BY
     });
 
     const addDep = addDepartment(changeNameColumns);
+
     const [findItems] = await connect_SQL.query(
       "SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?",
       [company]
@@ -1307,6 +1449,7 @@ const generateRaportData = async (req, res) => {
     //sortowanie obiektów wg kolejności, żeby arkusze w excel były odpowiednio posortowane
     const sortOrder = [
       "ALL",
+      "RAC",
       "WYDANE - NIEZAPŁACONE",
       "BLACHARNIA",
       "CZĘŚCI",
@@ -1533,6 +1676,7 @@ const getBusinessRaportFK = async (req, res) => {
 
     const areaData = [
       "TOTAL",
+      "RAC",
       "WYDANE - NIEZAPŁACONE",
       "BLACHARNIA",
       "SERWIS",
@@ -1546,6 +1690,7 @@ const getBusinessRaportFK = async (req, res) => {
     const areaDataForTotal = [
       "TOTAL",
       // "WYDANE - NIEZAPŁACONE",
+      "RAC",
       "BLACHARNIA",
       "SERWIS",
       "CZĘŚCI",
