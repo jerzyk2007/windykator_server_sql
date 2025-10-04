@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { addDepartment } = require("./manageDocumentAddition");
+const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -787,15 +788,15 @@ const checkAdminUsers = async () => {
 
 const reportFK_RAC = async () => {
   try {
-    //     await connect_SQL.query(`
-    //           CREATE TABLE company_raportFK_RAC_accountancy
-    //     LIKE company_raportFK_KEM_accountancy;
-    //           `);
+    await connect_SQL.query(`
+              CREATE TABLE company_raportFK_RAC_accountancy
+        LIKE company_raportFK_KEM_accountancy;
+              `);
 
-    //     await connect_SQL.query(`
-    //       CREATE TABLE company_fk_raport_RAC
-    // LIKE company_fk_raport_KEM;
-    //       `);
+    await connect_SQL.query(`
+          CREATE TABLE company_fk_raport_RAC
+    LIKE company_fk_raport_KEM;
+          `);
 
     const data = [
       {
@@ -819,16 +820,84 @@ const reportFK_RAC = async () => {
       );
     }
 
+    await connect_SQL.query(
+      "CREATE TABLE company_fk_settlements (  id_company_fk_settlements INT NOT NULL AUTO_INCREMENT,   NUMER_FV VARCHAR(255) NOT NULL,   DO_ROZLICZENIA DECIMAL(12,2) NOT NULL,   FIRMA VARCHAR(10) NOT NULL,   PRIMARY KEY (id_company_fk_settlements),   UNIQUE (id_company_fk_settlements))"
+    );
+
     console.log("rac");
   } catch (error) {
     console.error(error);
   }
 };
+
+const as_fk = async (companies) => {
+  try {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0"); // miesiące 0–11
+    const dd = String(today.getDate()).padStart(2, "0");
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    for (const company of companies) {
+      const queryMS = accountancyFKData(company, formattedDate);
+      const accountancyData = await msSqlQuery(queryMS);
+
+      await connect_SQL.query(
+        "DELETE FROM company_fk_settlements WHERE FIRMA = ?",
+        [company]
+      );
+
+      const values = accountancyData.map((item) => [
+        item["dsymbol"],
+        item["płatność"],
+        company,
+      ]);
+
+      const query = `
+         INSERT IGNORE INTO company_fk_settlements
+        (NUMER_FV,  DO_ROZLICZENIA, FIRMA) 
+         VALUES 
+        ${values.map(() => "( ?, ?, ?)").join(", ")}
+    `;
+
+      await connect_SQL.query(query, values.flat());
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const repair_mysql = async () => {
+  try {
+    const [result] = await connect_SQL.query(`
+  SELECT CONCAT(
+    'ALTER TABLE \`', table_name, 
+    '\` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci;'
+  ) AS sql_command
+  FROM information_schema.tables
+  WHERE table_schema = 'company_windykacja';
+`);
+    // Wykonaj każdą komendę ALTER TABLE
+    for (const row of result) {
+      const sql = row.sql_command;
+      console.log("Wykonuję:", sql);
+      await connect_SQL.query(sql);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
     // await prepareKRD();
     // await checkAdminUsers();
     // await reportFK_RAC();
+
+    const companies = ["KRT", "KEM", "RAC"];
+
+    // await as_fk(companies);
+
+    // await repair_mysql();
   } catch (error) {
     console.error(error);
   }

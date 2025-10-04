@@ -1,21 +1,20 @@
 const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
-const { verifyUserTableConfig } = require('./usersController');
+const { verifyUserTableConfig } = require("./usersController");
 
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny SQL
 const changeColumns = async (req, res) => {
   const { columns } = req.body;
-
   try {
     await connect_SQL.query("TRUNCATE TABLE company_table_columns");
-
+    columns.sort((a, b) => a.accessorKey.localeCompare(b.accessorKey));
     // Teraz przygotuj dane do wstawienia
-    const values = columns.map(item => [
+    const values = columns.map((item) => [
       item.accessorKey,
       item.header,
       item.filterVariant,
       item.type,
-      JSON.stringify(item.areas)
+      JSON.stringify(item.areas),
     ]);
 
     // Przygotowanie zapytania SQL z wieloma wartościami
@@ -26,16 +25,12 @@ const changeColumns = async (req, res) => {
             ${values.map(() => "(?, ?, ?, ?, ?)").join(", ")}
         `;
 
-    // // Wykonanie zapytania INSERT
+    // Wykonanie zapytania INSERT
     await connect_SQL.query(query, values.flat());
-
-
-
 
     const [userColumns] = await connect_SQL.query(
       `SELECT id_user, columns, departments, tableSettings FROM company_users`
     );
-
 
     for (const user of userColumns) {
       await verifyUserTableConfig(user.id_user, user.departments, columns);
@@ -79,7 +74,9 @@ const getSettings = async (req, res) => {
     );
 
     //zamieniam obiekt json na tablice ze stringami, kazdy klucz to wartość string w tablicy
-    const roles = Object.entries(userSettings[0].roles[0]).map(([role]) => role);
+    const roles = Object.entries(userSettings[0].roles[0]).map(
+      ([role]) => role
+    );
     const rolesToRemove = ["Root", "Start"];
 
     rolesToRemove.forEach((roleToRemove) => {
@@ -126,7 +123,7 @@ const getSettings = async (req, res) => {
       "SELECT DISTINCT DEPARTMENT FROM company_join_items"
     );
 
-    const departmentStrings = departmentsFromJI.map(item => item.DEPARTMENT);
+    const departmentStrings = departmentsFromJI.map((item) => item.DEPARTMENT);
 
     const [depsFromCJI] = await connect_SQL.query(
       "SELECT DISTINCT DEPARTMENT, COMPANY FROM company_join_items"
@@ -208,7 +205,7 @@ const getColumns = async (req, res) => {
     const [areas] = await connect_SQL.query(
       "SELECT AREA FROM company_area_items"
     );
-    const filteredAreas = areas.map(item => item.AREA);
+    const filteredAreas = areas.map((item) => item.AREA);
     res.json({ columns, areas: filteredAreas.sort() });
   } catch (error) {
     logEvents(

@@ -9,6 +9,7 @@ const {
   updateCarReleaseDatesQuery,
   updateSettlementsQuery,
   updateSettlementDescriptionQuery,
+  accountancyFKData,
 } = require("./sqlQueryForGetDataFromMSSQL");
 
 const today = new Date();
@@ -265,6 +266,47 @@ const updateSettlements = async (companies) => {
   } catch (error) {
     logEvents(
       `getDataFromMSSQL, uspdateSettlements: ${error}`,
+      "reqServerErrors.txt"
+    );
+    return false;
+  }
+};
+
+const updateFKSettlements = async (companies) => {
+  try {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0"); // miesiące 0–11
+    const dd = String(today.getDate()).padStart(2, "0");
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    for (const company of companies) {
+      const queryMS = accountancyFKData(company, formattedDate);
+      const accountancyData = await msSqlQuery(queryMS);
+
+      await connect_SQL.query(
+        "DELETE FROM company_fk_settlements WHERE FIRMA = ?",
+        [company]
+      );
+
+      const values = accountancyData.map((item) => [
+        item["dsymbol"],
+        item["płatność"],
+        company,
+      ]);
+
+      const query = `
+         INSERT IGNORE INTO company_fk_settlements
+        (NUMER_FV,  DO_ROZLICZENIA, FIRMA) 
+         VALUES 
+        ${values.map(() => "( ?, ?, ?)").join(", ")}
+    `;
+
+      await connect_SQL.query(query, values.flat());
+    }
+    return true;
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, updateFKSettlements: ${error}`,
       "reqServerErrors.txt"
     );
     return false;
@@ -547,7 +589,8 @@ const updateData = async () => {
         item.DATA_NAME !== "Rubicon" &&
         item.DATA_NAME !== "BeCared" &&
         item.DATA_NAME !== "Dokumenty Raportu FK - KRT" &&
-        item.DATA_NAME !== "Dokumenty Raportu FK - KEM"
+        item.DATA_NAME !== "Dokumenty Raportu FK - KEM" &&
+        item.DATA_NAME !== "Dokumenty Raportu FK - RAC"
     );
 
     const updateProgress = filteredUpdatesData.map((item) => {
@@ -560,13 +603,13 @@ const updateData = async () => {
     });
     for (const item of updateProgress) {
       const queryUpdate = `
-      UPDATE company_updates 
-      SET 
+      UPDATE company_updates
+      SET
       DATA_NAME = '${item.DATA_NAME}',
-      DATE = '${item.DATE}',    
-        HOUR = '${item.HOUR}', 
+      DATE = '${item.DATE}',
+        HOUR = '${item.HOUR}',
         UPDATE_SUCCESS = '${item.UPDATE_SUCCESS}'
-      WHERE 
+      WHERE
         DATA_NAME = '${item.DATA_NAME}'
     `;
       await connect_SQL.query(queryUpdate);
@@ -618,6 +661,26 @@ const updateData = async () => {
         );
       });
 
+    // aktualizacja rozliczeń Symfonia
+    updateFKSettlements(companies)
+      .then((result) => {
+        connect_SQL.query(
+          "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+          [
+            checkDate(new Date()),
+            checkTime(new Date()),
+            result ? "Zaktualizowano." : "Błąd aktualizacji",
+            "Rozliczenia Symfonia",
+          ]
+        );
+      })
+      .catch((error) => {
+        logEvents(
+          `getDataFromMSSQL - updateSettlements, getData: ${error}`,
+          "reqServerErrors.txt"
+        );
+      });
+
     // aktualizacja opisu rozrachunków
     updateSettlementDescription(companies)
       .then((result) => {
@@ -642,7 +705,7 @@ const updateData = async () => {
   }
 };
 
-cron.schedule("40 06 * * *", updateData, {
+cron.schedule("30 06 * * *", updateData, {
   timezone: "Europe/Warsaw",
 });
 
