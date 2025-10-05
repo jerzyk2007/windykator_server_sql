@@ -238,7 +238,27 @@ const getRaportDocumentsControlBL = async (req, res) => {
 const getRaportDifferncesAsFk = async (req, res) => {
   const { id_user } = req.params;
   try {
+    // const documents = await getDataDocuments(id_user, "different");
+    // const filteredData = documents?.data
+    //   ?.map((doc) => {
+    //     if (doc.ROZNICA_AS_FK === "TAK") {
+    //       return {
+    //         NUMER_FV: doc.NUMER_FV,
+    //         DATA_FV: doc.DATA_FV,
+    //         TERMIN: doc.TERMIN,
+    //         BRUTTO: doc.BRUTTO,
+    //         KONTR: doc.KONTRAHENT,
+    //         AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
+    //         FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
+    //         DZIAL: doc.DZIAL,
+    //         AREA: doc.AREA,
+    //         COMPANY: doc.FIRMA,
+    //       };
+    //     }
+    //   })
+    //   .filter(Boolean);
     const documents = await getDataDocuments(id_user, "different");
+
     const filteredData = documents?.data
       ?.map((doc) => {
         if (doc.ROZNICA_AS_FK === "TAK") {
@@ -258,7 +278,21 @@ const getRaportDifferncesAsFk = async (req, res) => {
       })
       .filter(Boolean);
 
-    const excelBuffer = await generateExcelRaport(filteredData);
+    // --- krok 1: sprawdź unikalne wartości ---
+    const uniqueDZIAL = [...new Set(filteredData.map((d) => d.DZIAL))];
+    const uniqueAREA = [...new Set(filteredData.map((d) => d.AREA))];
+    const uniqueCOMPANY = [...new Set(filteredData.map((d) => d.COMPANY))];
+
+    // --- krok 2: usuń klucze, które mają tylko jedną unikalną wartość ---
+    const finalData = filteredData.map((d) => {
+      const obj = { ...d };
+      if (uniqueDZIAL.length === 1) delete obj.DZIAL;
+      if (uniqueAREA.length === 1) delete obj.AREA;
+      if (uniqueCOMPANY.length === 1) delete obj.COMPANY;
+      return obj;
+    });
+
+    const excelBuffer = await generateExcelRaport(finalData);
 
     res.setHeader(
       "Content-Type",
