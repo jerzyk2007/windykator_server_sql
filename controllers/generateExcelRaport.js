@@ -160,7 +160,7 @@ const generateExcelRaport = async (dataVotum) => {
             right: { style: "thin" },
           };
 
-          if (header === "Numer FV") {
+          if (header === "Faktura") {
             headerCell.fill = {
               type: "pattern",
               pattern: "solid",
