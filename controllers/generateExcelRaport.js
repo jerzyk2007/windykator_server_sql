@@ -9,6 +9,8 @@ const columnsOrder = [
   "Do rozliczenia AS",
   "Do rozliczenia FK",
   "Dział",
+  "Obszar",
+  "Firma",
 ];
 
 const columnsName = [
@@ -43,6 +45,14 @@ const columnsName = [
   {
     accessorKey: "DZIAL",
     header: "Dział",
+  },
+  {
+    accessorKey: "AREA",
+    header: "Obszar",
+  },
+  {
+    accessorKey: "COMPANY",
+    header: "Firma",
   },
 ];
 

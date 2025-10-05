@@ -251,6 +251,8 @@ const getRaportDifferncesAsFk = async (req, res) => {
             AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
             FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
             DZIAL: doc.DZIAL,
+            AREA: doc.AREA,
+            COMPANY: doc.FIRMA,
           };
         }
       })
