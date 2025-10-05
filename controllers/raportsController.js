@@ -1,10 +1,9 @@
 const { logEvents } = require("../middleware/logEvents");
 const { getDataDocuments } = require("./documentsController");
 const { connect_SQL } = require("../config/dbConn");
-const ExcelJS = require("exceljs");
-const path = require("path");
-
 const { generateExcelRaport } = require("./generateExcelRaport");
+// const ExcelJS = require("exceljs");
+// const path = require("path");
 
 // pobiera dane do tabeli Raportu w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -22,62 +21,62 @@ const getDataRaport = async (req, res) => {
 };
 
 //generuje plik excel
-const getExcelRaport = async (data) => {
-  if (!Array.isArray(data) || data.length === 0) {
-    console.error("Tablica danych jest pusta lub niepoprawna");
-    return;
-  }
+// const getExcelRaport = async (data) => {
+//   if (!Array.isArray(data) || data.length === 0) {
+//     console.error("Tablica danych jest pusta lub niepoprawna");
+//     return;
+//   }
 
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Dane");
+//   const workbook = new ExcelJS.Workbook();
+//   const worksheet = workbook.addWorksheet("Dane");
 
-  // Nagłówki
-  const headers = Object.keys(data[0]);
-  worksheet.columns = headers.map((key) => ({
-    header: key,
-    key: key,
-    width: 20,
-  }));
+//   // Nagłówki
+//   const headers = Object.keys(data[0]);
+//   worksheet.columns = headers.map((key) => ({
+//     header: key,
+//     key: key,
+//     width: 20,
+//   }));
 
-  // Dodanie danych
-  data.forEach((item) => worksheet.addRow(item));
+//   // Dodanie danych
+//   data.forEach((item) => worksheet.addRow(item));
 
-  // Dodanie filtrowania do pierwszego wiersza
-  worksheet.autoFilter = {
-    from: {
-      row: 1,
-      column: 1,
-    },
-    to: {
-      row: 1,
-      column: headers.length,
-    },
-  };
+//   // Dodanie filtrowania do pierwszego wiersza
+//   worksheet.autoFilter = {
+//     from: {
+//       row: 1,
+//       column: 1,
+//     },
+//     to: {
+//       row: 1,
+//       column: headers.length,
+//     },
+//   };
 
-  // Zablokowanie pierwszego wiersza (nagłówków)
-  worksheet.views = [
-    {
-      state: "frozen",
-      ySplit: 1,
-    },
-  ];
+//   // Zablokowanie pierwszego wiersza (nagłówków)
+//   worksheet.views = [
+//     {
+//       state: "frozen",
+//       ySplit: 1,
+//     },
+//   ];
 
-  // Dodanie obramowania do wszystkich komórek z danymi
-  worksheet.eachRow((row, rowNumber) => {
-    row.eachCell((cell) => {
-      cell.border = {
-        top: { style: "thin" },
-        left: { style: "thin" },
-        bottom: { style: "thin" },
-        right: { style: "thin" },
-      };
-    });
-  });
+//   // Dodanie obramowania do wszystkich komórek z danymi
+//   worksheet.eachRow((row, rowNumber) => {
+//     row.eachCell((cell) => {
+//       cell.border = {
+//         top: { style: "thin" },
+//         left: { style: "thin" },
+//         bottom: { style: "thin" },
+//         right: { style: "thin" },
+//       };
+//     });
+//   });
 
-  // Zapis do bufora
-  const buffer = await workbook.xlsx.writeBuffer();
-  return buffer;
-};
+//   // Zapis do bufora
+//   const buffer = await workbook.xlsx.writeBuffer();
+//   return buffer;
+// };
 
 // nowy zrobiony na chwile dla Marty
 const getRaportArea = async (req, res) => {
@@ -121,15 +120,16 @@ WHERE CJI.AREA = "BLACHARNIA" AND DATA_ROZL_AS >= '2025-01-01' AND CD.DATA_FV < 
       };
     });
 
-    const excelBuffer = await generateExcelRaport(filteredData);
+    console.log(filteredData);
+    // const excelBuffer = await generateExcelRaport(filteredData);
 
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
-    res.send(excelBuffer);
-    res.end();
+    // res.setHeader(
+    //   "Content-Type",
+    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    // );
+    // res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
+    // res.send(excelBuffer);
+    // res.end();
   } catch (error) {
     logEvents(
       `raportsController, getRaportArea: ${error}`,
@@ -235,9 +235,48 @@ const getRaportDocumentsControlBL = async (req, res) => {
   }
 };
 
+const getRaportDifferncesAsFk = async (req, res) => {
+  const { id_user } = req.params;
+  try {
+    const documents = await getDataDocuments(id_user, "different");
+    const filteredData = documents?.data
+      ?.map((doc) => {
+        if (doc.ROZNICA_AS_FK === "TAK") {
+          return {
+            NUMER_FV: doc.NUMER_FV,
+            DATA_FV: doc.DATA_FV,
+            TERMIN: doc.TERMIN,
+            BRUTTO: doc.BRUTTO,
+            KONTR: doc.KONTRAHENT,
+            AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
+            FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
+            DZIAL: doc.DZIAL,
+          };
+        }
+      })
+      .filter(Boolean);
+
+    const excelBuffer = await generateExcelRaport(filteredData);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
+    res.send(excelBuffer);
+    res.end();
+  } catch (error) {
+    logEvents(
+      `raportsController, getRaportDifferncesAsFk: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 module.exports = {
   getDataRaport,
   getRaportArea,
   getStructureOrganization,
   getRaportDocumentsControlBL,
+  getRaportDifferncesAsFk,
 };

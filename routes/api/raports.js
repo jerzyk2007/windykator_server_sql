@@ -8,10 +8,10 @@ router
   .route("/get-data/:id_user")
   .get(verifyRoles(ROLES_LIST.User), raports.getDataRaport);
 
-// pobieranie pliku excel dla raport area
-router
-  .route("/get-raport-area")
-  .post(verifyRoles(ROLES_LIST.User), raports.getRaportArea);
+// pobieranie pliku excel dla raport area - raport chwilowy dla Marty
+// router
+//   .route("/get-raport-area")
+//   .post(verifyRoles(ROLES_LIST.User), raports.getRaportArea);
 
 // dane struktury orgaznizacji
 router
@@ -25,6 +25,11 @@ router
     ),
     raports.getStructureOrganization
   );
+
+// dane różnic pomiędzy AS a FK
+router
+  .route("/get-fifferences-as-fk/:id_user")
+  .get(verifyRoles(ROLES_LIST.Admin), raports.getRaportDifferncesAsFk);
 
 // dane do raportu kontroli dokumentów BL
 router
