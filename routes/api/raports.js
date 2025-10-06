@@ -26,6 +26,11 @@ router
   .route("/get-fifferences-as-fk/:id_user")
   .get(verifyRoles(ROLES_LIST.Admin), raports.getRaportDifferncesAsFk);
 
+// zestawienie wpłat kancelaryjnych z Symfoni
+router
+  .route("/get-data-raports-law-satetment")
+  .get(verifyRoles(ROLES_LIST.DNiKN), raports.getRaportLawStatement);
+
 // dane do raportu kontroli dokumentów BL
 router
   .route("/get-data-raports-control-BL")

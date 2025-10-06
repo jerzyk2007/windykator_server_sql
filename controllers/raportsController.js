@@ -1,6 +1,6 @@
 const { logEvents } = require("../middleware/logEvents");
 const { getDataDocuments } = require("./documentsController");
-const { connect_SQL } = require("../config/dbConn");
+const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { differencesAsFk } = require("./generate_excel_raport/differencesAsFk");
 const {
   organizationStructure,
@@ -8,6 +8,7 @@ const {
 const {
   documentsControlBL,
 } = require("./generate_excel_raport/documentsControlBL");
+const { lawStatement } = require("./generate_excel_raport/lawStatement");
 
 // pobiera dane do tabeli Raportu w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -422,10 +423,68 @@ const getRaportDifferncesAsFk = async (req, res) => {
   }
 };
 
+const getRaportLawStatement = async (req, res) => {
+  try {
+    // 1. wyczyszczenie tabeli
+    await msSqlQuery(`TRUNCATE TABLE [rapdb].[dbo].[fkkomandytowams]`);
+
+    // 2. wstawienie danych
+    await msSqlQuery(`
+    INSERT INTO [rapdb].[dbo].[fkkomandytowams]
+    SELECT DISTINCT 
+      GETDATE() AS smf_stan_na_dzien,
+      'N' AS smf_typ,
+      r.dsymbol AS smf_numer,
+      r1.dsymbol,
+      r1.kwota AS kwota_platności,
+      CAST(r1.data AS date) AS data_platnosci,
+      r.kwota AS kwota_faktury,
+      CAST(
+        CASE WHEN r.strona = 0 THEN r.kwota ELSE r.kwota * (-1) END
+        + SUM(ISNULL(CASE WHEN r1.strona = 0 THEN r1.kwota ELSE r1.kwota * (-1) END, 0)) OVER (PARTITION BY r.id)
+        AS money
+      ) AS naleznosc,
+      CAST(r.dataokr AS date) AS smf_data_otwarcia_rozrachunku
+    FROM [fkkomandytowa].[FK].[rozrachunki] r
+    LEFT JOIN [fkkomandytowa].[FK].[rozrachunki] r1 
+      ON r.id = r1.transakcja 
+      AND ISNULL(r1.czyrozliczenie, 0) = 1 
+      AND ISNULL(r1.dataokr, 0) <= GETDATE()
+    WHERE 
+      r.czyrozliczenie = 0
+      AND CAST(r.dataokr AS date) BETWEEN '2001-01-01' AND GETDATE()
+      AND r.dsymbol IN (SELECT faktura FROM [rapdb].[dbo].[faktms]);
+  `);
+
+    // 3. pobranie danych (jeśli naprawdę potrzebujesz je wyświetlić)
+    const dataFK = await msSqlQuery(`
+    SELECT * FROM [rapdb].[dbo].[fkkomandytowams];
+  `);
+
+    const excelBuffer = await lawStatement(dataFK);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
+    res.send(excelBuffer);
+    res.end();
+
+    res.end();
+  } catch (error) {
+    logEvents(
+      `raportsController, getRaportLawStatement: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 module.exports = {
   getDataRaport,
   getRaportArea,
   getStructureOrganization,
   getRaportDocumentsControlBL,
   getRaportDifferncesAsFk,
+  getRaportLawStatement,
 };
