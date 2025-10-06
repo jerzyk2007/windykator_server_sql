@@ -121,13 +121,15 @@ const rubiconFile = async (rows, res) => {
   if (
     !("Faktura nr" in rows[0]) ||
     !("Status aktualny" in rows[0]) ||
-    !("data przeniesienia<br>do WP" in rows[0]) ||
     !("Firma zewnętrzna" in rows[0]) ||
     !("data przeniesienia<br>do WP" in rows[0])
   ) {
+    logEvents(
+      `addDataFromExcelFileController, rubiconFile: błędne kolumny w pliku Rubicon`,
+      "reqServerErrors.txt"
+    );
     return res.status(500).json({ error: "Error file" });
   }
-
   try {
     const filteredData = rows
       .map((row) => {
@@ -352,10 +354,12 @@ const documentsFromFile = async (req, res) => {
     const data = new Uint8Array(buffer);
 
     if (!isExcelFile(data)) {
-      console.log("error");
+      logEvents(
+        `addDataFromExcelFileController, documentsFromFile - isExcelFIle: ${error}`,
+        "reqServerErrors.txt"
+      );
       return res.status(500).json({ error: "Invalid file" });
     }
-
     const workbook = read(buffer, { type: "buffer" });
     const workSheetName = workbook.SheetNames[0];
     const workSheet = workbook.Sheets[workSheetName];

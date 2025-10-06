@@ -1,9 +1,10 @@
 const { logEvents } = require("../middleware/logEvents");
 const { getDataDocuments } = require("./documentsController");
 const { connect_SQL } = require("../config/dbConn");
-const { generateExcelRaport } = require("./generateExcelRaport");
-// const ExcelJS = require("exceljs");
-// const path = require("path");
+const { differencesAsFk } = require("./generate_excel_raport/differencesAsFk");
+const {
+  organizationStructure,
+} = require("./generate_excel_raport/organizationStructure");
 
 // pobiera dane do tabeli Raportu w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -179,13 +180,59 @@ const getStructureOrganization = async (req, res) => {
       };
     });
 
-    if (data.length && accounts.length) {
-      const structure = findMail.map(({ id_join_items, ...rest }) => rest);
+    const structure = findMail.map(({ id_join_items, ...rest }) => rest);
+    const structureData = structure.map((item) => {
+      return {
+        area: item.AREA,
+        company: item.COMPANY,
+        department: item.DEPARTMENT,
+        localization: item.LOCALIZATION,
+        owner: Array.isArray(item.OWNER) ? item.OWNER.join("\n") : item.OWNER,
+        guardian: Array.isArray(item.GUARDIAN)
+          ? item.GUARDIAN.join("\n")
+          : item.GUARDIAN,
+        mail: Array.isArray(item.MAIL) ? item.MAIL.join("\n") : item.MAIL,
+      };
+    });
 
-      return res.json({ structure, accounts: filteredDeps });
-    } else {
-      return res.json({ structure: [], accounts: [] });
-    }
+    const accountsData = accounts.map((item) => {
+      return {
+        usersurname: item.usersurname,
+        username: item.username,
+        userlogin: item.userlogin,
+        departments: Array.isArray(item.departments)
+          ? item.departments
+              .map((d) => `${d.department}-${d.company}`)
+              .join(", ")
+          : item.departments,
+      };
+    });
+
+    const sortedAccountsData = accountsData.sort((a, b) => {
+      // Porównaj 'usersurname' w obu obiektach
+      if (a.usersurname < b.usersurname) {
+        return -1; // Jeśli a jest mniejsze niż b, a pojawi się wcześniej
+      }
+      if (a.usersurname > b.usersurname) {
+        return 1; // Jeśli a jest większe niż b, b pojawi się wcześniej
+      }
+      return 0; // Jeśli są równe, pozostaw porządek bez zmian
+    });
+
+    const addObject = [
+      { name: "struktura", data: structureData },
+      { name: "konta", data: sortedAccountsData },
+    ];
+
+    const excelBuffer = await organizationStructure(addObject);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
+    res.send(excelBuffer);
+    res.end();
   } catch (error) {
     logEvents(
       `raportsController, getStructureOrganization: ${error}`,
@@ -238,25 +285,6 @@ const getRaportDocumentsControlBL = async (req, res) => {
 const getRaportDifferncesAsFk = async (req, res) => {
   const { id_user } = req.params;
   try {
-    // const documents = await getDataDocuments(id_user, "different");
-    // const filteredData = documents?.data
-    //   ?.map((doc) => {
-    //     if (doc.ROZNICA_AS_FK === "TAK") {
-    //       return {
-    //         NUMER_FV: doc.NUMER_FV,
-    //         DATA_FV: doc.DATA_FV,
-    //         TERMIN: doc.TERMIN,
-    //         BRUTTO: doc.BRUTTO,
-    //         KONTR: doc.KONTRAHENT,
-    //         AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
-    //         FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
-    //         DZIAL: doc.DZIAL,
-    //         AREA: doc.AREA,
-    //         COMPANY: doc.FIRMA,
-    //       };
-    //     }
-    //   })
-    //   .filter(Boolean);
     const documents = await getDataDocuments(id_user, "different");
 
     const filteredData = documents?.data
@@ -292,7 +320,7 @@ const getRaportDifferncesAsFk = async (req, res) => {
       return obj;
     });
 
-    const excelBuffer = await generateExcelRaport(finalData);
+    const excelBuffer = await differencesAsFk(finalData);
 
     res.setHeader(
       "Content-Type",
