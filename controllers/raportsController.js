@@ -5,6 +5,9 @@ const { differencesAsFk } = require("./generate_excel_raport/differencesAsFk");
 const {
   organizationStructure,
 } = require("./generate_excel_raport/organizationStructure");
+const {
+  documentsControlBL,
+} = require("./generate_excel_raport/documentsControlBL");
 
 // pobiera dane do tabeli Raportu w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -266,14 +269,96 @@ const getRaportDocumentsControlBL = async (req, res) => {
     const [dataReport] = await connect_SQL.query(
       `SELECT CD.*, D.NUMER_FV,  D.KONTRAHENT, D.NR_SZKODY, D.BRUTTO, D.DZIAL, D.DORADCA, S.NALEZNOSC, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, datediff(D.TERMIN, D.DATA_FV) AS ILE_DNI_NA_PLATNOSC FROM company_documents AS D LEFT JOIN company_settlements as S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_control_documents AS CD ON D.NUMER_FV = CD.NUMER_FV LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV WHERE JI.AREA = 'BLACHARNIA' AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND  ${sqlCondition}`
     );
-    if (dataReport.length) {
-      const cleanedData = dataReport.map(
-        ({ id_control_documents, ...rest }) => rest
-      );
-      res.json(cleanedData);
-    } else {
-      res.json([]);
-    }
+    const cleanedData = dataReport.map(
+      ({ id_control_documents, ...rest }) => rest
+    );
+
+    const filteredData = cleanedData.map((item) => {
+      const uwagi =
+        Array.isArray(item.CONTROL_UWAGI) && item?.CONTROL_UWAGI?.length
+          ? item.CONTROL_UWAGI.length === 1
+            ? item.CONTROL_UWAGI[0]
+            : `Ilość poprzednich wpisów - ${item.CONTROL_UWAGI.length - 1}\n\n${
+                item.CONTROL_UWAGI[item.CONTROL_UWAGI.length - 1]
+              }`
+          : " ";
+
+      return {
+        BRUTTO: item.BRUTTO ? item.BRUTTO : 0,
+        CONTROL_DOW_REJ: item.CONTROL_DOW_REJ ? item.CONTROL_DOW_REJ : " ",
+        CONTROL_DECYZJA: item.CONTROL_DECYZJA ? item.CONTROL_DECYZJA : " ",
+        CONTROL_FV: item.CONTROL_FV ? item.CONTROL_FV : " ",
+        CONTROL_ODPOWIEDZIALNOSC: item.CONTROL_ODPOWIEDZIALNOSC
+          ? item.CONTROL_ODPOWIEDZIALNOSC
+          : " ",
+        CONTROL_PLATNOSC_VAT: item.CONTROL_PLATNOSC_VAT
+          ? item.CONTROL_PLATNOSC_VAT
+          : " ",
+        CONTROL_POLISA: item.CONTROL_POLISA ? item.CONTROL_POLISA : " ",
+        CONTROL_PR_JAZ: item.CONTROL_PR_JAZ ? item.CONTROL_PR_JAZ : " ",
+        CONTROL_UPOW: item.CONTROL_UPOW ? item.CONTROL_UPOW : " ",
+        CONTROL_UWAGI: uwagi,
+        CONTROL_BRAK_DZIALAN_OD_OST: item.CONTROL_BRAK_DZIALAN_OD_OST
+          ? item.CONTROL_BRAK_DZIALAN_OD_OST
+          : " ",
+        DZIAL: item.DZIAL ? item.DZIAL : " ",
+        ILE_DNI_NA_PLATNOSC: item.ILE_DNI_NA_PLATNOSC
+          ? item.ILE_DNI_NA_PLATNOSC
+          : " ",
+        ILE_DNI_PO_TERMINIE: item.ILE_DNI_PO_TERMINIE
+          ? item.ILE_DNI_PO_TERMINIE
+          : " ",
+        KONTRAHENT: item.KONTRAHENT ? item.KONTRAHENT : " ",
+        DORADCA: item.DORADCA ? item.DORADCA : " ",
+        NALEZNOSC: item.NALEZNOSC ? item.NALEZNOSC : 0,
+        NUMER_FV: item.NUMER_FV ? item.NUMER_FV : " ",
+        NR_SZKODY: item.NR_SZKODY ? item.NR_SZKODY : " ",
+      };
+    });
+
+    const resultArray = filteredData.reduce((acc, item) => {
+      let area = item.DZIAL; // Pobieramy wartość DZIAL z obiektu
+
+      // Zamieniamy wszystkie '/' na '-'
+      area = area.replace(/\//g, "-"); // Zastępujemy '/' myślnikiem
+
+      // Sprawdzamy, czy już mamy obiekt z takim DZIAL w wynikowej tablicy
+      const existingGroup = acc.find((group) => group.name === area);
+
+      if (existingGroup) {
+        // Jeśli grupa już istnieje, dodajemy obiekt do tej grupy
+        existingGroup.data.push(item);
+      } else {
+        // Jeśli grupa nie istnieje, tworzymy nową z danym DZIAL
+        acc.push({ name: area, data: [item] });
+      }
+
+      return acc;
+    }, []);
+
+    const addObject = [
+      { name: "Blacharnie", data: filteredData },
+      ...resultArray,
+    ];
+    // const sortedData = addObject.sort((a, b) => a.name.localeCompare(b.name));
+    const sortedData = addObject
+      .map((item) => ({
+        ...item,
+        data: item.data.sort(
+          (a, b) => a.ILE_DNI_PO_TERMINIE - b.ILE_DNI_PO_TERMINIE
+        ),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const excelBuffer = await documentsControlBL(sortedData);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
+    res.send(excelBuffer);
+    res.end();
   } catch (error) {
     logEvents(
       `raportsController, getRaportDocumentsControlBL: ${error}`,
