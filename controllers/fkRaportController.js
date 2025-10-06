@@ -196,7 +196,7 @@ const getAccountancyDataMsSQL = async (company, res) => {
       res.json({
         info: `Brak danych o działach: ${errorDepartments.sort().join(", ")}`,
       });
-      return [];
+      return null;
     }
 
     return addDep;
@@ -1093,6 +1093,8 @@ const getDataToNewRaport = async (req, res) => {
   try {
     // pobieram nowe dane wiekowania
     const accountancyData = await getAccountancyDataMsSQL(company, res);
+
+    if (res.headersSent) return;
 
     if (accountancyData?.length === 0 || !accountancyData) {
       return res.json({
