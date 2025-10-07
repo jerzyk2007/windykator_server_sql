@@ -835,6 +835,7 @@ const generateRaportData = async (req, res) => {
       { name: "WYDANE - NIEZAPŁACONE", data: carDataSettlement },
       ...resultArray,
     ];
+
     // usuwam wiekowanie starsze niż < 0, 1 - 7 z innych niż arkusza RAPORT
     const updateAging = finalResult.map((element) => {
       if (
@@ -1010,7 +1011,6 @@ const generateRaportData = async (req, res) => {
             validKwotaFK && validKwotaAS && notEqual && validType && validOpis
           );
         });
-
         const joinData = [...filteredData1, ...filteredData2];
 
         const updateDataDoc = joinData.map((prev) => {
@@ -1068,7 +1068,6 @@ const generateRaportData = async (req, res) => {
     const sortedArray = filteredData.sort(
       (a, b) => sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
     );
-
     await connect_SQL.query(
       `UPDATE company_fk_raport_excel set data = ? WHERE company = ?`,
       [JSON.stringify(sortedArray), company]
