@@ -7,6 +7,7 @@ const { sendEmail } = require("./mailController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { addDepartment } = require("./manageDocumentAddition");
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
+const { getDataDocuments } = require("./documentsController");
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -887,17 +888,29 @@ const repair_mysql = async () => {
   }
 };
 
+const getRaportDifferncesAsFk = async () => {
+  try {
+    const documents = await getDataDocuments(117, "different");
+
+    for (doc of documents.data) {
+      if (doc.NUMER_FV === "FV/AD/F/30/25/A/D72") {
+        console.log(doc);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
     // await prepareKRD();
     // await checkAdminUsers();
     // await reportFK_RAC();
-
-    const companies = ["KRT", "KEM", "RAC"];
-
+    // const companies = ["KRT", "KEM", "RAC"];
     // await as_fk(companies);
-
     // await repair_mysql();
+    // await getRaportDifferncesAsFk();
   } catch (error) {
     console.error(error);
   }

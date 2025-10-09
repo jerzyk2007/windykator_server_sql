@@ -1,1 +1,0 @@
-20251006	14:08:33	fKRaport, generateHistoryDocuments: Error: read ECONNRESET
