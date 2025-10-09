@@ -1,7 +1,7 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const cron = require("node-cron");
 const { logEvents } = require("../middleware/logEvents");
-const { addDepartment } = require("./manageDocumentAddition");
+const { addDepartment, documentsType } = require("./manageDocumentAddition");
 const { checkDate, checkTime } = require("./manageDocumentAddition");
 const {
   addDocumentToDatabaseQuery,
@@ -288,11 +288,15 @@ const updateFKSettlements = async (companies) => {
         [company]
       );
 
-      const values = accountancyData.map((item) => [
-        item["dsymbol"],
-        item["płatność"],
-        company,
-      ]);
+      // const values = accountancyData.map((item) => [
+      //   item["dsymbol"],
+      //   item["płatność"],
+      //   company,
+      // ]);
+
+      const values = accountancyData
+        .filter((item) => documentsType(item["dsymbol"]) === "Faktura")
+        .map((item) => [item["dsymbol"], item["płatność"], company]);
 
       const query = `
          INSERT IGNORE INTO company_fk_settlements

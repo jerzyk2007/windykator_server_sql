@@ -9,6 +9,7 @@ const {
   documentsControlBL,
 } = require("./generate_excel_raport/documentsControlBL");
 const { lawStatement } = require("./generate_excel_raport/lawStatement");
+const { documentsType } = require("./manageDocumentAddition");
 
 // pobiera dane do tabeli Raportu w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -374,8 +375,9 @@ const getRaportDifferncesAsFk = async (req, res) => {
     const documents = await getDataDocuments(id_user, "different");
 
     const filteredData = documents?.data
-      ?.map((doc) => {
-        if (doc.ROZNICA_AS_FK === "TAK") {
+      ?.filter((doc) => documentsType(doc.NUMER_FV) === "Faktura")
+      .map((doc) => {
+        if (doc.DO_ROZLICZENIA > 0 && doc.FK_DO_ROZLICZENIA === 0) {
           return {
             NUMER_FV: doc.NUMER_FV,
             DATA_FV: doc.DATA_FV,

@@ -4,7 +4,7 @@ const { verifyUserTableConfig } = require("./usersController");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
-const { generatePassword } = require("./manageDocumentAddition");
+const { generatePassword, documentsType } = require("./manageDocumentAddition");
 const { addDepartment } = require("./manageDocumentAddition");
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getDataDocuments } = require("./documentsController");
@@ -902,15 +902,64 @@ const getRaportDifferncesAsFk = async () => {
   }
 };
 
+// do naprawy rozliczeń symfoni do różnic
+const updateFKSettlements = async (companies) => {
+  try {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0"); // miesiące 0–11
+    const dd = String(today.getDate()).padStart(2, "0");
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    for (const company of companies) {
+      const queryMS = accountancyFKData(company, formattedDate);
+      const accountancyData = await msSqlQuery(queryMS);
+
+      await connect_SQL.query(
+        "DELETE FROM company_fk_settlements WHERE FIRMA = ?",
+        [company]
+      );
+
+      const values1 = accountancyData.map((item) => [
+        item["dsymbol"],
+        item["płatność"],
+        company,
+      ]);
+
+      const values = accountancyData
+        .filter((item) => documentsType(item["dsymbol"]) === "Faktura")
+        .map((item) => [item["dsymbol"], item["płatność"], company]);
+
+      const query = `
+         INSERT IGNORE INTO company_fk_settlements
+        (NUMER_FV,  DO_ROZLICZENIA, FIRMA) 
+         VALUES 
+        ${values.map(() => "( ?, ?, ?)").join(", ")}
+    `;
+
+      await connect_SQL.query(query, values.flat());
+    }
+    return true;
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, updateFKSettlements: ${error}`,
+      "reqServerErrors.txt"
+    );
+    return false;
+  }
+};
+
 const repair = async () => {
   try {
+    const companies = ["KRT", "KEM", "RAC"];
+
     // await prepareKRD();
     // await checkAdminUsers();
     // await reportFK_RAC();
-    // const companies = ["KRT", "KEM", "RAC"];
     // await as_fk(companies);
     // await repair_mysql();
     // await getRaportDifferncesAsFk();
+
+    // await updateFKSettlements(companies);
   } catch (error) {
     console.error(error);
   }
