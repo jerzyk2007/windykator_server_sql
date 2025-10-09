@@ -66,7 +66,7 @@ GROUP BY
     NULL AS UWAGI,
     MAX([typSprzedazy]) AS TYP_PLATNOSCI,
     MAX([kl_nip]) AS KONTR_NIP,  
-    'RAC' AS MARKER
+    'RAC' AS FIRMA
 FROM [RAPDB].[dbo].[RAC_zestawieniePrzychodow]
  WHERE [dataWystawienia]> '${twoDaysAgo}' AND [faktn_fakt_nr_caly] IS NOT NULL
 GROUP BY [faktn_fakt_nr_caly];
