@@ -24,7 +24,7 @@ router
 // dane różnic pomiędzy AS a FK
 router
   .route("/get-fifferences-as-fk/:id_user")
-  .get(verifyRoles(ROLES_LIST.Editor), raports.getRaportDifferncesAsFk);
+  .get(verifyRoles(ROLES_LIST.User), raports.getRaportDifferncesAsFk);
 
 // zestawienie wpłat kancelaryjnych z Symfoni
 router
