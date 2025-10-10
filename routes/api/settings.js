@@ -7,27 +7,36 @@ const verifyRoles = require("../../middleware/verifyRoles");
 router
   .route("/change-columns")
   .patch(
-    verifyRoles(ROLES_LIST.Admin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
     settings.changeColumns
   );
 
 router
   .route("/get-settings")
-  .get(verifyRoles(ROLES_LIST.Admin), settings.getSettings);
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    settings.getSettings
+  );
 
 router
   .route("/save-target-percent")
   .patch(
-    verifyRoles(ROLES_LIST.Admin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
     settings.saveTargetPercent
   );
 
 router
   .route("/get-departments")
-  .get(verifyRoles(ROLES_LIST.User), settings.getDepartments);
+  .get(
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    settings.getDepartments
+  );
 
 router
   .route("/get-columns")
-  .get(verifyRoles(ROLES_LIST.User), settings.getColumns);
+  .get(
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    settings.getColumns
+  );
 
 module.exports = router;

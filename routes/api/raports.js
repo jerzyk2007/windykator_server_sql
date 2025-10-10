@@ -6,7 +6,10 @@ const verifyRoles = require("../../middleware/verifyRoles");
 
 router
   .route("/get-data/:id_user")
-  .get(verifyRoles(ROLES_LIST.User), raports.getDataRaport);
+  .get(
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    raports.getDataRaport
+  );
 
 // dane struktury orgaznizacji
 router
@@ -16,7 +19,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     raports.getStructureOrganization
   );
@@ -25,14 +29,17 @@ router
 router
   .route("/get-fifferences-as-fk/:id_user")
   .get(
-    verifyRoles(ROLES_LIST.Editor, ROLES_LIST.Raports),
+    verifyRoles(ROLES_LIST.Editor, ROLES_LIST.Raports, ROLES_LIST.SuperAdmin),
     raports.getRaportDifferncesAsFk
   );
 
 // zestawienie wpłat kancelaryjnych z Symfoni
 router
   .route("/get-data-raports-law-satetment")
-  .get(verifyRoles(ROLES_LIST.DNiKN), raports.getRaportLawStatement);
+  .get(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    raports.getRaportLawStatement
+  );
 
 // dane do raportu kontroli dokumentów BL
 router
@@ -42,7 +49,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     raports.getRaportDocumentsControlBL
   );

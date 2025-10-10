@@ -12,7 +12,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     fKRaport.generateRaportData
   );
@@ -25,7 +26,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     fKRaport.getMainRaportFK
   );
@@ -38,7 +40,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     fKRaport.getBusinessRaportFK
   );
@@ -51,7 +54,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     fKRaport.getDateCounter
   );
@@ -64,7 +68,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     fKRaport.getDataToNewRaport
   );
@@ -77,7 +82,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     fKRaport.changeMark
   );
@@ -85,6 +91,9 @@ router
 //dodaje ostateczną decyzję i datę do osobnej tabeli, dla wygenerowania historii w raporcie FK
 router
   .route("/add-decision-date-fk")
-  .post(verifyRoles(ROLES_LIST.User), fKRaport.addDecisionDate);
+  .post(
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    fKRaport.addDecisionDate
+  );
 
 module.exports = router;

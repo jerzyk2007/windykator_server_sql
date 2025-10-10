@@ -15,7 +15,8 @@ router
       ROLES_LIST.Admin,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
     ),
     upload.single("excelFile"),
     AddData.documentsFromFile
