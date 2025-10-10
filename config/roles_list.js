@@ -8,6 +8,7 @@ const ROLES_LIST = {
   FK_KEM: 201,
   FK_RAC: 202,
   Nora: 300,
+  Raports: 400,
   Admin: 1000,
   SuperAdmin: 2000,
   Root: 5000,

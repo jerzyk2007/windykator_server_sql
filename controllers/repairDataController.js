@@ -948,18 +948,45 @@ const updateFKSettlements = async (companies) => {
   }
 };
 
+// dodanie nowej roli Raports
+const addRoleRaports = async () => {
+  try {
+    await connect_SQL.query(
+      "UPDATE company_settings SET ROLES = ? WHERE id_setting = 1",
+      [
+        JSON.stringify([
+          {
+            Start: 1,
+            User: 100,
+            Editor: 110,
+            Controller: 120,
+            DNiKN: 150,
+            FK_KRT: 200,
+            FK_KEM: 201,
+            FK_RAC: 202,
+            Nora: 300,
+            Raports: 400,
+            Admin: 1000,
+            SuperAdmin: 2000,
+          },
+        ]),
+      ]
+    );
+
+    const [roles] = await connect_SQL.query("SELECT * FROM company_settings");
+    for (const role of roles) {
+      console.log(role.roles);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
     const companies = ["KRT", "KEM", "RAC"];
 
-    // await prepareKRD();
-    // await checkAdminUsers();
-    // await reportFK_RAC();
-    // await as_fk(companies);
-    // await repair_mysql();
-    // await getRaportDifferncesAsFk();
-
-    // await updateFKSettlements(companies);
+    // await addRoleRaports();
   } catch (error) {
     console.error(error);
   }
