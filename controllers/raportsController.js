@@ -369,30 +369,79 @@ const getRaportDocumentsControlBL = async (req, res) => {
   }
 };
 
+// szukam poprzedniego dnia roboczego w poniedziałek dszukam piątku, w piątek czwartku itd
+const getPreviousBusinessDayString = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const result = new Date(today);
+
+  switch (day) {
+    case 1: // poniedziałek → piątek
+      result.setDate(today.getDate() - 3);
+      break;
+    case 0: // niedziela → piątek
+      result.setDate(today.getDate() - 2);
+      break;
+    case 6: // sobota → piątek
+      result.setDate(today.getDate() - 1);
+      break;
+    default: // pozostałe dni → poprzedni dzień
+      result.setDate(today.getDate() - 1);
+  }
+
+  // Zwracamy czysty string YYYY-MM-DD
+  return result.toISOString().split("T")[0];
+};
+
 const getRaportDifferncesAsFk = async (req, res) => {
   const { id_user } = req.params;
   try {
     const documents = await getDataDocuments(id_user, "different");
 
+    // const filteredData = documents?.data
+    //   ?.filter((doc) => documentsType(doc.NUMER_FV) === "Faktura")
+    //   .map((doc) => {
+    //     if (doc.DO_ROZLICZENIA > 0 && doc.FK_DO_ROZLICZENIA === 0) {
+    //       return {
+    //         NUMER_FV: doc.NUMER_FV,
+    //         DATA_FV: doc.DATA_FV,
+    //         TERMIN: doc.TERMIN,
+    //         BRUTTO: doc.BRUTTO,
+    //         KONTR: doc.KONTRAHENT,
+    //         AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
+    //         FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
+    //         DZIAL: doc.DZIAL,
+    //         AREA: doc.AREA,
+    //         COMPANY: doc.FIRMA,
+    //       };
+    //     }
+    //   })
+    //   .filter(Boolean);
+
+    const prevBusinessDayStr = getPreviousBusinessDayString();
+
     const filteredData = documents?.data
-      ?.filter((doc) => documentsType(doc.NUMER_FV) === "Faktura")
-      .map((doc) => {
-        if (doc.DO_ROZLICZENIA > 0 && doc.FK_DO_ROZLICZENIA === 0) {
-          return {
-            NUMER_FV: doc.NUMER_FV,
-            DATA_FV: doc.DATA_FV,
-            TERMIN: doc.TERMIN,
-            BRUTTO: doc.BRUTTO,
-            KONTR: doc.KONTRAHENT,
-            AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
-            FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
-            DZIAL: doc.DZIAL,
-            AREA: doc.AREA,
-            COMPANY: doc.FIRMA,
-          };
-        }
+      ?.filter((doc) => {
+        const docDateStr = doc.DATA_FV; // np. '2025-10-09'
+        return (
+          documentsType(doc.NUMER_FV) === "Faktura" &&
+          docDateStr < prevBusinessDayStr && // porównujemy tylko same daty jako stringi
+          doc.DO_ROZLICZENIA > 0 &&
+          doc.FK_DO_ROZLICZENIA === 0
+        );
       })
-      .filter(Boolean);
+      .map((doc) => ({
+        NUMER_FV: doc.NUMER_FV,
+        DATA_FV: doc.DATA_FV,
+        TERMIN: doc.TERMIN,
+        BRUTTO: doc.BRUTTO,
+        KONTR: doc.KONTRAHENT,
+        AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
+        FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
+        DZIAL: doc.DZIAL,
+        AREA: doc.AREA,
+        COMPANY: doc.FIRMA,
+      }));
 
     // --- krok 1: sprawdź unikalne wartości ---
     const uniqueDZIAL = [...new Set(filteredData.map((d) => d.DZIAL))];
