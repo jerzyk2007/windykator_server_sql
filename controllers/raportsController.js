@@ -398,26 +398,6 @@ const getRaportDifferncesAsFk = async (req, res) => {
   try {
     const documents = await getDataDocuments(id_user, "different");
 
-    // const filteredData = documents?.data
-    //   ?.filter((doc) => documentsType(doc.NUMER_FV) === "Faktura")
-    //   .map((doc) => {
-    //     if (doc.DO_ROZLICZENIA > 0 && doc.FK_DO_ROZLICZENIA === 0) {
-    //       return {
-    //         NUMER_FV: doc.NUMER_FV,
-    //         DATA_FV: doc.DATA_FV,
-    //         TERMIN: doc.TERMIN,
-    //         BRUTTO: doc.BRUTTO,
-    //         KONTR: doc.KONTRAHENT,
-    //         AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
-    //         FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
-    //         DZIAL: doc.DZIAL,
-    //         AREA: doc.AREA,
-    //         COMPANY: doc.FIRMA,
-    //       };
-    //     }
-    //   })
-    //   .filter(Boolean);
-
     const prevBusinessDayStr = getPreviousBusinessDayString();
 
     const filteredData = documents?.data
