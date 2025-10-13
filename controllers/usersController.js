@@ -202,14 +202,13 @@ const verifyUserTableConfig = async (
 
 // rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
-  const { userlogin, username, usersurname } = req.body;
+  const { userlogin, username, usersurname, userPermission } = req.body;
 
-  if (!userlogin || !username || !usersurname) {
+  if (!userlogin || !username || !usersurname || !userPermission) {
     return res
       .status(400)
       .json({ message: "Userlogin and password are required." });
   }
-
   try {
     const [checkUser] = await connect_SQL.query(
       "SELECT userlogin FROM company_users WHERE userlogin = ?",
@@ -224,9 +223,9 @@ const createNewUser = async (req, res) => {
     // encrypt the password
     const roles = { Start: 1 };
     const password = await generatePassword();
-
+    console.log(userPermission);
     await connect_SQL.query(
-      "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
         username,
         usersurname,
@@ -235,6 +234,7 @@ const createNewUser = async (req, res) => {
         JSON.stringify(roles),
         JSON.stringify(newUserTableSettings),
         JSON.stringify(raportSettings),
+        JSON.stringify(userPermission),
       ]
     );
 

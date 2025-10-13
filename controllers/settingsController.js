@@ -216,10 +216,27 @@ const getColumns = async (req, res) => {
   }
 };
 
+// do pobierania defaultowych uprawnień
+const getPermissions = async (req, res) => {
+  try {
+    const [permissions] = await connect_SQL.query(
+      "SELECT permissions FROM company_settings"
+    );
+    res.json(permissions.length ? permissions[0] : []);
+  } catch (error) {
+    logEvents(
+      `settingsController, getPermissions: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   getSettings,
   getDepartments,
   saveTargetPercent,
   changeColumns,
   getColumns,
+  getPermissions,
 };

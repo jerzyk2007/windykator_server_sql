@@ -39,4 +39,11 @@ router
     settings.getColumns
   );
 
+router
+  .route("/get-permissions")
+  .get(
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    settings.getPermissions
+  );
+
 module.exports = router;

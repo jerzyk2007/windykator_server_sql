@@ -19,8 +19,8 @@ const getDataDocuments = async (id_user, info) => {
       usersurname,
       departments = [],
     } = findUser[0] || {};
-
     // jeśli użytkownik nie ma nadanych dostępów i działów to zwraca puste dane
+
     if (
       !permissions ||
       typeof permissions !== "object" ||
@@ -33,7 +33,6 @@ const getDataDocuments = async (id_user, info) => {
     const truePermissions = Object.keys(permissions).filter(
       (permission) => permissions[permission]
     );
-
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
     const sqlCondition =
       departments?.length > 0
@@ -48,15 +47,18 @@ const getDataDocuments = async (id_user, info) => {
     const DORADCA = `${usersurname} ${username}`;
 
     if (info === "actual") {
-      if (truePermissions[0] === "Standard") {
-        [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
-        );
-      } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND D.DORADCA =  '${DORADCA}'`
-        );
-      }
+      [filteredData] = await connect_SQL.query(
+        `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
+      );
+      // if (truePermissions[0] === "Standard") {
+      //   [filteredData] = await connect_SQL.query(
+      //     `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
+      //   );
+      // } else if (truePermissions[0] === "Basic") {
+      //   [filteredData] = await connect_SQL.query(
+      //     `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND D.DORADCA =  '${DORADCA}'`
+      //   );
+      // }
     } else if (info === "critical") {
       if (truePermissions[0] === "Standard") {
         [filteredData] = await connect_SQL.query(
@@ -147,7 +149,6 @@ const getDataDocuments = async (id_user, info) => {
         filteredData = [];
       }
     }
-
     return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
     logEvents(
