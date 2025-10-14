@@ -46,6 +46,20 @@ router
     fKRaport.getBusinessRaportFK
   );
 
+// pobieranie mail ownerów
+router
+  .route("/get-owners-mail/:company")
+  .get(
+    verifyRoles(
+      ROLES_LIST.Admin,
+      ROLES_LIST.FK_KRT,
+      ROLES_LIST.FK_KEM,
+      ROLES_LIST.FK_RAC,
+      ROLES_LIST.SuperAdmin
+    ),
+    fKRaport.getOwnerMails
+  );
+
 // pobieram daty  aktualizacji plików excel dla raportu FK
 router
   .route("/get-date-counter/:company")

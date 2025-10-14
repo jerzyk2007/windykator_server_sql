@@ -1450,6 +1450,38 @@ const addDecisionDate = async (req, res) => {
   }
 };
 
+const getOwnerMails = async (req, res) => {
+  const { company } = req.params;
+  try {
+    const [owners] = await connect_SQL.query(
+      `SELECT OWNER FROM company_join_items
+            WHERE COMPANY = ?`,
+      [company]
+    );
+
+    const uniqueOwners = [...new Set(owners.flatMap((obj) => obj.OWNER))].sort(
+      (a, b) => a.localeCompare(b, "pl", { sensitivity: "base" })
+    );
+
+    let mailArray = [];
+    for (const owner of uniqueOwners) {
+      const [mailOwner] = await connect_SQL.query(
+        `SELECT OWNER_MAIL FROM company_owner_items
+            WHERE OWNER = ?`,
+        [owner]
+      );
+      mailArray.push(mailOwner[0].OWNER_MAIL);
+    }
+    const index = mailArray.indexOf("brak@danych.brak");
+    if (index !== -1) {
+      mailArray.splice(index, 1);
+    }
+    res.json({ mail: mailArray });
+  } catch (error) {
+    logEvents(`fKRaport, getOwnerMails: ${error}`, "reqServerErrors.txt");
+  }
+};
+
 module.exports = {
   getDateCounter,
   getDataToNewRaport,
@@ -1461,4 +1493,5 @@ module.exports = {
   getMainRaportFK,
   changeMark,
   addDecisionDate,
+  getOwnerMails,
 };

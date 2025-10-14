@@ -640,7 +640,10 @@ const getOwnersMail = async (company) => {
       // console.log(owner);
       mailArray.push(mailOwner[0].OWNER_MAIL);
     }
-
+    const index = mailArray.indexOf("brak@danych.brak");
+    if (index !== -1) {
+      mailArray.splice(index, 1);
+    }
     console.log(mailArray.join("; "));
   } catch (error) {
     console.error(error);
@@ -987,6 +990,8 @@ const repair = async () => {
     const companies = ["KRT", "KEM", "RAC"];
 
     // await addRoleRaports();
+
+    // await getOwnersMail("KRT");
   } catch (error) {
     console.error(error);
   }
@@ -998,7 +1003,6 @@ module.exports = {
   generatePassword,
   repairHistory,
   repairManagementDecisionFK,
-  getOwnersMail,
   generateHistoryDocumentsRepair,
   repairManagementDecision,
   repair,
