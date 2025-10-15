@@ -63,7 +63,6 @@ const options = {
   key: fs.readFileSync(path.join(__dirname, "cert", "krotoski.key")),
   cert: fs.readFileSync(path.join(__dirname, "cert", "krotoski.com.crt")),
 };
-
 // cykliczne wywoływanie funkcji o określonej godzinie
 // W wyrażeniu cron.schedule('58 16 * * *', ...) każda część odpowiada określonemu elementowi daty i czasu. Oto pełne wyjaśnienie:
 // Minuta – 58: Minuta, w której zadanie ma się uruchomić (tutaj: 58 minuta każdej godziny).
