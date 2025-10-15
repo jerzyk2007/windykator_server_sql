@@ -57,14 +57,7 @@ const columnsName = [
   },
 ];
 
-const differencesAsFk = async (dataVotum) => {
-  const cleanData = [
-    {
-      name: "Różnice",
-      data: dataVotum,
-    },
-  ];
-
+const differencesAsFk = async (cleanData) => {
   const startRow = 2;
 
   try {
