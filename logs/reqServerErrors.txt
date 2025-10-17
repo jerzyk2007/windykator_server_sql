@@ -1,0 +1,1 @@
+20251017	09:28:02	usersController, changeRoles: Error: Table 'testy_windykacja.copmany_users' doesn't exist

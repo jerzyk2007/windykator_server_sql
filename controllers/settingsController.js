@@ -77,44 +77,13 @@ const getSettings = async (req, res) => {
     const roles = Object.entries(userSettings[0].roles[0]).map(
       ([role]) => role
     );
-    const rolesToRemove = ["Root", "Start"];
+    const rolesToRemove = ["Start"];
 
     rolesToRemove.forEach((roleToRemove) => {
       const indexToRemove = roles.indexOf(roleToRemove);
       if (indexToRemove !== -1) {
         roles.splice(indexToRemove, 1);
       }
-    });
-
-    // const rolesOrder = [
-    //   "User",
-    //   "Editor",
-    //   "Controller",
-    //   "FK",
-    //   "Nora",
-    //   "Admin",
-    // ];
-    const rolesOrder = [
-      "User",
-      "Editor",
-      "Controller",
-      "FK_KRT",
-      "FK_KEM",
-      "FK_RAC",
-      "Nora",
-      "Admin",
-    ];
-
-    roles.sort((a, b) => {
-      // Uzyskujemy indeksy ról a i b w tablicy rolesOrder
-      const indexA = rolesOrder.indexOf(a);
-      const indexB = rolesOrder.indexOf(b);
-
-      // Porównujemy indeksy. Jeśli rola nie jest w rolesOrder, przypisujemy jej duży indeks, aby była na końcu.
-      return (
-        (indexA === -1 ? rolesOrder.length : indexA) -
-        (indexB === -1 ? rolesOrder.length : indexB)
-      );
     });
 
     const uniqueDepartments = await getFilteredDepartments(res);

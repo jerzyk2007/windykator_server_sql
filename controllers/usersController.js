@@ -223,7 +223,7 @@ const createNewUser = async (req, res) => {
     // encrypt the password
     const roles = { Start: 1 };
     const password = await generatePassword();
-    console.log(userPermission);
+
     await connect_SQL.query(
       "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
@@ -547,21 +547,34 @@ const changeRoles = async (req, res) => {
   const { id_user } = req.params;
   const { roles } = req.body;
   const newRoles = { ...ROLES_LIST };
+
+  // dodaję rolę STart, ktróra jest podstawowa do uruchomienia programu przez usera
+  const userRoles = [...roles, "Start"];
+
   const filteredRoles = Object.fromEntries(
-    Object.entries(newRoles).filter(([key]) => roles.includes(key))
+    Object.entries(newRoles).filter(([key]) => userRoles.includes(key))
   );
 
   try {
-    const [result] = await connect_SQL.query(
-      "UPDATE company_users SET roles = ? WHERE id_user = ?",
-      [JSON.stringify(filteredRoles), id_user]
+    const [userPermissions] = await connect_SQL.query(
+      "SELECT permissions FROM company_users WHERE id_user = ?",
+      [id_user]
     );
 
-    if (result.affectedRows > 0) {
-      // Jeśli aktualizacja zakończyła się sukcesem
-      return res.status(201).json({ message: "Roles are saved." });
+    if (userPermissions[0]?.permissions?.Pracownik) {
+      const [result] = await connect_SQL.query(
+        "UPDATE company_users SET roles = ? WHERE id_user = ?",
+        [JSON.stringify(filteredRoles), id_user]
+      );
+
+      if (result.affectedRows > 0) {
+        // Jeśli aktualizacja zakończyła się sukcesem
+        return res.status(201).json({ message: "Roles are saved." });
+      } else {
+        // Jeśli aktualizacja nie powiodła się
+        return res.status(400).json({ message: "Roles are not saved." });
+      }
     } else {
-      // Jeśli aktualizacja nie powiodła się
       return res.status(400).json({ message: "Roles are not saved." });
     }
   } catch (error) {

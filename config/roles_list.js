@@ -11,7 +11,6 @@ const ROLES_LIST = {
   Raports: 400,
   Admin: 1000,
   SuperAdmin: 2000,
-  Root: 5000,
 };
 
 module.exports = ROLES_LIST;
