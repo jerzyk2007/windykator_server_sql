@@ -368,29 +368,6 @@ const getRaportDocumentsControlBL = async (req, res) => {
     );
   }
 };
-// szukam poprzedniego dnia roboczego w poniedziałek dszukam piątku, w piątek czwartku itd
-const getPreviousBusinessDayString = () => {
-  const today = new Date();
-  const day = today.getDay();
-  const result = new Date(today);
-
-  switch (day) {
-    case 1: // poniedziałek → piątek
-      result.setDate(today.getDate() - 3);
-      break;
-    case 0: // niedziela → piątek
-      result.setDate(today.getDate() - 2);
-      break;
-    case 6: // sobota → piątek
-      result.setDate(today.getDate() - 1);
-      break;
-    default: // pozostałe dni → poprzedni dzień
-      result.setDate(today.getDate() - 1);
-  }
-
-  // Zwracamy czysty string YYYY-MM-DD
-  return result.toISOString().split("T")[0];
-};
 
 // szukam poprzedniego dnia roboczego w poniedziałek dszukam piątku, w piątek czwartku itd
 const getPreviousBusinessDayString = () => {
