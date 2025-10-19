@@ -150,7 +150,6 @@ const getStructureOrganization = async (req, res) => {
     const [data] = await connect_SQL.query(
       "SELECT * FROM company_join_items ORDER BY department"
     );
-
     const findMail = await Promise.all(
       data.map(async (item) => {
         const ownerMail = await Promise.all(
@@ -173,16 +172,17 @@ const getStructureOrganization = async (req, res) => {
     );
 
     const [accounts] = await connect_SQL.query(
-      "SELECT username, usersurname, userlogin, departments FROM company_users"
+      "SELECT username, usersurname, userlogin, departments, permissions FROM company_users"
     );
-    const filteredDeps = accounts.map((item) => {
-      return {
-        ...item,
-        departments: item.departments.map(
-          (acc) => `${acc.department}-${acc.company}`
-        ),
-      };
-    });
+
+    // const filteredDeps = accounts.map((item) => {
+    //   return {
+    //     ...item,
+    //     departments: item.departments.map(
+    //       (acc) => `${acc.department}-${acc.company}`
+    //     ),
+    //   };
+    // });
 
     const structure = findMail.map(({ id_join_items, ...rest }) => rest);
     const structureData = structure.map((item) => {
@@ -204,11 +204,11 @@ const getStructureOrganization = async (req, res) => {
         usersurname: item.usersurname,
         username: item.username,
         userlogin: item.userlogin,
-        departments: Array.isArray(item.departments)
-          ? item.departments
+        departments: Array.isArray(item.departments[item.permissions])
+          ? item.departments[item.permissions]
               .map((d) => `${d.department}-${d.company}`)
               .join(", ")
-          : item.departments,
+          : item.departments[item.permissions],
       };
     });
 
@@ -253,13 +253,12 @@ const getRaportDocumentsControlBL = async (req, res) => {
       "SELECT  permissions, username, usersurname, departments FROM company_users WHERE refreshToken = ?",
       [refreshToken]
     );
-
-    const { departments = [] } = findUser[0] || {};
+    const { departments = [], permissions = "" } = findUser[0] || {};
 
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
     const sqlCondition =
-      departments?.length > 0
-        ? `(${departments
+      departments[permissions]?.length > 0
+        ? `(${departments[permissions]
             .map(
               (dep) =>
                 `D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}' `
