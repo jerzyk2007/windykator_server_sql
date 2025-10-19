@@ -25,7 +25,6 @@ const handleRefreshToken = async (req, res) => {
       return res.end();
       // return res.sendStatus(403); // forbidden
     }
-
     // evaluate jwt
     jwt.verify(
       refreshToken,
@@ -33,7 +32,13 @@ const handleRefreshToken = async (req, res) => {
       (err, decoded) => {
         if (err || findUser[0].userlogin !== decoded.userlogin)
           return res.sendStatus(403);
+
         const roles = Object.values(findUser[0].roles).filter(Boolean);
+
+        // const [permissions] = Object.keys(findUser[0].permissions).filter(
+        //   (perm) => findUser[0].permissions[perm]
+        // );
+
         const accessToken = jwt.sign(
           {
             UserInfo: {
@@ -49,10 +54,10 @@ const handleRefreshToken = async (req, res) => {
         res.json({
           accessToken,
           roles,
+          permissions: findUser[0].permissions,
           userlogin: decoded.userlogin,
           username: findUser[0].username,
           usersurname: findUser[0].usersurname,
-          permissions: findUser[0].permissions,
           id_user: findUser[0].id_user,
         });
       }

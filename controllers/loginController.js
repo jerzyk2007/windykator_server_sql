@@ -45,12 +45,12 @@ const handleLogin = async (req, res) => {
           maxAge: 24 * 60 * 60 * 1000,
         })
         .json({
+          id_user: result[0].id_user,
           userlogin: result[0].userlogin,
           username: result[0].username,
           usersurname: result[0].usersurname,
-          id_user: result[0].id_user,
-          roles,
           permissions: result[0].permissions,
+          roles,
         });
     } else {
       res.sendStatus(401);

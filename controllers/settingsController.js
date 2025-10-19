@@ -69,8 +69,11 @@ const getFilteredDepartments = async (res) => {
 // pobieranie głównych ustawień
 const getSettings = async (req, res) => {
   try {
+    // const [userSettings] = await connect_SQL.query(
+    //   "SELECT roles, permissions, columns FROM company_settings WHERE id_setting = 1"
+    // );
     const [userSettings] = await connect_SQL.query(
-      "SELECT roles, permissions, columns FROM company_settings WHERE id_setting = 1"
+      "SELECT roles, columns FROM company_settings WHERE id_setting = 1"
     );
 
     //zamieniam obiekt json na tablice ze stringami, kazdy klucz to wartość string w tablicy
@@ -110,7 +113,7 @@ const getSettings = async (req, res) => {
       { departments: uniqueDepartments },
       { departmentsJI: departmentStrings },
       { columns: userSettings[0].columns },
-      { permissions: userSettings[0].permissions },
+      // { permissions: userSettings[0].permissions },
       { departmentsFromCJI: depsFromCJI },
       { departmentsFromCompDocs: depsFromCompDocs },
       { company: company[0]?.company ? company[0].company : [] },

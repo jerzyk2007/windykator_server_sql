@@ -126,7 +126,6 @@ WHERE CJI.AREA = "BLACHARNIA" AND DATA_ROZL_AS >= '2025-01-01' AND CD.DATA_FV < 
       };
     });
 
-    console.log(filteredData);
     // const excelBuffer = await generateExcelRaport(filteredData);
 
     // res.setHeader(

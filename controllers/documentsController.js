@@ -8,35 +8,25 @@ const getAllDocumentsSQL =
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info) => {
   let filteredData = [];
+
   try {
     const [findUser] = await connect_SQL.query(
       "SELECT  permissions, username, usersurname, departments FROM company_users WHERE id_user = ?",
       [id_user]
     );
-    const {
-      permissions = {},
-      username,
-      usersurname,
-      departments = [],
-    } = findUser[0] || {};
-    // jeśli użytkownik nie ma nadanych dostępów i działów to zwraca puste dane
+    const { permissions = "", departments = {} } = findUser[0] || {};
 
-    if (
-      !permissions ||
-      typeof permissions !== "object" ||
-      (Object.keys(permissions).length === 0 &&
-        (!Array.isArray(departments) || departments.length === 0))
-    ) {
-      return { data: [], permission: [] };
+    // jeśli użytkownik nie ma nadanych dostępów do działów to zwraca puste dane
+    const allDepartments = departments[permissions] || [];
+
+    if (!allDepartments.length) {
+      return { data: [] };
     }
 
-    const truePermissions = Object.keys(permissions).filter(
-      (permission) => permissions[permission]
-    );
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
     const sqlCondition =
-      departments?.length > 0
-        ? `(${departments
+      allDepartments?.length > 0
+        ? `(${allDepartments
             .map(
               (dep) =>
                 `D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}' `
@@ -44,112 +34,58 @@ const getDataDocuments = async (id_user, info) => {
             .join(" OR ")})`
         : null;
 
-    const DORADCA = `${usersurname} ${username}`;
-
-    if (info === "actual") {
-      [filteredData] = await connect_SQL.query(
-        `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
-      );
-      // if (truePermissions[0] === "Standard") {
-      //   [filteredData] = await connect_SQL.query(
-      //     `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
-      //   );
-      // } else if (truePermissions[0] === "Basic") {
-      //   [filteredData] = await connect_SQL.query(
-      //     `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND D.DORADCA =  '${DORADCA}'`
-      //   );
-      // }
-    } else if (info === "critical") {
-      if (truePermissions[0] === "Standard") {
+    if (permissions === "Pracownik") {
+      if (info === "actual") {
+        [filteredData] = await connect_SQL.query(
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
+        );
+      } else if (info === "critical") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND ${sqlCondition}`
-          // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
         );
-      } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND AND D.DORADCA =  '${DORADCA}'`
-        );
-      }
-    } else if (info === "obligations") {
-      if (truePermissions[0] === "Standard") {
+      } else if (info === "obligations") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) < 0 AND ${sqlCondition}`
-          // `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
         );
-      } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) < 0 AND D.DORADCA =  '${DORADCA}'`
-        );
-      }
-    } else if (info === "archive") {
-      if (truePermissions[0] === "Standard") {
+      } else if (info === "archive") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0 AND ${sqlCondition}`
         );
-      } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) = 0 AND D.DORADCA =  '${DORADCA}'`
-        );
-      }
-    } else if (info === "all") {
-      if (truePermissions[0] === "Standard") {
+      } else if (info === "all") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE ${sqlCondition}`
         );
-      } else if (truePermissions[0] === "Basic") {
-        [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`
-        );
-      }
-    } else if (info === "raport_fk") {
-      if (truePermissions[0] === "Standard") {
+      } else if (info === "raport_fk") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 1 AND ${sqlCondition}`
         );
-      } else if (truePermissions[0] === "Basic") {
-        // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
-        filteredData = [];
-      }
-    } else if (info === "disabled_fk") {
-      if (truePermissions[0] === "Standard") {
+      } else if (info === "disabled_fk") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE MD.RAPORT_FK = 0 AND ${sqlCondition}`
         );
-      } else if (truePermissions[0] === "Basic") {
-        // [filteredData] = await connect_SQL.query(`${getAllDocumentsSQL} WHERE  D.DORADCA = '${DORADCA}'`);
-        filteredData = [];
-      }
-    } else if (info === "control-bl") {
-      if (truePermissions[0] === "Standard") {
+      } else if (info === "control-bl") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE JI.area = 'BLACHARNIA' AND  ${sqlCondition} AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)`
         );
-      } else if (truePermissions[0] === "Basic") {
-        filteredData = [];
-      }
-    } else if (info === "krd") {
-      if (truePermissions[0] === "Standard") {
+      } else if (info === "krd") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE  ${sqlCondition} AND DA.KRD IS NOT NULL`
         );
-      } else if (truePermissions[0] === "Basic") {
-        filteredData = [];
       }
-    }
-    // do pobierania dla raportu róznic AS - FK
-    else if (info === "different") {
-      if (truePermissions[0] === "Standard") {
+      // do pobierania dla raportu róznic AS - FK
+      else if (info === "different") {
         const getAllDocumentsSQL =
           "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, IFNULL(FS.DO_ROZLICZENIA, 0) AS FK_DO_ROZLICZENIA,  D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU, DA.KRD   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_fk_settlements AS FS ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA";
 
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE  ${sqlCondition} AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0`
         );
-      } else if (truePermissions[0] === "Basic") {
-        filteredData = [];
       }
+      // return { data: filteredData, permission: truePermissions };
+      return { data: filteredData };
+    } else {
+      return { data: [] };
     }
-    return { data: filteredData, permission: truePermissions[0] };
   } catch (error) {
     logEvents(
       `documentsController, getDataDocuments: ${error}`,
@@ -330,15 +266,14 @@ const getSettingsColumnsTable = async (req, res) => {
     return res.status(400).json({ message: "Id and info are required." });
   }
   try {
-    const findUser = await connect_SQL.query(
-      "SELECT  tableSettings, columns  FROM company_users WHERE id_user = ?",
+    const [findUser] = await connect_SQL.query(
+      "SELECT permissions, tableSettings, columns  FROM company_users WHERE id_user = ?",
       [id_user]
     );
+    const { permissions = "" } = findUser[0] || {};
 
-    const tableSettings = findUser[0][0].tableSettings
-      ? findUser[0][0].tableSettings
-      : {};
-    const columns = findUser[0][0].columns ? findUser[0][0].columns : [];
+    const tableSettings = findUser[0].tableSettings[permissions];
+    const columns = findUser[0].columns[permissions];
 
     res.json({ tableSettings, columns });
   } catch (error) {

@@ -8,7 +8,7 @@ const getTime = async (req, res) => {
   try {
     // await updateData();
 
-    await repair();
+    // await repair();
 
     // await getRaportArea();
 
