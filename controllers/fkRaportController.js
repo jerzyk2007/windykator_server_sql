@@ -1069,7 +1069,7 @@ const generateRaportData = async (req, res) => {
       (a, b) => sortOrder.indexOf(a.name) - sortOrder.indexOf(b.name)
     );
     await connect_SQL.query(
-      `UPDATE company_fk_raport_excel set data = ? WHERE company = ?`,
+      `UPDATE company_fk_raport_excel set DATA = ? WHERE COMPANY = ?`,
       [JSON.stringify(sortedArray), company]
     );
 
@@ -1129,10 +1129,10 @@ const getDataToNewRaport = async (req, res) => {
 const getDataAfterGenerate = async (company) => {
   try {
     const [data] = await connect_SQL.query(
-      `SELECT data FROM company_fk_raport_excel WHERE company = ?`,
+      `SELECT DATA FROM company_fk_raport_excel WHERE COMPANY = ?`,
       [company]
     );
-    return data[0].data;
+    return data[0].DATA;
   } catch (error) {
     logEvents(
       `fKRaport, getDataAfterGenerate: ${error}`,

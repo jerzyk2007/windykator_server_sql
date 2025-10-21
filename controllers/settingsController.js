@@ -20,7 +20,7 @@ const changeColumns = async (req, res) => {
     // Przygotowanie zapytania SQL z wieloma wartościami
     const query = `
           INSERT IGNORE INTO company_table_columns
-            (accessorKey, header, filterVariant, type, areas) 
+            (ACCESSOR_KEY, HEADER, FILTER_VARIANT, TYPE, AREAS) 
           VALUES 
             ${values.map(() => "(?, ?, ?, ?, ?)").join(", ")}
         `;
@@ -29,11 +29,16 @@ const changeColumns = async (req, res) => {
     await connect_SQL.query(query, values.flat());
 
     const [userColumns] = await connect_SQL.query(
-      `SELECT id_user, columns, departments, tableSettings FROM company_users`
+      `SELECT id_user, columns, departments, tableSettings, permissions FROM company_users`
     );
 
     for (const user of userColumns) {
-      await verifyUserTableConfig(user.id_user, user.departments, columns);
+      // console.log(user.departments[permissions]);
+      await verifyUserTableConfig(
+        user.id_user,
+        user.departments[user.permissions],
+        columns
+      );
     }
     res.end();
   } catch (error) {
@@ -171,11 +176,23 @@ const getColumns = async (req, res) => {
     const [columns] = await connect_SQL.query(
       "SELECT * FROM company_table_columns"
     );
+
     const [areas] = await connect_SQL.query(
       "SELECT AREA FROM company_area_items"
     );
+    const newColumns = columns.map((item) => {
+      return {
+        ...item,
+        accessorKey: item.ACCESSOR_KEY,
+        header: item.HEADER,
+        filterVariant: item.FILTER_VARIANT,
+        type: item.TYPE,
+        areas: item.AREAS,
+      };
+    });
+
     const filteredAreas = areas.map((item) => item.AREA);
-    res.json({ columns, areas: filteredAreas.sort() });
+    res.json({ columns: newColumns, areas: filteredAreas.sort() });
   } catch (error) {
     logEvents(
       `settingsController, getColumns: ${error}`,

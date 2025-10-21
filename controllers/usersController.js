@@ -15,8 +15,11 @@ const { tr } = require("date-fns/locale/tr");
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
 const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
   try {
+    // console.log(userPermission);
+
     // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
     if (!newDeps.length) return;
+
     const whereClauses = newDeps
       .map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`)
       .join(" OR ");
@@ -43,27 +46,27 @@ const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
       checkDepartments[0];
 
     const areaDep = columnsFromSettings.reduce((acc, column) => {
-      column.areas.forEach((area) => {
+      column.AREAS.forEach((area) => {
         if (area.available) {
           const existingEntry = acc.find((entry) =>
             entry.hasOwnProperty(area.name)
           );
           if (existingEntry) {
             existingEntry[area.name].push({
-              accessorKey: column.accessorKey,
-              header: column.header,
-              filterVariant: column.filterVariant,
-              type: column.type,
+              accessorKey: column.ACCESSOR_KEY,
+              header: column.HEADER,
+              filterVariant: column.FILTER_VARIANT,
+              type: column.TYPE,
               // hide: area.hide
             });
           } else {
             acc.push({
               [area.name]: [
                 {
-                  accessorKey: column.accessorKey,
-                  header: column.header,
-                  filterVariant: column.filterVariant,
-                  type: column.type,
+                  accessorKey: column.ACCESSOR_KEY,
+                  header: column.HEADER,
+                  filterVariant: column.FILTER_VARIANT,
+                  type: column.TYPE,
                   // hide: area.hide
                 },
               ],
@@ -189,12 +192,10 @@ const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
     columns[permissions] = uniqueObjects;
     tableSettings[permissions] = newTableSettings;
 
-    console.log(columns);
-
-    // await connect_SQL.query(
-    //   "Update company_users SET columns = ?, tableSettings = ?  WHERE id_user = ?",
-    //   [JSON.stringify(columns), JSON.stringify(tableSettings), id_user]
-    // );
+    await connect_SQL.query(
+      "Update company_users SET columns = ?, tableSettings = ?  WHERE id_user = ?",
+      [JSON.stringify(columns), JSON.stringify(tableSettings), id_user]
+    );
   } catch (error) {
     logEvents(
       `usersController, verifyUserTableConfig: ${error}`,
@@ -451,9 +452,9 @@ const changeUserDepartments = async (req, res) => {
     if (permissions === "Pracownik") {
       if (departments[permissions].length) {
         const newDeps = [...departments[permissions]];
-        await verifyUserTableConfig(id_user, newDeps, getColumns, permissions);
+        // await verifyUserTableConfig(id_user, newDeps, getColumns, permissions);
+        await verifyUserTableConfig(id_user, newDeps, getColumns);
       }
-
       const [result] = await connect_SQL.query(
         "UPDATE company_users SET departments = ? WHERE id_user = ?",
         [JSON.stringify(departments), id_user]
@@ -538,7 +539,6 @@ const getUsersData = async (req, res) => {
     // const [truePermissions] = Object.keys(result[0].permissions).filter(
     //   (perm) => result[0].permissions[perm]
     // );
-
     const {
       permissions = "",
       departments = { Pracownik: [], Kancelaria: [] },
@@ -567,7 +567,6 @@ const getUsersData = async (req, res) => {
             oldDepartments: oldDepartments || [],
           };
         });
-
         return res.json(filteredUsers);
       } else {
         // kancelaria

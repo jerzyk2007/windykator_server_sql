@@ -108,6 +108,36 @@ const deleteDepartmentsColumn = async () => {
   }
 };
 
+const company_password_resets_Change = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_password_resets CHANGE COLUMN email EMAIL VARCHAR(255), CHANGE COLUMN token TOKEN VARCHAR(255), CHANGE COLUMN created_at CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const company_fk_raport_excel_Change = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_fk_raport_excel CHANGE COLUMN company COMPANY VARCHAR(45), CHANGE COLUMN data DATA JSON"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const company_table_columns_Change = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns DROP COLUMN description, CHANGE COLUMN accessorKey ACCESSOR_KEY VARCHAR(45), CHANGE COLUMN header HEADER VARCHAR(45), CHANGE COLUMN filterVariant FILTER_VARIANT VARCHAR(45), CHANGE COLUMN type TYPE VARCHAR(45), CHANGE COLUMN areas AREAS JSON"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
     // // zmiana tabeli company_users
@@ -115,9 +145,12 @@ const repair = async () => {
     // await changeTypeColumnPermissions()
     // await changeUserTable();
     //
-    // // zmiana tabeli company_settings
+    //
     // await changePermissionsTableSettings();
     // await deleteDepartmentsColumn();
+    // await company_password_resets_Change();
+    // await company_fk_raport_excel_Change();
+    // await company_table_columns_Change();
   } catch (error) {
     console.error(error);
   }
