@@ -69,15 +69,12 @@ const getFilteredDepartments = async (res) => {
 // pobieranie głównych ustawień
 const getSettings = async (req, res) => {
   try {
-    // const [userSettings] = await connect_SQL.query(
-    //   "SELECT roles, permissions, columns FROM company_settings WHERE id_setting = 1"
-    // );
     const [userSettings] = await connect_SQL.query(
-      "SELECT roles, columns FROM company_settings WHERE id_setting = 1"
+      "SELECT ROLES, COLUMNS FROM company_settings WHERE id_setting = 1"
     );
 
     //zamieniam obiekt json na tablice ze stringami, kazdy klucz to wartość string w tablicy
-    const roles = Object.entries(userSettings[0].roles[0]).map(
+    const roles = Object.entries(userSettings[0].ROLES[0]).map(
       ([role]) => role
     );
     const rolesToRemove = ["Start"];
@@ -105,18 +102,18 @@ const getSettings = async (req, res) => {
     );
 
     const [company] = await connect_SQL.query(
-      "SELECT company from company_settings WHERE id_setting = 1"
+      "SELECT COMPANY from company_settings WHERE id_setting = 1"
     );
 
     res.json([
       { roles },
       { departments: uniqueDepartments },
       { departmentsJI: departmentStrings },
-      { columns: userSettings[0].columns },
+      { columns: userSettings[0].COLUMNS },
       // { permissions: userSettings[0].permissions },
       { departmentsFromCJI: depsFromCJI },
       { departmentsFromCompDocs: depsFromCompDocs },
-      { company: company[0]?.company ? company[0].company : [] },
+      { company: company[0]?.COMPANY ? company[0].COMPANY : [] },
     ]);
   } catch (error) {
     logEvents(
@@ -134,11 +131,11 @@ const getDepartments = async (req, res) => {
 
     //pobieram zapisane cele
     const [getTarget] = await connect_SQL.query(
-      "SELECT target from company_settings WHERE id_setting = 1"
+      "SELECT TARGET from company_settings WHERE id_setting = 1"
     );
     res.json({
       departments: uniqueDepartments,
-      target: getTarget[0].target,
+      target: getTarget[0].TARGET,
     });
   } catch (error) {
     logEvents(
@@ -154,7 +151,7 @@ const saveTargetPercent = async (req, res) => {
   const { target } = req.body;
   try {
     await connect_SQL.query(
-      "UPDATE company_settings SET target = ? WHERE id_setting = 1",
+      "UPDATE company_settings SET TARGET = ? WHERE id_setting = 1",
       [JSON.stringify(target)]
     );
 
@@ -192,7 +189,7 @@ const getColumns = async (req, res) => {
 const getPermissions = async (req, res) => {
   try {
     const [permissions] = await connect_SQL.query(
-      "SELECT permissions FROM company_settings"
+      "SELECT PERMISSIONS FROM company_settings"
     );
     res.json(permissions.length ? permissions[0] : []);
   } catch (error) {

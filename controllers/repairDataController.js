@@ -22,7 +22,6 @@ const createLawTable = async () => {
 };
 
 // zmiana permissions w tabeli company_settings - dla zmian poz zewn kancelarie
-
 const deleteBasicUsers = async () => {
   try {
     const [users] = await connect_SQL.query("SELECT * FROM company_users");
@@ -99,6 +98,16 @@ const changePermissionsTableSettings = async () => {
   }
 };
 
+const deleteDepartmentsColumn = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_settings DROP COLUMN departments, CHANGE COLUMN roles ROLES JSON, CHANGE COLUMN columns COLUMNS JSON, CHANGE COLUMN permissions PERMISSIONS JSON, CHANGE COLUMN target TARGET JSON, CHANGE COLUMN company COMPANY JSON"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
     // // zmiana tabeli company_users
@@ -108,6 +117,7 @@ const repair = async () => {
     //
     // // zmiana tabeli company_settings
     // await changePermissionsTableSettings();
+    // await deleteDepartmentsColumn();
   } catch (error) {
     console.error(error);
   }

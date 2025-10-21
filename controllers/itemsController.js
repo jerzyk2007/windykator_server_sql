@@ -90,7 +90,7 @@ const getDataItems = async (req, res) => {
       "SELECT * from company_aging_items"
     );
     const [company] = await connect_SQL.query(
-      "SELECT company from company_settings WHERE id_setting = 1"
+      "SELECT COMPANY from company_settings WHERE id_setting = 1"
     );
     res.json({
       data: {
@@ -196,7 +196,7 @@ const getFKSettingsItems = async (req, res) => {
 
     // pobieram zapisane wcześniej nazwy oddziałów firmy (KRT, KEM, itd)
     const [company] = await connect_SQL.query(
-      "SELECT company from company_settings WHERE id_setting = 1"
+      "SELECT COMPANY from company_settings WHERE id_setting = 1"
     );
 
     //pobieram już zapisane wcześniej Itemy
