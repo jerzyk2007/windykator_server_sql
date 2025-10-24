@@ -192,14 +192,41 @@ const getAccountancyDataMsSQL = async (company, res) => {
     });
 
     if (errorDepartments.length > 0) {
-      // return res.json({ info: `Brak danych o działach: ${errorDepartments.join(', ')}` });
       res.json({
         info: `Brak danych o działach: ${errorDepartments.sort().join(", ")}`,
       });
       return null;
     }
 
-    return addDep;
+    // sprawdzenie jeżeli czy są nazwy kontrhentów, jeśli nie to szuka w danych AS3
+    const contractorName = addDep
+      .map((item) => {
+        if (!item.KONTRAHENT) {
+          return item.NUMER;
+        } else return null;
+      })
+      .filter(Boolean);
+
+    const sqlCondition =
+      contractorName?.length > 0
+        ? `(${contractorName
+            .map((doc) => `NUMER_FV = '${doc}' `)
+            .join(" OR ")})`
+        : null;
+
+    const [findContractor] = await connect_SQL.query(
+      `SELECT NUMER_FV, KONTRAHENT FROM company_documents WHERE ${sqlCondition}`
+    );
+
+    const merged = addDep.map((dep) => {
+      const found = findContractor.find((fc) => fc.NUMER_FV === dep.NUMER);
+      return {
+        ...dep,
+        KONTRAHENT: found ? `AS3 → ${found.KONTRAHENT}` : dep.KONTRAHENT,
+      };
+    });
+
+    return merged;
   } catch (error) {
     logEvents(
       `fKRaport, getAccountancyDataMsSQL: ${error}`,

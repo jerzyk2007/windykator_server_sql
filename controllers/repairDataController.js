@@ -4,10 +4,14 @@ const { verifyUserTableConfig } = require("./usersController");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
-const { generatePassword, documentsType } = require("./manageDocumentAddition");
-const { addDepartment } = require("./manageDocumentAddition");
+const {
+  generatePassword,
+  documentsType,
+  addDepartment,
+} = require("./manageDocumentAddition");
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getDataDocuments } = require("./documentsController");
+const { getAccountancyDataMsSQL } = require("./fkRaportController");
 
 // naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
 const repairAdvisersName = async (req, res) => {
@@ -1591,6 +1595,8 @@ const repair = async () => {
     // await generateHistoryDocuments("KRT");
 
     // await checkHistory();
+
+    // await getAccountancyDataMsSQL("KRT");
   } catch (error) {
     console.error(error);
   }

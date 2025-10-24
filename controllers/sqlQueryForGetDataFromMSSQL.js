@@ -12,8 +12,8 @@ const addDocumentToDatabaseQuery = (company, twoDaysAgo) => {
 
     return `SELECT 
        fv.[NUMER],
-	    CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
-	CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+        CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+    CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
        fv.[KONTR_NAZWA],
        fv.[KONTR_NIP],
        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
@@ -37,8 +37,8 @@ WHERE fv.[NUMER] != 'POTEM'
   AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
 GROUP BY 
        fv.[NUMER],
-	   CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
-	   CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
+       CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
+       CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
            fv.[KONTR_NAZWA],
        fv.[KONTR_NIP],
        fv.[NR_SZKODY],
@@ -79,7 +79,7 @@ const updateDocZaLQuery = (company) => {
 
   return `SELECT 
     fv.[NUMER] AS NUMER_FV,
-	    CASE 
+        CASE 
         WHEN pos.[NAZWA] LIKE '%FV/ZAL%' THEN 
             SUBSTRING(
                 pos.[NAZWA], 
@@ -88,7 +88,7 @@ const updateDocZaLQuery = (company) => {
             )
         ELSE NULL
     END AS FV_ZALICZKOWA,
-	    SUM(CASE WHEN pos.[NAZWA] LIKE '%Faktura zaliczkowa%' THEN -pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO
+        SUM(CASE WHEN pos.[NAZWA] LIKE '%Faktura zaliczkowa%' THEN -pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO
  --   pos.[NAZWA]
 FROM [${dbCompany}].[dbo].[FAKTDOC] AS fv
 LEFT JOIN [${dbCompany}].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
@@ -296,7 +296,152 @@ const updateSettlementDescriptionQuery = (company) => {
 };
 
 const accountancyFKData = (company, endDate) => {
+  // dla kont 201, 203, 249
   const queryKRT = `
+     DECLARE @datado DATETIME = '${endDate}';
+    DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
+DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
+
+WITH
+-- CTE 1: Pre-agregacja rozrachunków.
+cte_Rozrachunki AS (
+    SELECT
+        transakcja,
+        SUM(kwota * SIGN(0.5 - strona)) AS WnMaRozliczono,
+        SUM(CASE WHEN walutaObca IS NULL THEN kwota_w ELSE rozliczonoWO END * SIGN(0.5 - strona)) AS WnMaRozliczono_w
+    FROM [fkkomandytowa].[FK].[rozrachunki]
+    WHERE dataokr < @DataDoPlusJedenDzien AND czyRozliczenie = 1 AND potencjalna = 0
+    GROUP BY transakcja
+),
+-- CTE 2: Kompletna, zagnieżdżona agregacja dla ZOBOWIĄZAŃ.
+cte_Zobowiazania_Aggr AS (
+    SELECT
+        t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania,
+        SUM(t.płatność) AS płatność
+    FROM (
+        -- Wewnętrzna podselekcja dla Zobowiązań z UNION
+        SELECT
+            dsymbol, CAST(termin AS DATE) AS termin,
+            DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+            synt, poz1, poz2, kpu.nazwa AS kontrahent,
+            ROUND(
+                (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
+                SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+            , 2) AS płatność
+        FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
+        LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+        LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+        WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203, 249) -- Dodano 249
+          AND rozdata.dataokr < @DataDoPlusJedenDzien -- AND rozdata.baza = 2
+          AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
+          AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+          AND rozdata.strona = 1
+        GROUP BY dsymbol, termin, orgstrona, synt, poz1, poz2, kpu.nazwa, rozdata.kurs
+        
+        UNION
+        
+        SELECT
+            dSymbol, CAST(termin AS DATE) AS termin,
+            DATEDIFF(DAY, termin, @DataDoDate) AS dniPrzetreminowania,
+            synt, poz1, poz2, kpu.nazwa AS kontrahent,
+            ROUND(
+                SUM(rozdata.kwota) -
+                SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+            , 2) AS płatność
+        FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
+        LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+        LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+        WHERE rozdata.potencjalna = 0 --AND rozdata.baza = 2
+          AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+          AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
+          AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
+          AND rozdata.synt IN (201, 203, 249) -- Dodano 249
+        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.nazwa
+    ) AS t
+    GROUP BY t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania
+),
+-- CTE 3: Kompletna agregacja dla NALEŻNOŚCI.
+cte_Naleznosci_Aggr AS (
+    SELECT
+        t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania,
+        SUM(t.płatność) AS płatność
+    FROM (
+        -- Wewnętrzna podselekcja dla Należności
+        SELECT
+            dsymbol, CAST(termin AS DATE) AS termin,
+            DATEDIFF(DAY, termin, @DataDoDate) AS DniPrzetreminowania,
+            synt, poz1, poz2, kpu.nazwa AS kontrahent,
+            ROUND(
+                SUM(rozdata.kwota) +
+                SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
+            , 2) AS płatność
+        FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
+        LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
+        LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
+        WHERE rozdata.potencjalna = 0 AND rozdata.dataokr < @DataDoPlusJedenDzien
+          AND rozdata.synt IN (201, 203, 249) --AND rozdata.baza = 2 -- Dodano 249
+          AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
+          AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
+          AND strona = 0 AND rozdata.orgStrona = 0
+        GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.nazwa
+    ) AS t
+    GROUP BY t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania
+),
+-- CTE 4: Łączenie gotowych, zagregowanych wyników.
+cte_Combined_Results AS (
+    SELECT * FROM cte_Zobowiazania_Aggr
+    UNION ALL
+    SELECT * FROM cte_Naleznosci_Aggr
+),
+-- CTE 5: Finałowe obliczenia na połączonym zestawie.
+cte_Final_Calculation AS (
+    SELECT
+        @DataDoDate AS stanNa,
+        dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, płatność,
+        CASE
+            WHEN DniPrzetreminowania < 1   THEN '< 1'
+            WHEN DniPrzetreminowania <= 30 THEN '1 - 30'
+            WHEN DniPrzetreminowania <= 60 THEN '31 - 60'
+            WHEN DniPrzetreminowania <= 90 THEN '61 - 90'
+            WHEN DniPrzetreminowania <= 180 THEN '91 - 180'
+            WHEN DniPrzetreminowania <= 360 THEN '181 - 360'
+            ELSE '> 360'
+        END AS przedział,
+        SUM(płatność) OVER (
+            PARTITION BY synt,
+            -- Dostosowanie partycji dla nowego konta 249
+            CASE
+                WHEN synt IN (201, 249) THEN poz2 -- Jeśli 201 lub 249, użyj poz2
+                WHEN synt = 203 THEN poz1     -- Jeśli 203, użyj poz1
+                ELSE NULL                     -- Domyślne dla innych kont (lub jeśli chcesz je pominąć)
+            END
+        ) AS saldoKontrahent
+    FROM cte_Combined_Results
+    WHERE ROUND(płatność, 2) <> 0
+)
+-- Końcowy SELECT, który zwraca wynik do aplikacji.
+SELECT
+    stanNa,
+    dsymbol, kontrahent, synt, poz1, poz2, termin, dniPrzetreminowania, przedział, płatność,
+    ROUND(saldoKontrahent, 2) AS saldoKontrahent,
+    CASE
+        WHEN ROUND(saldoKontrahent, 2) > 0 THEN 'N'
+        WHEN ROUND(saldoKontrahent, 2) < 0 THEN 'Z'
+        ELSE 'R'
+    END AS Typ
+FROM cte_Final_Calculation
+ORDER BY
+    synt,
+    CASE
+        WHEN synt IN (201, 249) THEN poz2
+        WHEN synt = 203 THEN poz1
+        ELSE NULL
+    END,
+    termin
+     `;
+
+  // tylko dla kont 201 i 203
+  const queryKRT1 = `
  DECLARE @datado DATETIME = '${endDate}';
 DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
 DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
