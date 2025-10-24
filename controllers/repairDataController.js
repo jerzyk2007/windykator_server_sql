@@ -4,8 +4,11 @@ const { verifyUserTableConfig } = require("./usersController");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
-const { generatePassword, documentsType } = require("./manageDocumentAddition");
-const { addDepartment } = require("./manageDocumentAddition");
+const {
+  generatePassword,
+  documentsType,
+  addDepartment,
+} = require("./manageDocumentAddition");
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getDataDocuments } = require("./documentsController");
 

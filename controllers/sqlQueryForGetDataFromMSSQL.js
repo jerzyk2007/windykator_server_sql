@@ -12,8 +12,8 @@ const addDocumentToDatabaseQuery = (company, twoDaysAgo) => {
 
     return `SELECT 
        fv.[NUMER],
-	    CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
-	CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+        CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+    CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
        fv.[KONTR_NAZWA],
        fv.[KONTR_NIP],
        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
@@ -37,8 +37,8 @@ WHERE fv.[NUMER] != 'POTEM'
   AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
 GROUP BY 
        fv.[NUMER],
-	   CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
-	   CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
+       CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
+       CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
            fv.[KONTR_NAZWA],
        fv.[KONTR_NIP],
        fv.[NR_SZKODY],
@@ -79,7 +79,7 @@ const updateDocZaLQuery = (company) => {
 
   return `SELECT 
     fv.[NUMER] AS NUMER_FV,
-	    CASE 
+        CASE 
         WHEN pos.[NAZWA] LIKE '%FV/ZAL%' THEN 
             SUBSTRING(
                 pos.[NAZWA], 
@@ -88,7 +88,7 @@ const updateDocZaLQuery = (company) => {
             )
         ELSE NULL
     END AS FV_ZALICZKOWA,
-	    SUM(CASE WHEN pos.[NAZWA] LIKE '%Faktura zaliczkowa%' THEN -pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO
+        SUM(CASE WHEN pos.[NAZWA] LIKE '%Faktura zaliczkowa%' THEN -pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO
  --   pos.[NAZWA]
 FROM [${dbCompany}].[dbo].[FAKTDOC] AS fv
 LEFT JOIN [${dbCompany}].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
