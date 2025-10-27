@@ -2,7 +2,6 @@ const { read, utils } = require("xlsx");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
 const { checkDate, checkTime } = require("./manageDocumentAddition");
-const { addDepartment, documentsType } = require("./manageDocumentAddition");
 
 // weryfikacja czy plik excel jest prawidłowy (czy nie jest podmienione rozszerzenie)
 const isExcelFile = (data) => {
@@ -209,141 +208,6 @@ const rubiconFile = async (rows, res) => {
   }
 };
 
-// const accountancyFile = async (req, res) => {
-//   const { company } = req.params;
-//   if (!req.file) {
-//     return res.status(400).json({ error: "Not delivered file" });
-//   }
-//   try {
-//     const buffer = req.file.buffer;
-//     const data = new Uint8Array(buffer);
-
-//     if (!isExcelFile(data)) {
-//       console.log('error');
-//       return res.status(500).json({ error: "Invalid file" });
-//     }
-
-//     const workbook = read(buffer, { type: "buffer" });
-//     const workSheetName = workbook.SheetNames[0];
-//     const workSheet = workbook.Sheets[workSheetName];
-//     const rows = utils.sheet_to_json(workSheet, { header: 0, defval: null });
-
-//     if (
-//       !("Nr. dokumentu" in rows[0]) ||
-//       !("Kontrahent" in rows[0]) ||
-//       !("Płatność" in rows[0]) ||
-//       !("Data płatn." in rows[0]) ||
-//       !("Nr kontrahenta" in rows[0]) ||
-//       !("Synt." in rows[0])
-//     ) {
-//       return res.json({ info: "Plik musi zawierać kolumny: 'Nr. dokumentu', 'Kontrahent', 'Płatność', 'Data płatn.', 'Nr kontrahenta', 'Synt.'" });
-//     }
-
-//     const changeNameColumns = rows.map(item => {
-//       return {
-//         NUMER: item["Nr. dokumentu"],
-//         KONTRAHENT: item["Kontrahent"],
-//         NR_KONTRAHENTA: item["Nr kontrahenta"],
-//         DO_ROZLICZENIA: item["Płatność"],
-//         TERMIN: isExcelDate(item["Data płatn."]) ? excelDateToISODate(item["Data płatn."]) : null,
-//         KONTO: item["Synt."],
-//         TYP_DOKUMENTU: documentsType(item["Nr. dokumentu"]),
-//         FIRMA: company
-//       };
-//     });
-
-//     const addDep = addDepartment(changeNameColumns);
-//     const [findItems] = await connect_SQL.query('SELECT DEPARTMENT FROM company_join_items WHERE COMPANY = ?', [company]);
-
-//     // jeśli nie będzie możliwe dopasowanie ownerów, lokalizacji to wyskoczy bład we froncie
-//     let errorDepartments = [];
-//     addDep.forEach(item => {
-//       if (!findItems.some(findItem => findItem.DEPARTMENT === item.DZIAL)) {
-//         // Jeśli DZIAL nie ma odpowiednika, dodaj do errorDepartments
-//         if (!errorDepartments.includes(item.DZIAL)) {
-//           errorDepartments.push(item.DZIAL);
-//         }
-//       }
-//     });
-
-//     if (errorDepartments.length > 0) {
-//       return res.json({ info: `Brak danych o działach: ${errorDepartments}` });
-//     }
-//     await connect_SQL.query(`TRUNCATE TABLE company_raportFK_${company}_accountancy`);
-
-//     const values = addDep.map(item => [
-//       item.NUMER,
-//       item.KONTRAHENT,
-//       item.NR_KONTRAHENTA,
-//       item.DO_ROZLICZENIA,
-//       item.TERMIN,
-//       item.KONTO,
-//       item.TYP_DOKUMENTU,
-//       item.DZIAL,
-//       item.FIRMA
-//     ]);
-
-//     const query = `
-//       INSERT IGNORE INTO company_raportFK_${company}_accountancy
-//         (NUMER_FV, KONTRAHENT, NR_KONTRAHENTA, DO_ROZLICZENIA, TERMIN_FV, KONTO, TYP_DOKUMENTU, DZIAL, FIRMA)
-//       VALUES
-//         ${values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}
-//     `;
-
-//     await connect_SQL.query(query, values.flat());
-
-//     await connect_SQL.query(`UPDATE company_fk_updates_date SET DATE = ?, COUNTER = ? WHERE TITLE = 'accountancy' AND COMPANY = ?`, [checkDate(new Date()), addDep.length || 0, company]);
-
-//     res.json({ info: 'Dane zaktualizowane.' });
-//   }
-//   catch (error) {
-//     logEvents(
-//       `addDataFromExcelFileController, accountancyFile: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
-
-const randomFile = async (rows, res) => {
-  try {
-    // const filteredData = rows.map((item) => {
-    //   const DATA_DODANIA = isExcelDate(item.data)
-    //     ? excelDateToISODate(item.data)
-    //     : null;
-    //   return {
-    //     NUMER_FV: item.faktura,
-    //     KANCELARIA: item.firma,
-    //     DATA_DODANIA,
-    //     FIRMA: "KRT",
-    //   };
-    // });
-
-    // const values = filteredData.map((item) => [
-    //   item.NUMER_FV,
-    //   item.DATA_DODANIA,
-    //   item.KANCELARIA,
-    //   item.FIRMA,
-    // ]);
-
-    // const query = `
-    //   INSERT IGNORE INTO company_rubicon_data_history
-    //     (NUMER_FV, DATA_PRZENIESIENIA_DO_WP, FIRMA_ZEWNETRZNA, COMPANY)
-    //   VALUES
-    //     ${values.map(() => "(?, ?, ?, ?)").join(", ")}
-    // `;
-
-    // await connect_SQL.query(query, values.flat());
-    res.end();
-  } catch (error) {
-    logEvents(
-      `addDataFromExcelFileController, randomFile: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
 const documentsFromFile = async (req, res) => {
   const { type } = req.params;
   if (!req.file) {
@@ -369,8 +233,6 @@ const documentsFromFile = async (req, res) => {
       return becaredFile(rows, res);
     } else if (type === "rubicon") {
       return rubiconFile(rows, res);
-    } else if (type === "random") {
-      return randomFile(rows, res);
     } else {
       return res.status(500).json({ error: "Invalid file" });
     }
@@ -385,5 +247,4 @@ const documentsFromFile = async (req, res) => {
 
 module.exports = {
   documentsFromFile,
-  // accountancyFile
 };

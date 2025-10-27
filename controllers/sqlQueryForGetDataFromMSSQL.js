@@ -837,6 +837,7 @@ ORDER BY
     CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
     termin
 `;
+
   const queries = {
     KRT: queryKRT,
     KEM: queryKEM,

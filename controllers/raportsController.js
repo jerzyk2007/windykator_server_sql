@@ -26,125 +26,6 @@ const getDataRaport = async (req, res) => {
   }
 };
 
-//generuje plik excel
-// const getExcelRaport = async (data) => {
-//   if (!Array.isArray(data) || data.length === 0) {
-//     console.error("Tablica danych jest pusta lub niepoprawna");
-//     return;
-//   }
-
-//   const workbook = new ExcelJS.Workbook();
-//   const worksheet = workbook.addWorksheet("Dane");
-
-//   // Nagłówki
-//   const headers = Object.keys(data[0]);
-//   worksheet.columns = headers.map((key) => ({
-//     header: key,
-//     key: key,
-//     width: 20,
-//   }));
-
-//   // Dodanie danych
-//   data.forEach((item) => worksheet.addRow(item));
-
-//   // Dodanie filtrowania do pierwszego wiersza
-//   worksheet.autoFilter = {
-//     from: {
-//       row: 1,
-//       column: 1,
-//     },
-//     to: {
-//       row: 1,
-//       column: headers.length,
-//     },
-//   };
-
-//   // Zablokowanie pierwszego wiersza (nagłówków)
-//   worksheet.views = [
-//     {
-//       state: "frozen",
-//       ySplit: 1,
-//     },
-//   ];
-
-//   // Dodanie obramowania do wszystkich komórek z danymi
-//   worksheet.eachRow((row, rowNumber) => {
-//     row.eachCell((cell) => {
-//       cell.border = {
-//         top: { style: "thin" },
-//         left: { style: "thin" },
-//         bottom: { style: "thin" },
-//         right: { style: "thin" },
-//       };
-//     });
-//   });
-
-//   // Zapis do bufora
-//   const buffer = await workbook.xlsx.writeBuffer();
-//   return buffer;
-// };
-
-// nowy zrobiony na chwile dla Marty
-const getRaportArea = async (req, res) => {
-  try {
-    const query = `
-SELECT CD.NUMER_FV, CDA.NUMER_SPRAWY_BECARED, CD.BRUTTO, CD.NR_REJESTRACYJNY, CD.NR_SZKODY, IFNULL(CS.NALEZNOSC, 0) AS FV_NALEZNOSC, CSD.OPIS_ROZRACHUNKU, CSD.DATA_ROZL_AS
-FROM company_windykacja.company_documents AS CD
-LEFT JOIN company_windykacja.company_join_items AS CJI ON CD.DZIAL = CJI.DEPARTMENT
-LEFT JOIN company_windykacja.company_settlements_description AS CSD ON CD.NUMER_FV = CSD.NUMER
-LEFT JOIN company_windykacja.company_settlements AS CS ON CD.NUMER_FV = CS.NUMER_FV
-LEFT JOIN company_documents_actions AS CDA ON CD.id_document = CDA.document_id 
-WHERE CJI.AREA = "BLACHARNIA" AND DATA_ROZL_AS >= '2025-01-01' AND CD.DATA_FV < '2024-01-01' AND CD.NUMER_FV LIKE 'FV%' AND CDA.NUMER_SPRAWY_BECARED IS NOT NULL
-`;
-
-    const [result] = await connect_SQL.query(query);
-
-    const convertToDateIfPossible = (value, addDays = 0) => {
-      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-
-      if (typeof value === "string" && datePattern.test(value)) {
-        const date = new Date(value);
-        if (!isNaN(date.getTime())) {
-          // Dodaj dni jeśli podano
-          date.setDate(date.getDate() + addDays);
-          return date;
-        }
-      }
-
-      // Zwróć "BRAK", jeśli niepoprawna data
-      return "BRAK";
-    };
-
-    const filteredData = result.map((item) => {
-      return {
-        ...item,
-        FV_NALEZNOSC: item.FV_NALEZNOSC ? item.FV_NALEZNOSC : 0,
-        OPIS_ROZRACHUNKU: Array.isArray(item.OPIS_ROZRACHUNKU)
-          ? item.OPIS_ROZRACHUNKU.join("\n\n")
-          : "NULL",
-        DATA_ROZL_AS: convertToDateIfPossible(item.DATA_ROZL_AS),
-      };
-    });
-
-    console.log(filteredData);
-    // const excelBuffer = await generateExcelRaport(filteredData);
-
-    // res.setHeader(
-    //   "Content-Type",
-    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    // );
-    // res.setHeader("Content-Disposition", "attachment; filename=raport.xlsx");
-    // res.send(excelBuffer);
-    // res.end();
-  } catch (error) {
-    logEvents(
-      `raportsController, getRaportArea: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
-
 // pobiera dane struktury orgaznizacji
 const getStructureOrganization = async (req, res) => {
   try {
@@ -569,7 +450,6 @@ const getRaportLawStatement = async (req, res) => {
 
 module.exports = {
   getDataRaport,
-  getRaportArea,
   getStructureOrganization,
   getRaportDocumentsControlBL,
   getRaportDifferncesAsFk,

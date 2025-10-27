@@ -40,7 +40,10 @@ const getDateCounter = async (req, res) => {
     updateData.dms = dms;
     res.json({ updateData });
   } catch (error) {
-    logEvents(`fKRaport, getDateCounter: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, getDateCounter: ${error}`,
+      "reqServerErrors.txt"
+    );
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -123,7 +126,7 @@ const generateHistoryDocuments = async (company) => {
     }
   } catch (error) {
     logEvents(
-      `fKRaport, generateHistoryDocuments: ${error}`,
+      `fKRaportController, generateHistoryDocuments: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -207,10 +210,20 @@ const getAccountancyDataMsSQL = async (company, res) => {
       })
       .filter(Boolean);
 
+    //     const sqlCondition =
+    // departments?.length > 0
+    //   ? `(${departments
+    //       .map(
+    //         (dep) =>
+    //           `D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}' `
+    //       )
+    //       .join(" OR ")})`
+    //   : null;
+
     const sqlCondition =
       contractorName?.length > 0
         ? `(${contractorName
-            .map((doc) => `NUMER_FV = '${doc}' `)
+            .map((doc) => `NUMER_FV = '${doc}' AND FIRMA = '${company}'`)
             .join(" OR ")})`
         : null;
 
@@ -229,7 +242,7 @@ const getAccountancyDataMsSQL = async (company, res) => {
     return merged;
   } catch (error) {
     logEvents(
-      `fKRaport, getAccountancyDataMsSQL: ${error}`,
+      `fKRaportController, getAccountancyDataMsSQL: ${error}`,
       "reqServerErrors.txt"
     );
     return null;
@@ -267,7 +280,10 @@ const saveAccountancyData = async (data, company) => {
       [endDate, "accountancy", company]
     );
   } catch (error) {
-    logEvents(`fKRaport, saveAccountancyData: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, saveAccountancyData: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -528,7 +544,7 @@ const generateRaportCompany = async (company) => {
   } catch (error) {
     console.error(error);
     logEvents(
-      `fKRaport, generateRaportCompany - ${company}: ${error}`,
+      `fKRaportController, generateRaportCompany - ${company}: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -590,7 +606,10 @@ const differencesAS_FK = async (company) => {
 
     return addDocType;
   } catch (error) {
-    logEvents(`fKRaport, differencesAS_FK: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, differencesAS_FK: ${error}`,
+      "reqServerErrors.txt"
+    );
     return [];
   }
 };
@@ -643,7 +662,7 @@ const saveMark = async (documents, company) => {
       ]
     );
   } catch (error) {
-    logEvents(`fKRaport, saveMark: ${error}`, "reqServerErrors.txt");
+    logEvents(`fKRaportController, saveMark: ${error}`, "reqServerErrors.txt");
     connect_SQL.query(
       "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
       [
@@ -677,7 +696,10 @@ const gerReportDate = async (company) => {
 
     return reportInfo;
   } catch (error) {
-    logEvents(`fKRaport, gerReportDate: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, gerReportDate: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -1107,7 +1129,10 @@ const generateRaportData = async (req, res) => {
 
     res.end();
   } catch (error) {
-    logEvents(`fKRaport, generateRaportData: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, generateRaportData: ${error}`,
+      "reqServerErrors.txt"
+    );
     // res.status(500).json({ error: "Server error" });
   }
 };
@@ -1149,7 +1174,10 @@ const getDataToNewRaport = async (req, res) => {
 
     res.end();
   } catch (error) {
-    logEvents(`fKRaport, getDataToNewRaport: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, getDataToNewRaport: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -1162,7 +1190,7 @@ const getDataAfterGenerate = async (company) => {
     return data[0].data;
   } catch (error) {
     logEvents(
-      `fKRaport, getDataAfterGenerate: ${error}`,
+      `fKRaportController, getDataAfterGenerate: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -1252,7 +1280,10 @@ const getMainRaportFK = async (req, res) => {
 
     res.end();
   } catch (error) {
-    logEvents(`fKRaport, getMainRaportFK: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, getMainRaportFK: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -1393,7 +1424,10 @@ const getBusinessRaportFK = async (req, res) => {
     res.send(excelBuffer);
     res.end();
   } catch (error) {
-    logEvents(`fKRaport, getBusinessRaportFK: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, getBusinessRaportFK: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -1406,7 +1440,10 @@ const changeMark = async (req, res) => {
     );
     res.end();
   } catch (error) {
-    logEvents(`fKRaport, changeMark: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, changeMark: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -1473,7 +1510,10 @@ const addDecisionDate = async (req, res) => {
     }
     res.end();
   } catch (error) {
-    logEvents(`fKRaport, addDecision: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, addDecision: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -1505,7 +1545,10 @@ const getOwnerMails = async (req, res) => {
     }
     res.json({ mail: mailArray });
   } catch (error) {
-    logEvents(`fKRaport, getOwnerMails: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `fKRaportController, getOwnerMails: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
