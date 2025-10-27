@@ -1596,7 +1596,7 @@ const repair = async () => {
 
     // await checkHistory();
 
-    await getAccountancyDataMsSQL("KRT");
+    // await getAccountancyDataMsSQL("KRT");
   } catch (error) {
     console.error(error);
   }
