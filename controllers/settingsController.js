@@ -33,7 +33,6 @@ const changeColumns = async (req, res) => {
     );
 
     for (const user of userColumns) {
-      // console.log(user.departments[permissions]);
       await verifyUserTableConfig(
         user.id_user,
         user.departments[user.permissions],
@@ -182,7 +181,7 @@ const getColumns = async (req, res) => {
     );
     const newColumns = columns.map((item) => {
       return {
-        ...item,
+        id_table_columns: item.id_table_columns,
         accessorKey: item.ACCESSOR_KEY,
         header: item.HEADER,
         filterVariant: item.FILTER_VARIANT,

@@ -16,7 +16,7 @@ const { connect_SQL } = require("../config/dbConn");
 //     }
 //     catch (error) {
 //         logEvents(
-//             `itemsController, getUserItems: ${error}`,
+//             `organizationStructureController, getUserItems: ${error}`,
 //             "reqServerErrors.txt"
 //         );
 //     }
@@ -59,7 +59,10 @@ const newItem = async (req, res) => {
     }
     res.end();
   } catch (error) {
-    logEvents(`itemsController, newItem: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `organizationStructureController, newItem: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -104,7 +107,10 @@ const getDataItems = async (req, res) => {
       // },
     });
   } catch (error) {
-    logEvents(`itemsController, getDataItems: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `organizationStructureController, getDataItems: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -122,7 +128,10 @@ const deleteItem = async (req, res) => {
     }
     res.end();
   } catch (error) {
-    logEvents(`itemsController, deleteItem: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `organizationStructureController, deleteItem: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -149,7 +158,10 @@ const changeItem = async (req, res) => {
     res.end();
   } catch (error) {
     console.error(error);
-    logEvents(`itemsController, changeItem: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `organizationStructureController, changeItem: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -207,7 +219,7 @@ const getFKSettingsItems = async (req, res) => {
       uniqueDepFromCompanyJI,
       uniqueDepFromDocuments,
       manualAddDep,
-      company: company[0]?.company ? company[0].company : [],
+      company: company[0]?.COMPANY ? company[0].COMPANY : [],
       preparedItems,
       companyLoacalizations: locResult,
       companyAreas: areaResult,
@@ -216,7 +228,7 @@ const getFKSettingsItems = async (req, res) => {
     });
   } catch (error) {
     logEvents(
-      `itemsController, getFKSettingsItems: ${error}`,
+      `organizationStructureController, getFKSettingsItems: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
@@ -237,7 +249,7 @@ const getFKSettingsItems = async (req, res) => {
 //         res.json(departments);
 //     } catch (error) {
 //         logEvents(
-//             `itemsController, getDepfromDocuments: ${error}`,
+//             `organizationStructureController, getDepfromDocuments: ${error}`,
 //             "reqServerErrors.txt"
 //         );
 //         res.status(500).json({ error: "Server error" });
@@ -252,7 +264,7 @@ const getFKSettingsItems = async (req, res) => {
 //         );
 //         res.json(preparedItems);
 //     } catch (error) {
-//         logEvents(`itemsController, savePrepareItems: ${error}`, "reqServerErrors.txt");
+//         logEvents(`organizationStructureController, savePrepareItems: ${error}`, "reqServerErrors.txt");
 //         res.status(500).json({ error: "Server error" });
 //     }
 // };
@@ -293,7 +305,7 @@ const savePreparedItems = async (req, res) => {
     res.end();
   } catch (error) {
     logEvents(
-      `itemsController, savePreparedItems: ${error}`,
+      `organizationStructureController, savePreparedItems: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
@@ -310,7 +322,7 @@ const deletePreparedItem = async (req, res) => {
     res.end();
   } catch (error) {
     logEvents(
-      `itemsController, deletePreparedItem: ${error}`,
+      `organizationStructureController, deletePreparedItem: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -349,7 +361,7 @@ const checkDocPayment = async (req, res) => {
     res.json({ checkDoc });
   } catch (error) {
     logEvents(
-      `itemsController, checkDocPayment: ${error}`,
+      `organizationStructureController, checkDocPayment: ${error}`,
       "reqServerErrors.txt"
     );
   }

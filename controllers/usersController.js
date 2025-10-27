@@ -15,8 +15,6 @@ const { tr } = require("date-fns/locale/tr");
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
 const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
   try {
-    // console.log(userPermission);
-
     // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
     if (!newDeps.length) return;
 
@@ -104,8 +102,6 @@ const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
     const assignedUserNewColumns = uniqueObjects.map(
       (column) => column.accessorKey
     );
-
-    // console.log(tableSettings[permissions]);
 
     const newFilteredSize = () => {
       const newSize = assignedUserNewColumns.reduce((acc, key) => {
