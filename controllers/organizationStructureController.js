@@ -93,15 +93,15 @@ const getDataItems = async (req, res) => {
       "SELECT COMPANY from company_settings WHERE id_setting = 1"
     );
     res.json({
-      data: {
-        departments: depResult,
-        localizations: locResult,
-        areas: areaResult,
-        owners: ownerResult,
-        guardians: guardianResult,
-        aging: aging,
-        company: company,
-      },
+      // data: {
+      departments: depResult,
+      localizations: locResult,
+      areas: areaResult,
+      owners: ownerResult,
+      guardians: guardianResult,
+      aging: aging,
+      company: company[0].COMPANY || [],
+      // },
     });
   } catch (error) {
     logEvents(`itemsController, getDataItems: ${error}`, "reqServerErrors.txt");

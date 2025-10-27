@@ -141,19 +141,40 @@ const company_table_columns_Change = async () => {
   }
 };
 
+const company_setting_columns = async () => {
+  try {
+    const [changeColumns] = await connect_SQL.query(
+      "SELECT COLUMNS FROM company_settings"
+    );
+
+    const newColumns = {
+      PRACOWNIK: changeColumns[0].COLUMNS,
+      KANCELARIA: [],
+    };
+
+    await connect_SQL.query(
+      "UPDATE company_settings SET COLUMNS = ? WHERE id_setting = 1",
+      [JSON.stringify(newColumns)]
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
-    // // zmiana tabeli company_users
+    // zmiana tabeli company_users
     // await deleteBasicUsers();
-    // await changeTypeColumnPermissions()
+    // await changeTypeColumnPermissions();
     // await changeUserTable();
-    //
-    //
+    // //
+    // //
     // await changePermissionsTableSettings();
     // await deleteDepartmentsColumn();
     // await company_password_resets_Change();
     // await company_fk_raport_excel_Change();
     // await company_table_columns_Change();
+    // await company_setting_columns();
   } catch (error) {
     console.error(error);
   }
