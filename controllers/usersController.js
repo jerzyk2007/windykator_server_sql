@@ -8,198 +8,198 @@ const {
   userDepartments,
   userColumns,
 } = require("./manageDocumentAddition");
+const { verifyUserTableConfig } = require("./settingsController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { sendEmail } = require("./mailController");
 const { tr } = require("date-fns/locale/tr");
 
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
-const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
-  try {
-    // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
-    if (!newDeps.length) return;
+// const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
+//   try {
+//     // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
+//     if (!newDeps.length) return;
 
-    const whereClauses = newDeps
-      .map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`)
-      .join(" OR ");
-    const values = newDeps.flatMap((dep) => [dep.department, dep.company]);
+//     const whereClauses = newDeps
+//       .map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`)
+//       .join(" OR ");
+//     const values = newDeps.flatMap((dep) => [dep.department, dep.company]);
 
-    const query = `
-  SELECT DISTINCT ji.AREA
-  FROM company_users AS u
-  LEFT JOIN company_join_items AS ji
-    ON (${whereClauses})
-  WHERE u.id_user = ?
-`;
-    // Dodaj id_user na końcu wartości
-    values.push(id_user);
-    const [getUserAreas] = await connect_SQL.query(query, values);
+//     const query = `
+//   SELECT DISTINCT ji.AREA
+//   FROM company_users AS u
+//   LEFT JOIN company_join_items AS ji
+//     ON (${whereClauses})
+//   WHERE u.id_user = ?
+// `;
+//     // Dodaj id_user na końcu wartości
+//     values.push(id_user);
+//     const [getUserAreas] = await connect_SQL.query(query, values);
 
-    // pobieram ustawienia kolumn, przypisanych działów i ustawień tabeli danego użytkownika
-    const [checkDepartments] = await connect_SQL.query(
-      "SELECT permissions, columns, departments, tableSettings FROM company_users WHERE id_user = ?",
-      [id_user]
-    );
+//     // pobieram ustawienia kolumn, przypisanych działów i ustawień tabeli danego użytkownika
+//     const [checkDepartments] = await connect_SQL.query(
+//       "SELECT permissions, columns, departments, tableSettings FROM company_users WHERE id_user = ?",
+//       [id_user]
+//     );
 
-    const { permissions, columns, departments, tableSettings } =
-      checkDepartments[0];
+//     const { permissions, columns, departments, tableSettings } =
+//       checkDepartments[0];
 
-    const areaDep = columnsFromSettings.reduce((acc, column) => {
-      column.AREAS.forEach((area) => {
-        if (area.available) {
-          const existingEntry = acc.find((entry) =>
-            entry.hasOwnProperty(area.name)
-          );
-          if (existingEntry) {
-            existingEntry[area.name].push({
-              accessorKey: column.ACCESSOR_KEY,
-              header: column.HEADER,
-              filterVariant: column.FILTER_VARIANT,
-              type: column.TYPE,
-              // hide: area.hide
-            });
-          } else {
-            acc.push({
-              [area.name]: [
-                {
-                  accessorKey: column.ACCESSOR_KEY,
-                  header: column.HEADER,
-                  filterVariant: column.FILTER_VARIANT,
-                  type: column.TYPE,
-                  // hide: area.hide
-                },
-              ],
-            });
-          }
-        }
-      });
-      return acc;
-    }, []);
+//     const areaDep = columnsFromSettings.reduce((acc, column) => {
+//       column.AREAS.forEach((area) => {
+//         if (area.available) {
+//           const existingEntry = acc.find((entry) =>
+//             entry.hasOwnProperty(area.name)
+//           );
+//           if (existingEntry) {
+//             existingEntry[area.name].push({
+//               accessorKey: column.ACCESSOR_KEY,
+//               header: column.HEADER,
+//               filterVariant: column.FILTER_VARIANT,
+//               type: column.TYPE,
+//               // hide: area.hide
+//             });
+//           } else {
+//             acc.push({
+//               [area.name]: [
+//                 {
+//                   accessorKey: column.ACCESSOR_KEY,
+//                   header: column.HEADER,
+//                   filterVariant: column.FILTER_VARIANT,
+//                   type: column.TYPE,
+//                   // hide: area.hide
+//                 },
+//               ],
+//             });
+//           }
+//         }
+//       });
+//       return acc;
+//     }, []);
 
-    //  obszary(area) do jakich ma dostęp uzytkownik
-    const areaUsers = getUserAreas.map((item) => item.AREA);
+//     //  obszary(area) do jakich ma dostęp uzytkownik
+//     const areaUsers = getUserAreas.map((item) => item.AREA);
 
-    // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
-    const filteredAreas = areaDep.filter((area) =>
-      Object.keys(area).some((key) => areaUsers.includes(key))
-    );
+//     // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
+//     const filteredAreas = areaDep.filter((area) =>
+//       Object.keys(area).some((key) => areaUsers.includes(key))
+//     );
 
-    // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
-    const combinedObjects = filteredAreas.flatMap((area) =>
-      Object.entries(area)
-        .filter(([key]) => areaUsers.includes(key))
-        .flatMap(([, values]) => values)
-    );
+//     // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
+//     const combinedObjects = filteredAreas.flatMap((area) =>
+//       Object.entries(area)
+//         .filter(([key]) => areaUsers.includes(key))
+//         .flatMap(([, values]) => values)
+//     );
 
-    // 3. Usuń duplikaty na podstawie accessorKey.
-    const uniqueObjects = combinedObjects.reduce((acc, obj) => {
-      if (!acc.some((item) => item.accessorKey === obj.accessorKey)) {
-        acc.push(obj);
-      }
-      return acc;
-    }, []);
+//     // 3. Usuń duplikaty na podstawie accessorKey.
+//     const uniqueObjects = combinedObjects.reduce((acc, obj) => {
+//       if (!acc.some((item) => item.accessorKey === obj.accessorKey)) {
+//         acc.push(obj);
+//       }
+//       return acc;
+//     }, []);
 
-    // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
-    const assignedUserNewColumns = uniqueObjects.map(
-      (column) => column.accessorKey
-    );
+//     // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
+//     const assignedUserNewColumns = uniqueObjects.map(
+//       (column) => column.accessorKey
+//     );
 
-    const newFilteredSize = () => {
-      const newSize = assignedUserNewColumns.reduce((acc, key) => {
-        if (tableSettings[permissions]?.size.hasOwnProperty(key)) {
-          // Dodaj istniejące klucze z checkDepartments
-          acc[key] = tableSettings[permissions]?.size[key];
-        } else {
-          // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-          acc[key] = 100;
-        }
-        return acc;
-      }, {});
-      return newSize;
-    };
+//     const newFilteredSize = () => {
+//       const newSize = assignedUserNewColumns.reduce((acc, key) => {
+//         if (tableSettings[permissions]?.size.hasOwnProperty(key)) {
+//           // Dodaj istniejące klucze z checkDepartments
+//           acc[key] = tableSettings[permissions]?.size[key];
+//         } else {
+//           // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
+//           acc[key] = 100;
+//         }
+//         return acc;
+//       }, {});
+//       return newSize;
+//     };
 
-    const newFilteredeOrder = () => {
-      const checkOrder = tableSettings[permissions]?.order
-        ? tableSettings[permissions].order
-        : [];
+//     const newFilteredeOrder = () => {
+//       const checkOrder = tableSettings[permissions]?.order
+//         ? tableSettings[permissions].order
+//         : [];
 
-      if (checkOrder.length) {
-        const filteredOrder = checkOrder.filter(
-          (item) =>
-            assignedUserNewColumns.includes(item) || item === "mrt-row-spacer"
-        );
+//       if (checkOrder.length) {
+//         const filteredOrder = checkOrder.filter(
+//           (item) =>
+//             assignedUserNewColumns.includes(item) || item === "mrt-row-spacer"
+//         );
 
-        // Sprawdzamy, które elementy z `assignedUserNewColumns` są nowe (nie ma ich w `checkDepartments[0].tableSettings.order`)
-        const newColumns = assignedUserNewColumns.filter(
-          (item) => !tableSettings[permissions].order.includes(item)
-        );
+//         // Sprawdzamy, które elementy z `assignedUserNewColumns` są nowe (nie ma ich w `checkDepartments[0].tableSettings.order`)
+//         const newColumns = assignedUserNewColumns.filter(
+//           (item) => !tableSettings[permissions].order.includes(item)
+//         );
 
-        // Znajdujemy indeks przedostatniego elementu (przed 'mrt-row-spacer')
-        const indexBeforeSpacer = filteredOrder.indexOf("mrt-row-spacer");
+//         // Znajdujemy indeks przedostatniego elementu (przed 'mrt-row-spacer')
+//         const indexBeforeSpacer = filteredOrder.indexOf("mrt-row-spacer");
 
-        // Tworzymy nową tablicę, dodając nowe elementy przed ostatnim elementem ('mrt-row-spacer')
-        const finalOrder = [
-          ...filteredOrder.slice(0, indexBeforeSpacer), // Wszystkie elementy przed 'mrt-row-spacer'
-          ...newColumns, // Dodajemy nowe elementy
-          "mrt-row-spacer", // Zachowujemy 'mrt-row-spacer' na końcu
-        ];
-        return finalOrder;
-      } else {
-        const finalOrder = [...assignedUserNewColumns, "mrt-row-spacer"];
-        return finalOrder;
-      }
-    };
+//         // Tworzymy nową tablicę, dodając nowe elementy przed ostatnim elementem ('mrt-row-spacer')
+//         const finalOrder = [
+//           ...filteredOrder.slice(0, indexBeforeSpacer), // Wszystkie elementy przed 'mrt-row-spacer'
+//           ...newColumns, // Dodajemy nowe elementy
+//           "mrt-row-spacer", // Zachowujemy 'mrt-row-spacer' na końcu
+//         ];
+//         return finalOrder;
+//       } else {
+//         const finalOrder = [...assignedUserNewColumns, "mrt-row-spacer"];
+//         return finalOrder;
+//       }
+//     };
 
-    const newFilteredeVisible = () => {
-      const newVisible = assignedUserNewColumns.reduce((acc, key) => {
-        if (tableSettings[permissions]?.visible.hasOwnProperty(key)) {
-          // Dodaj istniejące klucze z checkDepartments
-          acc[key] = tableSettings[permissions]?.visible[key];
-        } else {
-          // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-          acc[key] = false;
-        }
-        return acc;
-      }, {});
-      return newVisible;
-    };
+//     const newFilteredeVisible = () => {
+//       const newVisible = assignedUserNewColumns.reduce((acc, key) => {
+//         if (tableSettings[permissions]?.visible.hasOwnProperty(key)) {
+//           // Dodaj istniejące klucze z checkDepartments
+//           acc[key] = tableSettings[permissions]?.visible[key];
+//         } else {
+//           // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
+//           acc[key] = false;
+//         }
+//         return acc;
+//       }, {});
+//       return newVisible;
+//     };
 
-    const newTableSettings = {
-      size:
-        tableSettings[permissions]?.size &&
-        Object.keys(tableSettings[permissions]?.size).length > 0
-          ? newFilteredSize()
-          : {},
-      order: tableSettings[permissions]?.order?.length
-        ? newFilteredeOrder()
-        : [],
-      visible:
-        tableSettings[permissions]?.visible &&
-        Object.keys(tableSettings[permissions]?.visible).length > 0
-          ? newFilteredeVisible()
-          : {},
-      pagination: tableSettings[permissions]?.pagination
-        ? tableSettings[permissions].pagination
-        : { pageIndex: 0, pageSize: 10 },
-      pinning: tableSettings[permissions]?.pinning
-        ? tableSettings[permissions].pinning
-        : { left: [], right: [] },
-    };
+//     const newTableSettings = {
+//       size:
+//         tableSettings[permissions]?.size &&
+//         Object.keys(tableSettings[permissions]?.size).length > 0
+//           ? newFilteredSize()
+//           : {},
+//       order: tableSettings[permissions]?.order?.length
+//         ? newFilteredeOrder()
+//         : [],
+//       visible:
+//         tableSettings[permissions]?.visible &&
+//         Object.keys(tableSettings[permissions]?.visible).length > 0
+//           ? newFilteredeVisible()
+//           : {},
+//       pagination: tableSettings[permissions]?.pagination
+//         ? tableSettings[permissions].pagination
+//         : { pageIndex: 0, pageSize: 10 },
+//       pinning: tableSettings[permissions]?.pinning
+//         ? tableSettings[permissions].pinning
+//         : { left: [], right: [] },
+//     };
 
-    columns[permissions] = uniqueObjects;
-    tableSettings[permissions] = newTableSettings;
+//     columns[permissions] = uniqueObjects;
+//     tableSettings[permissions] = newTableSettings;
 
-    await connect_SQL.query(
-      "Update company_users SET columns = ?, tableSettings = ?  WHERE id_user = ?",
-      [JSON.stringify(columns), JSON.stringify(tableSettings), id_user]
-    );
-  } catch (error) {
-    logEvents(
-      `usersController, verifyUserTableConfig: ${error}`,
-      "reqServerErrors.txt"
-    );
-    // console.error(error);
-  }
-};
+//     await connect_SQL.query(
+//       "Update company_users SET columns = ?, tableSettings = ?  WHERE id_user = ?",
+//       [JSON.stringify(columns), JSON.stringify(tableSettings), id_user]
+//     );
+//   } catch (error) {
+//     logEvents(
+//       `usersController, verifyUserTableConfig: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//   }
+// };
 
 // rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
@@ -434,34 +434,39 @@ const changeUserDepartments = async (req, res) => {
 
   try {
     // pobieram wszytskie kolumny dla tabel które sa opisane w programie
-    const [getColumns] = await connect_SQL.query(
-      "SELECT * FROM company_table_columns"
-    );
 
     const [userPermission] = await connect_SQL.query(
       "SELECT permissions, departments FROM company_users WHERE id_user = ?",
       [id_user]
     );
+    // const [getColumns] = await connect_SQL.query(
+    //   "SELECT * FROM company_table_columns WHERE EMPLOYEE = ?",
+    //   [userPermission[0].permissions || null]
+    // );
+
     const { permissions, departments } = userPermission[0];
     departments[permissions] = activeDepartments;
 
-    if (permissions === "Pracownik") {
-      if (departments[permissions].length) {
-        const newDeps = [...departments[permissions]];
-        // await verifyUserTableConfig(id_user, newDeps, getColumns, permissions);
-        await verifyUserTableConfig(id_user, newDeps, getColumns);
-      }
-      const [result] = await connect_SQL.query(
-        "UPDATE company_users SET departments = ? WHERE id_user = ?",
-        [JSON.stringify(departments), id_user]
+    if (departments[permissions].length) {
+      const newDeps = [...departments[permissions]];
+      // await verifyUserTableConfig(id_user, newDeps, getColumns, permissions);
+      await verifyUserTableConfig(
+        id_user,
+        userPermission[0].permissions,
+        newDeps
       );
-      if (result.affectedRows > 0) {
-        // Jeśli aktualizacja zakończyła się sukcesem
-        return res.status(201).json({ message: "Departments are changed" });
-      } else {
-        // Jeśli aktualizacja nie powiodła się
-        return res.status(404).json({ message: "User not found." });
-      }
+    }
+
+    const [result] = await connect_SQL.query(
+      "UPDATE company_users SET departments = ? WHERE id_user = ?",
+      [JSON.stringify(departments), id_user]
+    );
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Departments are changed" });
+    } else {
+      // Jeśli aktualizacja nie powiodła się
+      return res.status(404).json({ message: "User not found." });
     }
   } catch (error) {
     logEvents(
@@ -496,7 +501,7 @@ const deleteUser = async (req, res) => {
 };
 
 // zapisanie ustawień tabeli dla użytkownika SQL
-const saveTableSettings = async (req, res) => {
+const saveUserTableSettings = async (req, res) => {
   const { id_user } = req.params;
   const { tableSettings } = req.body;
   if (!id_user) {
@@ -517,7 +522,7 @@ const saveTableSettings = async (req, res) => {
     }
   } catch (error) {
     logEvents(
-      `usersController, saveTableSettings: ${error}`,
+      `usersController, saveUserTableSettings: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ message: error.message });
@@ -535,22 +540,18 @@ const getUsersData = async (req, res) => {
     // const [truePermissions] = Object.keys(result[0].permissions).filter(
     //   (perm) => result[0].permissions[perm]
     // );
-    const {
-      permissions = "",
-      departments = { Pracownik: [], Kancelaria: [] },
-    } = result[0];
+
+    const { permissions = "" } = result[0];
 
     if (result[0]?.userlogin.length > 0) {
       if (permissions === "Pracownik") {
         const filteredUsers = result.map((user) => {
           const roles = Object.keys(user.roles).map((role) => role);
-
-          const userDepartments = departments[permissions];
+          const userDepartments = user.departments[permissions];
 
           const oldDepartments = userDepartments?.length
             ? userDepartments.map((dep) => dep.department)
             : [];
-          user.departments = userDepartments;
 
           return {
             id_user: user.id_user,
@@ -577,7 +578,7 @@ const getUsersData = async (req, res) => {
 };
 
 // zmiana roli użytkownika User, Editor, Admin SQL
-const changeRoles = async (req, res) => {
+const changeUserRoles = async (req, res) => {
   const { id_user } = req.params;
   const { roles } = req.body;
   const newRoles = { ...ROLES_LIST };
@@ -612,13 +613,16 @@ const changeRoles = async (req, res) => {
       return res.status(400).json({ message: "Roles are not saved." });
     }
   } catch (error) {
-    logEvents(`usersController, changeRoles: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `usersController, changeUserRoles: ${error}`,
+      "reqServerErrors.txt"
+    );
     res.status(500).json({ error: "Server error" });
   }
 };
 
 // zmiana dostępu do kolumn tabeli dla użytkownika (jakie kolumny ma widzieć) SQL
-const changeColumns = async (req, res) => {
+const changeUserColumns = async (req, res) => {
   const { id_user } = req.params;
   const { columns } = req.body;
   try {
@@ -636,7 +640,7 @@ const changeColumns = async (req, res) => {
     }
   } catch (error) {
     logEvents(
-      `usersController, changeColumns: ${error}`,
+      `usersController, changeUserColumns: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
@@ -809,13 +813,12 @@ module.exports = {
   changeUserPermissions,
   changeUserDepartments,
   deleteUser,
-  saveTableSettings,
+  saveUserTableSettings,
   getUsersData,
-  changeRoles,
-  changeColumns,
+  changeUserRoles,
+  changeUserColumns,
   saveRaporDepartmentSettings,
   getRaportDepartmentSettings,
   saveRaporAdviserSettings,
   getRaportAdviserSettings,
-  verifyUserTableConfig,
 };

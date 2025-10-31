@@ -104,7 +104,7 @@ const changePermissionsTableSettings = async () => {
 const deleteDepartmentsColumn = async () => {
   try {
     await connect_SQL.query(
-      "ALTER TABLE company_settings DROP COLUMN departments, CHANGE COLUMN roles ROLES JSON, CHANGE COLUMN columns COLUMNS JSON, CHANGE COLUMN permissions PERMISSIONS JSON, CHANGE COLUMN target TARGET JSON, CHANGE COLUMN company COMPANY JSON"
+      "ALTER TABLE company_settings CHANGE COLUMN departments EXT_COMPANY JSON, CHANGE COLUMN roles ROLES JSON, CHANGE COLUMN columns COLUMNS JSON, CHANGE COLUMN permissions PERMISSIONS JSON, CHANGE COLUMN target TARGET JSON, CHANGE COLUMN company COMPANY JSON"
     );
   } catch (error) {
     console.error(error);
@@ -134,7 +134,55 @@ const company_fk_raport_excel_Change = async () => {
 const company_table_columns_Change = async () => {
   try {
     await connect_SQL.query(
-      "ALTER TABLE company_table_columns DROP COLUMN description, CHANGE COLUMN accessorKey ACCESSOR_KEY VARCHAR(45), CHANGE COLUMN header HEADER VARCHAR(45), CHANGE COLUMN filterVariant FILTER_VARIANT VARCHAR(45), CHANGE COLUMN type TYPE VARCHAR(45), CHANGE COLUMN areas AREAS JSON"
+      "ALTER TABLE company_table_columns CHANGE COLUMN description EMPLOYEE VARCHAR(45),  CHANGE COLUMN accessorKey ACCESSOR_KEY VARCHAR(45), CHANGE COLUMN header HEADER VARCHAR(45), CHANGE COLUMN filterVariant FILTER_VARIANT VARCHAR(45), CHANGE COLUMN type TYPE VARCHAR(45), CHANGE COLUMN areas AREAS JSON"
+    );
+    await connect_SQL.query(`
+      UPDATE company_table_columns
+      SET EMPLOYEE = 'Pracownik'
+    `);
+
+    const [columns] = await connect_SQL.query(
+      "SELECT * FROM company_table_columns"
+    );
+    for (col of columns) {
+      const uniqueAreas = [];
+      const seen = new Set();
+
+      for (const area of col.AREAS) {
+        if (!seen.has(area.name)) {
+          seen.add(area.name);
+          // tworzymy nowy obiekt bez 'hide'
+          const { hide, ...rest } = area;
+          uniqueAreas.push(rest);
+        }
+      }
+
+      col.AREAS = uniqueAreas;
+
+      await connect_SQL.query(
+        "UPDATE company_table_columns SET AREAS = ? where id_table_columns = ?",
+        [JSON.stringify(col.AREAS), col.id_table_columns]
+      );
+    }
+
+    // usuń UQ z ACCESSOR_KEY
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns DROP INDEX `accessorKey_UNIQUE`"
+    );
+
+    // -- 1️⃣ nadaj unikalność kolumnie id_table_columns
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns ADD CONSTRAINT uq_id_table_columns UNIQUE (id_table_columns)"
+    );
+
+    // -- 2️⃣ dodaj unikalność pary (EMPLOYEE, ACCESSOR_KEY)
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns ADD CONSTRAINT uq_employee_accessor UNIQUE (EMPLOYEE, ACCESSOR_KEY)"
+    );
+
+    // -- 3️⃣ dodaj unikalność pary (EMPLOYEE, HEADER)
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns ADD CONSTRAINT uq_employee_header UNIQUE (EMPLOYEE, HEADER)"
     );
   } catch (error) {
     console.error(error);
@@ -152,18 +200,19 @@ const company_setting_columns = async () => {
       KANCELARIA: [],
     };
 
+    const extCompany = ["Kancelaria Krotoski"];
+
     await connect_SQL.query(
-      "UPDATE company_settings SET COLUMNS = ? WHERE id_setting = 1",
-      [JSON.stringify(newColumns)]
+      "UPDATE company_settings SET COLUMNS = ?, EXT_COMPANY = ? WHERE id_setting = 1",
+      [JSON.stringify(newColumns), JSON.stringify(extCompany)]
     );
   } catch (error) {
     console.error(error);
   }
 };
 
-const repair = async () => {
+const rebuildDataBase = async () => {
   try {
-    // zmiana tabeli company_users
     // await deleteBasicUsers();
     // await changeTypeColumnPermissions();
     // await changeUserTable();
@@ -175,6 +224,16 @@ const repair = async () => {
     // await company_fk_raport_excel_Change();
     // await company_table_columns_Change();
     // await company_setting_columns();
+
+    console.log("finish");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const repair = async () => {
+  try {
+    await rebuildDataBase();
   } catch (error) {
     console.error(error);
   }

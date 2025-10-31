@@ -31,14 +31,14 @@ router
   .route("/change-roles/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    usersController.changeRoles
+    usersController.changeUserRoles
   );
 
 router
   .route("/change-columns/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    usersController.changeColumns
+    usersController.changeUserColumns
   );
 
 router
@@ -80,7 +80,7 @@ router
   .route("/save-table-settings/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
-    usersController.saveTableSettings
+    usersController.saveUserTableSettings
   );
 
 router
