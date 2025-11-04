@@ -9,6 +9,7 @@ const ROLES_LIST = {
   FK_RAC: 202,
   Nora: 300,
   Raports: 400,
+  LawPartner: 500,
   Admin: 1000,
   SuperAdmin: 2000,
 };

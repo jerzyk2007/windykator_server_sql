@@ -93,9 +93,25 @@ const changeUserTable = async () => {
 
 const changePermissionsTableSettings = async () => {
   try {
-    await connect_SQL.query("UPDATE company_settings SET permissions = ?", [
-      JSON.stringify(["Pracownik", "Kancelaria"]),
-    ]);
+    const roles = {
+      Start: 1,
+      User: 100,
+      Editor: 110,
+      Controller: 120,
+      DNiKN: 150,
+      FK_KRT: 200,
+      FK_KEM: 201,
+      FK_RAC: 202,
+      Nora: 300,
+      Raports: 400,
+      LawPartner: 500,
+      Admin: 1000,
+      SuperAdmin: 2000,
+    };
+    await connect_SQL.query(
+      "UPDATE company_settings SET permissions = ?,  roles = ?",
+      [JSON.stringify(["Pracownik", "Kancelaria"]), JSON.stringify(roles)]
+    );
   } catch (error) {
     console.error(error);
   }
@@ -224,8 +240,7 @@ const rebuildDataBase = async () => {
     // await company_fk_raport_excel_Change();
     // await company_table_columns_Change();
     // await company_setting_columns();
-
-    console.log("finish");
+    // console.log("finish");
   } catch (error) {
     console.error(error);
   }

@@ -42,10 +42,10 @@ router
   );
 
 router
-  .route("/change-permissions/:id_user")
+  .route("/change-law-partner/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    usersController.changeUserPermissions
+    usersController.changeLawPartner
   );
 
 router

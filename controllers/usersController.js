@@ -403,29 +403,29 @@ const changePasswordAnotherUser = async (req, res) => {
 };
 
 // zmiana uprawnień użytkownika Doradca/Asystentka SQL
-const changeUserPermissions = async (req, res) => {
-  const { id_user } = req.params;
-  const { permissions } = req.body;
-  try {
-    const [result] = await connect_SQL.query(
-      "UPDATE company_users SET permissions = ? WHERE id_user = ?",
-      [JSON.stringify(permissions), id_user]
-    );
-    if (result.affectedRows > 0) {
-      // Jeśli aktualizacja zakończyła się sukcesem
-      return res.status(201).json({ message: "Permissions are changed" });
-    } else {
-      // Jeśli aktualizacja nie powiodła się
-      return res.status(404).json({ message: "User not found." });
-    }
-  } catch (error) {
-    logEvents(
-      `usersController, changeUserPermissions: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ message: error.message });
-  }
-};
+// const changeUserPermissions = async (req, res) => {
+//   const { id_user } = req.params;
+//   const { permissions } = req.body;
+//   try {
+//     const [result] = await connect_SQL.query(
+//       "UPDATE company_users SET permissions = ? WHERE id_user = ?",
+//       [JSON.stringify(permissions), id_user]
+//     );
+//     if (result.affectedRows > 0) {
+//       // Jeśli aktualizacja zakończyła się sukcesem
+//       return res.status(201).json({ message: "Permissions are changed" });
+//     } else {
+//       // Jeśli aktualizacja nie powiodła się
+//       return res.status(404).json({ message: "User not found." });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `usersController, changeUserPermissions: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 // zmiana dostępu do działów SQL
 const changeUserDepartments = async (req, res) => {
@@ -434,22 +434,15 @@ const changeUserDepartments = async (req, res) => {
 
   try {
     // pobieram wszytskie kolumny dla tabel które sa opisane w programie
-
     const [userPermission] = await connect_SQL.query(
       "SELECT permissions, departments FROM company_users WHERE id_user = ?",
       [id_user]
     );
-    // const [getColumns] = await connect_SQL.query(
-    //   "SELECT * FROM company_table_columns WHERE EMPLOYEE = ?",
-    //   [userPermission[0].permissions || null]
-    // );
 
     const { permissions, departments } = userPermission[0];
     departments[permissions] = activeDepartments;
-
-    if (departments[permissions].length) {
+    if (departments[permissions].length && permissions === "Pracownik") {
       const newDeps = [...departments[permissions]];
-      // await verifyUserTableConfig(id_user, newDeps, getColumns, permissions);
       await verifyUserTableConfig(
         id_user,
         userPermission[0].permissions,
@@ -471,6 +464,35 @@ const changeUserDepartments = async (req, res) => {
   } catch (error) {
     logEvents(
       `usersController, changeUserDepartments: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const changeLawPartner = async (req, res) => {
+  const { id_user } = req.params;
+  const { lawPartner } = req.body;
+  try {
+    const [departments] = await connect_SQL.query(
+      "SELECT departments FROM company_users WHERE id_user = ?",
+      [id_user]
+    );
+    if (lawPartner.length) {
+      departments[0].departments.Kancelaria = [...lawPartner];
+      await connect_SQL.query(
+        "UPDATE company_users SET departments = ? WHERE id_user = ?",
+        [JSON.stringify(departments[0].departments), id_user]
+      );
+
+      console.log("zmiana kolumn");
+      res.end();
+    } else {
+      res.status(500).json({ message: error.message });
+    }
+  } catch (error) {
+    logEvents(
+      `usersController, changeLawPartner: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ message: error.message });
@@ -548,7 +570,6 @@ const getUsersData = async (req, res) => {
         const filteredUsers = result.map((user) => {
           const roles = Object.keys(user.roles).map((role) => role);
           const userDepartments = user.departments[permissions];
-
           const oldDepartments = userDepartments?.length
             ? userDepartments.map((dep) => dep.department)
             : [];
@@ -560,7 +581,7 @@ const getUsersData = async (req, res) => {
             userlogin: user.userlogin,
             roles,
             permissions,
-            departments: userDepartments || [],
+            departments: user.departments || [],
             oldDepartments: oldDepartments || [],
           };
         });
@@ -810,8 +831,9 @@ module.exports = {
   changeName,
   changePassword,
   changePasswordAnotherUser,
-  changeUserPermissions,
+  // changeUserPermissions,
   changeUserDepartments,
+  changeLawPartner,
   deleteUser,
   saveUserTableSettings,
   getUsersData,

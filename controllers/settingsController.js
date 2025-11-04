@@ -24,7 +24,6 @@ const verifyUserTableConfig = async (id_user, permission, newDeps) => {
         ON (${whereClauses})
       WHERE u.id_user = ?
     `;
-    console.log(values);
 
     // Dodaj id_user na końcu wartości
     values.push(id_user);
@@ -287,14 +286,12 @@ const getFilteredDepartments = async (res) => {
 // pobieranie głównych ustawień
 const getSettings = async (req, res) => {
   try {
-    const [userSettings] = await connect_SQL.query(
-      "SELECT ROLES, COLUMNS FROM company_settings WHERE id_setting = 1"
+    const [mainSettings] = await connect_SQL.query(
+      "SELECT ROLES, COLUMNS, EXT_COMPANY FROM company_settings WHERE id_setting = 1"
     );
-
     //zamieniam obiekt json na tablice ze stringami, kazdy klucz to wartość string w tablicy
-    const roles = Object.entries(userSettings[0].ROLES[0]).map(
-      ([role]) => role
-    );
+    const roles = Object.entries(mainSettings[0].ROLES).map(([role]) => role);
+
     const rolesToRemove = ["Start"];
 
     rolesToRemove.forEach((roleToRemove) => {
@@ -327,11 +324,15 @@ const getSettings = async (req, res) => {
       { roles },
       { departments: uniqueDepartments },
       { departmentsJI: departmentStrings },
-      { columns: userSettings[0].COLUMNS },
-      // { permissions: userSettings[0].permissions },
+      { columns: mainSettings[0].COLUMNS },
       { departmentsFromCJI: depsFromCJI },
       { departmentsFromCompDocs: depsFromCompDocs },
       { company: company[0]?.COMPANY ? company[0].COMPANY : [] },
+      {
+        ext_company: mainSettings[0]?.EXT_COMPANY
+          ? mainSettings[0].EXT_COMPANY
+          : [],
+      },
     ]);
   } catch (error) {
     logEvents(
