@@ -41,7 +41,7 @@ const getDataDocuments = async (id_user, info) => {
         );
       } else if (info === "critical") {
         [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND ${sqlCondition}`
+          `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND DATEDIFF(NOW(), D.TERMIN) >= -3  AND R.FIRMA_ZEWNETRZNA IS NULL AND DA.JAKA_KANCELARIA_TU IS NULL AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)  AND ${sqlCondition}`
         );
       } else if (info === "obligations") {
         [filteredData] = await connect_SQL.query(
@@ -65,7 +65,7 @@ const getDataDocuments = async (id_user, info) => {
         );
       } else if (info === "control-bl") {
         [filteredData] = await connect_SQL.query(
-          `${getAllDocumentsSQL} WHERE JI.area = 'BLACHARNIA' AND  ${sqlCondition} AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)`
+          `${getAllDocumentsSQL} WHERE JI.area = 'BLACHARNIA' AND  ${sqlCondition} AND S.NALEZNOSC > 0 AND DA.JAKA_KANCELARIA_TU IS NULL AND R.FIRMA_ZEWNETRZNA IS NULL AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL) `
         );
       } else if (info === "krd") {
         [filteredData] = await connect_SQL.query(
