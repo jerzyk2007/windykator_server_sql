@@ -437,7 +437,9 @@ const getPermissions = async (req, res) => {
     const [permissions] = await connect_SQL.query(
       "SELECT PERMISSIONS FROM company_settings"
     );
-    res.json(permissions.length ? permissions[0] : []);
+    res.json({
+      permissions: permissions.length ? permissions[0].PERMISSIONS : [],
+    });
   } catch (error) {
     logEvents(
       `settingsController, getPermissions: ${error}`,

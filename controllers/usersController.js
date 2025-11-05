@@ -566,29 +566,29 @@ const getUsersData = async (req, res) => {
     const { permissions = "" } = result[0];
 
     if (result[0]?.userlogin.length > 0) {
-      if (permissions === "Pracownik") {
-        const filteredUsers = result.map((user) => {
-          const roles = Object.keys(user.roles).map((role) => role);
-          const userDepartments = user.departments[permissions];
-          const oldDepartments = userDepartments?.length
-            ? userDepartments.map((dep) => dep.department)
-            : [];
+      // if (permissions === "Pracownik") {
+      const filteredUsers = result.map((user) => {
+        const roles = Object.keys(user.roles).map((role) => role);
+        const userDepartments = user.departments[permissions];
+        const oldDepartments = userDepartments?.length
+          ? userDepartments.map((dep) => dep.department)
+          : [];
 
-          return {
-            id_user: user.id_user,
-            username: user.username,
-            usersurname: user.usersurname,
-            userlogin: user.userlogin,
-            roles,
-            permissions,
-            departments: user.departments || [],
-            oldDepartments: oldDepartments || [],
-          };
-        });
-        return res.json(filteredUsers);
-      } else {
-        // kancelaria
-      }
+        return {
+          id_user: user.id_user,
+          username: user.username,
+          usersurname: user.usersurname,
+          userlogin: user.userlogin,
+          roles,
+          permissions,
+          departments: user.departments || [],
+          oldDepartments: oldDepartments || [],
+        };
+      });
+      return res.json(filteredUsers);
+      // } else {
+      //   // kancelaria
+      // }
     } else {
       return res.json([]);
     }
@@ -603,36 +603,37 @@ const changeUserRoles = async (req, res) => {
   const { id_user } = req.params;
   const { roles } = req.body;
   const newRoles = { ...ROLES_LIST };
-
+  // console.log(permission);
   // dodaję rolę STart, ktróra jest podstawowa do uruchomienia programu przez usera
   const userRoles = [...roles, "Start"];
 
   const filteredRoles = Object.fromEntries(
     Object.entries(newRoles).filter(([key]) => userRoles.includes(key))
   );
+  // console.log(id_user);
 
   try {
-    const [userPermissions] = await connect_SQL.query(
-      "SELECT permissions FROM company_users WHERE id_user = ?",
-      [id_user]
+    // const [userPermissions] = await connect_SQL.query(
+    //   "SELECT permissions FROM company_users WHERE id_user = ?",
+    //   [id_user]
+    // );
+
+    // if (userPermissions[0]?.permissions === "Pracownik") {
+    const [result] = await connect_SQL.query(
+      "UPDATE company_users SET roles = ? WHERE id_user = ?",
+      [JSON.stringify(filteredRoles), id_user]
     );
 
-    if (userPermissions[0]?.permissions === "Pracownik") {
-      const [result] = await connect_SQL.query(
-        "UPDATE company_users SET roles = ? WHERE id_user = ?",
-        [JSON.stringify(filteredRoles), id_user]
-      );
-
-      if (result.affectedRows > 0) {
-        // Jeśli aktualizacja zakończyła się sukcesem
-        return res.status(201).json({ message: "Roles are saved." });
-      } else {
-        // Jeśli aktualizacja nie powiodła się
-        return res.status(400).json({ message: "Roles are not saved." });
-      }
+    if (result.affectedRows > 0) {
+      // Jeśli aktualizacja zakończyła się sukcesem
+      return res.status(201).json({ message: "Roles are saved." });
     } else {
+      // Jeśli aktualizacja nie powiodła się
       return res.status(400).json({ message: "Roles are not saved." });
     }
+    // } else {
+    //   return res.status(400).json({ message: "Roles are not saved." });
+    // }
   } catch (error) {
     logEvents(
       `usersController, changeUserRoles: ${error}`,
