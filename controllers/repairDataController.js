@@ -1,6 +1,5 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
-const { verifyUserTableConfig } = require("./usersController");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
@@ -227,6 +226,37 @@ const company_setting_columns = async () => {
   }
 };
 
+const update_table_setiings = async () => {
+  try {
+    const tableLawPartnerSettings = {
+      size: {},
+      order: ["mrt-row-spacer"],
+      pinning: {
+        left: [],
+        right: [],
+      },
+      visible: {},
+      pagination: {
+        pageSize: 50,
+        pageIndex: 0,
+      },
+    };
+    const [userTableSettings] = await connect_SQL.query(
+      "SELECT id_user, tableSettings FROM company_users"
+    );
+    for (const user of userTableSettings) {
+      user.tableSettings["Kancelaria"] = tableLawPartnerSettings;
+
+      await connect_SQL.query(
+        "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
+        [JSON.stringify(user.tableSettings), user.id_user]
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const rebuildDataBase = async () => {
   try {
     // await deleteBasicUsers();
@@ -240,7 +270,8 @@ const rebuildDataBase = async () => {
     // await company_fk_raport_excel_Change();
     // await company_table_columns_Change();
     // await company_setting_columns();
-    // console.log("finish");
+    // await update_table_setiings();
+    console.log("finish");
   } catch (error) {
     console.error(error);
   }
@@ -249,6 +280,7 @@ const rebuildDataBase = async () => {
 const repair = async () => {
   try {
     await rebuildDataBase();
+    console.log("repair");
   } catch (error) {
     console.error(error);
   }

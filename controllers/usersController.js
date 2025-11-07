@@ -3,205 +3,21 @@ const bcryptjs = require("bcryptjs");
 const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
 const {
+  raportUserSettings,
+  raportLawPartnerSettings,
   newUserTableSettings,
-  raportSettings,
+  newLawPartnerTableSettings,
   userDepartments,
   userColumns,
-} = require("./manageDocumentAddition");
-const { verifyUserTableConfig } = require("./settingsController");
+} = require("../config/userSettings");
+const {
+  verifyUserTableConfig,
+  verifyUserLawPartnerConfig,
+} = require("./settingsController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { sendEmail } = require("./mailController");
 const { tr } = require("date-fns/locale/tr");
 
-// funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
-// const verifyUserTableConfig = async (id_user, newDeps, columnsFromSettings) => {
-//   try {
-//     // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
-//     if (!newDeps.length) return;
-
-//     const whereClauses = newDeps
-//       .map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`)
-//       .join(" OR ");
-//     const values = newDeps.flatMap((dep) => [dep.department, dep.company]);
-
-//     const query = `
-//   SELECT DISTINCT ji.AREA
-//   FROM company_users AS u
-//   LEFT JOIN company_join_items AS ji
-//     ON (${whereClauses})
-//   WHERE u.id_user = ?
-// `;
-//     // Dodaj id_user na końcu wartości
-//     values.push(id_user);
-//     const [getUserAreas] = await connect_SQL.query(query, values);
-
-//     // pobieram ustawienia kolumn, przypisanych działów i ustawień tabeli danego użytkownika
-//     const [checkDepartments] = await connect_SQL.query(
-//       "SELECT permissions, columns, departments, tableSettings FROM company_users WHERE id_user = ?",
-//       [id_user]
-//     );
-
-//     const { permissions, columns, departments, tableSettings } =
-//       checkDepartments[0];
-
-//     const areaDep = columnsFromSettings.reduce((acc, column) => {
-//       column.AREAS.forEach((area) => {
-//         if (area.available) {
-//           const existingEntry = acc.find((entry) =>
-//             entry.hasOwnProperty(area.name)
-//           );
-//           if (existingEntry) {
-//             existingEntry[area.name].push({
-//               accessorKey: column.ACCESSOR_KEY,
-//               header: column.HEADER,
-//               filterVariant: column.FILTER_VARIANT,
-//               type: column.TYPE,
-//               // hide: area.hide
-//             });
-//           } else {
-//             acc.push({
-//               [area.name]: [
-//                 {
-//                   accessorKey: column.ACCESSOR_KEY,
-//                   header: column.HEADER,
-//                   filterVariant: column.FILTER_VARIANT,
-//                   type: column.TYPE,
-//                   // hide: area.hide
-//                 },
-//               ],
-//             });
-//           }
-//         }
-//       });
-//       return acc;
-//     }, []);
-
-//     //  obszary(area) do jakich ma dostęp uzytkownik
-//     const areaUsers = getUserAreas.map((item) => item.AREA);
-
-//     // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
-//     const filteredAreas = areaDep.filter((area) =>
-//       Object.keys(area).some((key) => areaUsers.includes(key))
-//     );
-
-//     // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
-//     const combinedObjects = filteredAreas.flatMap((area) =>
-//       Object.entries(area)
-//         .filter(([key]) => areaUsers.includes(key))
-//         .flatMap(([, values]) => values)
-//     );
-
-//     // 3. Usuń duplikaty na podstawie accessorKey.
-//     const uniqueObjects = combinedObjects.reduce((acc, obj) => {
-//       if (!acc.some((item) => item.accessorKey === obj.accessorKey)) {
-//         acc.push(obj);
-//       }
-//       return acc;
-//     }, []);
-
-//     // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
-//     const assignedUserNewColumns = uniqueObjects.map(
-//       (column) => column.accessorKey
-//     );
-
-//     const newFilteredSize = () => {
-//       const newSize = assignedUserNewColumns.reduce((acc, key) => {
-//         if (tableSettings[permissions]?.size.hasOwnProperty(key)) {
-//           // Dodaj istniejące klucze z checkDepartments
-//           acc[key] = tableSettings[permissions]?.size[key];
-//         } else {
-//           // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-//           acc[key] = 100;
-//         }
-//         return acc;
-//       }, {});
-//       return newSize;
-//     };
-
-//     const newFilteredeOrder = () => {
-//       const checkOrder = tableSettings[permissions]?.order
-//         ? tableSettings[permissions].order
-//         : [];
-
-//       if (checkOrder.length) {
-//         const filteredOrder = checkOrder.filter(
-//           (item) =>
-//             assignedUserNewColumns.includes(item) || item === "mrt-row-spacer"
-//         );
-
-//         // Sprawdzamy, które elementy z `assignedUserNewColumns` są nowe (nie ma ich w `checkDepartments[0].tableSettings.order`)
-//         const newColumns = assignedUserNewColumns.filter(
-//           (item) => !tableSettings[permissions].order.includes(item)
-//         );
-
-//         // Znajdujemy indeks przedostatniego elementu (przed 'mrt-row-spacer')
-//         const indexBeforeSpacer = filteredOrder.indexOf("mrt-row-spacer");
-
-//         // Tworzymy nową tablicę, dodając nowe elementy przed ostatnim elementem ('mrt-row-spacer')
-//         const finalOrder = [
-//           ...filteredOrder.slice(0, indexBeforeSpacer), // Wszystkie elementy przed 'mrt-row-spacer'
-//           ...newColumns, // Dodajemy nowe elementy
-//           "mrt-row-spacer", // Zachowujemy 'mrt-row-spacer' na końcu
-//         ];
-//         return finalOrder;
-//       } else {
-//         const finalOrder = [...assignedUserNewColumns, "mrt-row-spacer"];
-//         return finalOrder;
-//       }
-//     };
-
-//     const newFilteredeVisible = () => {
-//       const newVisible = assignedUserNewColumns.reduce((acc, key) => {
-//         if (tableSettings[permissions]?.visible.hasOwnProperty(key)) {
-//           // Dodaj istniejące klucze z checkDepartments
-//           acc[key] = tableSettings[permissions]?.visible[key];
-//         } else {
-//           // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-//           acc[key] = false;
-//         }
-//         return acc;
-//       }, {});
-//       return newVisible;
-//     };
-
-//     const newTableSettings = {
-//       size:
-//         tableSettings[permissions]?.size &&
-//         Object.keys(tableSettings[permissions]?.size).length > 0
-//           ? newFilteredSize()
-//           : {},
-//       order: tableSettings[permissions]?.order?.length
-//         ? newFilteredeOrder()
-//         : [],
-//       visible:
-//         tableSettings[permissions]?.visible &&
-//         Object.keys(tableSettings[permissions]?.visible).length > 0
-//           ? newFilteredeVisible()
-//           : {},
-//       pagination: tableSettings[permissions]?.pagination
-//         ? tableSettings[permissions].pagination
-//         : { pageIndex: 0, pageSize: 10 },
-//       pinning: tableSettings[permissions]?.pinning
-//         ? tableSettings[permissions].pinning
-//         : { left: [], right: [] },
-//     };
-
-//     columns[permissions] = uniqueObjects;
-//     tableSettings[permissions] = newTableSettings;
-
-//     await connect_SQL.query(
-//       "Update company_users SET columns = ?, tableSettings = ?  WHERE id_user = ?",
-//       [JSON.stringify(columns), JSON.stringify(tableSettings), id_user]
-//     );
-//   } catch (error) {
-//     logEvents(
-//       `usersController, verifyUserTableConfig: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//   }
-// };
-
-// rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
   const { userlogin, username, usersurname, permission } = req.body;
   if (!userlogin || !username || !usersurname || !permission) {
@@ -222,8 +38,18 @@ const createNewUser = async (req, res) => {
         .json({ message: `User ${userlogin} is existing in databse` });
 
     // encrypt the password
-    const roles = { Start: 1 };
+    const roles =
+      permission === "Pracownik" ? { Start: 1 } : { Start: 1, LawPartner: 500 };
     const password = await generatePassword();
+
+    const raportSettings =
+      permission === "Pracownik"
+        ? raportUserSettings
+        : raportLawPartnerSettings;
+    const tableSettings =
+      permission === "Pracownik"
+        ? newUserTableSettings
+        : newLawPartnerTableSettings;
 
     await connect_SQL.query(
       "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings, permissions, departments, columns) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -233,7 +59,7 @@ const createNewUser = async (req, res) => {
         userlogin,
         password.hashedPwd,
         JSON.stringify(roles),
-        JSON.stringify(newUserTableSettings),
+        JSON.stringify(tableSettings),
         JSON.stringify(raportSettings),
         permission,
         JSON.stringify(userDepartments),
@@ -438,7 +264,6 @@ const changeUserDepartments = async (req, res) => {
       "SELECT permissions, departments FROM company_users WHERE id_user = ?",
       [id_user]
     );
-
     const { permissions, departments } = userPermission[0];
     departments[permissions] = activeDepartments;
     if (departments[permissions].length && permissions === "Pracownik") {
@@ -484,8 +309,11 @@ const changeLawPartner = async (req, res) => {
         "UPDATE company_users SET departments = ? WHERE id_user = ?",
         [JSON.stringify(departments[0].departments), id_user]
       );
-
-      console.log("zmiana kolumn");
+      await verifyUserLawPartnerConfig(
+        id_user,
+        (permission = "Kancelaria"),
+        lawPartner
+      );
       res.end();
     } else {
       res.status(500).json({ message: error.message });
@@ -559,14 +387,9 @@ const getUsersData = async (req, res) => {
       "SELECT id_user, username, usersurname, userlogin, roles, permissions, departments FROM company_users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
       [`%${search}%`, `%${search}%`, `%${search}%`]
     );
-    // const [truePermissions] = Object.keys(result[0].permissions).filter(
-    //   (perm) => result[0].permissions[perm]
-    // );
-
-    const { permissions = "" } = result[0];
 
     if (result[0]?.userlogin.length > 0) {
-      // if (permissions === "Pracownik") {
+      const { permissions = "" } = result[0];
       const filteredUsers = result.map((user) => {
         const roles = Object.keys(user.roles).map((role) => role);
         const userDepartments = user.departments[permissions];

@@ -5,18 +5,18 @@ const { logEvents } = require("../middleware/logEvents");
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
 const verifyUserTableConfig = async (id_user, permission, newDeps) => {
   try {
+    // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
+    if (!newDeps.length) return;
+
     const [columnsFromSettings] = await connect_SQL.query(
       "SELECT * FROM company_table_columns WHERE EMPLOYEE = ?",
       [permission]
     );
 
-    // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
-    if (!newDeps.length) return;
     const whereClauses = newDeps
       .map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`)
       .join(" OR ");
     const values = newDeps.flatMap((dep) => [dep.department, dep.company]);
-
     const query = `
       SELECT DISTINCT ji.AREA
       FROM company_users AS u
@@ -27,6 +27,7 @@ const verifyUserTableConfig = async (id_user, permission, newDeps) => {
 
     // Dodaj id_user na końcu wartości
     values.push(id_user);
+
     const [getUserAreas] = await connect_SQL.query(query, values);
 
     // pobieram ustawienia kolumn, przypisanych działów i ustawień tabeli danego użytkownika
@@ -34,9 +35,7 @@ const verifyUserTableConfig = async (id_user, permission, newDeps) => {
       "SELECT permissions, columns, departments, tableSettings FROM company_users WHERE id_user = ?",
       [id_user]
     );
-
-    const { permissions, columns, departments, tableSettings } =
-      checkDepartments[0];
+    const { permissions, columns, tableSettings } = checkDepartments[0];
 
     const areaDep = columnsFromSettings.reduce((acc, column) => {
       column.AREAS.forEach((area) => {
@@ -50,7 +49,6 @@ const verifyUserTableConfig = async (id_user, permission, newDeps) => {
               header: column.HEADER,
               filterVariant: column.FILTER_VARIANT,
               type: column.TYPE,
-              // hide: area.hide
             });
           } else {
             acc.push({
@@ -60,7 +58,6 @@ const verifyUserTableConfig = async (id_user, permission, newDeps) => {
                   header: column.HEADER,
                   filterVariant: column.FILTER_VARIANT,
                   type: column.TYPE,
-                  // hide: area.hide
                 },
               ],
             });
@@ -194,6 +191,127 @@ const verifyUserTableConfig = async (id_user, permission, newDeps) => {
   }
 };
 
+// funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika-zewnętrznego i dopasowująca nowe po zmianie dostępu do kancelarii
+const verifyUserLawPartnerConfig = async (id_user, permission, lawPartner) => {
+  try {
+    if (!lawPartner.length) return;
+    const [userData] = await connect_SQL.query(
+      "SELECT departments, tableSettings, columns  FROM company_users WHERE id_user = ?",
+      [id_user]
+    );
+    if (!userData.length) return;
+    const { departments, tableSettings, columns } = userData[0];
+
+    const [columnsFromSettings] = await connect_SQL.query(
+      "SELECT * FROM company_table_columns WHERE EMPLOYEE = ?",
+      [permission]
+    );
+
+    //  1️⃣ //  sprawdzam jakie kolumny powinny byc przypisane do usera
+    const trueDepartments = departments[permission]
+      .filter((obj) => Object.values(obj)[0] === true)
+      .map((obj) => Object.keys(obj)[0]);
+
+    const newUserColumns = columnsFromSettings.filter((col) =>
+      col.AREAS.some(
+        (area) => trueDepartments.includes(area.name) && area.available
+      )
+    );
+
+    // sprawdzam czy nie ma duplikatów po id_table_columns:
+    const uniqueUserColumns = [
+      ...new Map(
+        newUserColumns.map((col) => [col.id_table_columns, col])
+      ).values(),
+    ];
+
+    const cleanedUserColumns = uniqueUserColumns.map((col) => ({
+      accessorKey: col.ACCESSOR_KEY,
+      header: col.HEADER,
+      type: col.TYPE,
+      filterVariant: col.FILTER_VARIANT,
+    }));
+    columns[permission] = [...cleanedUserColumns];
+
+    // -- 2️⃣ dopsaowuje tableSetting po zmianie kolumn
+
+    const allowedKeys = cleanedUserColumns.map((col) => col.accessorKey);
+    // 📦 Pobierz ustawienia użytkownika
+    const userSettings = tableSettings[permission] || {};
+
+    // 🔧 Głęboka kopia (aby nie mutować oryginału)
+    const cleanedSettings = JSON.parse(JSON.stringify(userSettings));
+
+    // --- SIZE ---
+    if (cleanedSettings.size) {
+      if (allowedKeys.length === 0) {
+        cleanedSettings.size = {};
+      } else {
+        cleanedSettings.size = Object.fromEntries(
+          Object.entries(cleanedSettings.size).filter(([key]) =>
+            allowedKeys.includes(key)
+          )
+        );
+      }
+    }
+
+    // --- ORDER ---
+    if (cleanedSettings.order) {
+      if (allowedKeys.length === 0) {
+        cleanedSettings.order = ["mrt-row-spacer"];
+      } else {
+        cleanedSettings.order = cleanedSettings.order.filter(
+          (key) => key === "mrt-row-spacer" || allowedKeys.includes(key)
+        );
+
+        cleanedSettings.order = [
+          ...cleanedSettings.order.filter((k) => k !== "mrt-row-spacer"),
+          "mrt-row-spacer",
+        ];
+      }
+    }
+
+    // --- PINNING ---
+    // 🔒 tu nic nie dodajemy, tylko usuwamy z oryginalnych ustawień
+    if (cleanedSettings.pinning) {
+      const { left = [], right = [] } = cleanedSettings.pinning;
+
+      cleanedSettings.pinning = {
+        left: left.filter((key) => allowedKeys.includes(key)),
+        right: right.filter((key) => allowedKeys.includes(key)),
+      };
+    }
+
+    // --- VISIBLE ---
+    if (cleanedSettings.visible) {
+      if (allowedKeys.length === 0) {
+        cleanedSettings.visible = {};
+      } else {
+        cleanedSettings.visible = Object.fromEntries(
+          Object.entries(cleanedSettings.visible).filter(([key]) =>
+            allowedKeys.includes(key)
+          )
+        );
+      }
+    }
+
+    // --- PAGINATION ---
+    // nie zmieniamy
+
+    tableSettings[permission] = cleanedSettings;
+
+    await connect_SQL.query(
+      "UPDATE company_users SET columns = ?, tableSettings = ? WHERE id_user = ?",
+      [JSON.stringify(columns), JSON.stringify(tableSettings), id_user]
+    );
+  } catch (error) {
+    logEvents(
+      `settingsController, verifyUserLawPartnerConfig: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny SQL
 const changeTableColumns = async (req, res) => {
   const { type, permission, data } = req.body;
@@ -224,16 +342,46 @@ const changeTableColumns = async (req, res) => {
         ]
       );
     }
-    //  await verifyUserTableConfig(permission);
+
     const [userTableColumns] = await connect_SQL.query(
       `SELECT id_user, columns, departments, tableSettings, permissions FROM company_users`
     );
+    console.log(permission);
     for (const user of userTableColumns) {
-      await verifyUserTableConfig(
-        user.id_user,
-        permission,
-        user.departments[permission]
-      );
+      if (user.permissions === "Pracownik") {
+        await verifyUserTableConfig(
+          user.id_user,
+          permission,
+          user.departments[permission]
+        );
+        await verifyUserLawPartnerConfig(
+          user.id_user,
+          permission,
+          user.departments["Kancelaria"]
+        );
+      } else if (user.permissions === "Kancelaria") {
+        await verifyUserLawPartnerConfig(
+          user.id_user,
+          permission,
+          user.departments["Kancelaria"]
+        );
+      }
+      // if (permission === "Pracownik") {
+      //   for (const user of userTableColumns) {
+      //     await verifyUserTableConfig(
+      //       user.id_user,
+      //       permission,
+      //       user.departments[permission]
+      //     );
+      //   }
+      // } else if (permission === "Kancelaria") {
+      //   for (const user of userTableColumns) {
+      //     await verifyUserLawPartnerConfig(
+      //       user.id_user,
+      //       permission,
+      //       user.departments[permission]
+      //     );
+      //   }
     }
 
     res.end();
@@ -458,4 +606,5 @@ module.exports = {
   getTableColumns,
   getPermissions,
   verifyUserTableConfig,
+  verifyUserLawPartnerConfig,
 };
