@@ -13,7 +13,7 @@ const {
 const {
   verifyUserTableConfig,
   verifyUserLawPartnerConfig,
-} = require("./settingsController");
+} = require("./tableController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { sendEmail } = require("./mailController");
 const { tr } = require("date-fns/locale/tr");
@@ -353,23 +353,25 @@ const deleteUser = async (req, res) => {
 // zapisanie ustawień tabeli dla użytkownika SQL
 const saveUserTableSettings = async (req, res) => {
   const { id_user } = req.params;
-  const { tableSettings } = req.body;
+  const { newTableSettings } = req.body;
   if (!id_user) {
     return res.status(400).json({ message: "Userlogin is required." });
   }
 
   try {
-    const [result] = await connect_SQL.query(
-      "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
+    const [userTableSettings] = await connect_SQL.query(
+      "SELECT tableSettings, permissions FROM company_users WHERE id_user = ?",
+      [id_user]
+    );
+    const { tableSettings, permissions } = userTableSettings[0];
+    tableSettings[permissions] = newTableSettings;
+
+    await connect_SQL.query(
+      "UPDATE company_users SET tableSettings =? WHERE id_user = ?",
       [JSON.stringify(tableSettings), id_user]
     );
-    if (result.affectedRows > 0) {
-      // Jeśli aktualizacja zakończyła się sukcesem
-      return res.status(201).json({ message: "Table settings are changed" });
-    } else {
-      // Jeśli aktualizacja nie powiodła się
-      res.status(400).json({ message: "Table settings are not changed" });
-    }
+
+    res.end();
   } catch (error) {
     logEvents(
       `usersController, saveUserTableSettings: ${error}`,
@@ -426,22 +428,14 @@ const changeUserRoles = async (req, res) => {
   const { id_user } = req.params;
   const { roles } = req.body;
   const newRoles = { ...ROLES_LIST };
-  // console.log(permission);
   // dodaję rolę STart, ktróra jest podstawowa do uruchomienia programu przez usera
   const userRoles = [...roles, "Start"];
 
   const filteredRoles = Object.fromEntries(
     Object.entries(newRoles).filter(([key]) => userRoles.includes(key))
   );
-  // console.log(id_user);
 
   try {
-    // const [userPermissions] = await connect_SQL.query(
-    //   "SELECT permissions FROM company_users WHERE id_user = ?",
-    //   [id_user]
-    // );
-
-    // if (userPermissions[0]?.permissions === "Pracownik") {
     const [result] = await connect_SQL.query(
       "UPDATE company_users SET roles = ? WHERE id_user = ?",
       [JSON.stringify(filteredRoles), id_user]
@@ -454,9 +448,6 @@ const changeUserRoles = async (req, res) => {
       // Jeśli aktualizacja nie powiodła się
       return res.status(400).json({ message: "Roles are not saved." });
     }
-    // } else {
-    //   return res.status(400).json({ message: "Roles are not saved." });
-    // }
   } catch (error) {
     logEvents(
       `usersController, changeUserRoles: ${error}`,

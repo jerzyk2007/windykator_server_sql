@@ -215,7 +215,7 @@ const company_setting_columns = async () => {
       KANCELARIA: [],
     };
 
-    const extCompany = ["Kancelaria Krotoski"];
+    const extCompany = ["Kancelaria Krotoski", "Krauze"];
 
     await connect_SQL.query(
       "UPDATE company_settings SET COLUMNS = ?, EXT_COMPANY = ? WHERE id_setting = 1",
