@@ -277,6 +277,18 @@ const rebuildDataBase = async () => {
   }
 };
 
+//tworzenie relacje pomiędzy tabelami SQL
+const createTableRelations = async () => {
+  try {
+    // relacja dla tabeli company_documents i company_documents_actions
+    await connect_SQL.query(
+      "ALTER TABLE company_documents_actions ADD CONSTRAINT fk_company_documents_actions_documents FOREIGN KEY (document_id) REFERENCES company_documents(id_document) ON DELETE CASCADE ON UPDATE CASCADE"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
     await rebuildDataBase();
