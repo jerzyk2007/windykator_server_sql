@@ -1,5 +1,377 @@
 const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
+const { format } = require("date-fns");
+
+// formatowanie tabeli z danymi
+const muiTableBodyCellProps = {
+  align: "center",
+
+  sx: {
+    fontFamily: "Calibri, sans-serif",
+    fontSize: "15px",
+    borderRight: "1px solid rgba(99, 99, 99, .8)",
+    borderTop: "1px solid rgba(99, 99, 99, .8)",
+    fontWeight: "500",
+    minHeight: "65px",
+    textWrap: "balance",
+    whiteSpace: "pre-wrap",
+  },
+};
+
+// przygotowanie kolumn w tabeli
+const prepareTableColumns = (columnsData) => {
+  const update = columnsData.map((item) => {
+    const modifiedItem = { ...item };
+
+    modifiedItem.muiTableBodyCellProps = muiTableBodyCellProps;
+
+    if (item.filterVariant === "date-range") {
+      modifiedItem.accessorFn = (originalRow) => {
+        const date = new Date(originalRow[item.accessorKey]);
+        // ustaw godzinę na początek dnia, by uniknąć problemów z filtrowaniem
+        date.setHours(0, 0, 0, 0);
+        return date;
+      };
+
+      modifiedItem.Cell = ({ cell }) => {
+        // Parsowanie wartości komórki jako data
+        const date = new Date(cell.getValue());
+        // Sprawdzenie, czy data jest prawidłowa
+        if (!isNaN(date)) {
+          return format(date, "yyyy-MM-dd");
+        } else {
+          // Jeśli data jest nieprawidłowa, zwracamy pusty string lub inny komunikat błędu
+          return "brak danych";
+        }
+      };
+    }
+
+    // if (item.accessorKey === "UWAGI_ASYSTENT") {
+    //   modifiedItem.Cell = ({ cell }) => {
+    //     const cellValue = cell.getValue();
+    //     if (Array.isArray(cellValue) && cellValue.length > 0) {
+    //       let numberOfObjects = cellValue.length;
+    //       return (
+    //         <div style={{ whiteSpace: "pre-wrap" }}>
+    //           {numberOfObjects > 1 && (
+    //             <p>{`Liczba wpisów wcześniejszych: ${numberOfObjects - 1}`}</p>
+    //           )}
+    //           {cellValue.map((item, index) => (
+    //             <p key={index}>
+    //               {
+    //                 index === cellValue.length - 1 // Sprawdzanie czy to ostatni element w tablicy
+    //                   ? item.length > 200 // Sprawdzenie długości tekstu
+    //                     ? item.slice(0, 200) + "..." // Jeśli tekst jest dłuższy niż 150 znaków, obetnij i dodaj trzy kropki na końcu
+    //                     : item // W przeciwnym razie, wyświetl pełny tekst
+    //                   : null // W przeciwnym razie, nie wyświetlaj nic
+    //               }
+    //             </p>
+    //           ))}
+    //         </div>
+    //       );
+    //     } else {
+    //       <p>Brak</p>;
+    //     }
+    //   };
+
+    //   const changeMuiTableBodyCellProps = { ...muiTableBodyCellProps };
+    //   changeMuiTableBodyCellProps.align = "left";
+    //   const updatedSx = { ...changeMuiTableBodyCellProps.sx };
+    //   updatedSx.backgroundColor = "rgba(248, 255, 152, .2)";
+    //   changeMuiTableBodyCellProps.sx = updatedSx;
+    //   modifiedItem.muiTableBodyCellProps = changeMuiTableBodyCellProps;
+    //   modifiedItem.enableClickToCopy = false;
+    // }
+
+    if (
+      item.accessorKey === "UWAGI_Z_FAKTURY" ||
+      item.accessorKey === "STATUS_SPRAWY_KANCELARIA" ||
+      item.accessorKey === "OPIS_ROZRACHUNKU"
+    ) {
+      modifiedItem.Cell = ({ cell }) => {
+        const cellValue = cell.getValue();
+        if (typeof cellValue === "string" && cellValue.length > 150) {
+          return cellValue.slice(0, 150) + " ...";
+        }
+        return cellValue;
+      };
+    }
+
+    if (item.accessorKey === "KONTRAHENT") {
+      modifiedItem.muiTableBodyCellProps = ({ cell }) => {
+        // const cellValue = cell.getValue();
+        const checkClient = cell.row.original.ZAZNACZ_KONTRAHENTA;
+
+        return {
+          align: "left",
+          sx: {
+            ...muiTableBodyCellProps.sx,
+            backgroundColor:
+              cell.column.id === "KONTRAHENT" && checkClient === "TAK"
+                ? "#7fffd4"
+                : "white",
+          },
+        };
+      };
+      modifiedItem.filterFn = "contains";
+    }
+
+    // if (item.accessorKey === "ZAZNACZ_KONTRAHENTA") {
+    //   modifiedItem.Cell = ({ cell, row }) => {
+    //     const cellValue = cell.getValue();
+
+    //     return <span>{cellValue}</span>;
+    //   };
+    // }
+
+    if (item.accessorKey === "ZAZNACZ_KONTRAHENTA") {
+      modifiedItem.Cell = ({ cell, row }) => {
+        const cellValue = cell.getValue();
+
+        // Jeśli wartość komórki jest null, wyświetl "NIE", w przeciwnym razie wyświetl wartość
+        const displayValue = cellValue === null ? "NIE" : cellValue;
+
+        return displayValue;
+      };
+    }
+
+    if (item.accessorKey === "ILE_DNI_PO_TERMINIE") {
+      modifiedItem.muiTableBodyCellProps = ({ cell }) => ({
+        ...muiTableBodyCellProps,
+        sx: {
+          ...muiTableBodyCellProps.sx,
+          backgroundColor:
+            cell.column.id === "ILE_DNI_PO_TERMINIE" && cell.getValue() > 0
+              ? "rgb(250, 136, 136)"
+              : "white",
+        },
+      });
+    }
+
+    if (item.accessorKey === "DO_ROZLICZENIA") {
+      modifiedItem.muiTableBodyCellProps = ({ cell }) => ({
+        ...muiTableBodyCellProps,
+        sx: {
+          ...muiTableBodyCellProps.sx,
+          backgroundColor: "rgba(248, 255, 152, .2)",
+        },
+      });
+    }
+
+    if (item.accessorKey === "OSTATECZNA_DATA_ROZLICZENIA") {
+      modifiedItem.accessorFn = (originalRow) => {
+        return originalRow[item.accessorKey]
+          ? originalRow[item.accessorKey]
+          : "BRAK";
+      };
+    }
+
+    if (item.accessorKey === "NR_SZKODY") {
+      modifiedItem.accessorFn = (originalRow) => {
+        return originalRow[item.accessorKey]
+          ? originalRow[item.accessorKey]
+          : "";
+      };
+    }
+
+    if (item.accessorKey === "NR_SZKODY") {
+      modifiedItem.accessorFn = (originalRow) => {
+        return originalRow[item.accessorKey]
+          ? originalRow[item.accessorKey]
+          : "";
+      };
+    }
+
+    if (item.accessorKey === "NR_REJESTRACYJNY") {
+      modifiedItem.accessorFn = (originalRow) => {
+        return originalRow[item.accessorKey]
+          ? originalRow[item.accessorKey]
+          : "";
+      };
+    }
+
+    if (item.accessorKey === "KRD") {
+      modifiedItem.accessorFn = (originalRow) => {
+        return originalRow[item.accessorKey]
+          ? originalRow[item.accessorKey]
+          : "BRAK";
+      };
+    }
+    if (item.accessorKey === "50_VAT") {
+      modifiedItem.muiTableBodyCellProps = ({ cell }) => {
+        const cellValue = cell.getValue();
+        const dorozliczValue = cell.row.original.DO_ROZLICZENIA;
+
+        return {
+          ...muiTableBodyCellProps,
+          sx: {
+            ...muiTableBodyCellProps.sx,
+            backgroundColor:
+              cell.column.id === "50_VAT" &&
+              Math.abs(cellValue - dorozliczValue) <= 1
+                ? "rgb(250, 136, 136)"
+                : "white",
+          },
+        };
+      };
+    }
+
+    if (item.accessorKey === "100_VAT") {
+      modifiedItem.muiTableBodyCellProps = ({ cell }) => {
+        const cellValue = cell.getValue();
+        const dorozliczValue = cell.row.original.DO_ROZLICZENIA;
+        return {
+          ...muiTableBodyCellProps,
+          sx: {
+            ...muiTableBodyCellProps.sx,
+            backgroundColor:
+              cell.column.id === "100_VAT" &&
+              Math.abs(cellValue - dorozliczValue) <= 1
+                ? "rgb(250, 136, 136)"
+                : "white",
+          },
+        };
+      };
+    }
+
+    if (item.accessorKey === "INFORMACJA_ZARZAD") {
+      modifiedItem.accessorFn = (originalRow) => {
+        const arrayData = originalRow.INFORMACJA_ZARZAD;
+
+        if (!Array.isArray(arrayData) || arrayData.length === 0) return "BRAK";
+
+        const last = arrayData[arrayData.length - 1];
+        return typeof last === "string"
+          ? last.length > 90
+            ? last.slice(0, 90) + " …"
+            : last
+          : "BRAK";
+      };
+    }
+
+    if (item.accessorKey === "UWAGI_ASYSTENT") {
+      modifiedItem.accessorFn = (originalRow) => {
+        const arrayData = originalRow.UWAGI_ASYSTENT;
+        if (!arrayData) return "";
+        try {
+          const dzialania =
+            Array.isArray(arrayData) && arrayData.length > 0
+              ? arrayData.length === 1
+                ? arrayData[0]
+                : `Liczba wcześniejszych wpisów: ${arrayData.length - 1}\n${
+                    arrayData[arrayData.length - 1]
+                  }`
+              : "";
+          return dzialania.length > 120
+            ? dzialania.slice(0, 120) + " …"
+            : dzialania;
+          // return "BRAK";
+        } catch {
+          return "BRAK";
+        }
+      };
+      modifiedItem.muiTableBodyCellProps = {
+        ...muiTableBodyCellProps,
+        sx: {
+          ...muiTableBodyCellProps.sx,
+          backgroundColor: "rgba(148, 255, 152, .2)", // nadpisanie koloru tła
+        },
+      };
+    }
+
+    if (item.filterVariant === "none") {
+      modifiedItem.enableColumnFilter = false;
+      delete modifiedItem.filterVariant;
+    }
+
+    // if (item.filterVariant === "range-slider") {
+    //   modifiedItem.muiFilterSliderProps = {
+    //     marks: true,
+    //     max: data.reduce(
+    //       (max, key) => Math.max(max, key[item.accessorKey]),
+    //       Number.NEGATIVE_INFINITY
+    //     ),
+    //     min: data.reduce(
+    //       (min, key) => Math.min(min, key[item.accessorKey]),
+    //       Number.POSITIVE_INFINITY
+    //     ),
+    //     step: 100,
+    //     valueLabelFormat: (value) =>
+    //       value.toLocaleString("pl-PL", {
+    //         style: "currency",
+    //         currency: "PLN",
+    //       }),
+    //   };
+    // }
+
+    if (item.type === "money") {
+      modifiedItem.Cell = ({ cell }) => {
+        const value = cell.getValue();
+
+        const formattedSalary =
+          value !== undefined && value !== null && value !== 0
+            ? value.toLocaleString("pl-PL", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+                useGrouping: true,
+              })
+            : "0,00";
+
+        return formattedSalary;
+      };
+    }
+
+    // if (item.accessorKey === "KWOTA_WINDYKOWANA_BECARED") {
+    //   modifiedItem.accessorFn = (originalRow) => {
+    //     return originalRow[item.accessorKey]
+    //       ? originalRow[item.accessorKey]
+    //       : " ";
+    //   };
+    //   modifiedItem.Cell = ({ cell }) => {
+    //     const value = cell.getValue();
+    //     const formattedSalary =
+    //       value !== undefined && value !== null && value !== 0
+    //         ? value.toLocaleString("pl-PL", {
+    //           minimumFractionDigits: 2,
+    //           maximumFractionDigits: 2,
+    //           useGrouping: true,
+    //         })
+    //         : "0,00"; // Zastąp puste pola zerem
+
+    //     return `${formattedSalary}`;
+    //   };
+    // }
+    if (item.accessorKey === "KWOTA_WINDYKOWANA_BECARED") {
+      modifiedItem.accessorFn = (originalRow) => {
+        return originalRow[item.accessorKey] !== null &&
+          originalRow[item.accessorKey] !== undefined
+          ? originalRow[item.accessorKey]
+          : ""; // Jeżeli wartość jest null lub undefined, zwracamy 'BRAK'
+      };
+
+      modifiedItem.Cell = ({ cell }) => {
+        const value = cell.getValue();
+
+        // Sprawdzenie, czy wartość jest liczbą
+        const formattedValue =
+          typeof value === "number"
+            ? value.toLocaleString("pl-PL", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+                useGrouping: true,
+              })
+            : value; // Wartość pozostaje bez zmian, jeśli to nie liczba (np. 'BRAK')
+
+        // return <span>{formattedValue}</span>; // Zwracamy sformatowaną wartość
+        return formattedValue; // Zwracamy sformatowaną wartość
+      };
+    }
+    modifiedItem.columnFilterModeOptions = [];
+    delete modifiedItem.type;
+    return modifiedItem;
+  });
+  return update;
+};
 
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
 const verifyUserTableConfig = async (id_user, permission, newDeps) => {
@@ -442,10 +814,37 @@ const getTableColumns = async (req, res) => {
   }
 };
 
+// SQL pobieram  ustawienia tabeli(order, visiblility itd), kolumny
+const getSettingsColumnsTable = async (req, res) => {
+  const { id_user, user_type } = req.params;
+  if (!id_user) {
+    return res.status(400).json({ message: "Id and info are required." });
+  }
+  try {
+    const [findUser] = await connect_SQL.query(
+      "SELECT permissions, tableSettings, columns  FROM company_users WHERE id_user = ?",
+      [id_user]
+    );
+
+    const tableSettings = findUser[0].tableSettings[user_type];
+    const columns = findUser[0].columns[user_type];
+
+    res.json({ tableSettings, columns });
+  } catch (error) {
+    logEvents(
+      `tableController, getSettingsColumnsTable: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
+  prepareTableColumns,
   verifyUserTableConfig,
   verifyUserLawPartnerConfig,
   changeTableColumns,
   deleteTableColumn,
   getTableColumns,
+  getSettingsColumnsTable,
 };

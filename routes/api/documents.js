@@ -37,12 +37,12 @@ router
   );
 
 // pobiera wszytskie  ustawienia tabeli
-router
-  .route("/get-settings-colums-table/:id_user/")
-  .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
-    Documents.getSettingsColumnsTable
-  );
+// router
+//   .route("/get-settings-colums-table/:id_user/")
+//   .get(
+//     verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+//     Documents.getSettingsColumnsTable
+//   );
 
 //pobiera pojedyńczy dokument
 router

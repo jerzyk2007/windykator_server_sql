@@ -24,4 +24,11 @@ router
     table.getTableColumns
   );
 
+router
+  .route("/get-settings-colums-table/:id_user/:user_type")
+  .get(
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    table.getSettingsColumnsTable
+  );
+
 module.exports = router;

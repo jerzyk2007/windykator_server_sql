@@ -259,18 +259,18 @@ const update_table_setiings = async () => {
 
 const rebuildDataBase = async () => {
   try {
-    // await deleteBasicUsers();
-    // await changeTypeColumnPermissions();
-    // await changeUserTable();
-    // //
-    // //
-    // await changePermissionsTableSettings();
-    // await deleteDepartmentsColumn();
-    // await company_password_resets_Change();
-    // await company_fk_raport_excel_Change();
-    // await company_table_columns_Change();
-    // await company_setting_columns();
-    // await update_table_setiings();
+    await deleteBasicUsers();
+    await changeTypeColumnPermissions();
+    await changeUserTable();
+    //
+    //
+    await changePermissionsTableSettings();
+    await deleteDepartmentsColumn();
+    await company_password_resets_Change();
+    await company_fk_raport_excel_Change();
+    await company_table_columns_Change();
+    await company_setting_columns();
+    await update_table_setiings();
     console.log("finish");
   } catch (error) {
     console.error(error);
@@ -291,8 +291,8 @@ const createTableRelations = async () => {
 
 const repair = async () => {
   try {
-    await rebuildDataBase();
-    console.log("repair");
+    // await rebuildDataBase();
+    // console.log("repair");
   } catch (error) {
     console.error(error);
   }
