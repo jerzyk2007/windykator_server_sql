@@ -13,10 +13,10 @@ const { documentsType } = require("./manageDocumentAddition");
 
 // pobiera dane do tabeli Raportu w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
-  const { id_user } = req.params;
+  const { id_user, profile } = req.params;
   try {
-    const result = await getDataDocuments(id_user, "actual");
-    res.json({ data: result.data, permission: result.permission });
+    const result = await getDataDocuments(id_user, "actual", profile);
+    res.json({ data: result.data });
   } catch (error) {
     logEvents(
       `raportsController, getDataRaport: ${error}`,
@@ -430,10 +430,9 @@ const getRaportDifferncesAsFkAnia_Julia = (docData) => {
 };
 
 const getRaportDifferncesAsFk = async (req, res) => {
-  const { id_user } = req.params;
+  const { id_user, profile } = req.params;
   try {
-    const documents = await getDataDocuments(id_user, "different");
-
+    const documents = await getDataDocuments(id_user, "different", profile);
     const prevBusinessDayStr = getPreviousBusinessDayString();
 
     const filteredData = documents?.data

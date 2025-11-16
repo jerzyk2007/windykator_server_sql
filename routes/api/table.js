@@ -20,14 +20,14 @@ router
 router
   .route("/get-table-columns")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     table.getTableColumns
   );
 
 router
-  .route("/get-settings-colums-table/:id_user/:user_type")
+  .route("/get-settings-colums-table/:id_user/:profile")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     table.getSettingsColumnsTable
   );
 

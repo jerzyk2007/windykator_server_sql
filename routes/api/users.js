@@ -79,35 +79,35 @@ router
 router
   .route("/save-table-settings/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.saveUserTableSettings
   );
 
 router
   .route("/save-raport-departments-settings/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.saveRaporDepartmentSettings
   );
 
 router
   .route("/get-raport-departments-settings/:id_user")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.getRaportDepartmentSettings
   );
 
 router
   .route("/save-raport-advisers-settings/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.saveRaporAdviserSettings
   );
 
 router
   .route("/get-raport-advisers-settings/:id_user")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.getRaportAdviserSettings
   );
 

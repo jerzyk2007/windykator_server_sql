@@ -1,6 +1,6 @@
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
-// const { addDepartment } = require('./manageDocumentAddition');
+const { userProfile } = require("./manageDocumentAddition");
 
 // const getAllDocumentsSQL1 =
 //   "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  IFNULL( DA.INFORMACJA_ZARZAD , 'BRAK' ) AS INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU, DA.KRD   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_fk_settlements AS FS ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA";
@@ -8,23 +8,22 @@ const getAllDocumentsSQL =
   "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.UWAGI_ASYSTENT, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  DA.INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU, DA.KRD   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_fk_settlements AS FS ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA";
 
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
-const getDataDocuments = async (id_user, info) => {
+const getDataDocuments = async (id_user, info, profile) => {
   let filteredData = [];
-
+  const userType = userProfile(profile);
   try {
     const [findUser] = await connect_SQL.query(
-      "SELECT  permissions, username, usersurname, departments FROM company_users WHERE id_user = ?",
+      "SELECT  username, usersurname, departments FROM company_users WHERE id_user = ?",
       [id_user]
     );
-    const { permissions = "", departments = {} } = findUser[0] || {};
+    const { departments = {} } = findUser[0] || {};
 
     // jeśli użytkownik nie ma nadanych dostępów do działów to zwraca puste dane
-    const allDepartments = departments[permissions] || [];
+    const allDepartments = departments[userType] || [];
 
     if (!allDepartments.length) {
       return { data: [] };
     }
-
     // dopisuje do zapytania dostęp tylko do działow zadeklarowanych
     const sqlCondition =
       allDepartments?.length > 0
@@ -36,7 +35,7 @@ const getDataDocuments = async (id_user, info) => {
             .join(" OR ")})`
         : null;
 
-    if (permissions === "Pracownik") {
+    if (userType === "Pracownik") {
       if (info === "actual") {
         [filteredData] = await connect_SQL.query(
           `${getAllDocumentsSQL} WHERE IFNULL(S.NALEZNOSC, 0) > 0 AND ${sqlCondition}`
@@ -83,7 +82,6 @@ const getDataDocuments = async (id_user, info) => {
           `${getAllDocumentsSQL} WHERE  ${sqlCondition} AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0`
         );
       }
-      // return { data: filteredData, permission: truePermissions };
       return { data: filteredData };
     } else {
       return { data: [] };
@@ -97,20 +95,20 @@ const getDataDocuments = async (id_user, info) => {
 };
 
 // pobiera dane do tabeli w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
-const getAllDocuments = async (req, res) => {
-  const { info, id_user } = req.params;
-  try {
-    const result = await getDataDocuments(id_user, info);
+// const getAllDocuments = async (req, res) => {
+//   const { info, id_user } = req.params;
+//   try {
+//     const result = await getDataDocuments(id_user, info);
 
-    res.json(result.data);
-  } catch (error) {
-    logEvents(
-      `documentsController, getAllDocuments: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ error: "Server error" });
-  }
-};
+//     res.json(result.data);
+//   } catch (error) {
+//     logEvents(
+//       `documentsController, getAllDocuments: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ error: "Server error" });
+//   }
+// };
 
 //SQL zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
 // funkcja zmieniająca dane w poszczególnym dokumncie (editRowTable)
@@ -245,12 +243,14 @@ const getAvailableDeps = async (req, res) => {
 };
 // SQL pobieram dane do tabeli
 const getDataTable = async (req, res) => {
-  const { id_user, info } = req.params;
-  if (!id_user || !info) {
-    return res.status(400).json({ message: "Id and info are required." });
+  const { id_user, info, profile } = req.params;
+  if (!id_user || !info || !profile) {
+    return res
+      .status(400)
+      .json({ message: "Id, info and profile are required." });
   }
   try {
-    const result = await getDataDocuments(id_user, info);
+    const result = await getDataDocuments(id_user, info, profile);
 
     res.json(result.data);
   } catch (error) {
@@ -261,31 +261,6 @@ const getDataTable = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-// // SQL pobieram  ustawienia tabeli(order, visiblility itd), kolumny
-// const getSettingsColumnsTable = async (req, res) => {
-//   const { id_user } = req.params;
-//   if (!id_user) {
-//     return res.status(400).json({ message: "Id and info are required." });
-//   }
-//   try {
-//     const [findUser] = await connect_SQL.query(
-//       "SELECT permissions, tableSettings, columns  FROM company_users WHERE id_user = ?",
-//       [id_user]
-//     );
-//     const { permissions = "" } = findUser[0] || {};
-
-//     const tableSettings = findUser[0].tableSettings[permissions];
-//     const columns = findUser[0].columns[permissions];
-
-//     res.json({ tableSettings, columns });
-//   } catch (error) {
-//     logEvents(
-//       `documentsController, getSettingsColumnsTable: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//     res.status(500).json({ error: "Server error" });
-//   }
-// };
 
 // pobiera pojedyńczy dokument SQL
 const getSingleDocument = async (req, res) => {
@@ -321,8 +296,6 @@ const getSingleDocument = async (req, res) => {
       singleDoc: singleDoc[0],
       controlDoc: controlDoc[0] ? controlDoc[0] : {},
     });
-    // res.json(result[0]);
-    // res.end();
   } catch (error) {
     logEvents(
       `documentsController, getSingleDocument: ${error}`,
@@ -488,10 +461,9 @@ const changeDocumentControl = async (req, res) => {
 };
 
 module.exports = {
-  getAllDocuments,
+  // getAllDocuments,
   changeSingleDocument,
   getDataTable,
-  // getSettingsColumnsTable,
   getDataDocuments,
   getSingleDocument,
   getColumnsName,

@@ -114,10 +114,19 @@ const generatePassword = async (length = 12) => {
   };
 };
 
+const userProfile = (profile) => {
+  return profile === "insider"
+    ? "Pracownik"
+    : profile === "partner"
+    ? "Kancelaria"
+    : "";
+};
+
 module.exports = {
   addDepartment,
   checkDate,
   checkTime,
   documentsType,
   generatePassword,
+  userProfile,
 };

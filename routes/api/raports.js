@@ -5,9 +5,9 @@ const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
 router
-  .route("/get-data/:id_user")
+  .route("/get-data/:id_user/:profile")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     raports.getDataRaport
   );
 
@@ -27,7 +27,7 @@ router
 
 // dane różnic pomiędzy AS a FK
 router
-  .route("/get-fifferences-as-fk/:id_user")
+  .route("/get-fifferences-as-fk/:id_user/:profile")
   .get(
     verifyRoles(ROLES_LIST.Editor, ROLES_LIST.Raports, ROLES_LIST.SuperAdmin),
     raports.getRaportDifferncesAsFk

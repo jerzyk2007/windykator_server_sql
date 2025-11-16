@@ -22,7 +22,7 @@ router
 router
   .route("/get-departments")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     settings.getDepartments
   );
 
@@ -49,7 +49,7 @@ router
 router
   .route("/get-table-columns")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     table.getTableColumns
   );
 
