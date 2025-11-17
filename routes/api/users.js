@@ -77,9 +77,14 @@ router
   );
 
 router
-  .route("/save-table-settings/:id_user")
+  .route("/save-table-settings/:id_user/:profile")
   .patch(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
+    verifyRoles(
+      ROLES_LIST.User,
+      ROLES_LIST.Editor,
+      ROLES_LIST.LawPartner,
+      ROLES_LIST.SuperAdmin
+    ),
     usersController.saveUserTableSettings
   );
 

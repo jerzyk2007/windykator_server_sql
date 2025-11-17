@@ -15,9 +15,9 @@ const { getDataDocuments } = require("./documentsController");
 
 const createLawTable = async () => {
   try {
-    //  await connect_SQL.query(
-    //   "CREATE TABLE company_fk_settlements (  id_company_fk_settlements INT NOT NULL AUTO_INCREMENT,   NUMER_FV VARCHAR(255) NOT NULL,   DO_ROZLICZENIA DECIMAL(12,2) NOT NULL,   FIRMA VARCHAR(10) NOT NULL,   PRIMARY KEY (id_company_fk_settlements),   UNIQUE (id_company_fk_settlements))"
-    // );
+    await connect_SQL.query(
+      "CREATE TABLE company_law_documents (  id_company_law_documents INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, PRIMARY KEY (id_company_law_documents), UNIQUE (NUMER_FV))"
+    );
   } catch (error) {
     console.error(error);
   }
@@ -259,6 +259,7 @@ const update_table_setiings = async () => {
 
 const rebuildDataBase = async () => {
   try {
+    await createLawTable();
     await deleteBasicUsers();
     await changeTypeColumnPermissions();
     await changeUserTable();
@@ -289,8 +290,54 @@ const createTableRelations = async () => {
   }
 };
 
+// dodaję testow dane do tabeli company_law_documents
+const addDataToLawDocuments = async () => {
+  try {
+    const data = [
+      {
+        NUMER_FV: "FV/UBL/671/25/A/D8",
+        KONTRAHENT:
+          "PRZEDSIĘBIORSTWO PRZEMYSŁOWO-HANDLOWE 'HETMAN' SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+      },
+      {
+        NUMER_FV: "FV/WS/20/24/V/D8",
+        KONTRAHENT: "JYOTI TEXTILES PARVENDRA SINGH BHATI",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+      },
+      {
+        NUMER_FV: "FV/AN/516/25/A/D1",
+        KONTRAHENT:
+          "VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+      },
+      {
+        NUMER_FV: "FV/UBL/1142/25/A/D8",
+        KONTRAHENT:
+          'JACEK TULIŃSKI "TULIPAN" FIRMA HANDLOWO-USŁUGOWO-PRODUKCYJNA',
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+      },
+      {
+        NUMER_FV: "FV/UBL/232/25/S/D8",
+        KONTRAHENT: "Pietrzykowska-Dudek Lidia",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+      },
+    ];
+
+    for (const doc of data) {
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_law_documents (NUMER_FV, KONTRAHENT, NAZWA_KANCELARII) VALUES (?, ?, ?)",
+        [doc.NUMER_FV, doc.KONTRAHENT, doc.NAZWA_KANCELARII]
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
+    // await addDataToLawDocuments();
     // await rebuildDataBase();
     // console.log("repair");
   } catch (error) {

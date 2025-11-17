@@ -11,7 +11,7 @@ router
     table.changeTableColumns
   );
 router
-  .route("/delete-table-columns/:id")
+  .route("/delete-table-columns/:id/:permission")
   .delete(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
     table.deleteTableColumn
@@ -27,7 +27,12 @@ router
 router
   .route("/get-settings-colums-table/:id_user/:profile")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
+    verifyRoles(
+      ROLES_LIST.User,
+      ROLES_LIST.Editor,
+      ROLES_LIST.LawPartner,
+      ROLES_LIST.SuperAdmin
+    ),
     table.getSettingsColumnsTable
   );
 

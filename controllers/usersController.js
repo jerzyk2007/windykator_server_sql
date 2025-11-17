@@ -16,7 +16,7 @@ const {
 } = require("./tableController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { sendEmail } = require("./mailController");
-const { tr } = require("date-fns/locale/tr");
+const { userProfile } = require("./manageDocumentAddition");
 
 const createNewUser = async (req, res) => {
   const { userlogin, username, usersurname, permission } = req.body;
@@ -352,20 +352,22 @@ const deleteUser = async (req, res) => {
 
 // zapisanie ustawień tabeli dla użytkownika SQL
 const saveUserTableSettings = async (req, res) => {
-  const { id_user } = req.params;
+  const { id_user, profile } = req.params;
   const { newTableSettings } = req.body;
-  if (!id_user) {
-    return res.status(400).json({ message: "Userlogin is required." });
-  }
 
+  if (!id_user || !profile) {
+    return res
+      .status(400)
+      .json({ message: "Userlogin and profile are required." });
+  }
+  const userType = userProfile(profile);
   try {
     const [userTableSettings] = await connect_SQL.query(
       "SELECT tableSettings, permissions FROM company_users WHERE id_user = ?",
       [id_user]
     );
-    const { tableSettings, permissions } = userTableSettings[0];
-    tableSettings[permissions] = newTableSettings;
-
+    const { tableSettings } = userTableSettings[0];
+    tableSettings[userType] = newTableSettings;
     await connect_SQL.query(
       "UPDATE company_users SET tableSettings =? WHERE id_user = ?",
       [JSON.stringify(tableSettings), id_user]

@@ -2,6 +2,38 @@ const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
 const { userProfile } = require("./manageDocumentAddition");
 
+const syncColumns = async (permission) => {
+  try {
+    const [userTableColumns] = await connect_SQL.query(
+      `SELECT id_user, columns, departments, tableSettings, permissions FROM company_users`
+    );
+    for (const user of userTableColumns) {
+      if (
+        permission === "Pracownik" &&
+        user.permissions === "Pracownik" &&
+        user.departments[permission]?.length
+      ) {
+        await verifyUserTableConfig(
+          user.id_user,
+          permission,
+          user.departments[permission]
+        );
+      } else if (
+        permission === "Kancelaria" &&
+        user.departments["Kancelaria"]?.length
+      ) {
+        await verifyUserLawPartnerConfig(
+          user.id_user,
+          permission,
+          user.departments["Kancelaria"]
+        );
+      }
+    }
+  } catch (error) {
+    logEvents(`tableController, syncColumns: ${error}`, "reqServerErrors.txt");
+  }
+};
+
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
 const verifyUserTableConfig = async (id_user, permission, newDeps) => {
   try {
@@ -316,6 +348,7 @@ const verifyUserLawPartnerConfig = async (id_user, permission, lawPartner) => {
 // funkcja która ma zmienić ustawienia poszczególnych kolumn użytkownika, jeśli zostaną zmienione globalne ustawienia tej kolumny SQL
 const changeTableColumns = async (req, res) => {
   const { type, permission, data } = req.body;
+
   try {
     if (type === "edit") {
       await connect_SQL.query(
@@ -343,32 +376,32 @@ const changeTableColumns = async (req, res) => {
         ]
       );
     }
-
-    const [userTableColumns] = await connect_SQL.query(
-      `SELECT id_user, columns, departments, tableSettings, permissions FROM company_users`
-    );
-    for (const user of userTableColumns) {
-      if (
-        permission === "Pracownik" &&
-        user.permissions === "Pracownik" &&
-        user.departments[permission]?.length
-      ) {
-        await verifyUserTableConfig(
-          user.id_user,
-          permission,
-          user.departments[permission]
-        );
-      } else if (
-        permission === "Kancelaria" &&
-        user.departments["Kancelaria"]?.length
-      ) {
-        await verifyUserLawPartnerConfig(
-          user.id_user,
-          permission,
-          user.departments["Kancelaria"]
-        );
-      }
-    }
+    await syncColumns(permission);
+    // const [userTableColumns] = await connect_SQL.query(
+    //   `SELECT id_user, columns, departments, tableSettings, permissions FROM company_users`
+    // );
+    // for (const user of userTableColumns) {
+    //   if (
+    //     permission === "Pracownik" &&
+    //     user.permissions === "Pracownik" &&
+    //     user.departments[permission]?.length
+    //   ) {
+    //     await verifyUserTableConfig(
+    //       user.id_user,
+    //       permission,
+    //       user.departments[permission]
+    //     );
+    //   } else if (
+    //     permission === "Kancelaria" &&
+    //     user.departments["Kancelaria"]?.length
+    //   ) {
+    //     await verifyUserLawPartnerConfig(
+    //       user.id_user,
+    //       permission,
+    //       user.departments["Kancelaria"]
+    //     );
+    //   }
+    // }
 
     res.end();
   } catch (error) {
@@ -381,12 +414,14 @@ const changeTableColumns = async (req, res) => {
 };
 
 const deleteTableColumn = async (req, res) => {
-  const { id } = req.params;
+  const { id, permission } = req.params;
+
   try {
     await connect_SQL.query(
       "DELETE FROM company_table_columns WHERE id_table_columns = ?",
       [id]
     );
+    await syncColumns(permission);
     res.end();
   } catch (error) {
     logEvents(

@@ -33,12 +33,13 @@ router
     settings.getPermissions
   );
 
-router
-  .route("/change-table-columns")
-  .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    table.changeTableColumns
-  );
+// router
+//   .route("/change-table-columns")
+//   .patch(
+//     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+//     table.changeTableColumns
+//   );
+
 router
   .route("/delete-table-columns/:id")
   .delete(

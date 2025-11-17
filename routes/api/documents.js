@@ -32,7 +32,12 @@ router
 router
   .route("/get-data-table/:id_user/:info/:profile")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
+    verifyRoles(
+      ROLES_LIST.User,
+      ROLES_LIST.Editor,
+      ROLES_LIST.LawPartner,
+      ROLES_LIST.SuperAdmin
+    ),
     documents.getDataTable
   );
 
