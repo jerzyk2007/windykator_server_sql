@@ -16,7 +16,7 @@ const { getDataDocuments } = require("./documentsController");
 const createLawTable = async () => {
   try {
     await connect_SQL.query(
-      "CREATE TABLE company_law_documents (  id_company_law_documents INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, PRIMARY KEY (id_company_law_documents), UNIQUE (NUMER_FV))"
+      "CREATE TABLE company_law_documents (  id_company_law_documents INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL, PRIMARY KEY (id_company_law_documents), UNIQUE (NUMER_FV))"
     );
   } catch (error) {
     console.error(error);
