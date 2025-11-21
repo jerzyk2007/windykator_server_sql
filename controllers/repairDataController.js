@@ -16,7 +16,7 @@ const { getDataDocuments } = require("./documentsController");
 const createLawTable = async () => {
   try {
     await connect_SQL.query(
-      "CREATE TABLE company_law_documents (  id_company_law_documents INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL, PRIMARY KEY (id_company_law_documents), UNIQUE (NUMER_FV))"
+      "CREATE TABLE company_law_documents (  id_company_law_documents INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL, PRIMARY KEY (id_company_law_documents), UNIQUE KEY unique_fv_kancelaria (NUMER_FV, NAZWA_KANCELARII))"
     );
   } catch (error) {
     console.error(error);
@@ -299,28 +299,33 @@ const addDataToLawDocuments = async () => {
         KONTRAHENT:
           "PRZEDSIĘBIORSTWO PRZEMYSŁOWO-HANDLOWE 'HETMAN' SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
+        KWOTA_ROSZCZENIA: 112.11,
       },
       {
         NUMER_FV: "FV/WS/20/24/V/D8",
         KONTRAHENT: "JYOTI TEXTILES PARVENDRA SINGH BHATI",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
+        KWOTA_ROSZCZENIA: 1500.1,
       },
       {
         NUMER_FV: "FV/AN/516/25/A/D1",
         KONTRAHENT:
           "VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
+        KWOTA_ROSZCZENIA: 35,
       },
       {
         NUMER_FV: "FV/UBL/1142/25/A/D8",
         KONTRAHENT:
           'JACEK TULIŃSKI "TULIPAN" FIRMA HANDLOWO-USŁUGOWO-PRODUKCYJNA',
         NAZWA_KANCELARII: "Kancelaria Krotoski",
+        KWOTA_ROSZCZENIA: 21555.89,
       },
       {
         NUMER_FV: "FV/UBL/232/25/S/D8",
         KONTRAHENT: "Pietrzykowska-Dudek Lidia",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
+        KWOTA_ROSZCZENIA: 399.99,
       },
     ];
 
@@ -340,6 +345,7 @@ const repair = async () => {
     // await addDataToLawDocuments();
     // await rebuildDataBase();
     // console.log("repair");
+    // await createTableRelations()
   } catch (error) {
     console.error(error);
   }
