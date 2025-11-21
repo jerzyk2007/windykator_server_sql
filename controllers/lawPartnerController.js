@@ -34,7 +34,24 @@ WHERE fv.[NUMER] = '${docID}'`
     res.json(contractorData);
   } catch (error) {
     logEvents(
-      `settingsController, getPermissions: ${error}`,
+      `lawPartnerController, getContractor: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const getSingleDocument = async (req, res) => {
+  const { docID } = req.params;
+  try {
+    const [singleDocument] = await connect_SQL.query(
+      "SELECT * FROM company_law_documents WHERE id_document = ?",
+      [docID]
+    );
+    res.json(singleDocument.length ? singleDocument[0] : {});
+  } catch (error) {
+    logEvents(
+      `lawPartnerController, getSingleDocument: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
@@ -43,4 +60,5 @@ WHERE fv.[NUMER] = '${docID}'`
 
 module.exports = {
   getContractor,
+  getSingleDocument,
 };

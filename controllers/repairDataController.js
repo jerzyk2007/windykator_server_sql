@@ -16,7 +16,7 @@ const { getDataDocuments } = require("./documentsController");
 const createLawTable = async () => {
   try {
     await connect_SQL.query(
-      "CREATE TABLE company_law_documents (  id_company_law_documents INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL, PRIMARY KEY (id_company_law_documents), UNIQUE KEY unique_fv_kancelaria (NUMER_FV, NAZWA_KANCELARII))"
+      "CREATE TABLE company_law_documents (  id_document INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL, CHAT_LAW_PARTNER JSON, PRIMARY KEY (id_document), UNIQUE KEY unique_fv_kancelaria (NUMER_FV, NAZWA_KANCELARII))"
     );
   } catch (error) {
     console.error(error);
@@ -292,6 +292,30 @@ const createTableRelations = async () => {
 
 // dodaję testow dane do tabeli company_law_documents
 const addDataToLawDocuments = async () => {
+  const chatLawPartner = [
+    {
+      profile: "Pracownik",
+      date: "17-10-2025",
+      username: "Kowalski",
+      userlogin: "jan.kowalski@krotoski.com",
+      note: "Zapłata nastąpi zgodnie z terminem płatności 24.11.2025 Sławomir Sołdon",
+    },
+    {
+      profile: "Kancelaria",
+      date: "18-10-2025",
+      username: "Mickiewicz",
+      userlogin: "adam.mickiewicz@kancelaria-krotoski.com",
+      note: "Złożony wniosek o uzasadnienie wyroku.",
+    },
+    {
+      profile: "Kancelaria",
+      date: "29-10-2025",
+      username: "Mickiewicz",
+      userlogin: "adam.mickiewicz@kancelaria-krotoski.com",
+      note: "Przekazałem uzasadnienie wyroku do jan.kowalski@krotoski.com",
+    },
+  ];
+
   try {
     const data = [
       {
@@ -306,6 +330,7 @@ const addDataToLawDocuments = async () => {
         KONTRAHENT: "JYOTI TEXTILES PARVENDRA SINGH BHATI",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
         KWOTA_ROSZCZENIA: 1500.1,
+        CHAT_LAW_PARTNER: chatLawPartner,
       },
       {
         NUMER_FV: "FV/AN/516/25/A/D1",
@@ -331,8 +356,14 @@ const addDataToLawDocuments = async () => {
 
     for (const doc of data) {
       await connect_SQL.query(
-        "INSERT IGNORE INTO company_law_documents (NUMER_FV, KONTRAHENT, NAZWA_KANCELARII) VALUES (?, ?, ?)",
-        [doc.NUMER_FV, doc.KONTRAHENT, doc.NAZWA_KANCELARII]
+        "INSERT IGNORE INTO company_law_documents (NUMER_FV, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA, CHAT_LAW_PARTNER) VALUES (?, ?, ?, ?, ?)",
+        [
+          doc.NUMER_FV,
+          doc.KONTRAHENT,
+          doc.NAZWA_KANCELARII,
+          doc.KWOTA_ROSZCZENIA,
+          JSON.stringify(doc.CHAT_LAW_PARTNER) || null,
+        ]
       );
     }
   } catch (error) {
@@ -340,12 +371,23 @@ const addDataToLawDocuments = async () => {
   }
 };
 
+const temporaryFunc = async () => {
+  try {
+    // await createLawTable();
+    await addDataToLawDocuments();
+    // await createTableRelations()
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
-    // await addDataToLawDocuments();
     // await rebuildDataBase();
     // console.log("repair");
-    // await createTableRelations()
+    //
+    // chwilowa funkcja
+    // await temporaryFunc();
   } catch (error) {
     console.error(error);
   }

@@ -8,4 +8,8 @@ router
   .route("/get-contractor-data/:docID")
   .get(verifyRoles(ROLES_LIST.LawPartner), lawPartner.getContractor);
 
+router
+  .route("/get-single-document/:docID")
+  .get(verifyRoles(ROLES_LIST.LawPartner), lawPartner.getSingleDocument);
+
 module.exports = router;
