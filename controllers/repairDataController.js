@@ -15,9 +15,107 @@ const { getDataDocuments } = require("./documentsController");
 
 const createLawTable = async () => {
   try {
+    await connect_SQL.query(`
+CREATE TABLE IF NOT EXISTS company_law_documents (
+    id_document INT NOT NULL AUTO_INCREMENT,
+    NUMER_DOKUMENTU VARCHAR(250) NOT NULL,
+    KONTRAHENT VARCHAR(500) NOT NULL,
+    NIP VARCHAR(20) NULL,
+    NAZWA_KANCELARII VARCHAR(50) NOT NULL,
+    DATA_PRZYJECIA_SPRAWY DATE NULL,
+    DATA_WYSTAWIENIA_DOKUMENTU DATE NULL,
+    KWOTA_BRUTTO_DOKUMENTU DECIMAL(12,2) NOT NULL,
+    ODDZIAL JSON NULL,
+    OPIS_DOKUMENTU VARCHAR(250) NULL,
+    FIRMA VARCHAR(45) NOT NULL,
+    DATA_PRZEKAZANIA_SPRAWY DATE NULL,
+    KWOTA_ROSZCZENIA_DO_KANCELARII DECIMAL(12,2) NOT NULL,
+    CZAT_KANCELARIA JSON NULL,
+    CZAT_LOGI JSON NULL,
+    PRIMARY KEY (id_document),
+    UNIQUE KEY unique_doc_firma (NUMER_DOKUMENTU, FIRMA)
+);
+`);
+    //     await connect_SQL.query(`
+    // CREATE TABLE IF NOT EXISTS company_law_documents_settlements (
+    //    ********** id_document INT NOT NULL AUTO_INCREMENT,
+    //    ********** NUMER_DOKUMENTU VARCHAR(250) NOT NULL,
+    //    ********** WYKAZ_SPLACONEJ_KWOTY JSON NULL,
+    //    ********** SUMA_SPLACONEJ_KWOTY DECIMAL(12,2) NULL,
+    //     FIRMA VARCHAR(45) NOT NULL,
+    //    **********   PRIMARY KEY (id_document),
+    //    ********** UNIQUE KEY unique_doc_firma (NUMER_DOKUMENTU, FIRMA)
+    // );
+    // `);
+    await connect_SQL.query(`
+CREATE TABLE IF NOT EXISTS company_law_documents_settlements (
+    id_document_settlements INT NOT NULL AUTO_INCREMENT,
+    NUMER_DOKUMENTU_FK VARCHAR(250) NOT NULL,
+    WYKAZ_SPLACONEJ_KWOTY_FK JSON NULL,
+    SUMA_SPLACONEJ_KWOTY_FK DECIMAL(12,2) NULL,
+     FIRMA VARCHAR(45) NOT NULL,
+    POZOSTALA_NALEZNOSC_FK DECIMAL(12,2) NULL,
+      PRIMARY KEY (id_document_settlements),
+        UNIQUE KEY unique_numer (NUMER_DOKUMENTU_FK)
+);
+`);
+
     await connect_SQL.query(
-      "CREATE TABLE company_law_documents (  id_document INT NOT NULL AUTO_INCREMENT, NUMER_FV VARCHAR(50) NOT NULL, KONTRAHENT VARCHAR(250) NOT NULL, DATA_PRZEKAZANIA DATE NOT NULL DEFAULT (CURRENT_DATE), NAZWA_KANCELARII VARCHAR(50) NOT NULL, KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL, CHAT_LAW_PARTNER JSON, PRIMARY KEY (id_document), UNIQUE KEY unique_fv_kancelaria (NUMER_FV, NAZWA_KANCELARII))"
+      "ALTER TABLE company_law_documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
     );
+    await connect_SQL.query(
+      "ALTER TABLE company_law_documents_settlements CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const createTriggers = async () => {
+  try {
+    await connect_SQL.query(
+      "DROP TRIGGER IF EXISTS set_DATA_PRZEKAZANIA_SPRAWY"
+    );
+
+    await connect_SQL.query(`
+CREATE TRIGGER set_DATA_PRZEKAZANIA_SPRAWY
+BEFORE INSERT ON company_law_documents
+FOR EACH ROW
+BEGIN
+    IF NEW.DATA_PRZEKAZANIA_SPRAWY IS NULL THEN
+        SET NEW.DATA_PRZEKAZANIA_SPRAWY = CURDATE();
+    END IF;
+END
+`);
+
+    // 1. Usuń trigger, jeśli istnieje
+    await connect_SQL.query("DROP TRIGGER IF EXISTS generate_NUMER_DOKUMENTU");
+
+    // 2. Stwórz trigger
+    await connect_SQL.query(`
+CREATE TRIGGER generate_NUMER_DOKUMENTU
+BEFORE INSERT ON company_law_documents
+FOR EACH ROW
+BEGIN
+    IF NEW.NUMER_DOKUMENTU IS NULL OR NEW.NUMER_DOKUMENTU = '' THEN
+        SET @last_noid = (
+            SELECT CAST(SUBSTRING(NUMER_DOKUMENTU, 11) AS UNSIGNED)
+            FROM company_law_documents
+            WHERE NUMER_DOKUMENTU LIKE 'BRAK_NOID_%'
+            ORDER BY CAST(SUBSTRING(NUMER_DOKUMENTU, 11) AS UNSIGNED) DESC
+            LIMIT 1
+        );
+
+        IF @last_noid IS NULL THEN
+            SET @last_noid = 1;
+        ELSE
+            SET @last_noid = @last_noid + 1;
+        END IF;
+
+        SET NEW.NUMER_DOKUMENTU = CONCAT('BRAK_NOID_', @last_noid);
+    END IF;
+END
+`);
   } catch (error) {
     console.error(error);
   }
@@ -319,50 +417,118 @@ const addDataToLawDocuments = async () => {
   try {
     const data = [
       {
-        NUMER_FV: "FV/UBL/671/25/A/D8",
+        NUMER_DOKUMENTU: "FV/UBL/671/25/A/D8",
+        OPIS_DOKUMENTU: null,
         KONTRAHENT:
           "PRZEDSIĘBIORSTWO PRZEMYSŁOWO-HANDLOWE 'HETMAN' SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
-        KWOTA_ROSZCZENIA: 112.11,
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: "2025-06-26",
+        KWOTA_BRUTTO_DOKUMENTU: 9098.71,
+        ODDZIAL: {
+          DZIAL: "D008",
+          LOKALIZACJA: "Łódź Przybyszewskiego",
+          OBSZAR: "BLACHARNIA",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 6731.88,
+        CZAT_KANCELARIA: null,
       },
       {
-        NUMER_FV: "FV/WS/20/24/V/D8",
-        KONTRAHENT: "JYOTI TEXTILES PARVENDRA SINGH BHATI",
-        NAZWA_KANCELARII: "Kancelaria Krotoski",
-        KWOTA_ROSZCZENIA: 1500.1,
-        CHAT_LAW_PARTNER: chatLawPartner,
-      },
-      {
-        NUMER_FV: "FV/AN/516/25/A/D1",
+        NUMER_DOKUMENTU: null,
+        OPIS_DOKUMENTU: "Polisa nr 123456, Hestia",
         KONTRAHENT:
-          "VOLKSWAGEN FINANCIAL SERVICES POLSKA SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+          "ALEXAS CAR SERVICE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
-        KWOTA_ROSZCZENIA: 35,
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: null,
+        KWOTA_BRUTTO_DOKUMENTU: 1000,
+        ODDZIAL: {
+          DZIAL: "D039",
+          LOKALIZACJA: "Wolica",
+          OBSZAR: "F&I",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 112.11,
+        CZAT_KANCELARIA: null,
       },
       {
-        NUMER_FV: "FV/UBL/1142/25/A/D8",
+        NUMER_DOKUMENTU: "FV/MN/20211/25/S/D7",
+        OPIS_DOKUMENTU: null,
         KONTRAHENT:
-          'JACEK TULIŃSKI "TULIPAN" FIRMA HANDLOWO-USŁUGOWO-PRODUKCYJNA',
+          "AUTOKOS SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ SPÓŁKA KOMANDYTOWA",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
-        KWOTA_ROSZCZENIA: 21555.89,
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: "2025-11-19",
+        KWOTA_BRUTTO_DOKUMENTU: 3508.84,
+        ODDZIAL: {
+          DZIAL: "D007",
+          LOKALIZACJA: "Łódź Niciarniana",
+          OBSZAR: "CZĘŚCI",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 3508.84,
+        CZAT_KANCELARIA: chatLawPartner,
       },
       {
-        NUMER_FV: "FV/UBL/232/25/S/D8",
-        KONTRAHENT: "Pietrzykowska-Dudek Lidia",
+        NUMER_DOKUMENTU: null,
+        OPIS_DOKUMENTU: "kara umowna + odszkodowanie uzupełniające",
+        KONTRAHENT: "Euro - Trans - Poland sp. z o.o.",
         NAZWA_KANCELARII: "Kancelaria Krotoski",
-        KWOTA_ROSZCZENIA: 399.99,
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: null,
+        KWOTA_BRUTTO_DOKUMENTU: 872.11,
+
+        ODDZIAL: {
+          DZIAL: "D076",
+          LOKALIZACJA: "Warszawa Radzymińska",
+          OBSZAR: "SERWIS",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 872.11,
+        CZAT_KANCELARIA: null,
+      },
+      {
+        NUMER_DOKUMENTU: "FV/UP/5298/18/D6",
+        OPIS_DOKUMENTU: null,
+        KONTRAHENT: "PHU WACAR ARKADIUSZ WAWRZYNIAK",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: "2019-04-03",
+        KWOTA_BRUTTO_DOKUMENTU: 13931.59,
+
+        ODDZIAL: {
+          DZIAL: "D447",
+          LOKALIZACJA: "Audi Białołęka",
+          OBSZAR: "CZĘŚCI",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 13931.59,
+        CZAT_KANCELARIA: null,
       },
     ];
 
     for (const doc of data) {
       await connect_SQL.query(
-        "INSERT IGNORE INTO company_law_documents (NUMER_FV, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA, CHAT_LAW_PARTNER) VALUES (?, ?, ?, ?, ?)",
+        "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, OPIS_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, DATA_PRZYJECIA_SPRAWY, DATA_WYSTAWIENIA_DOKUMENTU, KWOTA_BRUTTO_DOKUMENTU, ODDZIAL, FIRMA, DATA_PRZEKAZANIA_SPRAWY, KWOTA_ROSZCZENIA_DO_KANCELARII, CZAT_KANCELARIA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-          doc.NUMER_FV,
+          doc.NUMER_DOKUMENTU,
+          doc.OPIS_DOKUMENTU,
           doc.KONTRAHENT,
           doc.NAZWA_KANCELARII,
-          doc.KWOTA_ROSZCZENIA,
-          JSON.stringify(doc.CHAT_LAW_PARTNER) || null,
+          doc.DATA_PRZYJECIA_SPRAWY,
+          doc.DATA_WYSTAWIENIA_DOKUMENTU,
+          doc.KWOTA_BRUTTO_DOKUMENTU,
+          JSON.stringify(doc.ODDZIAL),
+          doc.FIRMA,
+          doc.DATA_PRZEKAZANIA_SPRAWY,
+          JSON.stringify(doc.KWOTA_ROSZCZENIA_DO_KANCELARII),
+          JSON.stringify(doc.CZAT_KANCELARIA) || null,
         ]
       );
     }
@@ -371,10 +537,168 @@ const addDataToLawDocuments = async () => {
   }
 };
 
+const updateLawSettlements = async () => {
+  try {
+    const [docs] = await connect_SQL.query(
+      "SELECT distinct NUMER_DOKUMENTU FROM company_law_documents"
+    );
+
+    const sqlCondition =
+      docs?.length > 0
+        ? `(${docs
+            .map((dep) => `r.dsymbol = '${dep.NUMER_DOKUMENTU}' `)
+            .join(" OR ")})`
+        : null;
+
+    await msSqlQuery("TRUNCATE TABLE [rapdb].dbo.fkkomandytowams");
+
+    await msSqlQuery(
+      `
+        INSERT INTO [rapdb].dbo.fkkomandytowams
+        SELECT DISTINCT
+            GETDATE() AS smf_stan_na_dzien,
+            'N' AS smf_typ,
+            r.dsymbol AS smf_numer,
+            r1.dsymbol,
+            r1.kwota AS kwota_platnosci,
+            CAST(r1.data AS DATE) AS data_platnosci,
+            r.kwota AS kwota_faktury,
+            CAST(
+                (CASE WHEN r.strona = 0 THEN r.kwota ELSE r.kwota * (-1) END)
+                + SUM(ISNULL(CASE WHEN r1.strona = 0 THEN r1.kwota ELSE r1.kwota * (-1) END, 0))
+                    OVER (PARTITION BY r.id)
+            AS MONEY) AS naleznosc,
+            CAST(r.dataokr AS DATE) AS smf_data_otwarcia_rozrachunku
+        FROM [fkkomandytowa].[FK].[rozrachunki] r
+        LEFT JOIN [fkkomandytowa].[FK].[rozrachunki] r1
+            ON r.id = r1.transakcja
+            AND ISNULL(r1.czyrozliczenie, 0) = 1
+            AND ISNULL(r1.dataokr, 0) <= GETDATE()
+        WHERE
+            r.czyrozliczenie = 0
+            AND CAST(r.dataokr AS DATE) BETWEEN '2001-01-01' AND GETDATE()
+            AND ${sqlCondition}
+
+      `
+    );
+
+    // 4. Pobierz to, co zostało zapisane
+    const settlementDescription = await msSqlQuery(`
+        SELECT *
+        FROM [rapdb].dbo.fkkomandytowams
+    `);
+
+    // console.log(settlementDescription.length);
+
+    const result = [];
+
+    settlementDescription.forEach((item) => {
+      const key = item.smf_numer;
+
+      // czy już istnieje dokument z tym numerem
+      let existing = result.find((r) => r.NUMER_DOKUMENTU === key);
+
+      // format daty yyyy-mm-dd
+      const formatDate = (date) =>
+        date ? new Date(date).toISOString().slice(0, 10) : null;
+
+      const paymentObj = {
+        data: formatDate(item.data_platnosci),
+        symbol: item.dsymbol,
+        kwota: item["kwota_platności"],
+        // kwota_faktury: item.kwota_faktury,
+      };
+
+      if (!existing) {
+        // tworzymy nowy dokument
+        result.push({
+          NUMER_DOKUMENTU: key,
+          WYKAZ_SPLACONEJ_KWOTY: item["kwota_platności"] ? [paymentObj] : [],
+          SUMA: item["kwota_platności"] || 0,
+          NALEZNOSC: item["naleznosc"] || 0,
+        });
+      } else {
+        // dopisujemy płatność jeśli istnieje
+        if (item["kwota_platności"]) {
+          existing.WYKAZ_SPLACONEJ_KWOTY.push(paymentObj);
+          existing.SUMA += item["kwota_platności"];
+        }
+      }
+    });
+
+    // 🔽 SORTOWANIE WYKAZ_SPLACONEJ_KWOTY według daty (najnowsze na górze)
+    result.forEach((doc) => {
+      doc.WYKAZ_SPLACONEJ_KWOTY.sort((a, b) => {
+        if (!a.data) return 1;
+        if (!b.data) return -1;
+        return new Date(b.data) - new Date(a.data); // malejąco
+      });
+    });
+
+    const testData = [
+      {
+        NUMER_DOKUMENTU: "FV/MN/17376/25/A/D447",
+        WYKAZ_SPLACONEJ_KWOTY: [],
+        SUMA: 0,
+        NALEZNOSC: 8868.8,
+      },
+      {
+        NUMER_DOKUMENTU: "FV/MN/20211/25/S/D7",
+        WYKAZ_SPLACONEJ_KWOTY: [],
+        SUMA: 0,
+        NALEZNOSC: 3508.84,
+      },
+      {
+        NUMER_DOKUMENTU: "FV/UBL/671/25/A/D8",
+        WYKAZ_SPLACONEJ_KWOTY: [
+          { data: "2025-07-25", symbol: "KP/DC/915/25/V/D17", kwota: 850.69 },
+        ],
+        SUMA: 850.69,
+        NALEZNOSC: 8248.02,
+      },
+      {
+        NUMER_DOKUMENTU: "FV/UP/5298/18/D6",
+        WYKAZ_SPLACONEJ_KWOTY: [
+          { data: "2018-12-31", symbol: "PK 554/12/18", kwota: 2000 },
+          { data: "2018-11-08", symbol: "WBRA 217/11/2018", kwota: 827.46 },
+          { data: "2018-11-05", symbol: "WBRE 214/11/2018", kwota: 1302.55 },
+          { data: "2018-10-29", symbol: "WBRW 210/10/2018", kwota: 2547.71 },
+          { data: "2018-10-17", symbol: "WBRW 202/10/2018", kwota: 2647.53 },
+        ],
+        SUMA: 9325.25,
+        NALEZNOSC: 4606.34,
+      },
+    ];
+
+    for (const doc of result) {
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_law_documents_settlements (NUMER_DOKUMENTU_FK, WYKAZ_SPLACONEJ_KWOTY_FK, SUMA_SPLACONEJ_KWOTY_FK, POZOSTALA_NALEZNOSC_FK) VALUES (?, ?, ?, ?)",
+        [
+          doc.NUMER_DOKUMENTU,
+          JSON.stringify(doc.WYKAZ_SPLACONEJ_KWOTY),
+          doc.SUMA,
+          doc.NALEZNOSC,
+        ]
+      );
+    }
+    console.log(result.length);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const temporaryFunc = async () => {
   try {
     // await createLawTable();
-    await addDataToLawDocuments();
+    // console.log("createLawTable");
+    // await createTriggers();
+    // console.log("createTriggers");
+    // await addDataToLawDocuments();
+    // console.log("addDataToLawDocuments");
+    //pobiera Wartość spłaconej kwoty
+    // await updateLawSettlements();
+    // console.log("updateLawSettlements");
+    // tworzy relacje pomiędzy tabelami
     // await createTableRelations()
   } catch (error) {
     console.error(error);
@@ -387,7 +711,7 @@ const repair = async () => {
     // console.log("repair");
     //
     // chwilowa funkcja
-    // await temporaryFunc();
+    await temporaryFunc();
   } catch (error) {
     console.error(error);
   }

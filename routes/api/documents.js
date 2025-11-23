@@ -28,7 +28,7 @@ router
     documents.getAvailableDeps
   );
 
-// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all
+// pobiera wszytskie faktury wg uprawnień oraz actual/archive/all
 router
   .route("/get-data-table/:id_user/:info/:profile")
   .get(

@@ -1,0 +1,32 @@
+DNiKN
+*** Oddział *tekst
+*** Tytuł roszczenia/numer dokumentu sprzedaży  *tekst
+*** opis dokumentu jesli nie będzie fv *tekst
+*** data wystawienia dokumentu *data
+*** Data przyjęcia sprawy przez Kancelarię *data
+*** Data przekazania sprawy do Kancelarii *data 
+*** kwota przekazana do kancelarii *decimal
+
+
+*** Wartość spłaconej kwoty - dane z tabeli mssql *JSON
+*** Wartość spłaconej kwoty *decimal
+
+
+
+kanelaria:
+*** Dłużnik/odbiorca dokumentu sprzedaży *tekst
+- Status sprawy *JSON
+    EGZEKUCYJNA
+    PRZEDSĄDOWA
+    RESTRUKTURYZACYJNA
+    SĄDOWA
+    SĄDOWA/EGZEKUCYJNA
+- Stan sprawy *JSON - chatData
+- termin przedawnienia roszczenia *data
+- Data wymagalności płatności *data
+- Wartość dokumentu sprzedaży *kwota decimal
+- Aktualna kwota zadłużenia *kwota decimal
+- Wydział Sądu  *tekst
+- sygn.sprawy sądowej  *tekst
+- Organ egzekucyjny *tekst
+- Sygn. Sprawy egzekucyjnej *tekst

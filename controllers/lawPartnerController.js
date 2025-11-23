@@ -1,6 +1,35 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
 
+// zapytanie do pobrania danych
+const getDocumentsLawPartner = "SELECT * FROM company_law_documents";
+
+// pobiera dane do tabeli w zaleźności od wywołania
+const getDataTable = async (req, res) => {
+  const { id_user, info, profile } = req.params;
+  try {
+    let data = [];
+    if (info === "ongoing") {
+      [data] = await connect_SQL.query(
+        `${getDocumentsLawPartner} WHERE DATA_PRZYJECIA_SPRAWY IS NOT NULL`
+      );
+    } else if (info === "no-accept") {
+      [data] = await connect_SQL.query(
+        `${getDocumentsLawPartner} WHERE DATA_PRZYJECIA_SPRAWY IS NULL`
+      );
+    } else {
+      data = [];
+    }
+    res.json(data);
+    // res.end();
+  } catch (error) {
+    logEvents(
+      `lawPartnerController, getDataTable: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 //pobiera dane kontrahenta z FK
 const getContractor = async (req, res) => {
   const { docID } = req.params;
@@ -44,8 +73,12 @@ WHERE fv.[NUMER] = '${docID}'`
 const getSingleDocument = async (req, res) => {
   const { docID } = req.params;
   try {
+    // const [singleDocument] = await connect_SQL.query(
+    //   "SELECT * FROM company_law_documents WHERE id_document = ?",
+    //   [docID]
+    // );
     const [singleDocument] = await connect_SQL.query(
-      "SELECT * FROM company_law_documents WHERE id_document = ?",
+      "SELECT CLD.*, CLDS.* FROM company_law_documents as CLD LEFT JOIN company_law_documents_settlements as CLDS ON CLD.NUMER_DOKUMENTU = CLDS.NUMER_DOKUMENTU_FK WHERE CLD.id_document = ?",
       [docID]
     );
     res.json(singleDocument.length ? singleDocument[0] : {});
@@ -58,7 +91,67 @@ const getSingleDocument = async (req, res) => {
   }
 };
 
+const changeSingleDocument = async (req, res) => {
+  const { id_document, document, chatLog } = req.body;
+  try {
+    const [oldData] = await connect_SQL.query(
+      "SELECT * FROM company_law_documents WHERE id_document = ?",
+      [id_document]
+    );
+
+    // łącze stare i nowe dane czatu
+    const oldChatDoc = oldData[0]?.CZAT_KANCELARIA
+      ? oldData[0].CZAT_KANCELARIA
+      : [];
+    const newChat = chatLog?.CZAT_KANCELARIA?.length
+      ? chatLog.CZAT_KANCELARIA
+      : [];
+
+    const mergeChat = [...(oldChatDoc ?? []), ...(newChat ?? [])];
+
+    // łącze stare i nowe dane logów zdarzeń
+    const oldLogDoc = oldData[0]?.CZAT_LOGI ? oldData[0].CZAT_LOGI : [];
+    const newLog = chatLog?.CZAT_LOGI?.length ? chatLog.CZAT_LOGI : [];
+
+    const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
+
+    await connect_SQL.query(
+      "UPDATE company_law_documents SET CZAT_KANCELARIA = ?, CZAT_LOGI = ? WHERE id_document = ?",
+      [
+        mergeChat.length ? JSON.stringify(mergeChat) : null,
+        mergeLog.length ? JSON.stringify(mergeLog) : null,
+        id_document,
+      ]
+    );
+    res.end();
+  } catch (error) {
+    logEvents(
+      `lawPartnerController, changeSingleDocument: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+const acceptDocument = async (req, res) => {
+  const { id_document, acceptDate } = req.body;
+  try {
+    await connect_SQL.query(
+      "UPDATE company_law_documents SET DATA_PRZYJECIA_SPRAWY = ? WHERE id_document = ?",
+      [acceptDate, id_document]
+    );
+    res.end();
+  } catch (error) {
+    logEvents(
+      `lawPartnerController, acceptDocument: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 module.exports = {
+  getDataTable,
   getContractor,
   getSingleDocument,
+  changeSingleDocument,
+  acceptDocument,
 };
