@@ -116,10 +116,25 @@ const changeSingleDocument = async (req, res) => {
     const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
 
     await connect_SQL.query(
-      "UPDATE company_law_documents SET CZAT_KANCELARIA = ?, CZAT_LOGI = ? WHERE id_document = ?",
+      "UPDATE company_law_documents SET CZAT_KANCELARIA = ?, CZAT_LOGI = ?, STATUS_SPRAWY = ?, SYGNATURA_SPRAWY = ?, TERMIN_PRZEDAWNIENIA_ROSZCZENIA = ?, DATA_WYMAGALNOSCI_PLATNOSCI = ?, WYDZIAL_SADU = ?, ORGAN_EGZEKUCYJNY = ?, SYGN_SPRAWY_EGZEKUCYJNEJ = ? WHERE id_document = ?",
       [
         mergeChat.length ? JSON.stringify(mergeChat) : null,
         mergeLog.length ? JSON.stringify(mergeLog) : null,
+        document.STATUS_SPRAWY && document.STATUS_SPRAWY !== "BRAK"
+          ? document.STATUS_SPRAWY
+          : null,
+        document?.SYGNATURA_SPRAWY ? document.SYGNATURA_SPRAWY : null,
+        document?.TERMIN_PRZEDAWNIENIA_ROSZCZENIA
+          ? document.TERMIN_PRZEDAWNIENIA_ROSZCZENIA
+          : null,
+        document?.DATA_WYMAGALNOSCI_PLATNOSCI
+          ? document.DATA_WYMAGALNOSCI_PLATNOSCI
+          : null,
+        document?.WYDZIAL_SADU ? document.WYDZIAL_SADU : null,
+        document?.ORGAN_EGZEKUCYJNY ? document.ORGAN_EGZEKUCYJNY : null,
+        document?.SYGN_SPRAWY_EGZEKUCYJNEJ
+          ? document.SYGN_SPRAWY_EGZEKUCYJNEJ
+          : null,
         id_document,
       ]
     );

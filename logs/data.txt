@@ -15,21 +15,21 @@ DNiKN
 
 kanelaria:
 *** Dłużnik/odbiorca dokumentu sprzedaży *tekst
-- Status sprawy *JSON
+*** Status sprawy *JSON
     EGZEKUCYJNA
     PRZEDSĄDOWA
     RESTRUKTURYZACYJNA
     SĄDOWA
     SĄDOWA/EGZEKUCYJNA
-- Stan sprawy *JSON - chatData
-- termin przedawnienia roszczenia *data
-- Data wymagalności płatności *data
-- Wartość dokumentu sprzedaży *kwota decimal
-- Aktualna kwota zadłużenia *kwota decimal
-- Wydział Sądu  *tekst
-- sygn.sprawy sądowej  *tekst
-- Organ egzekucyjny *tekst
-- Sygn. Sprawy egzekucyjnej *tekst
+*** Stan sprawy *JSON - chatData
+*** termin przedawnienia roszczenia *data
+*** Data wymagalności płatności *data
+*** Wartość dokumentu sprzedaży *kwota decimal
+*** Aktualna kwota zadłużenia *kwota decimal
+*** Wydział Sądu  *tekst
+*** sygn.sprawy sądowej  *tekst
+*** Organ egzekucyjny *tekst
+*** Sygn. Sprawy egzekucyjnej *tekst
 
 
 usuń kolumnę COLUMNS z tabeli company_settings
