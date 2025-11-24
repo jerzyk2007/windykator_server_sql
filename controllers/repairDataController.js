@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS company_law_documents (
     CZAT_KANCELARIA JSON NULL,
     CZAT_LOGI JSON NULL,
     PRIMARY KEY (id_document),
-    UNIQUE KEY unique_doc_firma (NUMER_DOKUMENTU, FIRMA)
+    UNIQUE KEY unique_doc_firma (NUMER_DOKUMENTU)
 );
 `);
     //     await connect_SQL.query(`
@@ -47,18 +47,19 @@ CREATE TABLE IF NOT EXISTS company_law_documents (
     //    ********** UNIQUE KEY unique_doc_firma (NUMER_DOKUMENTU, FIRMA)
     // );
     // `);
+
     await connect_SQL.query(`
-CREATE TABLE IF NOT EXISTS company_law_documents_settlements (
-    id_document_settlements INT NOT NULL AUTO_INCREMENT,
-    NUMER_DOKUMENTU_FK VARCHAR(250) NOT NULL,
-    WYKAZ_SPLACONEJ_KWOTY_FK JSON NULL,
-    SUMA_SPLACONEJ_KWOTY_FK DECIMAL(12,2) NULL,
-     FIRMA VARCHAR(45) NOT NULL,
-    POZOSTALA_NALEZNOSC_FK DECIMAL(12,2) NULL,
-      PRIMARY KEY (id_document_settlements),
-        UNIQUE KEY unique_numer (NUMER_DOKUMENTU_FK)
-);
-`);
+    CREATE TABLE IF NOT EXISTS company_law_documents_settlements (
+        id_document_settlements INT NOT NULL AUTO_INCREMENT,
+        NUMER_DOKUMENTU_FK VARCHAR(250) NOT NULL,
+        WYKAZ_SPLACONEJ_KWOTY_FK JSON NULL,
+        SUMA_SPLACONEJ_KWOTY_FK DECIMAL(12,2) NULL,
+         FIRMA VARCHAR(45) NOT NULL,
+        POZOSTALA_NALEZNOSC_FK DECIMAL(12,2) NULL,
+          PRIMARY KEY (id_document_settlements),
+            UNIQUE KEY unique_numer (NUMER_DOKUMENTU_FK)
+    );
+    `);
 
     await connect_SQL.query(
       "ALTER TABLE company_law_documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
