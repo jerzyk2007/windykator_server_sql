@@ -394,81 +394,6 @@ const updateSettlementDescriptionCompany = async (company) => {
     );
   }
 };
-// pobranie opisów rozrachunków dla KEM
-// const updateSettlementDescriptionKEM = async () => {
-//   const queryMsSql = `SELECT
-//      CASE
-//           WHEN CHARINDEX(' ', tr.[OPIS]) > 0 THEN LEFT(tr.[OPIS], CHARINDEX(' ', tr.[OPIS]) - 1)
-//           ELSE tr.[OPIS]
-//       END AS NUMER_FV,
-//   rozl.[OPIS] AS NUMER_OPIS,
-//   CONVERT(VARCHAR(10), tr.[DATA_ROZLICZENIA], 23) AS [DATA_ROZLICZENIA],
-//   CONVERT(VARCHAR(10), rozl.[DATA], 23) AS DATA_OPERACJI,
-//   rozl.[WARTOSC_SALDO] AS WARTOSC_OPERACJI
-//   FROM     [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].TRANSDOC AS tr
-//   LEFT JOIN    [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[TRANSDOC] AS rozl   ON rozl.[TRANSDOC_EXT_PARENT_ID] = tr.[TRANSDOC_ID]
-//   WHERE rozl.[WARTOSC_SALDO] IS NOT NULL`;
-
-//   try {
-//     const settlementDescription = await msSqlQuery(queryMsSql);
-
-//     const updatedSettlements = Object.values(
-//       settlementDescription.reduce((acc, item) => {
-//         // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
-//         const formattedAmount = (typeof item.WARTOSC_OPERACJI === 'number' && !isNaN(item.WARTOSC_OPERACJI))
-//           ? item.WARTOSC_OPERACJI.toLocaleString('pl-PL', {
-//             minimumFractionDigits: 2,
-//             maximumFractionDigits: 2,
-//             useGrouping: true
-//           })
-//           : 'brak danych';
-
-//         // Pomijanie wpisów, jeśli wszystkie dane są null lub brak danych
-//         if (item.DATA_OPERACJI === null && item.NUMER_OPIS === null && formattedAmount === 'brak danych') {
-//           return acc;
-//         }
-
-//         const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
-//         const newDataRozliczenia = new Date(item.DATA_ROZLICZENIA);
-//         const DATA_OPERACJI = item.DATA_OPERACJI;
-
-//         if (!acc[item.NUMER_FV]) {
-//           // Jeśli jeszcze nie ma wpisu dla tego NUMER_FV, tworzymy nowy obiekt
-//           acc[item.NUMER_FV] = {
-//             NUMER_FV: item.NUMER_FV,
-//             DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
-//             OPIS_ROZRACHUNKU: [description],
-//             COMPANY: 'KEM'
-//           };
-//         } else {
-//           // Jeśli już istnieje obiekt, dodajemy opis
-//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
-
-//           // Porównujemy daty i aktualizujemy na najnowszą (najbliższą dzisiejszej)
-//           const currentDataRozliczenia = new Date(acc[item.NUMER_FV].DATA_ROZLICZENIA);
-//           if (new Date(DATA_OPERACJI) > newDataRozliczenia && !item.DATA_ROZLICZENIA) {
-//             acc[item.NUMER_FV].DATA_ROZLICZENIA = null;
-//           } else if (newDataRozliczenia > currentDataRozliczenia) {
-//             acc[item.NUMER_FV].DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
-//           }
-
-//           // Sortowanie opisów według daty
-//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
-//             const dateA = new Date(a.split(' - ')[0]);
-//             const dateB = new Date(b.split(' - ')[0]);
-//             return dateB - dateA;
-//           });
-//         }
-
-//         return acc;
-//       }, {})
-//     );
-//     return updatedSettlements;
-//   }
-//   catch (error) {
-//     logEvents(`getDataFromMSSQL, updateSettlementDescriptionKEM: ${error}`, "reqServerErrors.txt");
-//   }
-// };
 
 // aktualizacja opisów rozrachunków
 // const updateSettlementDescription = async (companies) => {
@@ -477,16 +402,6 @@ const updateSettlementDescription = async () => {
   const allData = await Promise.all(
     companies.map((company) => updateSettlementDescriptionCompany(company))
   );
-
-  // const allData = await Promise.all(
-  //   companies.map((company) => {
-  //     if (company === "RAC") {
-  //       // dla RAC nic nie robimy, zwracamy pustą tablicę
-  //       return [];
-  //     }
-  //     return updateSettlementDescriptionCompany(company);
-  //   })
-  // );
 
   // Sprawdzenie czy wszystkie wyniki są prawidłowe (czy nie ma np. null lub undefined)
   const isValid = allData.every(
@@ -546,12 +461,6 @@ const updateSettlementDescription = async () => {
 //uruchamiam po kolei aktualizację faktur dla KRT, KEM, RAC
 const updateDocuments = async (companies) => {
   try {
-    // const resultKRT = await addDocumentToDatabase("KRT");
-    // const resultKEM = await addDocumentToDatabase("KEM");
-    // const resultRAC = await addDocumentToDatabase("RAC");
-
-    // const success = resultKRT && resultKEM && resultRAC;
-
     const results = await Promise.all(
       companies.map((company) => addDocumentToDatabase(company))
     );
