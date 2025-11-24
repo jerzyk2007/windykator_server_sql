@@ -502,7 +502,7 @@ const updateSettlementDescription = async () => {
 
   try {
     //dodawanie do mysql dużych pakietów danych, podzielonych na części
-    const batchInsert = async (connection, data, batchSize = 50000) => {
+    const batchInsert = async (connection, data, batchSize = 1000) => {
       for (let i = 0; i < data.length; i += batchSize) {
         const batch = data.slice(i, i + batchSize);
 
