@@ -52,9 +52,9 @@ const newLawPartnerTableSettings = {
   Pracownik: {},
   Kancelaria: {
     size: {},
-    order: ["NUMER_FV", "mrt-row-spacer"],
+    order: ["NUMER_DOKUMENTU", "mrt-row-spacer"],
     pinning: {
-      left: ["NUMER_FV"],
+      left: ["NUMER_DOKUMENTU"],
       right: [],
     },
     visible: {
