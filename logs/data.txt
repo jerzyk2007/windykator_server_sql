@@ -30,3 +30,6 @@ kanelaria:
 - sygn.sprawy sądowej  *tekst
 - Organ egzekucyjny *tekst
 - Sygn. Sprawy egzekucyjnej *tekst
+
+
+usuń kolumnę COLUMNS z tabeli company_settings

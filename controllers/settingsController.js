@@ -25,8 +25,11 @@ const getFilteredDepartments = async (res) => {
 // pobieranie głównych ustawień
 const getSettings = async (req, res) => {
   try {
+    // const [mainSettings] = await connect_SQL.query(
+    //   "SELECT ROLES, COLUMNS, EXT_COMPANY FROM company_settings WHERE id_setting = 1"
+    // );
     const [mainSettings] = await connect_SQL.query(
-      "SELECT ROLES, COLUMNS, EXT_COMPANY FROM company_settings WHERE id_setting = 1"
+      "SELECT ROLES, EXT_COMPANY FROM company_settings WHERE id_setting = 1"
     );
     //zamieniam obiekt json na tablice ze stringami, kazdy klucz to wartość string w tablicy
     const roles = Object.entries(mainSettings[0].ROLES).map(([role]) => role);
@@ -63,7 +66,7 @@ const getSettings = async (req, res) => {
       { roles },
       { departments: uniqueDepartments },
       { departmentsJI: departmentStrings },
-      { columns: mainSettings[0].COLUMNS },
+      // { columns: mainSettings[0].COLUMNS },
       { departmentsFromCJI: depsFromCJI },
       { departmentsFromCompDocs: depsFromCompDocs },
       { company: company[0]?.COMPANY ? company[0].COMPANY : [] },
