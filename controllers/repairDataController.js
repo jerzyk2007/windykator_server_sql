@@ -358,6 +358,7 @@ const update_table_setiings = async () => {
 const rebuildDataBase = async () => {
   try {
     await createLawTable();
+    await createTriggers();
     await deleteBasicUsers();
     await changeTypeColumnPermissions();
     await changeUserTable();
@@ -687,6 +688,129 @@ const updateLawSettlements = async () => {
   }
 };
 
+const copyTableKolumnsPartner = async () => {
+  try {
+    // const [columns] = await connect_SQL.query(
+    //   "SELECT * FROM lokalna_windykacja.company_table_columns WHERE EMPLOYEE = 'Kancelaria'"
+    // );
+
+    const columns = [
+      {
+        id_table_columns: 47,
+        ACCESSOR_KEY: "CZAT_KANCELARIA",
+        HEADER: "Panel komunikacji",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 45,
+        ACCESSOR_KEY: "DATA_PRZEKAZANIA_SPRAWY",
+        HEADER: "Data przekazania sprawy",
+        FILTER_VARIANT: "date-range",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 42,
+        ACCESSOR_KEY: "DATA_PRZYJECIA_DOKUMENTU",
+        HEADER: "Data przyjęcia dokumentu",
+        FILTER_VARIANT: "multi-select",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 43,
+        ACCESSOR_KEY: "DATA_WYSTAWIENIA_DOKUMENTU",
+        HEADER: "Data wystawienia dokumentu",
+        FILTER_VARIANT: "date-range",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 41,
+        ACCESSOR_KEY: "KONTRAHENT",
+        HEADER: "Kontrahent",
+        FILTER_VARIANT: "startsWith",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 44,
+        ACCESSOR_KEY: "KWOTA_BRUTTO_DOKUMENTU",
+        HEADER: "Kwota brutto dokumentu",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 46,
+        ACCESSOR_KEY: "KWOTA_ROSZCZENIA_DO_KANCELARII",
+        HEADER: "Kwota roszczenia",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 40,
+        ACCESSOR_KEY: "NUMER_DOKUMENTU",
+        HEADER: "Numer dokumentu",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+    ];
+
+    for (const col of columns) {
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_table_columns (ACCESSOR_KEY, HEADER, FILTER_VARIANT, TYPE, EMPLOYEE, AREAS) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+          col.ACCESSOR_KEY,
+          col.HEADER,
+          col.FILTER_VARIANT,
+          col.TYPE,
+          col.EMPLOYEE,
+          JSON.stringify(col.AREAS),
+        ]
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const temporaryFunc = async () => {
   try {
     // await createLawTable();
@@ -700,6 +824,8 @@ const temporaryFunc = async () => {
     // console.log("updateLawSettlements");
     // tworzy relacje pomiędzy tabelami
     // await createTableRelations()
+    // wczytanie testowych kolumn dla Kancelarii
+    // await copyTableKolumnsPartner();
   } catch (error) {
     console.error(error);
   }
@@ -711,7 +837,7 @@ const repair = async () => {
     // console.log("repair");
     //
     // chwilowa funkcja
-    await temporaryFunc();
+    // await temporaryFunc();
   } catch (error) {
     console.error(error);
   }
