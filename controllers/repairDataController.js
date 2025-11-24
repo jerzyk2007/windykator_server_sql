@@ -722,8 +722,8 @@ const copyTableKolumnsPartner = async () => {
       },
       {
         id_table_columns: 42,
-        ACCESSOR_KEY: "DATA_PRZYJECIA_DOKUMENTU",
-        HEADER: "Data przyjęcia dokumentu",
+        ACCESSOR_KEY: "DATA_PRZYJECIA_SPRAWY",
+        HEADER: "Data przyjęcia sprawy",
         FILTER_VARIANT: "multi-select",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
