@@ -860,11 +860,35 @@ const copyTableKolumnsPartner = async () => {
         ],
       },
       {
+        id_table_columns: 60,
+        ACCESSOR_KEY: "POZOSTALA_NALEZNOSC_FK",
+        HEADER: "Pozostała należność FK",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
         id_table_columns: 51,
         ACCESSOR_KEY: "STATUS_SPRAWY",
         HEADER: "Status sprawy",
         FILTER_VARIANT: "multi-select",
         TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
+      {
+        id_table_columns: 59,
+        ACCESSOR_KEY: "SUMA_SPLACONEJ_KWOTY_FK",
+        HEADER: "Suma spłaconej kwoty",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
         EMPLOYEE: "Kancelaria",
         AREAS: [
           { name: "Kancelaria Krotoski", available: true },
@@ -919,9 +943,22 @@ const copyTableKolumnsPartner = async () => {
           { name: "Krauze", available: false },
         ],
       },
+      {
+        id_table_columns: 58,
+        ACCESSOR_KEY: "WYKAZ_SPLACONEJ_KWOTY_FK",
+        HEADER: "Wykaz spłaconej kwoty",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [
+          { name: "Kancelaria Krotoski", available: true },
+          { name: "Krauze", available: false },
+        ],
+      },
     ];
 
     for (const col of columns) {
+      // console.log(col);
       await connect_SQL.query(
         "INSERT IGNORE INTO company_table_columns (ACCESSOR_KEY, HEADER, FILTER_VARIANT, TYPE, EMPLOYEE, AREAS) VALUES (?, ?, ?, ?, ?, ?)",
         [

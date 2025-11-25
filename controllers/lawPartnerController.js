@@ -2,7 +2,8 @@ const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
 
 // zapytanie do pobrania danych
-const getDocumentsLawPartner = "SELECT * FROM company_law_documents";
+const getDocumentsLawPartner =
+  "SELECT CLD.id_document, CLD.NUMER_DOKUMENTU, CLD.KONTRAHENT, CLD.NIP_NR, CLD.DATA_PRZYJECIA_SPRAWY, CLD.DATA_WYSTAWIENIA_DOKUMENTU, CLD.KWOTA_BRUTTO_DOKUMENTU, CLD.ODDZIAL, CLD.OPIS_DOKUMENTU, CLD.DATA_PRZEKAZANIA_SPRAWY, CLD.KWOTA_ROSZCZENIA_DO_KANCELARII, CLD.CZAT_KANCELARIA, CLD.STATUS_SPRAWY, CLD.SYGNATURA_SPRAWY, CLD.TERMIN_PRZEDAWNIENIA_ROSZCZENIA, CLD.DATA_WYMAGALNOSCI_PLATNOSCI, CLD.WYDZIAL_SADU, CLD.ORGAN_EGZEKUCYJNY, CLD.SYGN_SPRAWY_EGZEKUCYJNEJ, CLDS.WYKAZ_SPLACONEJ_KWOTY_FK, CLDS.SUMA_SPLACONEJ_KWOTY_FK, CLDS.POZOSTALA_NALEZNOSC_FK FROM company_law_documents as CLD LEFT JOIN company_law_documents_settlements as CLDS ON CLD.NUMER_DOKUMENTU = CLDS.NUMER_DOKUMENTU_FK";
 
 // pobiera dane do tabeli w zaleźności od wywołania
 const getDataTable = async (req, res) => {
@@ -58,8 +59,8 @@ kon.[PESEL]
   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv ON fv.KONTRAHENT_ID = kon.KONTRAHENT_ID
 WHERE fv.[NUMER] = '${docID}'`
     );
-    console.log(contractorData);
-    console.log(docID);
+    // console.log(contractorData);
+    // console.log(docID);
     res.json(contractorData);
   } catch (error) {
     logEvents(
