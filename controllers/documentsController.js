@@ -211,16 +211,17 @@ const changeSingleDocument = async (req, res) => {
     }
     if (lawFirmData.zapisz) {
       await connect_SQL.query(
-        "INSERT IGNORE INTO company_law_documents (NUMER_FV, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA) VALUES (?, ?, ?, ?) ",
+        "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA_DO_KANCELARII, KWOTA_BRUTTO_DOKUMENTU, FIRMA) VALUES (?, ?, ?, ?, ?, ?) ",
         [
           lawFirmData.numerFv,
           lawFirmData.kontrahent,
           lawFirmData.kancelaria,
           lawFirmData.kwotaRoszczenia,
+          lawFirmData.kwota_brutto,
+          lawFirmData.firma,
         ]
       );
     }
-
     res.end();
   } catch (error) {
     logEvents(
@@ -284,7 +285,8 @@ const getSingleDocument = async (req, res) => {
     D.VIN, D.FIRMA, DA.*, SD.OPIS_ROZRACHUNKU,  SD.DATA_ROZL_AS, datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, 
     ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT',ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', 
     IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, JI.area AS AREA, UPPER(R.FIRMA_ZEWNETRZNA) AS JAKA_KANCELARIA, 
-    R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL, MD.NUMER_FV AS MARK_FV, MD.RAPORT_FK AS MARK_FK
+    R.STATUS_AKTUALNY, FZAL.FV_ZALICZKOWA, FZAL.KWOTA_BRUTTO AS KWOTA_FV_ZAL, MD.NUMER_FV AS MARK_FV, MD.RAPORT_FK AS MARK_FK,
+    CLD.DATA_PRZEKAZANIA_SPRAWY AS DATA_PRZEKAZANIA_SPRAWY_DO_KANCELARII
     FROM company_documents AS D 
     LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id 
     LEFT JOIN company_settlements_description AS SD ON D.NUMER_FV = SD.NUMER AND D.FIRMA = SD.COMPANY
@@ -294,6 +296,7 @@ const getSingleDocument = async (req, res) => {
     LEFT JOIN company_fv_zaliczkowe AS FZAL ON D.NUMER_FV = FZAL.NUMER_FV AND D.FIRMA = FZAL.COMPANY
     LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY
     LEFT JOIN company_fk_settlements AS FS ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA
+    LEFT JOIN company_law_documents AS CLD ON D.NUMER_FV = CLD.NUMER_DOKUMENTU AND D.FIRMA = CLD.FIRMA
     WHERE D.id_document = ?`,
       [id_document]
     );
@@ -304,7 +307,7 @@ const getSingleDocument = async (req, res) => {
     );
 
     const [extLaw] = await connect_SQL.query(
-      "SELECT EXT_COMPANY FROM lokalna_windykacja.company_settings;"
+      "SELECT EXT_COMPANY FROM company_settings;"
     );
 
     res.json({

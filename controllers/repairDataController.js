@@ -321,7 +321,8 @@ const company_setting_columns = async () => {
       KANCELARIA: [],
     };
 
-    const extCompany = ["Kancelaria Krotoski", "Krauze"];
+    // const extCompany = ["Kancelaria Krotoski", "Krauze"];
+    const extCompany = ["Kancelaria Krotoski"];
 
     await connect_SQL.query(
       "UPDATE company_settings SET COLUMNS = ?, EXT_COMPANY = ? WHERE id_setting = 1",
@@ -699,7 +700,7 @@ const updateLawSettlements = async () => {
 const copyTableKolumnsPartner = async () => {
   try {
     // const [columns] = await connect_SQL.query(
-    //   "SELECT * FROM lokalna_windykacja.company_table_columns WHERE EMPLOYEE = 'Kancelaria'"
+    //   "SELECT * FROM company_table_columns WHERE EMPLOYEE = 'Kancelaria'"
     // );
 
     const columns = [
