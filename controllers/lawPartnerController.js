@@ -148,11 +148,11 @@ const changeSingleDocument = async (req, res) => {
 };
 
 const acceptDocument = async (req, res) => {
-  const { id_document, acceptDate } = req.body;
+  const { id_document, acceptDate, note } = req.body;
   try {
     await connect_SQL.query(
-      "UPDATE company_law_documents SET DATA_PRZYJECIA_SPRAWY = ? WHERE id_document = ?",
-      [acceptDate, id_document]
+      "UPDATE company_law_documents SET DATA_PRZYJECIA_SPRAWY = ?, CZAT_LOGI = ? WHERE id_document = ?",
+      [acceptDate, JSON.stringify([note]), id_document]
     );
     res.end();
   } catch (error) {
