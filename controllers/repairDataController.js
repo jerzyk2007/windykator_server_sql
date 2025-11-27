@@ -379,11 +379,11 @@ const repairCompanyUpdatesTable = async () => {
     // const updateItems = [...getUpdatesData, newItem];
 
     // *********************
-
+    //     await connect_SQL.query(
+    //   "ALTER TABLE company_updates MODIFY COLUMN DATA_NAME VARCHAR(45) NOT NULL, ADD UNIQUE INDEX DATA_NAME_UNIQUE (DATA_NAME)"
+    // );
+    console.log("repairCompanyUpdatesTable");
     await connect_SQL.query("TRUNCATE TABLE company_updates");
-    await connect_SQL.query(
-      "ALTER TABLE company_updates MODIFY COLUMN DATA_NAME VARCHAR(45) NOT NULL, ADD UNIQUE INDEX DATA_NAME_UNIQUE (DATA_NAME)"
-    );
 
     const updateItems = [
       {
@@ -813,10 +813,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 45,
@@ -825,10 +822,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "date-range",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 42,
@@ -837,10 +831,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "multi-select",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 54,
@@ -849,10 +840,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "date-range",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 43,
@@ -861,10 +849,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "date-range",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 41,
@@ -873,10 +858,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "startsWith",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 44,
@@ -885,10 +867,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "money",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 46,
@@ -897,10 +876,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "money",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 48,
@@ -909,10 +885,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "startsWith",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 40,
@@ -921,10 +894,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 49,
@@ -933,10 +903,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "multi-select",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 50,
@@ -945,10 +912,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 56,
@@ -957,10 +921,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 60,
@@ -969,10 +930,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "money",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 51,
@@ -981,10 +939,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "multi-select",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 59,
@@ -993,10 +948,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "money",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 57,
@@ -1005,10 +957,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 52,
@@ -1017,10 +966,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 53,
@@ -1029,10 +975,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "date-range",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 55,
@@ -1041,10 +984,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
       {
         id_table_columns: 58,
@@ -1053,10 +993,7 @@ const copyTableKolumnsPartner = async () => {
         FILTER_VARIANT: "none",
         TYPE: "text",
         EMPLOYEE: "Kancelaria",
-        AREAS: [
-          { name: "Kancelaria Krotoski", available: true },
-          { name: "Krauze", available: false },
-        ],
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
       },
     ];
 
