@@ -364,22 +364,124 @@ const update_table_setiings = async () => {
   }
 };
 
+const repairCompanyUpdatesTable = async () => {
+  try {
+    // const [getUpdatesData] = await connect_SQL.query(
+    //   "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
+    // );
+    // const newItem = {
+    //   DATA_NAME: "Wpłaty dla spraw w Kancelarii Krotoski.",
+    //   DATE: "2025-11-24",
+    //   HOUR: "06:32",
+    //   UPDATE_SUCCESS: "",
+    // };
+
+    // const updateItems = [...getUpdatesData, newItem];
+
+    // *********************
+
+    await connect_SQL.query("TRUNCATE TABLE company_updates");
+    await connect_SQL.query(
+      "ALTER TABLE company_updates MODIFY COLUMN DATA_NAME VARCHAR(45) NOT NULL, ADD UNIQUE INDEX DATA_NAME_UNIQUE (DATA_NAME)"
+    );
+
+    const updateItems = [
+      {
+        DATA_NAME: "Faktury",
+        DATE: "2025-11-24",
+        HOUR: "06:32",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Wydania samochodów",
+        DATE: "2025-11-24",
+        HOUR: "06:32",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Rozrachunki",
+        DATE: "2025-11-24",
+        HOUR: "06:30",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Opisy rozrachunków",
+        DATE: "2025-11-24",
+        HOUR: "06:49",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Rozliczenia Symfonia",
+        DATE: "2025-11-24",
+        HOUR: "06:32",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Rubicon",
+        DATE: "2025-11-24",
+        HOUR: "06:56",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "BeCared",
+        DATE: "2025-11-24",
+        HOUR: "07:06",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Dokumenty Raportu FK - KRT",
+        DATE: "2025-11-24",
+        HOUR: "07:21",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Dokumenty Raportu FK - KEM",
+        DATE: "2025-10-26",
+        HOUR: "17:59",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Dokumenty Raportu FK - RAC",
+        DATE: null,
+        HOUR: null,
+        UPDATE_SUCCESS: null,
+      },
+      {
+        DATA_NAME: "Wpłaty dla spraw w Kancelarii Krotoski",
+        DATE: "2025-11-27",
+        HOUR: "11:18",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+    ];
+
+    for (const doc of updateItems) {
+      connect_SQL.query(
+        "INSERT IGNORE INTO company_updates (DATA_NAME, DATE, HOUR, UPDATE_SUCCESS) VALUES (?, ?, ?, ?)",
+        [doc.DATA_NAME, doc.DATE, doc.HOUR, doc.UPDATE_SUCCESS]
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const rebuildDataBase = async () => {
   try {
-    await createLawTable();
-    await createTriggers();
-    await deleteBasicUsers();
-    await changeTypeColumnPermissions();
-    await changeUserTable();
-    //
-    //
-    await changePermissionsTableSettings();
-    await deleteDepartmentsColumn();
-    await company_password_resets_Change();
-    await company_fk_raport_excel_Change();
-    await company_table_columns_Change();
-    await company_setting_columns();
-    await update_table_setiings();
+    // await createLawTable();
+    // await createTriggers();
+    // await deleteBasicUsers();
+    // await changeTypeColumnPermissions();
+    // await changeUserTable();
+    // //
+    // //
+    // await changePermissionsTableSettings();
+    // await deleteDepartmentsColumn();
+    // await company_password_resets_Change();
+    // await company_fk_raport_excel_Change();
+    // await company_table_columns_Change();
+    // await company_setting_columns();
+    // await update_table_setiings();
+    // await repairCompanyUpdatesTable();
     console.log("finish");
   } catch (error) {
     console.error(error);

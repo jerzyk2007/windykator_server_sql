@@ -396,7 +396,6 @@ const updateSettlementDescriptionCompany = async (company) => {
 };
 
 // aktualizacja opisów rozrachunków
-// const updateSettlementDescription = async (companies) => {
 const updateSettlementDescription = async () => {
   const companies = ["KRT", "KEM"];
   const allData = await Promise.all(
@@ -452,6 +451,127 @@ const updateSettlementDescription = async () => {
   } catch (error) {
     logEvents(
       `getDataFromMSSQL, updateSettlementDescription: ${error}`,
+      "reqServerErrors.txt"
+    );
+    return false;
+  }
+};
+
+// aktualizacja wpłat dla kancelarii Krotoski
+const updateLegalCasePayments = async () => {
+  try {
+    const [docs] = await connect_SQL.query(
+      "SELECT distinct NUMER_DOKUMENTU FROM company_law_documents"
+    );
+
+    const sqlCondition =
+      docs?.length > 0
+        ? `(${docs
+            .map((dep) => `r.dsymbol = '${dep.NUMER_DOKUMENTU}' `)
+            .join(" OR ")})`
+        : null;
+
+    await msSqlQuery("TRUNCATE TABLE [rapdb].dbo.fkkomandytowams");
+
+    await msSqlQuery(
+      `
+        INSERT INTO [rapdb].dbo.fkkomandytowams
+        SELECT DISTINCT
+            GETDATE() AS smf_stan_na_dzien,
+            'N' AS smf_typ,
+            r.dsymbol AS smf_numer,
+            r1.dsymbol,
+            r1.kwota AS kwota_platnosci,
+            CAST(r1.data AS DATE) AS data_platnosci,
+            r.kwota AS kwota_faktury,
+            CAST(
+                (CASE WHEN r.strona = 0 THEN r.kwota ELSE r.kwota * (-1) END)
+                + SUM(ISNULL(CASE WHEN r1.strona = 0 THEN r1.kwota ELSE r1.kwota * (-1) END, 0))
+                    OVER (PARTITION BY r.id)
+            AS MONEY) AS naleznosc,
+            CAST(r.dataokr AS DATE) AS smf_data_otwarcia_rozrachunku
+        FROM [fkkomandytowa].[FK].[rozrachunki] r
+        LEFT JOIN [fkkomandytowa].[FK].[rozrachunki] r1
+            ON r.id = r1.transakcja
+            AND ISNULL(r1.czyrozliczenie, 0) = 1
+            AND ISNULL(r1.dataokr, 0) <= GETDATE()
+        WHERE
+            r.czyrozliczenie = 0
+            AND CAST(r.dataokr AS DATE) BETWEEN '2001-01-01' AND GETDATE()
+            AND ${sqlCondition}
+
+      `
+    );
+
+    // 4. Pobierz to, co zostało zapisane
+    const settlementDescription = await msSqlQuery(`
+        SELECT *
+        FROM [rapdb].dbo.fkkomandytowams
+    `);
+
+    // console.log(settlementDescription.length);
+
+    const result = [];
+
+    settlementDescription.forEach((item) => {
+      const key = item.smf_numer;
+
+      // czy już istnieje dokument z tym numerem
+      let existing = result.find((r) => r.NUMER_DOKUMENTU === key);
+
+      // format daty yyyy-mm-dd
+      const formatDate = (date) =>
+        date ? new Date(date).toISOString().slice(0, 10) : null;
+
+      const paymentObj = {
+        data: formatDate(item.data_platnosci),
+        symbol: item.dsymbol,
+        kwota: item["kwota_platności"],
+        // kwota_faktury: item.kwota_faktury,
+      };
+
+      if (!existing) {
+        // tworzymy nowy dokument
+        result.push({
+          NUMER_DOKUMENTU: key,
+          WYKAZ_SPLACONEJ_KWOTY: item["kwota_platności"] ? [paymentObj] : [],
+          SUMA: item["kwota_platności"] || 0,
+          NALEZNOSC: item["naleznosc"] || 0,
+        });
+      } else {
+        // dopisujemy płatność jeśli istnieje
+        if (item["kwota_platności"]) {
+          existing.WYKAZ_SPLACONEJ_KWOTY.push(paymentObj);
+          existing.SUMA += item["kwota_platności"];
+        }
+      }
+    });
+
+    // 🔽 SORTOWANIE WYKAZ_SPLACONEJ_KWOTY według daty (najnowsze na górze)
+    result.forEach((doc) => {
+      doc.WYKAZ_SPLACONEJ_KWOTY.sort((a, b) => {
+        if (!a.data) return 1;
+        if (!b.data) return -1;
+        return new Date(b.data) - new Date(a.data); // malejąco
+      });
+    });
+    await connect_SQL.query("TRUNCATE TABLE company_law_documents_settlements");
+    for (const doc of result) {
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_law_documents_settlements (NUMER_DOKUMENTU_FK, WYKAZ_SPLACONEJ_KWOTY_FK, SUMA_SPLACONEJ_KWOTY_FK, POZOSTALA_NALEZNOSC_FK) VALUES (?, ?, ?, ?)",
+        [
+          doc.NUMER_DOKUMENTU,
+          JSON.stringify(doc.WYKAZ_SPLACONEJ_KWOTY),
+          doc.SUMA,
+          doc.NALEZNOSC,
+        ]
+      );
+    }
+
+    return true;
+  } catch (error) {
+    logEvents(
+      `getDataFromMSSQL, updateLegalCasePayments: ${error}`,
       "reqServerErrors.txt"
     );
     return false;
@@ -610,6 +730,25 @@ const updateData = async () => {
       .catch((error) => {
         logEvents(
           `getDataFromMSSQL - updateSettlementDescription, getData: ${error}`,
+          "reqServerErrors.txt"
+        );
+      });
+
+    updateLegalCasePayments()
+      .then((result) => {
+        connect_SQL.query(
+          "UPDATE company_updates SET DATE = ?, HOUR = ?, UPDATE_SUCCESS = ? WHERE DATA_NAME = ?",
+          [
+            checkDate(new Date()),
+            checkTime(new Date()),
+            result ? "Zaktualizowano." : "Błąd aktualizacji",
+            "Wpłaty dla spraw w Kancelarii Krotoski",
+          ]
+        );
+      })
+      .catch((error) => {
+        logEvents(
+          `getDataFromMSSQL - updateLegalCasePayments, getData: ${error}`,
           "reqServerErrors.txt"
         );
       });
