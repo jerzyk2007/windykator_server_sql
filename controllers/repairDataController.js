@@ -68,11 +68,39 @@ CREATE TABLE IF NOT EXISTS company_law_documents (
     );
     `);
 
+    await connect_SQL.query(`
+    CREATE TABLE IF NOT EXISTS company_insurance_documents (
+        id_document INT NOT NULL AUTO_INCREMENT,
+        NUMER_POLISY VARCHAR(45) NOT NULL,
+        DATA_WYSTAWIENIA DATE NOT NULL,
+        UBEZPIECZYCIEL VARCHAR(45) NOT NULL,
+        KONTRAHENT VARCHAR(500) NOT NULL,
+        DZIAL VARCHAR(45) NOT NULL,
+        DATA_PRZEKAZANIA DATE NOT NULL,
+        FAKTURA_NR VARCHAR(45) NOT NULL,
+        STATUS JSON NULL,
+        OW DATE NULL,
+        NIP VARCHAR(45) NULL,
+        KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL,
+        OSOBA_ZLECAJACA_WINDYKACJE VARCHAR(45) NOT NULL,
+        KONTAKT_DO_KLIENTA JSON NULL,
+        NR_KONTA VARCHAR(45) NOT NULL,
+        CZAT JSON NULL,
+        LOGI_ZDARZEN JSON NULL,
+          PRIMARY KEY (id_document),
+            UNIQUE KEY unique_numer (NUMER_POLISY)
+    );
+    `);
+
     await connect_SQL.query(
       "ALTER TABLE company_law_documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
     );
     await connect_SQL.query(
       "ALTER TABLE company_law_documents_settlements CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
+    );
+
+    await connect_SQL.query(
+      "ALTER TABLE company_insurance_documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
     );
   } catch (error) {
     console.error(error);
@@ -476,21 +504,21 @@ const repairCompanyUpdatesTable = async () => {
 
 const rebuildDataBase = async () => {
   try {
-    await createLawTable();
-    await createTriggers();
-    await deleteBasicUsers();
-    await changeTypeColumnPermissions();
-    await changeUserTable();
+    // await createLawTable();
+    // await createTriggers();
+    // await deleteBasicUsers();
+    // await changeTypeColumnPermissions();
+    // await changeUserTable();
     //
     //
-    await changePermissionsTableSettings();
-    await deleteDepartmentsColumn();
-    await company_password_resets_Change();
-    await company_fk_raport_excel_Change();
-    await company_table_columns_Change();
-    await company_setting_columns();
-    await update_table_setiings();
-    await repairCompanyUpdatesTable();
+    // await changePermissionsTableSettings();
+    // await deleteDepartmentsColumn();
+    // await company_password_resets_Change();
+    // await company_fk_raport_excel_Change();
+    // await company_table_columns_Change();
+    // await company_setting_columns();
+    // await update_table_setiings();
+    // await repairCompanyUpdatesTable();
     console.log("finish");
   } catch (error) {
     console.error(error);
@@ -1048,11 +1076,11 @@ const temporaryFunc = async () => {
 const repair = async () => {
   try {
     // await rebuildDataBase();
-    // console.log("repair");
+    // console.log("rebuildDataBase");
     //
     // chwilowa funkcja
     // await temporaryFunc();
-    console.log("temporaryFunc");
+    // console.log("temporaryFunc");
   } catch (error) {
     console.error(error);
   }
