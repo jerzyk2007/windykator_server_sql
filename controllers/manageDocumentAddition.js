@@ -115,11 +115,12 @@ const generatePassword = async (length = 12) => {
 };
 
 const userProfile = (profile) => {
-  return profile === "insider"
-    ? "Pracownik"
-    : profile === "partner"
-    ? "Kancelaria"
-    : "";
+  const selectProfile = {
+    insider: "Pracownik",
+    partner: "Kancelaria",
+    insurance: "Polisy",
+  };
+  return selectProfile[profile];
 };
 
 module.exports = {

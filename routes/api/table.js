@@ -7,20 +7,25 @@ const verifyRoles = require("../../middleware/verifyRoles");
 router
   .route("/change-table-columns")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     table.changeTableColumns
   );
 router
   .route("/delete-table-columns/:id/:permission")
   .delete(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     table.deleteTableColumn
   );
 
 router
   .route("/get-table-columns")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
+    verifyRoles(
+      ROLES_LIST.User,
+      ROLES_LIST.Editor,
+      ROLES_LIST.DNiKN,
+      ROLES_LIST.SuperAdmin
+    ),
     table.getTableColumns
   );
 
@@ -31,6 +36,8 @@ router
       ROLES_LIST.User,
       ROLES_LIST.Editor,
       ROLES_LIST.LawPartner,
+      ROLES_LIST.Insurance,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.SuperAdmin
     ),
     table.getSettingsColumnsTable

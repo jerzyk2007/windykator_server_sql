@@ -167,18 +167,22 @@ const changeUserTable = async () => {
       const tableSettings = {
         Pracownik: user.tableSettings,
         Kancelaria: {},
+        Polisy: {},
       };
       const raportSettings = {
         Pracownik: user.raportSettings,
         Kancelaria: {},
+        Polisy: {},
       };
       const departments = {
         Pracownik: [...user.departments],
         Kancelaria: [],
+        Polisy: [],
       };
       const columns = {
         Pracownik: [...user.columns],
         Kancelaria: [],
+        Polisy: [],
       };
       await connect_SQL.query(
         "UPDATE company_users SET tableSettings = ?, raportSettings = ?, departments = ?, columns = ? WHERE id_user = ?",
@@ -208,6 +212,7 @@ const changePermissionsTableSettings = async () => {
       FK_KEM: 201,
       FK_RAC: 202,
       Nora: 300,
+      Insurance: 350,
       Raports: 400,
       LawPartner: 500,
       Admin: 1000,
@@ -215,7 +220,10 @@ const changePermissionsTableSettings = async () => {
     };
     await connect_SQL.query(
       "UPDATE company_settings SET permissions = ?,  roles = ?",
-      [JSON.stringify(["Pracownik", "Kancelaria"]), JSON.stringify(roles)]
+      [
+        JSON.stringify(["Pracownik", "Kancelaria", "Polisy"]),
+        JSON.stringify(roles),
+      ]
     );
   } catch (error) {
     console.error(error);
@@ -353,6 +361,7 @@ const update_table_setiings = async () => {
     );
     for (const user of userTableSettings) {
       user.tableSettings["Kancelaria"] = tableLawPartnerSettings;
+      user.tableSettings["Polisy"] = tableLawPartnerSettings;
 
       await connect_SQL.query(
         "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
@@ -379,9 +388,9 @@ const repairCompanyUpdatesTable = async () => {
     // const updateItems = [...getUpdatesData, newItem];
 
     // *********************
-    //     await connect_SQL.query(
-    //   "ALTER TABLE company_updates MODIFY COLUMN DATA_NAME VARCHAR(45) NOT NULL, ADD UNIQUE INDEX DATA_NAME_UNIQUE (DATA_NAME)"
-    // );
+    await connect_SQL.query(
+      "ALTER TABLE company_updates MODIFY COLUMN DATA_NAME VARCHAR(45) NOT NULL, ADD UNIQUE INDEX DATA_NAME_UNIQUE (DATA_NAME)"
+    );
     console.log("repairCompanyUpdatesTable");
     await connect_SQL.query("TRUNCATE TABLE company_updates");
 
@@ -467,21 +476,21 @@ const repairCompanyUpdatesTable = async () => {
 
 const rebuildDataBase = async () => {
   try {
-    // await createLawTable();
-    // await createTriggers();
-    // await deleteBasicUsers();
-    // await changeTypeColumnPermissions();
-    // await changeUserTable();
-    // //
-    // //
-    // await changePermissionsTableSettings();
-    // await deleteDepartmentsColumn();
-    // await company_password_resets_Change();
-    // await company_fk_raport_excel_Change();
-    // await company_table_columns_Change();
-    // await company_setting_columns();
-    // await update_table_setiings();
-    // await repairCompanyUpdatesTable();
+    await createLawTable();
+    await createTriggers();
+    await deleteBasicUsers();
+    await changeTypeColumnPermissions();
+    await changeUserTable();
+    //
+    //
+    await changePermissionsTableSettings();
+    await deleteDepartmentsColumn();
+    await company_password_resets_Change();
+    await company_fk_raport_excel_Change();
+    await company_table_columns_Change();
+    await company_setting_columns();
+    await update_table_setiings();
+    await repairCompanyUpdatesTable();
     console.log("finish");
   } catch (error) {
     console.error(error);
@@ -1018,19 +1027,19 @@ const copyTableKolumnsPartner = async () => {
 
 const temporaryFunc = async () => {
   try {
-    // await createLawTable();
-    // console.log("createLawTable");
-    // await createTriggers();
-    // console.log("createTriggers");
-    // await addDataToLawDocuments();
-    // console.log("addDataToLawDocuments");
-    //pobiera Wartość spłaconej kwoty
-    // await updateLawSettlements();
-    // console.log("updateLawSettlements");
+    await createLawTable();
+    console.log("createLawTable");
+    await createTriggers();
+    console.log("createTriggers");
+    await addDataToLawDocuments();
+    console.log("addDataToLawDocuments");
+    // pobiera Wartość spłaconej kwoty
+    await updateLawSettlements();
+    console.log("updateLawSettlements");
     // tworzy relacje pomiędzy tabelami
-    // await createTableRelations()
+    await createTableRelations();
     // wczytanie testowych kolumn dla Kancelarii
-    // await copyTableKolumnsPartner();
+    await copyTableKolumnsPartner();
   } catch (error) {
     console.error(error);
   }
@@ -1043,6 +1052,7 @@ const repair = async () => {
     //
     // chwilowa funkcja
     // await temporaryFunc();
+    console.log("temporaryFunc");
   } catch (error) {
     console.error(error);
   }

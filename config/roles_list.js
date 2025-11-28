@@ -8,6 +8,7 @@ const ROLES_LIST = {
   FK_KEM: 201,
   FK_RAC: 202,
   Nora: 300,
+  Insurance: 350,
   Raports: 400,
   LawPartner: 500,
   Admin: 1000,

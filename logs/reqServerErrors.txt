@@ -1,0 +1,5 @@
+20251128	11:07:58	insuranceController, getSingleDocument: Error: Unknown column 'id_document' in 'where clause'
+20251128	11:08:33	insuranceController, getSingleDocument: Error: Unknown column 'id_document' in 'where clause'
+20251128	11:08:35	insuranceController, getSingleDocument: Error: Unknown column 'id_document' in 'where clause'
+20251128	11:08:50	insuranceController, getSingleDocument: Error: Unknown column 'id_document' in 'where clause'
+20251128	11:09:47	insuranceController, getSingleDocument: Error: Unknown column 'id_document' in 'where clause'

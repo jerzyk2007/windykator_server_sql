@@ -5,7 +5,7 @@ const { userProfile } = require("./manageDocumentAddition");
 const syncColumns = async (permission) => {
   try {
     const [userTableColumns] = await connect_SQL.query(
-      `SELECT id_user, columns, departments, tableSettings, permissions FROM company_users`
+      `SELECT id_user, columns, departments, roles, tableSettings, permissions FROM company_users`
     );
     for (const user of userTableColumns) {
       if (
@@ -22,11 +22,13 @@ const syncColumns = async (permission) => {
         permission === "Kancelaria" &&
         user.departments["Kancelaria"]?.length
       ) {
-        await verifyUserLawPartnerConfig(
+        await prepareColumnConfigForUser(
           user.id_user,
-          permission,
-          user.departments["Kancelaria"]
+          permission
+          // user.departments["Kancelaria"]
         );
+      } else if (permission === "Polisy" && user.roles?.Insurance) {
+        await prepareColumnConfigForUser(user.id_user, permission);
       }
     }
   } catch (error) {
@@ -225,9 +227,9 @@ const verifyUserTableConfig = async (id_user, permission, newDeps) => {
 };
 
 // funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika-zewnętrznego i dopasowująca nowe po zmianie dostępu do kancelarii
-const verifyUserLawPartnerConfig = async (id_user, permission, lawPartner) => {
+const prepareColumnConfigForUser = async (id_user, permission) => {
   try {
-    if (!lawPartner.length) return;
+    // if (!lawPartner.length) return;
     const [userData] = await connect_SQL.query(
       "SELECT departments, tableSettings, columns  FROM company_users WHERE id_user = ?",
       [id_user]
@@ -241,10 +243,14 @@ const verifyUserLawPartnerConfig = async (id_user, permission, lawPartner) => {
     );
 
     //  1️⃣ //  sprawdzam jakie kolumny powinny byc przypisane do usera
-    const trueDepartments = departments[permission]
-      .filter((obj) => Object.values(obj)[0] === true)
-      .map((obj) => Object.keys(obj)[0]);
-
+    let trueDepartments = [];
+    if (permission === "Kancelaria") {
+      trueDepartments = departments[permission]
+        .filter((obj) => Object.values(obj)[0] === true)
+        .map((obj) => Object.keys(obj)[0]);
+    } else if (permission === "Polisy") {
+      trueDepartments = ["Polisy"];
+    }
     const newUserColumns = columnsFromSettings.filter((col) =>
       col.AREAS.some(
         (area) => trueDepartments.includes(area.name) && area.available
@@ -332,14 +338,13 @@ const verifyUserLawPartnerConfig = async (id_user, permission, lawPartner) => {
     // nie zmieniamy
 
     tableSettings[permission] = cleanedSettings;
-
     await connect_SQL.query(
       "UPDATE company_users SET columns = ?, tableSettings = ? WHERE id_user = ?",
       [JSON.stringify(columns), JSON.stringify(tableSettings), id_user]
     );
   } catch (error) {
     logEvents(
-      `tableController, verifyUserLawPartnerConfig: ${error}`,
+      `tableController, prepareColumnConfigForUser: ${error}`,
       "reqServerErrors.txt"
     );
   }
@@ -395,7 +400,7 @@ const changeTableColumns = async (req, res) => {
     //     permission === "Kancelaria" &&
     //     user.departments["Kancelaria"]?.length
     //   ) {
-    //     await verifyUserLawPartnerConfig(
+    //     await prepareColumnConfigForUser(
     //       user.id_user,
     //       permission,
     //       user.departments["Kancelaria"]
@@ -462,9 +467,9 @@ const getTableColumns = async (req, res) => {
       "SELECT AREA FROM company_area_items"
     );
     const filteredAreas = areas.map((item) => item.AREA);
-
     grouped.Pracownik.areas = filteredAreas;
     grouped.Kancelaria.areas = permissions[0].EXT_COMPANY || [];
+    grouped.Polisy.areas = ["Polisy"];
     res.json({
       permissions: permissions[0].PERMISSIONS || [],
       employees: grouped,
@@ -506,7 +511,7 @@ const getSettingsColumnsTable = async (req, res) => {
 
 module.exports = {
   verifyUserTableConfig,
-  verifyUserLawPartnerConfig,
+  prepareColumnConfigForUser,
   changeTableColumns,
   deleteTableColumn,
   getTableColumns,

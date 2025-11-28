@@ -59,8 +59,6 @@ kon.[PESEL]
   LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv ON fv.KONTRAHENT_ID = kon.KONTRAHENT_ID
 WHERE fv.[NUMER] = '${docID}'`
     );
-    // console.log(contractorData);
-    // console.log(docID);
     res.json(contractorData);
   } catch (error) {
     logEvents(

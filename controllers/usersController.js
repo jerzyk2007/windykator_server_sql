@@ -12,7 +12,7 @@ const {
 } = require("../config/userSettings");
 const {
   verifyUserTableConfig,
-  verifyUserLawPartnerConfig,
+  prepareColumnConfigForUser,
 } = require("./tableController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { sendEmail } = require("./mailController");
@@ -309,7 +309,7 @@ const changeLawPartner = async (req, res) => {
         "UPDATE company_users SET departments = ? WHERE id_user = ?",
         [JSON.stringify(departments[0].departments), id_user]
       );
-      await verifyUserLawPartnerConfig(
+      await prepareColumnConfigForUser(
         id_user,
         (permission = "Kancelaria"),
         lawPartner
@@ -432,11 +432,12 @@ const changeUserRoles = async (req, res) => {
   const newRoles = { ...ROLES_LIST };
   // dodaję rolę STart, ktróra jest podstawowa do uruchomienia programu przez usera
   const userRoles = [...roles, "Start"];
-
   const filteredRoles = Object.fromEntries(
     Object.entries(newRoles).filter(([key]) => userRoles.includes(key))
   );
-
+  if (roles.includes("Insurance")) {
+    await prepareColumnConfigForUser(id_user, "Polisy");
+  }
   try {
     const [result] = await connect_SQL.query(
       "UPDATE company_users SET roles = ? WHERE id_user = ?",

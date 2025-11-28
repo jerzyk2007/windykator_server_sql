@@ -509,8 +509,6 @@ const updateLegalCasePayments = async () => {
         FROM [rapdb].dbo.fkkomandytowams
     `);
 
-    // console.log(settlementDescription.length);
-
     const result = [];
 
     settlementDescription.forEach((item) => {
