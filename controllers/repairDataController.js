@@ -492,7 +492,7 @@ const repairCompanyUpdatesTable = async () => {
     ];
 
     for (const doc of updateItems) {
-      connect_SQL.query(
+      await connect_SQL.query(
         "INSERT IGNORE INTO company_updates (DATA_NAME, DATE, HOUR, UPDATE_SUCCESS) VALUES (?, ?, ?, ?)",
         [doc.DATA_NAME, doc.DATE, doc.HOUR, doc.UPDATE_SUCCESS]
       );
@@ -688,9 +688,12 @@ const addDataToLawDocuments = async () => {
 
 const updateLawSettlements = async () => {
   try {
+    console.log("docs");
+
     const [docs] = await connect_SQL.query(
       "SELECT distinct NUMER_DOKUMENTU FROM company_law_documents"
     );
+    console.log(docs);
 
     const sqlCondition =
       docs?.length > 0
@@ -698,7 +701,7 @@ const updateLawSettlements = async () => {
             .map((dep) => `r.dsymbol = '${dep.NUMER_DOKUMENTU}' `)
             .join(" OR ")})`
         : null;
-
+    console.log(sqlCondition);
     await msSqlQuery("TRUNCATE TABLE [rapdb].dbo.fkkomandytowams");
 
     await msSqlQuery(
@@ -737,7 +740,7 @@ const updateLawSettlements = async () => {
         FROM [rapdb].dbo.fkkomandytowams
     `);
 
-    // console.log(settlementDescription.length);
+    console.log(settlementDescription.length);
 
     const result = [];
 
@@ -784,42 +787,8 @@ const updateLawSettlements = async () => {
       });
     });
 
-    const testData = [
-      {
-        NUMER_DOKUMENTU: "FV/MN/17376/25/A/D447",
-        WYKAZ_SPLACONEJ_KWOTY: [],
-        SUMA: 0,
-        NALEZNOSC: 8868.8,
-      },
-      {
-        NUMER_DOKUMENTU: "FV/MN/20211/25/S/D7",
-        WYKAZ_SPLACONEJ_KWOTY: [],
-        SUMA: 0,
-        NALEZNOSC: 3508.84,
-      },
-      {
-        NUMER_DOKUMENTU: "FV/UBL/671/25/A/D8",
-        WYKAZ_SPLACONEJ_KWOTY: [
-          { data: "2025-07-25", symbol: "KP/DC/915/25/V/D17", kwota: 850.69 },
-        ],
-        SUMA: 850.69,
-        NALEZNOSC: 8248.02,
-      },
-      {
-        NUMER_DOKUMENTU: "FV/UP/5298/18/D6",
-        WYKAZ_SPLACONEJ_KWOTY: [
-          { data: "2018-12-31", symbol: "PK 554/12/18", kwota: 2000 },
-          { data: "2018-11-08", symbol: "WBRA 217/11/2018", kwota: 827.46 },
-          { data: "2018-11-05", symbol: "WBRE 214/11/2018", kwota: 1302.55 },
-          { data: "2018-10-29", symbol: "WBRW 210/10/2018", kwota: 2547.71 },
-          { data: "2018-10-17", symbol: "WBRW 202/10/2018", kwota: 2647.53 },
-        ],
-        SUMA: 9325.25,
-        NALEZNOSC: 4606.34,
-      },
-    ];
-
     for (const doc of result) {
+      console.log(doc);
       await connect_SQL.query(
         "INSERT IGNORE INTO company_law_documents_settlements (NUMER_DOKUMENTU_FK, WYKAZ_SPLACONEJ_KWOTY_FK, SUMA_SPLACONEJ_KWOTY_FK, POZOSTALA_NALEZNOSC_FK) VALUES (?, ?, ?, ?)",
         [
@@ -1055,19 +1024,568 @@ const copyTableKolumnsPartner = async () => {
 
 const temporaryFunc = async () => {
   try {
-    await createLawTable();
-    console.log("createLawTable");
-    await createTriggers();
-    console.log("createTriggers");
-    await addDataToLawDocuments();
-    console.log("addDataToLawDocuments");
+    // await createLawTable();
+    // console.log("createLawTable");
+    // await createTriggers();
+    // console.log("createTriggers");
+    // await addDataToLawDocuments();
+    // console.log("addDataToLawDocuments");
     // pobiera Wartość spłaconej kwoty
-    await updateLawSettlements();
-    console.log("updateLawSettlements");
+    // await updateLawSettlements();
+    // console.log("updateLawSettlements");
     // tworzy relacje pomiędzy tabelami
-    await createTableRelations();
-    // wczytanie testowych kolumn dla Kancelarii
-    await copyTableKolumnsPartner();
+    //   await createTableRelations();
+    //   // wczytanie testowych kolumn dla Kancelarii
+    //   await copyTableKolumnsPartner();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const copyDataToLaw = async () => {
+  try {
+    // Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
+    const excelDateToISODate = (excelDate) => {
+      const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
+      return date.toISOString().split("T")[0]; // Pobranie daty w formacie "yyyy-mm-dd"
+    };
+
+    // funkcja wykonuje sprawdzenie czy data jest sformatowana w excelu czy zwykły string
+    const isExcelDate = (value) => {
+      // Sprawdź, czy wartość jest liczbą i jest większa od zera (Excelowa data to liczba większa od zera)
+      if (typeof value === "number" && value > 0) {
+        // Sprawdź, czy wartość mieści się w zakresie typowych wartości dat w Excelu
+        return value >= 0 && value <= 2958465; // Zakres dat w Excelu: od 0 (1900-01-01) do 2958465 (9999-12-31)
+      }
+      return false;
+    };
+
+    // const DATA_KOMENTARZA_BECARED = isExcelDate(
+    //     row["Data ostatniego komentarza"]
+    //   )
+    //     ? excelDateToISODate(row["Data ostatniego komentarza"])
+    //     : null;
+    const data = [
+      {
+        "Numer dokumentu": "FV/MN/5673/18/D7",
+        "Data wystawienia dokumentu": 43244,
+        Kontrahent: "Auto Galeria Team sp. z o.o.",
+        "Kwota brutto dokumentu": 3912.32,
+        "Data przekazania sprawy": 43615,
+        "Data przyjęcia sprawy": 43615,
+        "Data wymagalności płatności": 43273,
+        "Pozostała należność FK": 10499.9,
+        Odzial: {
+          DZIAL: "D007",
+          OBSZAR: "CZĘŚCI",
+          LOKALIZACJA: "Łódź Niciarniana",
+        },
+        FIRMA: "KRT",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym w Białej Podlaskiej Łukasz Nejman Kancelaria Komornicza nr 5 w Białej Podlaskiej",
+        "Status sprawy": "EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "GKm 205/24",
+        "Panel komunikacji": [
+          {
+            date: "2024-12-16",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-12-20",
+            note: "zajęcie wierzytelności z rachunku bankowego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "KF/UP/78/19/D36",
+        "Data wystawienia dokumentu": 43698,
+        Kontrahent: "Remigiusz Szostek (RAMP INVESTMENTS)",
+        "Kwota brutto dokumentu": 5843.72,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 43720,
+        "Pozostała należność FK": 8216.2,
+        Odzial: {
+          DZIAL: "D036",
+          OBSZAR: "SERWIS",
+          LOKALIZACJA: "Wolica",
+        },
+        FIRMA: "KRT",
+        "Status sprawy": "SĄDOWA",
+        "Termin przedawnienia roszcz.": 46752,
+        "Wydział Sądu":
+          "Sąd Rejonowy dla m.st. Warszawy w Warszawie I Wydział Gospodarczy ",
+        "Panel komunikacji": [
+          {
+            date: "2024-12-17",
+            note: "pozew o zapłatę w postępowaniu upominawczym przeciwko członkowi zarządu spółki z ograniczoną odpowiedzialnością na podstawie art.. 299 KSH",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-02-26",
+            note: "nakaz zapłaty 10.146,66 zł",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "Brak danych",
+            note: "Faktura FV/UP/2991/19/D36 skorygowana na KF/UP/78/19/D36",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "FV/MN/2175/16/D57",
+        "Data wystawienia dokumentu": 42661,
+        Kontrahent: "Piotr Gołaszewski (AUTO SERWIS Piotr Gołaszewski)",
+        "Kwota brutto dokumentu": 1893.56,
+        "Data przekazania sprawy": 42746,
+        "Data przyjęcia sprawy": 42746,
+        "Data wymagalności płatności": 42682,
+        "Pozostała należność FK": 8118.47,
+        Odzial: {
+          DZIAL: "D057",
+          OBSZAR: "CZĘŚCI",
+          LOKALIZACJA: "Wolica",
+        },
+        FIRMA: "KRT",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym w Białymstoku Zastępca Cezarego Kalinowskiego Alicja Wysocka-Wasiluk, Kancelaria komornicza nr II w Białymstoku",
+        "Status sprawy": "EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "CK GKm 42/25",
+
+        "Panel komunikacji": [
+          {
+            date: "2024-12-16",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "FV/MN/6540/18/D7",
+        "Data wystawienia dokumentu": 43266,
+        Kontrahent: "Auto Galeria Team sp. z o.o.",
+        "Kwota brutto dokumentu": 102.93,
+        "Data przekazania sprawy": 43616,
+        "Data przyjęcia sprawy": 43616,
+        "Data wymagalności płatności": 43295,
+        "Pozostała należność FK": 10499.9,
+        Odzial: {
+          DZIAL: "D007",
+          OBSZAR: "CZĘŚCI",
+          LOKALIZACJA: "Łódź Niciarniana",
+        },
+        FIRMA: "KRT",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym w Białej Podlaskiej Łukasz Nejman Kancelaria Komornicza nr 5 w Białej Podlaskiej",
+        "Status sprawy": "EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "GKm 205/24",
+        "Panel komunikacji": [
+          {
+            date: "2024-12-16",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-12-20",
+            note: "zajęcie wierzytelności z rachunku bankowego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "109/08/RAC/2023",
+        "Data wystawienia dokumentu": 45166,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 6826.5,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45180,
+        "Pozostała należność FK": 7139.29,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "121/05/RAC/2023",
+        "Data wystawienia dokumentu": 45075,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 2755.59,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45090,
+        "Pozostała należność FK": 3072.4,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "126/08/RAC/2023",
+        "Data wystawienia dokumentu": 45166,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 5694.9,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45180,
+        "Pozostała należność FK": 6007.69,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "130/06/RAC/2023",
+        "Data wystawienia dokumentu": 45105,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 5694.9,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45119,
+        "Pozostała należność FK": 6207.65,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+    ];
+
+    await connect_SQL.query("TRUNCATE TABLE company_law_documents");
+
+    for (const item of data) {
+      const NUMER_DOKUMENTU = item["Numer dokumentu"];
+      const KONTRAHENT = item["Kontrahent"];
+      const NAZWA_KANCELARII = "Kancelaria Krotoski";
+      const DATA_PRZYJECIA_SPRAWY = isExcelDate(item["Data przekazania sprawy"])
+        ? excelDateToISODate(item["Data przekazania sprawy"])
+        : null;
+      const DATA_WYSTAWIENIA_DOKUMENTU = isExcelDate(
+        item["Data wystawienia dokumentu"]
+      )
+        ? excelDateToISODate(item["Data wystawienia dokumentu"])
+        : null;
+      const KWOTA_BRUTTO_DOKUMENTU = item["Kwota brutto dokumentu"];
+      const ODDZIAL = item.Odzial;
+      const FIRMA = item.FIRMA;
+      const DATA_PRZEKAZANIA_SPRAWY = isExcelDate(
+        item["Data przekazania sprawy"]
+      )
+        ? excelDateToISODate(item["Data przekazania sprawy"])
+        : null;
+      const KWOTA_ROSZCZENIA_DO_KANCELARII = null;
+
+      const CZAT_KANCELARIA = item["Panel komunikacji"];
+      const STATUS_SPRAWY = item["Status sprawy"];
+      const TERMIN_PRZEDAWNIENIA_ROSZCZENIA = isExcelDate(
+        item["Termin przedawnienia roszcz."]
+      )
+        ? excelDateToISODate(item["Termin przedawnienia roszcz."])
+        : null;
+
+      const DATA_WYMAGALNOSCI_PLATNOSCI = isExcelDate(
+        item["Data wymagalności płatności"]
+      )
+        ? excelDateToISODate(item["Data wymagalności płatności"])
+        : null;
+      const WYDZIAL_SADU = item["Wydział Sądu"];
+      const ORGAN_EGZEKUCYJNY = item["Organ egzekucyjny"];
+      const SYGN_SPRAWY_EGZEKUCYJNEJ = item["Sygnatura sprawy egz."];
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, DATA_PRZYJECIA_SPRAWY, DATA_WYSTAWIENIA_DOKUMENTU, KWOTA_BRUTTO_DOKUMENTU, ODDZIAL, FIRMA, DATA_PRZEKAZANIA_SPRAWY, KWOTA_ROSZCZENIA_DO_KANCELARII, CZAT_KANCELARIA, STATUS_SPRAWY, TERMIN_PRZEDAWNIENIA_ROSZCZENIA, DATA_WYMAGALNOSCI_PLATNOSCI, WYDZIAL_SADU, ORGAN_EGZEKUCYJNY, SYGN_SPRAWY_EGZEKUCYJNEJ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          NUMER_DOKUMENTU || null,
+          KONTRAHENT || null,
+          NAZWA_KANCELARII || null,
+          DATA_PRZYJECIA_SPRAWY || null,
+          DATA_WYSTAWIENIA_DOKUMENTU || null,
+          KWOTA_BRUTTO_DOKUMENTU || null,
+          JSON.stringify(ODDZIAL) || null,
+          FIRMA || null,
+          DATA_PRZEKAZANIA_SPRAWY || null,
+          KWOTA_ROSZCZENIA_DO_KANCELARII || null,
+          JSON.stringify(CZAT_KANCELARIA) || null,
+          STATUS_SPRAWY || null,
+          TERMIN_PRZEDAWNIENIA_ROSZCZENIA || null,
+          DATA_WYMAGALNOSCI_PLATNOSCI || null,
+          WYDZIAL_SADU || null,
+          ORGAN_EGZEKUCYJNY || null,
+          SYGN_SPRAWY_EGZEKUCYJNEJ || null,
+        ]
+      );
+    }
+    await updateLawSettlements();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const copyDefaultTableSettings = async () => {
+  try {
+    const [user] = await connect_SQL.query(
+      "SELECT * FROM company_users WHERE id_user = 117"
+    );
+    const Kancelaria = {
+      size: {
+        KONTRAHENT: 204,
+        CZAT_KANCELARIA: 314,
+        NUMER_DOKUMENTU: 196,
+        ORGAN_EGZEKUCYJNY: 251,
+        DATA_PRZYJECIA_SPRAWY: 195,
+        KWOTA_BRUTTO_DOKUMENTU: 158,
+        POZOSTALA_NALEZNOSC_FK: 155,
+        DATA_PRZEKAZANIA_SPRAWY: 190,
+        WYKAZ_SPLACONEJ_KWOTY_FK: 316,
+        DATA_WYSTAWIENIA_DOKUMENTU: 182,
+        DATA_WYMAGALNOSCI_PLATNOSCI: 200,
+      },
+      order: [
+        "NUMER_DOKUMENTU",
+        "DATA_WYSTAWIENIA_DOKUMENTU",
+        "KONTRAHENT",
+        "KWOTA_BRUTTO_DOKUMENTU",
+        "KWOTA_ROSZCZENIA_DO_KANCELARII",
+        "POZOSTALA_NALEZNOSC_FK",
+        "CZAT_KANCELARIA",
+        "DATA_PRZYJECIA_SPRAWY",
+        "DATA_PRZEKAZANIA_SPRAWY",
+        "SUMA_SPLACONEJ_KWOTY_FK",
+        "WYKAZ_SPLACONEJ_KWOTY_FK",
+        "DATA_WYMAGALNOSCI_PLATNOSCI",
+        "ODDZIAL",
+        "NIP_NR",
+        "OPIS_DOKUMENTU",
+        "ORGAN_EGZEKUCYJNY",
+        "STATUS_SPRAWY",
+        "SYGN_SPRAWY_EGZEKUCYJNEJ",
+        "SYGNATURA_SPRAWY",
+        "TERMIN_PRZEDAWNIENIA_ROSZCZENIA",
+        "WYDZIAL_SADU",
+        "mrt-row-spacer",
+      ],
+      pinning: { left: ["NUMER_DOKUMENTU"], right: [] },
+      visible: { NIP_NR: false, OPIS_DOKUMENTU: false },
+      pagination: { pageSize: 50, pageIndex: 0 },
+    };
+
+    // const userTable = user[0].tableSettings;
+    // userTable.Kancelaria = Kancelaria;
+
+    const id = [4, 20, 21, 117];
+
+    for (const item of id) {
+      const [newUser] = await connect_SQL.query(
+        "SELECT tableSettings FROM company_users WHERE id_user = ?",
+        [item]
+      );
+      const tableSeting = newUser[0].tableSettings;
+      tableSeting.Kancelaria = Kancelaria;
+
+      await connect_SQL.query(
+        "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
+        [JSON.stringify(tableSeting), item]
+      );
+    }
+    console.log("finish");
   } catch (error) {
     console.error(error);
   }
@@ -1081,6 +1599,9 @@ const repair = async () => {
     // chwilowa funkcja
     // await temporaryFunc();
     // console.log("temporaryFunc");
+    // await copyDataToLaw();
+    //
+    // await copyDefaultTableSettings();
   } catch (error) {
     console.error(error);
   }
