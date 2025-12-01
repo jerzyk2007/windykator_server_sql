@@ -2338,6 +2338,7 @@ const repair = async () => {
     // await rebuildDataBase();
     // console.log("rebuildDataBase");
     //
+    //
     // chwilowa funkcja
     // await temporaryFunc();
     // console.log("temporaryFunc");
