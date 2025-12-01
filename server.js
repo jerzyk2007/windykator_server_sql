@@ -47,13 +47,15 @@ app.use("/logout", require("./routes/logout"));
 app.use(verifyJWT);
 app.use("/documents", require("./routes/api/documents"));
 app.use("/settings", require("./routes/api/settings"));
+app.use("/table", require("./routes/api/table"));
 app.use("/user", require("./routes/api/users"));
 app.use("/raport", require("./routes/api/raports"));
 app.use("/update", require("./routes/api/update"));
 app.use("/fk", require("./routes/api/fkRaport"));
-app.use("/items", require("./routes/api/items"));
+app.use("/structure", require("./routes/api/organizationStructure"));
 app.use("/add-data", require("./routes/api/addDataFromExcelFile"));
-app.use("/repair", require("./routes/api/repair"));
+app.use("/law-partner", require("./routes/api/lawPartner"));
+app.use("/insurance", require("./routes/api/insurance"));
 
 app.all("*", (req, res) => {
   res.status(404);

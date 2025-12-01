@@ -1,6 +1,5 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
-const { verifyUserTableConfig } = require("./usersController");
 const bcryptjs = require("bcryptjs");
 const crypto = require("crypto");
 const { sendEmail } = require("./mailController");
@@ -11,1574 +10,2324 @@ const {
 } = require("./manageDocumentAddition");
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getDataDocuments } = require("./documentsController");
-const { getAccountancyDataMsSQL } = require("./fkRaportController");
 
-// naprawa/zamiana imienia i nazwiska dla Doradców - zamiana miejscami imienia i nazwiska
-const repairAdvisersName = async (req, res) => {
+//szukam czy jakiś user ma role Root
+
+const createLawTable = async () => {
   try {
-    const query = `SELECT 
-        fv.[NUMER],
-        us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL
- FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] AS fv
- LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
- 
- WHERE fv.[NUMER] != 'POTEM' 
-   AND fv.[DATA_WYSTAWIENIA] > '2023-12-31' `;
+    await connect_SQL.query(`
+CREATE TABLE IF NOT EXISTS company_law_documents (
+    id_document INT NOT NULL AUTO_INCREMENT,
+    NUMER_DOKUMENTU VARCHAR(250) NOT NULL,
+    KONTRAHENT VARCHAR(500) NOT NULL,
+    NIP_NR VARCHAR(20) NULL,
+    NAZWA_KANCELARII VARCHAR(50) NOT NULL,
+    DATA_PRZYJECIA_SPRAWY DATE NULL,
+    DATA_WYSTAWIENIA_DOKUMENTU DATE NULL,
+    KWOTA_BRUTTO_DOKUMENTU DECIMAL(12,2) NOT NULL,
+    ODDZIAL JSON NULL,
+    OPIS_DOKUMENTU VARCHAR(250) NULL,
+    FIRMA VARCHAR(45) NOT NULL,
+    DATA_PRZEKAZANIA_SPRAWY DATE NULL,
+    KWOTA_ROSZCZENIA_DO_KANCELARII DECIMAL(12,2) NOT NULL,
+    CZAT_KANCELARIA JSON NULL,
+    CZAT_LOGI JSON NULL,
+    STATUS_SPRAWY VARCHAR(45)  NULL,
+    SYGNATURA_SPRAWY VARCHAR(250)  NULL,
+    TERMIN_PRZEDAWNIENIA_ROSZCZENIA DATE NULL,
+    DATA_WYMAGALNOSCI_PLATNOSCI DATE NULL,
+    WYDZIAL_SADU VARCHAR(250)  NULL,
+    ORGAN_EGZEKUCYJNY VARCHAR(250)  NULL,
+    SYGN_SPRAWY_EGZEKUCYJNEJ VARCHAR(250)  NULL,
+    PRIMARY KEY (id_document),
+    UNIQUE KEY unique_doc_firma (NUMER_DOKUMENTU)
+);
+`);
+    //     await connect_SQL.query(`
+    // CREATE TABLE IF NOT EXISTS company_law_documents_settlements (
+    //    ********** id_document INT NOT NULL AUTO_INCREMENT,
+    //    ********** NUMER_DOKUMENTU VARCHAR(250) NOT NULL,
+    //    ********** WYKAZ_SPLACONEJ_KWOTY JSON NULL,
+    //    ********** SUMA_SPLACONEJ_KWOTY DECIMAL(12,2) NULL,
+    //     FIRMA VARCHAR(45) NOT NULL,
+    //    **********   PRIMARY KEY (id_document),
+    //    ********** UNIQUE KEY unique_doc_firma (NUMER_DOKUMENTU, FIRMA)
+    // );
+    // `);
 
-    const documents = await msSqlQuery(query);
+    await connect_SQL.query(`
+    CREATE TABLE IF NOT EXISTS company_law_documents_settlements (
+        id_document_settlements INT NOT NULL AUTO_INCREMENT,
+        NUMER_DOKUMENTU_FK VARCHAR(250) NOT NULL,
+        WYKAZ_SPLACONEJ_KWOTY_FK JSON NULL,
+        SUMA_SPLACONEJ_KWOTY_FK DECIMAL(12,2) NULL,
+         FIRMA VARCHAR(45) NOT NULL,
+        POZOSTALA_NALEZNOSC_FK DECIMAL(12,2) NULL,
+          PRIMARY KEY (id_document_settlements),
+            UNIQUE KEY unique_numer (NUMER_DOKUMENTU_FK)
+    );
+    `);
 
-    // const addDep = addDepartment(documents);
+    await connect_SQL.query(`
+    CREATE TABLE IF NOT EXISTS company_insurance_documents (
+        id_document INT NOT NULL AUTO_INCREMENT,
+        NUMER_POLISY VARCHAR(45) NOT NULL,
+        DATA_WYSTAWIENIA DATE NOT NULL,
+        UBEZPIECZYCIEL VARCHAR(45) NOT NULL,
+        KONTRAHENT VARCHAR(500) NOT NULL,
+        DZIAL VARCHAR(45) NOT NULL,
+        DATA_PRZEKAZANIA DATE NOT NULL,
+        FAKTURA_NR VARCHAR(45) NOT NULL,
+        STATUS JSON NULL,
+        OW DATE NULL,
+        NIP VARCHAR(45) NULL,
+        KWOTA_ROSZCZENIA DECIMAL(12,2) NOT NULL,
+        OSOBA_ZLECAJACA_WINDYKACJE VARCHAR(45) NOT NULL,
+        KONTAKT_DO_KLIENTA JSON NULL,
+        NR_KONTA VARCHAR(45) NOT NULL,
+        CZAT JSON NULL,
+        LOGI_ZDARZEN JSON NULL,
+          PRIMARY KEY (id_document),
+            UNIQUE KEY unique_numer (NUMER_POLISY)
+    );
+    `);
 
-    // console.log(addDep);
-    for (const doc of documents) {
-      await connect_SQL.query(
-        "UPDATE company_documents SET DORADCA = ? WHERE NUMER_FV = ?",
-        [doc.PRZYGOTOWAL, doc.NUMER]
-      );
-    }
+    await connect_SQL.query(
+      "ALTER TABLE company_law_documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
+    );
+    await connect_SQL.query(
+      "ALTER TABLE company_law_documents_settlements CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
+    );
 
-    console.log("finish");
+    await connect_SQL.query(
+      "ALTER TABLE company_insurance_documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
+    );
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Server error" });
   }
 };
 
-// tworzy konta dla pracowników wg struktury organizacyjnej, operacja jednorazowa :)
-const createAccounts = async (req, res) => {
+const createTriggers = async () => {
   try {
-    const [data] = await connect_SQL.query(
-      "SELECT * FROM company_join_items  WHERE COMPANY = 'KEM' ORDER BY DEPARTMENT"
+    await connect_SQL.query(
+      "DROP TRIGGER IF EXISTS set_DATA_PRZEKAZANIA_SPRAWY"
     );
 
-    // Dodaj do OWNER elementy z GUARDIAN, jeśli ich tam nie ma
-    data.forEach((item) => {
-      item.GUARDIAN.forEach((guardianName) => {
-        if (!item.OWNER.includes(guardianName)) {
-          item.OWNER.push(guardianName);
-        }
-      });
-    });
+    await connect_SQL.query(`
+CREATE TRIGGER set_DATA_PRZEKAZANIA_SPRAWY
+BEFORE INSERT ON company_law_documents
+FOR EACH ROW
+BEGIN
+    IF NEW.DATA_PRZEKAZANIA_SPRAWY IS NULL THEN
+        SET NEW.DATA_PRZEKAZANIA_SPRAWY = CURDATE();
+    END IF;
+END
+`);
 
-    const findMail = await Promise.all(
-      data.map(async (item) => {
-        const ownerMail = await Promise.all(
-          item.OWNER.map(async (own) => {
-            const [mail] = await connect_SQL.query(
-              `SELECT OWNER_MAIL FROM company_owner_items WHERE OWNER = ?`,
-              [own]
-            );
-            // Zamiana null na "Brak danych"
-            return mail.map((row) => row.OWNER_MAIL || "Brak danych");
-          })
+    // 1. Usuń trigger, jeśli istnieje
+    await connect_SQL.query("DROP TRIGGER IF EXISTS generate_NUMER_DOKUMENTU");
+
+    // 2. Stwórz trigger
+    await connect_SQL.query(`
+CREATE TRIGGER generate_NUMER_DOKUMENTU
+BEFORE INSERT ON company_law_documents
+FOR EACH ROW
+BEGIN
+    IF NEW.NUMER_DOKUMENTU IS NULL OR NEW.NUMER_DOKUMENTU = '' THEN
+        SET @last_noid = (
+            SELECT CAST(SUBSTRING(NUMER_DOKUMENTU, 11) AS UNSIGNED)
+            FROM company_law_documents
+            WHERE NUMER_DOKUMENTU LIKE 'BRAK_NOID_%'
+            ORDER BY CAST(SUBSTRING(NUMER_DOKUMENTU, 11) AS UNSIGNED) DESC
+            LIMIT 1
         );
 
-        return {
-          ...item,
-          MAIL: ownerMail.flat(), // Spłaszczamy tablicę wyników
-        };
-      })
+        IF @last_noid IS NULL THEN
+            SET @last_noid = 1;
+        ELSE
+            SET @last_noid = @last_noid + 1;
+        END IF;
+
+        SET NEW.NUMER_DOKUMENTU = CONCAT('BRAK_NOID_', @last_noid);
+    END IF;
+END
+`);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// zmiana permissions w tabeli company_settings - dla zmian poz zewn kancelarie
+const deleteBasicUsers = async () => {
+  try {
+    const [users] = await connect_SQL.query("SELECT * FROM company_users");
+    for (const user of users) {
+      if (user.permissions.Basic) {
+        await connect_SQL.query("DELETE FROM company_users WHERE id_user = ?", [
+          user.id_user,
+        ]);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// zmiana typu kolumny permissions
+const changeTypeColumnPermissions = async () => {
+  try {
+    await connect_SQL.query(
+      'ALTER TABLE company_users MODIFY COLUMN permissions VARCHAR(45) NOT NULL DEFAULT "Pracownik"'
+    );
+    await connect_SQL.query(
+      'UPDATE company_users SET permissions = "Pracownik"'
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// zmiana kolumn tableSettings, raportSettings, departments, columns
+const changeUserTable = async () => {
+  try {
+    const [users] = await connect_SQL.query("SELECT * FROM company_users");
+    for (const user of users) {
+      const tableSettings = {
+        Pracownik: user.tableSettings,
+        Kancelaria: {},
+        Polisy: {},
+      };
+      const raportSettings = {
+        Pracownik: user.raportSettings,
+        Kancelaria: {},
+        Polisy: {},
+      };
+      const departments = {
+        Pracownik: [...user.departments],
+        Kancelaria: [],
+        Polisy: [],
+      };
+      const columns = {
+        Pracownik: [...user.columns],
+        Kancelaria: [],
+        Polisy: [],
+      };
+      await connect_SQL.query(
+        "UPDATE company_users SET tableSettings = ?, raportSettings = ?, departments = ?, columns = ? WHERE id_user = ?",
+        [
+          JSON.stringify(tableSettings),
+          JSON.stringify(raportSettings),
+          JSON.stringify(departments),
+          JSON.stringify(columns),
+          user.id_user,
+        ]
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const changePermissionsTableSettings = async () => {
+  try {
+    const roles = {
+      Start: 1,
+      User: 100,
+      Editor: 110,
+      Controller: 120,
+      DNiKN: 150,
+      FK_KRT: 200,
+      FK_KEM: 201,
+      FK_RAC: 202,
+      Nora: 300,
+      Insurance: 350,
+      Raports: 400,
+      LawPartner: 500,
+      Admin: 1000,
+      SuperAdmin: 2000,
+    };
+    await connect_SQL.query(
+      "UPDATE company_settings SET permissions = ?,  roles = ?",
+      [
+        JSON.stringify(["Pracownik", "Kancelaria", "Polisy"]),
+        JSON.stringify(roles),
+      ]
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const deleteDepartmentsColumn = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_settings CHANGE COLUMN departments EXT_COMPANY JSON, CHANGE COLUMN roles ROLES JSON, CHANGE COLUMN columns COLUMNS JSON, CHANGE COLUMN permissions PERMISSIONS JSON, CHANGE COLUMN target TARGET JSON, CHANGE COLUMN company COMPANY JSON"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const company_password_resets_Change = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_password_resets CHANGE COLUMN email EMAIL VARCHAR(255), CHANGE COLUMN token TOKEN VARCHAR(255), CHANGE COLUMN created_at CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const company_fk_raport_excel_Change = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_fk_raport_excel CHANGE COLUMN company COMPANY VARCHAR(45), CHANGE COLUMN data DATA JSON"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const company_table_columns_Change = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns CHANGE COLUMN description EMPLOYEE VARCHAR(45),  CHANGE COLUMN accessorKey ACCESSOR_KEY VARCHAR(45), CHANGE COLUMN header HEADER VARCHAR(45), CHANGE COLUMN filterVariant FILTER_VARIANT VARCHAR(45), CHANGE COLUMN type TYPE VARCHAR(45), CHANGE COLUMN areas AREAS JSON"
+    );
+    await connect_SQL.query(`
+      UPDATE company_table_columns
+      SET EMPLOYEE = 'Pracownik'
+    `);
+
+    const [columns] = await connect_SQL.query(
+      "SELECT * FROM company_table_columns"
+    );
+    for (col of columns) {
+      const uniqueAreas = [];
+      const seen = new Set();
+
+      for (const area of col.AREAS) {
+        if (!seen.has(area.name)) {
+          seen.add(area.name);
+          // tworzymy nowy obiekt bez 'hide'
+          const { hide, ...rest } = area;
+          uniqueAreas.push(rest);
+        }
+      }
+
+      col.AREAS = uniqueAreas;
+
+      await connect_SQL.query(
+        "UPDATE company_table_columns SET AREAS = ? where id_table_columns = ?",
+        [JSON.stringify(col.AREAS), col.id_table_columns]
+      );
+    }
+
+    // usuń UQ z ACCESSOR_KEY
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns DROP INDEX `accessorKey_UNIQUE`"
     );
 
-    // Pobranie unikalnych wartości z owner, usunięcie "Brak danych" i sortowanie
-    const uniqueOwners = [...new Set(findMail.flatMap((item) => item.OWNER))]
-      .filter((name) => name !== "Brak danych") // Usuwa "Brak danych"
-      .sort(); // Sortuje alfabetycznie
+    // -- 1️⃣ nadaj unikalność kolumnie id_table_columns
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns ADD CONSTRAINT uq_id_table_columns UNIQUE (id_table_columns)"
+    );
 
-    const roles = { Start: 1, User: 100, Editor: 110 };
-    const permissions = {
-      Basic: false,
-      Standard: true,
+    // -- 2️⃣ dodaj unikalność pary (EMPLOYEE, ACCESSOR_KEY)
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns ADD CONSTRAINT uq_employee_accessor UNIQUE (EMPLOYEE, ACCESSOR_KEY)"
+    );
+
+    // -- 3️⃣ dodaj unikalność pary (EMPLOYEE, HEADER)
+    await connect_SQL.query(
+      "ALTER TABLE company_table_columns ADD CONSTRAINT uq_employee_header UNIQUE (EMPLOYEE, HEADER)"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const company_setting_columns = async () => {
+  try {
+    const [changeColumns] = await connect_SQL.query(
+      "SELECT COLUMNS FROM company_settings"
+    );
+
+    const newColumns = {
+      PRACOWNIK: changeColumns[0].COLUMNS,
+      KANCELARIA: [],
     };
-    const raportSettings = {
-      raportAdvisers:
-        '{"size":{},"visible":{"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DORADCA","DZIAL","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","CEL_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}',
-      raportDepartments:
-        '{"size":{},"visible":{"CEL_BEZ_PZU_LINK4":false,"PRZETERMINOWANE_BEZ_PZU_LINK4":false,"ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4":false,"NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4":false,"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DZIALY","CEL","CEL_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","CEL_CALOSC","PRZETERMINOWANE_FV","ILOSC_PRZETERMINOWANYCH_FV","NIEPRZETERMINOWANE_FV","CEL_BEZ_KANCELARII","PRZETERMINOWANE_BEZ_KANCELARII","ILOSC_PRZETERMINOWANYCH_FV_BEZ_KANCELARII","NIEPRZETERMINOWANE_FV_BEZ_KANCELARII","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}',
-    };
-    const tableSettings = {
-      size: {
-        NIP: 100,
-        VIN: 100,
-        AREA: 100,
-        DZIAL: 100,
-        NETTO: 100,
-        BRUTTO: 111,
-        TERMIN: 122,
-        DATA_FV: 140,
-        DORADCA: 100,
-        NUMER_FV: 194,
-        KONTRAHENT: 270,
-        BLAD_DORADCY: 100,
-        TYP_PLATNOSCI: 100,
-        DO_ROZLICZENIA: 136,
-        UWAGI_ASYSTENT: 250,
-        JAKA_KANCELARIA: 100,
-        UWAGI_Z_FAKTURY: 100,
-        NR_REJESTRACYJNY: 100,
-        DATA_WYDANIA_AUTA: 100,
-        INFORMACJA_ZARZAD: 192,
-        CZY_PRZETERMINOWANE: 100,
-        ILE_DNI_PO_TERMINIE: 111,
-        ZAZNACZ_KONTRAHENTA: 100,
-        OSTATECZNA_DATA_ROZLICZENIA: 230,
-      },
-      order: [
-        "NUMER_FV",
-        "DATA_FV",
-        "TERMIN",
-        "ILE_DNI_PO_TERMINIE",
-        "BRUTTO",
-        "DO_ROZLICZENIA",
-        "KONTRAHENT",
-        "UWAGI_ASYSTENT",
-        "AREA",
-        "BLAD_DORADCY",
-        "CZY_PRZETERMINOWANE",
-        "DATA_WYDANIA_AUTA",
-        "DORADCA",
-        "DZIAL",
-        "INFORMACJA_ZARZAD",
-        "JAKA_KANCELARIA",
-        "NETTO",
-        "NIP",
-        "NR_REJESTRACYJNY",
-        "OSTATECZNA_DATA_ROZLICZENIA",
-        "TYP_PLATNOSCI",
-        "UWAGI_Z_FAKTURY",
-        "VIN",
-        "ZAZNACZ_KONTRAHENTA",
-        "mrt-row-spacer",
-      ],
+
+    // const extCompany = ["Kancelaria Krotoski", "Krauze"];
+    const extCompany = ["Kancelaria Krotoski"];
+
+    await connect_SQL.query(
+      "UPDATE company_settings SET COLUMNS = ?, EXT_COMPANY = ? WHERE id_setting = 1",
+      [JSON.stringify(newColumns), JSON.stringify(extCompany)]
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const update_table_setiings = async () => {
+  try {
+    const tableLawPartnerSettings = {
+      size: {},
+      order: ["mrt-row-spacer"],
       pinning: {
-        left: ["NUMER_FV"],
+        left: [],
         right: [],
       },
-      visible: {
-        NIP: false,
-        VIN: false,
-        AREA: false,
-        DZIAL: false,
-        NETTO: false,
-        BRUTTO: true,
-        TERMIN: true,
-        DATA_FV: true,
-        DORADCA: false,
-        NUMER_FV: true,
-        KONTRAHENT: true,
-        BLAD_DORADCY: false,
-        TYP_PLATNOSCI: false,
-        DO_ROZLICZENIA: true,
-        UWAGI_ASYSTENT: true,
-        JAKA_KANCELARIA: false,
-        UWAGI_Z_FAKTURY: false,
-        NR_REJESTRACYJNY: false,
-        DATA_WYDANIA_AUTA: false,
-        INFORMACJA_ZARZAD: true,
-        CZY_PRZETERMINOWANE: false,
-        ILE_DNI_PO_TERMINIE: true,
-        ZAZNACZ_KONTRAHENTA: false,
-        OSTATECZNA_DATA_ROZLICZENIA: true,
-      },
+      visible: {},
       pagination: {
-        pageSize: 30,
+        pageSize: 50,
         pageIndex: 0,
       },
     };
-
-    const result = await Promise.all(
-      uniqueOwners.map(async (user) => {
-        const [surname, name] = user.split(" "); // Podział na imię i nazwisko
-        let userMail = "";
-        let departments = new Set();
-        const pass = await generatePassword();
-
-        findMail.forEach(({ OWNER, MAIL, DEPARTMENT }) => {
-          const index = OWNER.indexOf(user);
-          if (index !== -1) {
-            if (!userMail) userMail = MAIL[index]; // Przypisujemy pierwszy znaleziony mail
-            departments.add({ company: "KEM", department: DEPARTMENT }); // Dodajemy dział, jeśli użytkownik występuje w tym obiekcie
-          }
-        });
-        return {
-          userlogin: userMail || null,
-          username: name,
-          usersurname: surname,
-          password: pass.password, // Teraz czekamy na wygenerowanie hasła
-          hashedPwd: pass.hashedPwd, // Teraz czekamy na wygenerowanie hasła
-          dzial: [...departments], // Konwersja z Set na tablicę
-        };
-      })
+    const [userTableSettings] = await connect_SQL.query(
+      "SELECT id_user, tableSettings FROM company_users"
     );
+    for (const user of userTableSettings) {
+      user.tableSettings["Kancelaria"] = tableLawPartnerSettings;
+      user.tableSettings["Polisy"] = tableLawPartnerSettings;
 
-    // const test = result.map(item => {
-    //     if (item.userlogin === 'mariola.sliwa@krotoski.com') {
-    //         console.log(item);
-
-    //     }
-    // });
-    // do testów i dodawania uzytkowników
-    // const pass = await generatePassword();
-
-    // const result = [
-    //     {
-    //         userlogin: 'mariola.sliwa@krotoski.com',
-    //         username: 'Mariola',
-    //         usersurname: 'Śliwa',
-    //         password: 'WmW3%AwdrGbs',
-    //         hashedPwd: '$2a$10$1cI.SKg7Jn1M8vvDGj4GJuVLj4G1S7PCW.pd/N0WGPZlnYmwNN.0G',
-    //         dzial: [
-    //             { company: 'KEM', department: 'D531' },
-    //             { company: 'KEM', department: 'D538' }
-    //         ]
-    //     }
-    // ];
-
-    for (const user of result) {
-      const [checkDuplicate] = await connect_SQL.query(
-        `SELECT userlogin FROM company_users WHERE userlogin = ? `,
-        [user.userlogin]
+      await connect_SQL.query(
+        "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
+        [JSON.stringify(user.tableSettings), user.id_user]
       );
-      // console.log(checkDuplicate);
-
-      if (!checkDuplicate.length) {
-        // console.log(user);
-
-        await connect_SQL.query(
-          `INSERT INTO company_users (username, usersurname, userlogin, password, departments, roles, permissions, tableSettings, raportSettings ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            user.username,
-            user.usersurname,
-            user.userlogin,
-            user.hashedPwd,
-            JSON.stringify(user.dzial),
-            JSON.stringify(roles),
-            JSON.stringify(permissions),
-            JSON.stringify(tableSettings),
-            JSON.stringify(raportSettings),
-          ]
-        );
-
-        const [getColumns] = await connect_SQL.query(
-          "SELECT * FROM company_table_columns"
-        );
-
-        const [checkIdUser] = await connect_SQL.query(
-          "SELECT id_user FROM company_users WHERE userlogin = ?",
-          [user.userlogin]
-        );
-
-        // // titaj kod dopisuje jakie powinien dany user widzieć kolumny w tabeli
-        await verifyUserTableConfig(
-          checkIdUser[0].id_user,
-          user.dzial,
-          getColumns
-        );
-
-        const dzialy = user.dzial.map((item) => item.department);
-
-        const mailOptions = {
-          from: "powiadomienia-raportbl@krotoski.com",
-          to: `${user.userlogin}`,
-          // to: `jerzy.komorowski@krotoski.com`,
-          subject: "Zostało założone konto dla Ciebie",
-          // text: "Treść wiadomości testowej",
-          html: `
-                    <b>Dzień dobry</b><br>
-                    <br>
-                    Zostało założone konto dla Ciebie, aplikacja dostępna pod adresem <br>
-                    <a href="https://raportbl.krotoski.com/" target="_blank">https://raportbl.krotoski.com</a><br>
-                    <br>
-                    Login: ${user.userlogin}<br>
-                    Hasło: ${user.password}<br>
-                    Masz dostęp do działów: ${dzialy.join(", ")} <br/>
-                    <br>
-                    Polecamy skorzystać z instrukcji obsługi, aby poznać funkcje programu.<br/>
-                    <a href="https://raportbl.krotoski.com/instruction" target="_blank">https://raportbl.krotoski.com/instruction</a><br>
-                     <br>
-                    Z poważaniem.<br>
-                    Dział Nadzoru i Kontroli Należności <br>
-                `,
-        };
-        console.log(mailOptions);
-
-        await sendEmail(mailOptions);
-      }
     }
-
-    console.log(result.length);
-    // wyciągnięcie wszystkich maili;
-    // const userLoginsString = [...new Set(result.map(user => user.userlogin))].sort().join('; ');
-
-    // console.log(userLoginsString);
   } catch (error) {
     console.error(error);
   }
 };
 
-// const repairHistory = async () => {
-//   try {
-//     const [dataHistory] = await connect_SQL.query(
-//       "SELECT * FROM company_windykacja.company_history_management"
-//     );
-
-//     const test = dataHistory.map((item) => {
-//       if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
-//         console.log(item);
-//       }
-//     });
-
-//     const targetDate = "2025-09-11";
-
-//     const filteredDataHistory = dataHistory.map((doc) => {
-//       return {
-//         ...doc,
-//         HISTORY_DOC: doc.HISTORY_DOC.filter(
-//           (historyItem) => !historyItem.info.includes(`utworzono ${targetDate}`)
-//         ),
-//       };
-//     });
-
-//     const test2 = filteredDataHistory.map((item) => {
-//       if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
-//         console.log(item);
-//       }
-//     });
-//     await connect_SQL.query(
-//       "TRUNCATE company_windykacja.company_history_management"
-//     );
-
-//     for (const doc of filteredDataHistory) {
-//       // console.log(doc);
-//       await connect_SQL.query(
-//         `INSERT INTO company_windykacja.company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-//         [doc.NUMER_FV, JSON.stringify(doc.HISTORY_DOC), doc.COMPANY]
-//       );
-//     }
-//     console.log("nic");
-
-//   } catch (err) {
-//     console.error(err);
-//   }
-// };
-
-// const repairManagementDecisionFK = async () => {
-//   try {
-//     const [getDateDecision] = await connect_SQL.query(
-//       "SELECT * FROM management_decision_FK"
-//     );
-
-//     // łączę dane z management_decision_FK HISTORIA_ZMIANY_DATY_ROZLICZENIA i INFORMACJA_ZARZADw jeden obiekt
-//     // const merged = [];
-
-//     // getDateDecision.forEach(item => {
-//     //     const existing = merged.find(el =>
-//     //         el.NUMER_FV === item.NUMER_FV &&
-//     //         el.WYKORZYSTANO_RAPORT_FK === item.WYKORZYSTANO_RAPORT_FK
-//     //     );
-
-//     //     if (existing) {
-//     //         // Uzupełnij brakujące pola tylko jeśli są null
-//     //         if (!existing.INFORMACJA_ZARZAD && item.INFORMACJA_ZARZAD) {
-//     //             existing.INFORMACJA_ZARZAD = item.INFORMACJA_ZARZAD;
-//     //         }
-
-//     //         if (!existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA && item.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-//     //             existing.HISTORIA_ZMIANY_DATY_ROZLICZENIA = item.HISTORIA_ZMIANY_DATY_ROZLICZENIA;
-//     //         }
-//     //     } else {
-//     //         // Brak duplikatu, dodaj nowy obiekt
-//     //         merged.push({ ...item });
-//     //     }
-//     // });
-//     // console.log(merged);
-//     // console.log(getDateDecision);
-
-//     const groupedMap = new Map();
-
-//     for (const item of getDateDecision) {
-//       const key = `${item.NUMER_FV}|${item.WYKORZYSTANO_RAPORT_FK}`;
-
-//       if (!groupedMap.has(key)) {
-//         groupedMap.set(key, {
-//           NUMER_FV: item.NUMER_FV,
-//           WYKORZYSTANO_RAPORT_FK: item.WYKORZYSTANO_RAPORT_FK,
-//           INFORMACJA_ZARZAD: [],
-//           HISTORIA_ZMIANY_DATY_ROZLICZENIA: [],
-//         });
-//       }
-
-//       const group = groupedMap.get(key);
-
-//       if (item.INFORMACJA_ZARZAD) {
-//         group.INFORMACJA_ZARZAD.push(item.INFORMACJA_ZARZAD);
-//       }
-
-//       if (item.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-//         group.HISTORIA_ZMIANY_DATY_ROZLICZENIA.push(
-//           item.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-//         );
-//       }
-//     }
-
-//     const result = Array.from(groupedMap.values());
-//     // const test2 = result.map(item => {
-
-//     //     if (item.NUMER_FV === 'FV/UP/5189/24/A/D86') {
-//     //         console.log(item);
-
-//     //     }
-//     // });
-
-//     for (const doc of result) {
-//       await connect_SQL.query(
-//         `INSERT INTO management_date_description_FK (NUMER_FV, WYKORZYSTANO_RAPORT_FK, INFORMACJA_ZARZAD, HISTORIA_ZMIANY_DATY_ROZLICZENIA) VALUES (?, ?, ?, ?)`,
-//         [
-//           doc.NUMER_FV,
-//           doc.WYKORZYSTANO_RAPORT_FK,
-//           JSON.stringify(doc.INFORMACJA_ZARZAD),
-//           JSON.stringify(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA),
-//         ]
-//       );
-//     }
-//   } catch (err) {
-//     console.error(err);
-//   }
-// };
-
-//do wyciągnięcia maili ownerów
-// const getOwnersMail = async (company) => {
-//   try {
-//     const [owners] = await connect_SQL.query(
-//       `SELECT OWNER FROM company_join_items
-//             WHERE COMPANY = ?`,
-//       [company]
-//     );
-
-//     const uniqueOwners = [...new Set(owners.flatMap((obj) => obj.OWNER))].sort(
-//       (a, b) => a.localeCompare(b, "pl", { sensitivity: "base" })
-//     );
-
-//     let mailArray = [];
-//     for (const owner of uniqueOwners) {
-//       const [mailOwner] = await connect_SQL.query(
-//         `SELECT OWNER_MAIL FROM company_owner_items
-//             WHERE OWNER = ?`,
-//         [owner]
-//       );
-//       // console.log(owner);
-//       mailArray.push(mailOwner[0].OWNER_MAIL);
-//     }
-//     const index = mailArray.indexOf("brak@danych.brak");
-//     if (index !== -1) {
-//       mailArray.splice(index, 1);
-//     }
-//     console.log(mailArray.join("; "));
-//   } catch (error) {
-//     console.error(error);
-//   }
-// };
-
-const repairManagementDecision = async () => {
+const repairCompanyUpdatesTable = async () => {
   try {
+    // const [getUpdatesData] = await connect_SQL.query(
+    //   "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
+    // );
+    // const newItem = {
+    //   DATA_NAME: "Wpłaty dla spraw w Kancelarii Krotoski.",
+    //   DATE: "2025-11-24",
+    //   HOUR: "06:32",
+    //   UPDATE_SUCCESS: "",
+    // };
+
+    // const updateItems = [...getUpdatesData, newItem];
+
+    // *********************
     await connect_SQL.query(
-      "TRUNCATE company_windykacja.company_history_management"
+      "ALTER TABLE company_updates MODIFY COLUMN DATA_NAME VARCHAR(45) NOT NULL, ADD UNIQUE INDEX DATA_NAME_UNIQUE (DATA_NAME)"
     );
-    const [result] = await connect_SQL.query(
-      "INSERT INTO company_windykacja.company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) SELECT NUMER_FV, HISTORY_DOC, COMPANY FROM testy_windykacja.company_history_management"
-    );
+    console.log("repairCompanyUpdatesTable");
+    await connect_SQL.query("TRUNCATE TABLE company_updates");
 
-    console.log(result);
+    const updateItems = [
+      {
+        DATA_NAME: "Faktury",
+        DATE: "2025-11-24",
+        HOUR: "06:32",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Wydania samochodów",
+        DATE: "2025-11-24",
+        HOUR: "06:32",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Rozrachunki",
+        DATE: "2025-11-24",
+        HOUR: "06:30",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Opisy rozrachunków",
+        DATE: "2025-11-24",
+        HOUR: "06:49",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Rozliczenia Symfonia",
+        DATE: "2025-11-24",
+        HOUR: "06:32",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Rubicon",
+        DATE: "2025-11-24",
+        HOUR: "06:56",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "BeCared",
+        DATE: "2025-11-24",
+        HOUR: "07:06",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Dokumenty Raportu FK - KRT",
+        DATE: "2025-11-24",
+        HOUR: "07:21",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Dokumenty Raportu FK - KEM",
+        DATE: "2025-10-26",
+        HOUR: "17:59",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+      {
+        DATA_NAME: "Dokumenty Raportu FK - RAC",
+        DATE: null,
+        HOUR: null,
+        UPDATE_SUCCESS: null,
+      },
+      {
+        DATA_NAME: "Wpłaty dla spraw w Kancelarii Krotoski",
+        DATE: "2025-11-27",
+        HOUR: "11:18",
+        UPDATE_SUCCESS: "Zaktualizowano.",
+      },
+    ];
 
-    // const test = result.map((item) => {
-    //   if (item.NUMER_FV === "FV/UP/696/25/V/D6") {
-    //     console.log(item);
-    //   }
-    // });
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-//przygotowanie do KRD
-
-const prepareKRD = async () => {
-  try {
-    const [result] = await connect_SQL.query(`
-  ALTER TABLE company_documents_actions 
-  ADD COLUMN KRD VARCHAR(45) NULL
-`);
-    console.log("Kolumna KRD dodana:", result);
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-const checkAdminUsers = async () => {
-  try {
-    const [result] = await connect_SQL.query("SELECT * FROM company_users");
-    console.log(result);
-
-    for (const user of result) {
-      if (user.roles?.Admin) {
-        console.log(user.userlogin);
-      }
+    for (const doc of updateItems) {
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_updates (DATA_NAME, DATE, HOUR, UPDATE_SUCCESS) VALUES (?, ?, ?, ?)",
+        [doc.DATA_NAME, doc.DATE, doc.HOUR, doc.UPDATE_SUCCESS]
+      );
     }
   } catch (error) {
     console.error(error);
   }
 };
 
-const reportFK_RAC = async () => {
+const rebuildDataBase = async () => {
   try {
-    await connect_SQL.query(`
-              CREATE TABLE company_raportFK_RAC_accountancy
-        LIKE company_raportFK_KEM_accountancy;
-              `);
+    // await createLawTable();
+    // await createTriggers();
+    // await deleteBasicUsers();
+    // await changeTypeColumnPermissions();
+    // await changeUserTable();
+    //
+    //
+    // await changePermissionsTableSettings();
+    // await deleteDepartmentsColumn();
+    // await company_password_resets_Change();
+    // await company_fk_raport_excel_Change();
+    // await company_table_columns_Change();
+    // await company_setting_columns();
+    // await update_table_setiings();
+    // await repairCompanyUpdatesTable();
+    console.log("finish");
+  } catch (error) {
+    console.error(error);
+  }
+};
 
-    await connect_SQL.query(`
-          CREATE TABLE company_fk_raport_RAC
-    LIKE company_fk_raport_KEM;
-          `);
+//tworzenie relacje pomiędzy tabelami SQL
+const createTableRelations = async () => {
+  try {
+    // relacja dla tabeli company_documents i company_documents_actions
+    await connect_SQL.query(
+      "ALTER TABLE company_documents_actions ADD CONSTRAINT fk_company_documents_actions_documents FOREIGN KEY (document_id) REFERENCES company_documents(id_document) ON DELETE CASCADE ON UPDATE CASCADE"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
 
+// dodaję testow dane do tabeli company_law_documents
+const addDataToLawDocuments = async () => {
+  const chatLawPartner = [
+    {
+      profile: "Pracownik",
+      date: "17-10-2025",
+      username: "Kowalski",
+      userlogin: "jan.kowalski@krotoski.com",
+      note: "Zapłata nastąpi zgodnie z terminem płatności 24.11.2025 Sławomir Sołdon",
+    },
+    {
+      profile: "Kancelaria",
+      date: "18-10-2025",
+      username: "Mickiewicz",
+      userlogin: "adam.mickiewicz@kancelaria-krotoski.com",
+      note: "Złożony wniosek o uzasadnienie wyroku.",
+    },
+    {
+      profile: "Kancelaria",
+      date: "29-10-2025",
+      username: "Mickiewicz",
+      userlogin: "adam.mickiewicz@kancelaria-krotoski.com",
+      note: "Przekazałem uzasadnienie wyroku do jan.kowalski@krotoski.com",
+    },
+  ];
+
+  try {
     const data = [
       {
-        title: "accountancy",
-        company: "RAC",
+        NUMER_DOKUMENTU: "FV/UBL/671/25/A/D8",
+        OPIS_DOKUMENTU: null,
+        KONTRAHENT:
+          "PRZEDSIĘBIORSTWO PRZEMYSŁOWO-HANDLOWE 'HETMAN' SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: "2025-06-26",
+        KWOTA_BRUTTO_DOKUMENTU: 9098.71,
+        ODDZIAL: {
+          DZIAL: "D008",
+          LOKALIZACJA: "Łódź Przybyszewskiego",
+          OBSZAR: "BLACHARNIA",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 6731.88,
+        CZAT_KANCELARIA: null,
       },
       {
-        title: "generate",
-        company: "RAC",
+        NUMER_DOKUMENTU: null,
+        OPIS_DOKUMENTU: "Polisa nr 123456, Hestia",
+        KONTRAHENT:
+          "ALEXAS CAR SERVICE SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: null,
+        KWOTA_BRUTTO_DOKUMENTU: 1000,
+        ODDZIAL: {
+          DZIAL: "D039",
+          LOKALIZACJA: "Wolica",
+          OBSZAR: "F&I",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 112.11,
+        CZAT_KANCELARIA: null,
       },
       {
-        title: "raport",
-        company: "RAC",
+        NUMER_DOKUMENTU: "FV/MN/20211/25/S/D7",
+        OPIS_DOKUMENTU: null,
+        KONTRAHENT:
+          "AUTOKOS SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ SPÓŁKA KOMANDYTOWA",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: "2025-11-19",
+        KWOTA_BRUTTO_DOKUMENTU: 3508.84,
+        ODDZIAL: {
+          DZIAL: "D007",
+          LOKALIZACJA: "Łódź Niciarniana",
+          OBSZAR: "CZĘŚCI",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 3508.84,
+        CZAT_KANCELARIA: chatLawPartner,
+      },
+      {
+        NUMER_DOKUMENTU: null,
+        OPIS_DOKUMENTU: "kara umowna + odszkodowanie uzupełniające",
+        KONTRAHENT: "Euro - Trans - Poland sp. z o.o.",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: null,
+        KWOTA_BRUTTO_DOKUMENTU: 872.11,
+
+        ODDZIAL: {
+          DZIAL: "D076",
+          LOKALIZACJA: "Warszawa Radzymińska",
+          OBSZAR: "SERWIS",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 872.11,
+        CZAT_KANCELARIA: null,
+      },
+      {
+        NUMER_DOKUMENTU: "FV/UP/5298/18/D6",
+        OPIS_DOKUMENTU: null,
+        KONTRAHENT: "PHU WACAR ARKADIUSZ WAWRZYNIAK",
+        NAZWA_KANCELARII: "Kancelaria Krotoski",
+        DATA_PRZYJECIA_SPRAWY: null,
+        DATA_WYSTAWIENIA_DOKUMENTU: "2019-04-03",
+        KWOTA_BRUTTO_DOKUMENTU: 13931.59,
+
+        ODDZIAL: {
+          DZIAL: "D447",
+          LOKALIZACJA: "Audi Białołęka",
+          OBSZAR: "CZĘŚCI",
+        },
+        FIRMA: "KRT",
+        DATA_PRZEKAZANIA_SPRAWY: null,
+        KWOTA_ROSZCZENIA_DO_KANCELARII: 13931.59,
+        CZAT_KANCELARIA: null,
       },
     ];
 
     for (const doc of data) {
       await connect_SQL.query(
-        "INSERT INTO company_fk_updates_date (TITLE, COMPANY) VALUES (?, ?)",
-        [doc.title, doc.company]
+        "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, OPIS_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, DATA_PRZYJECIA_SPRAWY, DATA_WYSTAWIENIA_DOKUMENTU, KWOTA_BRUTTO_DOKUMENTU, ODDZIAL, FIRMA, DATA_PRZEKAZANIA_SPRAWY, KWOTA_ROSZCZENIA_DO_KANCELARII, CZAT_KANCELARIA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          doc.NUMER_DOKUMENTU,
+          doc.OPIS_DOKUMENTU,
+          doc.KONTRAHENT,
+          doc.NAZWA_KANCELARII,
+          doc.DATA_PRZYJECIA_SPRAWY,
+          doc.DATA_WYSTAWIENIA_DOKUMENTU,
+          doc.KWOTA_BRUTTO_DOKUMENTU,
+          JSON.stringify(doc.ODDZIAL),
+          doc.FIRMA,
+          doc.DATA_PRZEKAZANIA_SPRAWY,
+          JSON.stringify(doc.KWOTA_ROSZCZENIA_DO_KANCELARII),
+          JSON.stringify(doc.CZAT_KANCELARIA) || null,
+        ]
       );
-    }
-
-    await connect_SQL.query(
-      "CREATE TABLE company_fk_settlements (  id_company_fk_settlements INT NOT NULL AUTO_INCREMENT,   NUMER_FV VARCHAR(255) NOT NULL,   DO_ROZLICZENIA DECIMAL(12,2) NOT NULL,   FIRMA VARCHAR(10) NOT NULL,   PRIMARY KEY (id_company_fk_settlements),   UNIQUE (id_company_fk_settlements))"
-    );
-
-    console.log("rac");
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-const as_fk = async (companies) => {
-  try {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0"); // miesiące 0–11
-    const dd = String(today.getDate()).padStart(2, "0");
-    const formattedDate = `${yyyy}-${mm}-${dd}`;
-    for (const company of companies) {
-      const queryMS = accountancyFKData(company, formattedDate);
-      const accountancyData = await msSqlQuery(queryMS);
-
-      await connect_SQL.query(
-        "DELETE FROM company_fk_settlements WHERE FIRMA = ?",
-        [company]
-      );
-
-      const values = accountancyData.map((item) => [
-        item["dsymbol"],
-        item["płatność"],
-        company,
-      ]);
-
-      const query = `
-         INSERT IGNORE INTO company_fk_settlements
-        (NUMER_FV,  DO_ROZLICZENIA, FIRMA) 
-         VALUES 
-        ${values.map(() => "( ?, ?, ?)").join(", ")}
-    `;
-
-      await connect_SQL.query(query, values.flat());
     }
   } catch (error) {
     console.error(error);
   }
 };
 
-const repair_mysql = async () => {
+const updateLawSettlements = async () => {
   try {
-    const [result] = await connect_SQL.query(`
-  SELECT CONCAT(
-    'ALTER TABLE \`', table_name, 
-    '\` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci;'
-  ) AS sql_command
-  FROM information_schema.tables
-  WHERE table_schema = 'company_windykacja';
-`);
-    // Wykonaj każdą komendę ALTER TABLE
-    for (const row of result) {
-      const sql = row.sql_command;
-      console.log("Wykonuję:", sql);
-      await connect_SQL.query(sql);
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
+    // console.log("docs");
 
-const getRaportDifferncesAsFk = async () => {
-  try {
-    const documents = await getDataDocuments(117, "different");
+    // const [docs] = await connect_SQL.query(
+    //   "SELECT distinct NUMER_DOKUMENTU FROM company_law_documents"
+    // );
+    // console.log(docs);
 
-    for (doc of documents.data) {
-      if (doc.NUMER_FV === "FV/AD/F/30/25/A/D72") {
-        console.log(doc);
-      }
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
+    const docs = [
+      {
+        "Numer dokumentu": "FV/MN/5673/18/D7",
+      },
+      {
+        "Numer dokumentu": "KF/UP/78/19/D36",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2175/16/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6540/18/D7",
+      },
+      {
+        "Numer dokumentu": "109/08/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "121/05/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "126/08/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "130/06/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "134/07/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "136/06/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "138/07/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "dot. nadpłaty",
+      },
+      {
+        "Numer dokumentu": "FC/UBL/238/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/AN/169/19/PCS",
+      },
+      {
+        "Numer dokumentu": "7/11/2019",
+      },
+      {
+        "Numer dokumentu": "FV/4/12/19",
+      },
+      {
+        "Numer dokumentu": "FV/AU/304/19/D54",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10309/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1184/15/D38",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1215/15/D38",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1233/19/23/A/D118",
+      },
+      {
+        "Numer dokumentu": "FV/BL/125/09/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1344/14/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/21/23/A/D118",
+      },
+      {
+        "Numer dokumentu": "FV/BL/45/18/D78,",
+      },
+      {
+        "Numer dokumentu": "FV/BL/54/17/D78",
+      },
+      {
+        "Numer dokumentu": "FV/BL/992/14/D38",
+      },
+      {
+        "Numer dokumentu": "FV/I/156/16/D2",
+      },
+      {
+        "Numer dokumentu": "FV/I/19/21D3",
+      },
+      {
+        "Numer dokumentu": "FV/I/20/20/D31",
+      },
+      {
+        "Numer dokumentu": "FV/M/127/19/D87",
+      },
+      {
+        "Numer dokumentu": "FV/M/1292/19/D17",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3819/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/M/3920/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/M/4021/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/1887/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/1904/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/1905/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2126/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2158/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2296/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2296/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2296/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2514/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2536/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2536/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2536/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2539/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2601/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2701/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2799/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2987/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10864/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10920/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10920/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10921/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10985/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11138/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11645/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/126/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1262/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/128/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1351/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1351/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1454/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1509/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1509/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1509/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1516/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1517/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1544/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1553/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1577/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/16014/23/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1716/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1716/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/195/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/196/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1961/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2014/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2021/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2058/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2093/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2093/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2098/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2175/16/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2303/16/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2341/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2342/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2382/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2383/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2384/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2412/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2412/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2432/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2432/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2480/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2481/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2482/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2483/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2548/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2552/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2558/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2639/18/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2656/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2711/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2712/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2749/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2804/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2805/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2806/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2858/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2908/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/3649/18/d7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/3684/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/5661/18/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6646/17/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6671/18/D7 .",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6750/17/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/717/18/D47",
+      },
+      {
+        "Numer dokumentu": "FV/MN/717/18/D47",
+      },
+      {
+        "Numer dokumentu": "FV/MN/9120/17/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/936/18/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/986/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/986/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/986/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1503/16/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1627/17/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/165/24/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1656/19/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1788/17/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1788/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/232/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/232/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/238/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/280/20/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/329/22/A/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/329/22/A/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/359/22/S/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/529/16/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/581/21/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/619/21/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/672/22/A/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/975/18/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1008/18/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1019/17/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/10204/15/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1119/18/D86",
+      },
+      {
+        "Numer dokumentu": "FV/UP/11538/15/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/12/20/D46",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1233/23/A/D116",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1365/18/D56",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1437/19/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2991/19/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2991/19/D36",
+      },
+      {
+        "Numer dokumentu": "KF/UP/78/19/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3192/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3478/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3478/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3671/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3959/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3959/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3959/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/4405/21/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/4426/18/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/444/19/D96",
+      },
+      {
+        "Numer dokumentu": "FV/UP/444/19/D96",
+      },
+      {
+        "Numer dokumentu": "FV/UP/5298/18/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/822/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/822/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/843/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/890/19/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/991/19/D76",
+      },
+      {
+        "Numer dokumentu": "FV/WS/1/13/D1",
+      },
+      {
+        "Numer dokumentu": "FV/WS/15/17/D56",
+      },
+      {
+        "Numer dokumentu": "FV/WY/1/19/D72",
+      },
+      {
+        "Numer dokumentu": "FV/WY/105/19/D62",
+      },
+      {
+        "Numer dokumentu": "FV/WY/154/19/D62",
+      },
+      {
+        "Numer dokumentu": "FV/WY/159/19/D62",
+      },
+      {
+        "Numer dokumentu": "FV/WY/90/19/D62",
+      },
+    ];
 
-// do naprawy rozliczeń symfoni do różnic
-const updateFKSettlements = async (companies) => {
-  try {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0"); // miesiące 0–11
-    const dd = String(today.getDate()).padStart(2, "0");
-    const formattedDate = `${yyyy}-${mm}-${dd}`;
-    for (const company of companies) {
-      const queryMS = accountancyFKData(company, formattedDate);
-      const accountancyData = await msSqlQuery(queryMS);
+    // *******************************
+    const sqlCondition =
+      docs?.length > 0
+        ? `(${docs
+            .map((dep) => `r.dsymbol = '${dep["Numer dokumentu"]}' `)
+            .join(" OR ")})`
+        : null;
 
-      await connect_SQL.query(
-        "DELETE FROM company_fk_settlements WHERE FIRMA = ?",
-        [company]
-      );
+    await msSqlQuery("TRUNCATE TABLE [rapdb].dbo.fkkomandytowams");
 
-      const values1 = accountancyData.map((item) => [
-        item["dsymbol"],
-        item["płatność"],
-        company,
-      ]);
+    await msSqlQuery(
+      `
+        INSERT INTO [rapdb].dbo.fkkomandytowams
+        SELECT DISTINCT
+            GETDATE() AS smf_stan_na_dzien,
+            'N' AS smf_typ,
+            r.dsymbol AS smf_numer,
+            r1.dsymbol,
+            r1.kwota AS kwota_platnosci,
+            CAST(r1.data AS DATE) AS data_platnosci,
+            r.kwota AS kwota_faktury,
+            CAST(
+                (CASE WHEN r.strona = 0 THEN r.kwota ELSE r.kwota * (-1) END)
+                + SUM(ISNULL(CASE WHEN r1.strona = 0 THEN r1.kwota ELSE r1.kwota * (-1) END, 0))
+                    OVER (PARTITION BY r.id)
+            AS MONEY) AS naleznosc,
+            CAST(r.dataokr AS DATE) AS smf_data_otwarcia_rozrachunku
+        FROM [fkkomandytowa].[FK].[rozrachunki] r
+        LEFT JOIN [fkkomandytowa].[FK].[rozrachunki] r1
+            ON r.id = r1.transakcja
+            AND ISNULL(r1.czyrozliczenie, 0) = 1
+            AND ISNULL(r1.dataokr, 0) <= GETDATE()
+        WHERE
+            r.czyrozliczenie = 0
+            AND CAST(r.dataokr AS DATE) BETWEEN '2001-01-01' AND GETDATE()
+            AND ${sqlCondition}
 
-      const values = accountancyData
-        .filter((item) => documentsType(item["dsymbol"]) === "Faktura")
-        .map((item) => [item["dsymbol"], item["płatność"], company]);
-
-      const query = `
-         INSERT IGNORE INTO company_fk_settlements
-        (NUMER_FV,  DO_ROZLICZENIA, FIRMA) 
-         VALUES 
-        ${values.map(() => "( ?, ?, ?)").join(", ")}
-    `;
-
-      await connect_SQL.query(query, values.flat());
-    }
-    return true;
-  } catch (error) {
-    logEvents(
-      `getDataFromMSSQL, updateFKSettlements: ${error}`,
-      "reqServerErrors.txt"
+      `
     );
-    return false;
-  }
-};
 
-// dodanie nowej roli Raports
-const addRoleRaports = async () => {
-  try {
-    await connect_SQL.query(
-      "UPDATE company_settings SET ROLES = ? WHERE id_setting = 1",
-      [
-        JSON.stringify([
-          {
-            Start: 1,
-            User: 100,
-            Editor: 110,
-            Controller: 120,
-            DNiKN: 150,
-            FK_KRT: 200,
-            FK_KEM: 201,
-            FK_RAC: 202,
-            Nora: 300,
-            Raports: 400,
-            Admin: 1000,
-            SuperAdmin: 2000,
-          },
-        ]),
-      ]
-    );
+    // 4. Pobierz to, co zostało zapisane
+    const settlementDescription = await msSqlQuery(`
+        SELECT *
+        FROM [rapdb].dbo.fkkomandytowams
+    `);
 
-    const [roles] = await connect_SQL.query("SELECT * FROM company_settings");
-    for (const role of roles) {
-      console.log(role.roles);
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
+    const result = [];
 
-const generateHistoryDocumentsRepair = async (company) => {
-  try {
-    const [raportDate] = await connect_SQL.query(
-      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'generate' AND COMPANY = ?`,
-      [company]
-    );
-    const [markDocuments] = await connect_SQL.query(
-      `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
-      [company]
-    );
+    settlementDescription.forEach((item) => {
+      const key = item.smf_numer;
 
-    for (item of markDocuments) {
-      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
-      const [getDoc] = await connect_SQL.query(
-        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
-        [item.NUMER_FV, raportDate[0].DATE, company]
-      );
+      // czy już istnieje dokument z tym numerem
+      let existing = result.find((r) => r.NUMER_DOKUMENTU === key);
 
-      //szukam czy jest wpis histori w tabeli history_fk_documents
-      const [getDocHist] = await connect_SQL.query(
-        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
-        [item.NUMER_FV, company]
-      );
-      // console.log(getDocHist, " - ", item);
+      // format daty yyyy-mm-dd
+      const formatDate = (date) =>
+        date ? new Date(date).toISOString().slice(0, 10) : null;
 
-      if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
-        console.log(item);
-        console.log(getDocHist[0].HISTORY_DOC);
-      }
+      const paymentObj = {
+        data: formatDate(item.data_platnosci),
+        symbol: item.dsymbol,
+        kwota: item["kwota_platności"],
+        // kwota_faktury: item.kwota_faktury,
+      };
 
-      //jesli nie ma historycznych wpisów tworzę nowy
-      if (!getDocHist.length) {
-        const newHistory = {
-          info: `1 raport utworzono ${raportDate[0].DATE}`,
-          historyDate: [],
-          historyText: [],
-        };
-
-        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
+      if (!existing) {
+        // tworzymy nowy dokument
+        result.push({
+          NUMER_DOKUMENTU: key,
+          WYKAZ_SPLACONEJ_KWOTY: item["kwota_platności"] ? [paymentObj] : [],
+          SUMA: item["kwota_platności"] || 0,
+          NALEZNOSC: item["naleznosc"] || 0,
         });
-
-        // await connect_SQL.query(
-        //   `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-        //   [item.NUMER_FV, JSON.stringify([newHistory]), company]
-        // );
       } else {
-        const newHistory = {
-          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
-            raportDate[0].DATE
-          }`,
-          historyDate: [],
-          historyText: [],
-        };
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
-        });
-        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
-
-        if (item.NUMER_FV === "FV/UBL/134/25/A/D78") {
-          console.log(item);
-          console.log(prepareArray);
+        // dopisujemy płatność jeśli istnieje
+        if (item["kwota_platności"]) {
+          existing.WYKAZ_SPLACONEJ_KWOTY.push(paymentObj);
+          existing.SUMA += item["kwota_platności"];
         }
-
-        // await connect_SQL.query(
-        //   `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
-        //   [JSON.stringify(prepareArray), item.NUMER_FV, company]
-        // );
       }
+    });
+
+    // 🔽 SORTOWANIE WYKAZ_SPLACONEJ_KWOTY według daty (najnowsze na górze)
+    result.forEach((doc) => {
+      doc.WYKAZ_SPLACONEJ_KWOTY.sort((a, b) => {
+        if (!a.data) return 1;
+        if (!b.data) return -1;
+        return new Date(b.data) - new Date(a.data); // malejąco
+      });
+    });
+
+    // for (const doc of result) {
+    //   console.log(doc);
+    //   await connect_SQL.query(
+    //     "INSERT IGNORE INTO company_law_documents_settlements (NUMER_DOKUMENTU_FK, WYKAZ_SPLACONEJ_KWOTY_FK, SUMA_SPLACONEJ_KWOTY_FK, POZOSTALA_NALEZNOSC_FK) VALUES (?, ?, ?, ?)",
+    //     [
+    //       doc.NUMER_DOKUMENTU,
+    //       JSON.stringify(doc.WYKAZ_SPLACONEJ_KWOTY),
+    //       doc.SUMA,
+    //       doc.NALEZNOSC,
+    //     ]
+    //   );
+    // }
+    // console.log(result);
+    console.log(JSON.stringify(result, null, 2));
+    logEvents(JSON.stringify(result, null, 2), "json.txt");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const copyTableKolumnsPartner = async () => {
+  try {
+    // const [columns] = await connect_SQL.query(
+    //   "SELECT * FROM company_table_columns WHERE EMPLOYEE = 'Kancelaria'"
+    // );
+
+    const columns = [
+      {
+        id_table_columns: 47,
+        ACCESSOR_KEY: "CZAT_KANCELARIA",
+        HEADER: "Panel komunikacji",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 45,
+        ACCESSOR_KEY: "DATA_PRZEKAZANIA_SPRAWY",
+        HEADER: "Data przekazania sprawy",
+        FILTER_VARIANT: "date-range",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 42,
+        ACCESSOR_KEY: "DATA_PRZYJECIA_SPRAWY",
+        HEADER: "Data przyjęcia sprawy",
+        FILTER_VARIANT: "multi-select",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 54,
+        ACCESSOR_KEY: "DATA_WYMAGALNOSCI_PLATNOSCI",
+        HEADER: "Data wymagalności płatności",
+        FILTER_VARIANT: "date-range",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 43,
+        ACCESSOR_KEY: "DATA_WYSTAWIENIA_DOKUMENTU",
+        HEADER: "Data wystawienia dokumentu",
+        FILTER_VARIANT: "date-range",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 41,
+        ACCESSOR_KEY: "KONTRAHENT",
+        HEADER: "Kontrahent",
+        FILTER_VARIANT: "startsWith",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 44,
+        ACCESSOR_KEY: "KWOTA_BRUTTO_DOKUMENTU",
+        HEADER: "Kwota brutto dokumentu",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 46,
+        ACCESSOR_KEY: "KWOTA_ROSZCZENIA_DO_KANCELARII",
+        HEADER: "Kwota roszczenia",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 48,
+        ACCESSOR_KEY: "NIP_NR",
+        HEADER: "NIP",
+        FILTER_VARIANT: "startsWith",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 40,
+        ACCESSOR_KEY: "NUMER_DOKUMENTU",
+        HEADER: "Numer dokumentu",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 49,
+        ACCESSOR_KEY: "ODDZIAL",
+        HEADER: "Oddział",
+        FILTER_VARIANT: "multi-select",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 50,
+        ACCESSOR_KEY: "OPIS_DOKUMENTU",
+        HEADER: "Opis dokumentu",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 56,
+        ACCESSOR_KEY: "ORGAN_EGZEKUCYJNY",
+        HEADER: "Organ egzekucyjny",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 60,
+        ACCESSOR_KEY: "POZOSTALA_NALEZNOSC_FK",
+        HEADER: "Pozostała należność FK",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 51,
+        ACCESSOR_KEY: "STATUS_SPRAWY",
+        HEADER: "Status sprawy",
+        FILTER_VARIANT: "multi-select",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 59,
+        ACCESSOR_KEY: "SUMA_SPLACONEJ_KWOTY_FK",
+        HEADER: "Suma spłaconej kwoty",
+        FILTER_VARIANT: "none",
+        TYPE: "money",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 57,
+        ACCESSOR_KEY: "SYGN_SPRAWY_EGZEKUCYJNEJ",
+        HEADER: "Sygnatura sprawy egz.",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 52,
+        ACCESSOR_KEY: "SYGNATURA_SPRAWY",
+        HEADER: "Sygnatura sprawy",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 53,
+        ACCESSOR_KEY: "TERMIN_PRZEDAWNIENIA_ROSZCZENIA",
+        HEADER: "Termin przedawnienia roszcz.",
+        FILTER_VARIANT: "date-range",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 55,
+        ACCESSOR_KEY: "WYDZIAL_SADU",
+        HEADER: "Wydział Sądu",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+      {
+        id_table_columns: 58,
+        ACCESSOR_KEY: "WYKAZ_SPLACONEJ_KWOTY_FK",
+        HEADER: "Wykaz spłaconej kwoty",
+        FILTER_VARIANT: "none",
+        TYPE: "text",
+        EMPLOYEE: "Kancelaria",
+        AREAS: [{ name: "Kancelaria Krotoski", available: true }],
+      },
+    ];
+
+    for (const col of columns) {
+      // console.log(col);
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_table_columns (ACCESSOR_KEY, HEADER, FILTER_VARIANT, TYPE, EMPLOYEE, AREAS) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+          col.ACCESSOR_KEY,
+          col.HEADER,
+          col.FILTER_VARIANT,
+          col.TYPE,
+          col.EMPLOYEE,
+          JSON.stringify(col.AREAS),
+        ]
+      );
     }
   } catch (error) {
     console.error(error);
   }
 };
 
-// generuję historię decyzji i ostatecznej daty rozliczenia
-const generateHistoryDocuments = async (company) => {
+const temporaryFunc = async () => {
   try {
-    const [raportDate] = await connect_SQL.query(
-      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
-      [company]
-    );
-
-    const [markDocuments] = await connect_SQL.query(
-      `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
-      [company]
-    );
-
-    for (item of markDocuments) {
-      if (item.NUMER_FV === "FV/UP/626/25/S/D6") {
-        console.log(item);
-      }
-      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
-      const [getDoc] = await connect_SQL.query(
-        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
-        [item.NUMER_FV, raportDate[0].DATE, company]
-      );
-
-      //szukam czy jest wpis histori w tabeli history_fk_documents
-      const [getDocHist] = await connect_SQL.query(
-        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
-        [item.NUMER_FV, company]
-      );
-
-      //jesli nie ma historycznych wpisów tworzę nowy
-      if (!getDocHist.length) {
-        const newHistory = {
-          info: `1 raport utworzono ${raportDate[0].DATE}`,
-          historyDate: [],
-          historyText: [],
-        };
-
-        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
-        });
-
-        // await connect_SQL.query(
-        //   `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-        //   [item.NUMER_FV, JSON.stringify([newHistory]), company]
-        // );
-      } else {
-        const newHistory = {
-          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
-            raportDate[0].DATE
-          }`,
-          historyDate: [],
-          historyText: [],
-        };
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
-        });
-        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
-
-        // await connect_SQL.query(
-        //   `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
-        //   [JSON.stringify(prepareArray), item.NUMER_FV, company]
-        // );
-      }
-    }
+    // await createLawTable();
+    // console.log("createLawTable");
+    // await createTriggers();
+    // console.log("createTriggers");
+    // await addDataToLawDocuments();
+    // console.log("addDataToLawDocuments");
+    // pobiera Wartość spłaconej kwoty
+    // await updateLawSettlements();
+    // console.log("updateLawSettlements");
+    // tworzy relacje pomiędzy tabelami
+    //   await createTableRelations();
+    //   // wczytanie testowych kolumn dla Kancelarii
+    //   await copyTableKolumnsPartner();
   } catch (error) {
-    logEvents(
-      `fKRaport, generateHistoryDocuments: ${error}`,
-      "reqServerErrors.txt"
-    );
+    console.error(error);
   }
 };
 
-const checkHistory = async () => {
-  const docs = [
-    {
-      "NR DOKUMENTU": "FV/UP/1770/25/V/D6",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/791/25/A/D38",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/12848/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/12846/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/13475/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1388/25/S/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/336/25/A/D78",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/926/25/A/D8",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/335/25/A/D78",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15667/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15666/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15656/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1629/25/A/D6",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1328/25/V/D126",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3607/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/12760/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2845/25/A/D36",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/347/25/S/D148",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/163/25/P/D98",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15550/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15561/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15576/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15297/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/INT/11191/25/A/D27",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3782/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2941/25/V/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/524/25/V/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15491/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15490/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15617/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15609/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15691/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15690/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15689/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/13924/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/1715/25/P/D97",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15775/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/16035/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/14455/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "NO/6/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/14946/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/377/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2349/25/S/D146",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/4305/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2350/25/S/D146",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/203/25/V/D2",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/697/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/4407/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2183/25/V/D6",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/832/25/D/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/SPZ/16/25/V/D3",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/SPZ/13/25/V/D3",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/4185/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/303/25/P/D91",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/F/826/25/A/D72",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/571/25/V/D67",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/275/25/A/D111",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/282/25/V/D2",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/238/25/V/D51",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/174/25/P/D91",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/687/25/A/D8",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/368/25/D/D6",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/394/25/P/D91",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/274/25/A/D111",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/819/25/D/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3195/25/V/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/284/25/S/D148",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/244/25/V/D118",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/536/25/V/D57",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/F/111/25/A/D72",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3081/25/A/D36",
-    },
-    {
-      "NR DOKUMENTU": "FV/LS/26/25/X/D89",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/391/25/P/D91",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/390/25/P/D91",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/397/25/A/D31",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3329/25/V/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/BL/30/25/V/D118",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/738/25/A/D38",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/111/25/S/D68",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/12/25/X/D69",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/14/25/X/D79",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1608/25/A/D46",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2682/25/V/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1636/25/A/D46",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1634/25/A/D46",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/343/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/25/25/X/D84",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/258/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/198/25/D/D65",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2652/25/V/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/12607/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1925/25/A/D116",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/330/25/A/D78",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/821/25/A/D38",
-    },
-    {
-      "NR DOKUMENTU": "FV/WS/14/25/A/D78",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/907/25/A/D8",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/166/25/V/D68",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/165/25/V/D68",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/492/25/V/D58",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/841/25/A/D38",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/168/25/V/D68",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2951/25/V/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/626/25/S/D6",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/141/25/V/D68",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/324/25/V/D8",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/14236/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/12461/25/A/D447",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/816/25/A/D38",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1361/25/S/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/686/25/A/D8",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/136/25/V/D68",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/482/25/V/D58",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/613/25/S/D6",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/658/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/268/25/A/D111",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/345/25/A/D118",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/878/25/A/D8",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1922/25/V/D6",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/F/127/25/V/D52",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/F/124/25/V/D62",
-    },
-    {
-      "NR DOKUMENTU": "FV/AD/17/25/V/D61",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/572/25/V/D67",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/265/25/A/D117",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/INT/11962/25/A/D27",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/358/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/695/25/A/D71",
-    },
-    {
-      "NR DOKUMENTU": "FV/AD/38/25/A/D71",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/4279/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/537/25/A/D1",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/533/25/V/D2",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1463/25/S/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/BL/7/25/S/D68",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3422/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/124/25/S/D67",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1292/25/S/D56",
-    },
-    {
-      "NR DOKUMENTU": "FV/MN/15807/25/S/D7",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/781/25/D/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/4134/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/F/530/25/S/D172",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/538/25/A/D1",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/46/25/S/D141",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3408/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1703/25/A/D46",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/634/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/167/25/P/D91",
-    },
-    {
-      "NR DOKUMENTU": "FV/ST/7/25/X/D4",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1976/25/A/D116",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/3878/25/A/D76",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1970/25/A/D116",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/F/741/25/A/D72",
-    },
-    {
-      "NR DOKUMENTU": "FV/UG/910/25/P/D96",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/190/25/V/D2",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/240/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/204/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/199/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/211/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/244/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/208/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/213/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/207/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/220/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/234/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/191/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/209/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/212/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/194/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/233/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/224/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/225/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/228/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/195/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/197/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/206/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/221/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/193/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/222/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/239/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/210/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/223/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/201/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/202/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/235/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/217/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/230/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/229/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/232/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/242/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/200/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/227/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/216/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/238/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/241/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/192/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/198/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/203/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/215/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/205/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/231/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/196/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/236/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/214/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/218/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/226/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/219/25/X/D14",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/605/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/291/25/V/D118",
-    },
-    {
-      "NR DOKUMENTU": "FV/AD/12/25/D/D5",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/631/25/A/D81",
-    },
-    {
-      "NR DOKUMENTU": "FV/AN/F/717/25/A/D72",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2945/25/A/D36",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/681/25/A/D71",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/164/25/A/D71",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/2898/25/V/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1262/25/S/D56",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1263/25/S/D56",
-    },
-    {
-      "NR DOKUMENTU": "FV/ZAL/528/25/A/D1",
-    },
-    {
-      "NR DOKUMENTU": "FV/UBL/666/25/A/D38",
-    },
-    {
-      "NR DOKUMENTU": "FV/UP/1345/25/S/D66",
-    },
-    {
-      "NR DOKUMENTU": "FV/M/INT/46/25/A/D37",
-    },
-    {
-      "NR DOKUMENTU": "FV/I/104/25/A/D1",
-    },
-  ];
+const copyDataToLaw = async () => {
   try {
-    for (const doc of docs) {
-      const [result] = await connect_SQL.query(
-        "SELECT * FROM company_windykacja.company_history_management WHERE NUMER_FV = ?",
-        [doc["NR DOKUMENTU"]]
-      );
-      if (result.length) {
-        console.log(result[0].id_history_fk_documents);
-        //   const [deleteDoc] = await connect_SQL.query(
-        //     "DELETE FROM company_windykacja.company_history_management WHERE id_history_fk_documents = ?",
-        //     [result[0].id_history_fk_documents]
-        //   );
-        //   console.log(deleteDoc);
+    // Funkcja do konwersji daty z formatu Excel na "yyyy-mm-dd"
+    const excelDateToISODate = (excelDate) => {
+      const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000); // Konwersja z formatu Excel do milisekund
+      return date.toISOString().split("T")[0]; // Pobranie daty w formacie "yyyy-mm-dd"
+    };
+
+    // funkcja wykonuje sprawdzenie czy data jest sformatowana w excelu czy zwykły string
+    const isExcelDate = (value) => {
+      // Sprawdź, czy wartość jest liczbą i jest większa od zera (Excelowa data to liczba większa od zera)
+      if (typeof value === "number" && value > 0) {
+        // Sprawdź, czy wartość mieści się w zakresie typowych wartości dat w Excelu
+        return value >= 0 && value <= 2958465; // Zakres dat w Excelu: od 0 (1900-01-01) do 2958465 (9999-12-31)
       }
+      return false;
+    };
+
+    // const DATA_KOMENTARZA_BECARED = isExcelDate(
+    //     row["Data ostatniego komentarza"]
+    //   )
+    //     ? excelDateToISODate(row["Data ostatniego komentarza"])
+    //     : null;
+    const data = [
+      {
+        "Numer dokumentu": "FV/MN/5673/18/D7",
+        "Data wystawienia dokumentu": 43244,
+        Kontrahent: "Auto Galeria Team sp. z o.o.",
+        "Kwota brutto dokumentu": 3912.32,
+        "Data przekazania sprawy": 43615,
+        "Data przyjęcia sprawy": 43615,
+        "Data wymagalności płatności": 43273,
+        "Pozostała należność FK": 10499.9,
+        Odzial: {
+          DZIAL: "D007",
+          OBSZAR: "CZĘŚCI",
+          LOKALIZACJA: "Łódź Niciarniana",
+        },
+        FIRMA: "KRT",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym w Białej Podlaskiej Łukasz Nejman Kancelaria Komornicza nr 5 w Białej Podlaskiej",
+        "Status sprawy": "EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "GKm 205/24",
+        "Panel komunikacji": [
+          {
+            date: "2024-12-16",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-12-20",
+            note: "zajęcie wierzytelności z rachunku bankowego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "KF/UP/78/19/D36",
+        "Data wystawienia dokumentu": 43698,
+        Kontrahent: "Remigiusz Szostek (RAMP INVESTMENTS)",
+        "Kwota brutto dokumentu": 5843.72,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 43720,
+        "Pozostała należność FK": 8216.2,
+        Odzial: {
+          DZIAL: "D036",
+          OBSZAR: "SERWIS",
+          LOKALIZACJA: "Wolica",
+        },
+        FIRMA: "KRT",
+        "Status sprawy": "SĄDOWA",
+        "Termin przedawnienia roszcz.": 46752,
+        "Wydział Sądu":
+          "Sąd Rejonowy dla m.st. Warszawy w Warszawie I Wydział Gospodarczy ",
+        "Panel komunikacji": [
+          {
+            date: "2024-12-17",
+            note: "pozew o zapłatę w postępowaniu upominawczym przeciwko członkowi zarządu spółki z ograniczoną odpowiedzialnością na podstawie art.. 299 KSH",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-02-26",
+            note: "nakaz zapłaty 10.146,66 zł",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "Brak danych",
+            note: "Faktura FV/UP/2991/19/D36 skorygowana na KF/UP/78/19/D36",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "FV/MN/2175/16/D57",
+        "Data wystawienia dokumentu": 42661,
+        Kontrahent: "Piotr Gołaszewski (AUTO SERWIS Piotr Gołaszewski)",
+        "Kwota brutto dokumentu": 1893.56,
+        "Data przekazania sprawy": 42746,
+        "Data przyjęcia sprawy": 42746,
+        "Data wymagalności płatności": 42682,
+        "Pozostała należność FK": 8118.47,
+        Odzial: {
+          DZIAL: "D057",
+          OBSZAR: "CZĘŚCI",
+          LOKALIZACJA: "Wolica",
+        },
+        FIRMA: "KRT",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym w Białymstoku Zastępca Cezarego Kalinowskiego Alicja Wysocka-Wasiluk, Kancelaria komornicza nr II w Białymstoku",
+        "Status sprawy": "EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "CK GKm 42/25",
+
+        "Panel komunikacji": [
+          {
+            date: "2024-12-16",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "FV/MN/6540/18/D7",
+        "Data wystawienia dokumentu": 43266,
+        Kontrahent: "Auto Galeria Team sp. z o.o.",
+        "Kwota brutto dokumentu": 102.93,
+        "Data przekazania sprawy": 43616,
+        "Data przyjęcia sprawy": 43616,
+        "Data wymagalności płatności": 43295,
+        "Pozostała należność FK": 10499.9,
+        Odzial: {
+          DZIAL: "D007",
+          OBSZAR: "CZĘŚCI",
+          LOKALIZACJA: "Łódź Niciarniana",
+        },
+        FIRMA: "KRT",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym w Białej Podlaskiej Łukasz Nejman Kancelaria Komornicza nr 5 w Białej Podlaskiej",
+        "Status sprawy": "EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "GKm 205/24",
+        "Panel komunikacji": [
+          {
+            date: "2024-12-16",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-12-20",
+            note: "zajęcie wierzytelności z rachunku bankowego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "109/08/RAC/2023",
+        "Data wystawienia dokumentu": 45166,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 6826.5,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45180,
+        "Pozostała należność FK": 7139.29,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "121/05/RAC/2023",
+        "Data wystawienia dokumentu": 45075,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 2755.59,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45090,
+        "Pozostała należność FK": 3072.4,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "126/08/RAC/2023",
+        "Data wystawienia dokumentu": 45166,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 5694.9,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45180,
+        "Pozostała należność FK": 6007.69,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+      {
+        "Numer dokumentu": "130/06/RAC/2023",
+        "Data wystawienia dokumentu": 45105,
+        Kontrahent: "Mozell Sp. z o.o.",
+        "Kwota brutto dokumentu": 5694.9,
+        "Data przekazania sprawy": 40179,
+        "Data przyjęcia sprawy": 40179,
+        "Data wymagalności płatności": 45119,
+        "Pozostała należność FK": 6207.65,
+        Odzial: {
+          DZIAL: "",
+          OBSZAR: "",
+          LOKALIZACJA: "RAC",
+        },
+        FIRMA: "RAC",
+        "Organ egzekucyjny":
+          "Komornik Sądowy przy Sądzie Rejonowym dla Warszawy-Woli w Warszawie Piotr Bukszewicz Kancelaria Komornicza ",
+        "Status sprawy": "SĄDOWA / EGZEKUCYJNA",
+        "Sygnatura sprawy egz.": "Km 1036/24",
+        "Termin przedawnienia roszcz.": 46752,
+        "Panel komunikacji": [
+          {
+            date: "2024-08-27",
+            note: "postanowienie o odmówieniu wszczęcia egzekucji",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2024-09-06",
+            note: "wniosek o wszczęcie postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+
+          {
+            date: "2024-09-27",
+            note: "wezwanie do uiszczenia zaliczki na wydatki (Km 2579/24)",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-12",
+            note: "wysłuchanie wierzyciela przed umorzeniem postępowania egzekucyjnego",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+          {
+            date: "2025-05-25",
+            note: "wniosek o poszukiwanie majątku",
+            profile: "Kancelaria",
+            username: "Archiwum",
+            userlogin: "Brak danych",
+          },
+        ],
+      },
+    ];
+
+    await connect_SQL.query("TRUNCATE TABLE company_law_documents");
+
+    for (const item of data) {
+      const NUMER_DOKUMENTU = item["Numer dokumentu"];
+      const KONTRAHENT = item["Kontrahent"];
+      const NAZWA_KANCELARII = "Kancelaria Krotoski";
+      const DATA_PRZYJECIA_SPRAWY = isExcelDate(item["Data przekazania sprawy"])
+        ? excelDateToISODate(item["Data przekazania sprawy"])
+        : null;
+      const DATA_WYSTAWIENIA_DOKUMENTU = isExcelDate(
+        item["Data wystawienia dokumentu"]
+      )
+        ? excelDateToISODate(item["Data wystawienia dokumentu"])
+        : null;
+      const KWOTA_BRUTTO_DOKUMENTU = item["Kwota brutto dokumentu"];
+      const ODDZIAL = item.Odzial;
+      const FIRMA = item.FIRMA;
+      const DATA_PRZEKAZANIA_SPRAWY = isExcelDate(
+        item["Data przekazania sprawy"]
+      )
+        ? excelDateToISODate(item["Data przekazania sprawy"])
+        : null;
+      const KWOTA_ROSZCZENIA_DO_KANCELARII = null;
+
+      const CZAT_KANCELARIA = item["Panel komunikacji"];
+      const STATUS_SPRAWY = item["Status sprawy"];
+      const TERMIN_PRZEDAWNIENIA_ROSZCZENIA = isExcelDate(
+        item["Termin przedawnienia roszcz."]
+      )
+        ? excelDateToISODate(item["Termin przedawnienia roszcz."])
+        : null;
+
+      const DATA_WYMAGALNOSCI_PLATNOSCI = isExcelDate(
+        item["Data wymagalności płatności"]
+      )
+        ? excelDateToISODate(item["Data wymagalności płatności"])
+        : null;
+      const WYDZIAL_SADU = item["Wydział Sądu"];
+      const ORGAN_EGZEKUCYJNY = item["Organ egzekucyjny"];
+      const SYGN_SPRAWY_EGZEKUCYJNEJ = item["Sygnatura sprawy egz."];
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, DATA_PRZYJECIA_SPRAWY, DATA_WYSTAWIENIA_DOKUMENTU, KWOTA_BRUTTO_DOKUMENTU, ODDZIAL, FIRMA, DATA_PRZEKAZANIA_SPRAWY, KWOTA_ROSZCZENIA_DO_KANCELARII, CZAT_KANCELARIA, STATUS_SPRAWY, TERMIN_PRZEDAWNIENIA_ROSZCZENIA, DATA_WYMAGALNOSCI_PLATNOSCI, WYDZIAL_SADU, ORGAN_EGZEKUCYJNY, SYGN_SPRAWY_EGZEKUCYJNEJ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          NUMER_DOKUMENTU || null,
+          KONTRAHENT || null,
+          NAZWA_KANCELARII || null,
+          DATA_PRZYJECIA_SPRAWY || null,
+          DATA_WYSTAWIENIA_DOKUMENTU || null,
+          KWOTA_BRUTTO_DOKUMENTU || null,
+          JSON.stringify(ODDZIAL) || null,
+          FIRMA || null,
+          DATA_PRZEKAZANIA_SPRAWY || null,
+          KWOTA_ROSZCZENIA_DO_KANCELARII || null,
+          JSON.stringify(CZAT_KANCELARIA) || null,
+          STATUS_SPRAWY || null,
+          TERMIN_PRZEDAWNIENIA_ROSZCZENIA || null,
+          DATA_WYMAGALNOSCI_PLATNOSCI || null,
+          WYDZIAL_SADU || null,
+          ORGAN_EGZEKUCYJNY || null,
+          SYGN_SPRAWY_EGZEKUCYJNEJ || null,
+        ]
+      );
     }
+    await updateLawSettlements();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const copyDefaultTableSettings = async () => {
+  try {
+    const [user] = await connect_SQL.query(
+      "SELECT * FROM company_users WHERE id_user = 117"
+    );
+    const Kancelaria = {
+      size: {
+        KONTRAHENT: 204,
+        CZAT_KANCELARIA: 314,
+        NUMER_DOKUMENTU: 196,
+        ORGAN_EGZEKUCYJNY: 251,
+        DATA_PRZYJECIA_SPRAWY: 195,
+        KWOTA_BRUTTO_DOKUMENTU: 158,
+        POZOSTALA_NALEZNOSC_FK: 155,
+        DATA_PRZEKAZANIA_SPRAWY: 190,
+        WYKAZ_SPLACONEJ_KWOTY_FK: 316,
+        DATA_WYSTAWIENIA_DOKUMENTU: 182,
+        DATA_WYMAGALNOSCI_PLATNOSCI: 200,
+      },
+      order: [
+        "NUMER_DOKUMENTU",
+        "DATA_WYSTAWIENIA_DOKUMENTU",
+        "KONTRAHENT",
+        "KWOTA_BRUTTO_DOKUMENTU",
+        "KWOTA_ROSZCZENIA_DO_KANCELARII",
+        "POZOSTALA_NALEZNOSC_FK",
+        "CZAT_KANCELARIA",
+        "DATA_PRZYJECIA_SPRAWY",
+        "DATA_PRZEKAZANIA_SPRAWY",
+        "SUMA_SPLACONEJ_KWOTY_FK",
+        "WYKAZ_SPLACONEJ_KWOTY_FK",
+        "DATA_WYMAGALNOSCI_PLATNOSCI",
+        "ODDZIAL",
+        "NIP_NR",
+        "OPIS_DOKUMENTU",
+        "ORGAN_EGZEKUCYJNY",
+        "STATUS_SPRAWY",
+        "SYGN_SPRAWY_EGZEKUCYJNEJ",
+        "SYGNATURA_SPRAWY",
+        "TERMIN_PRZEDAWNIENIA_ROSZCZENIA",
+        "WYDZIAL_SADU",
+        "mrt-row-spacer",
+      ],
+      pinning: { left: ["NUMER_DOKUMENTU"], right: [] },
+      visible: { NIP_NR: false, OPIS_DOKUMENTU: false },
+      pagination: { pageSize: 50, pageIndex: 0 },
+    };
+
+    // const userTable = user[0].tableSettings;
+    // userTable.Kancelaria = Kancelaria;
+
+    const id = [4, 20, 21, 117];
+
+    for (const item of id) {
+      const [newUser] = await connect_SQL.query(
+        "SELECT tableSettings FROM company_users WHERE id_user = ?",
+        [item]
+      );
+      const tableSeting = newUser[0].tableSettings;
+      tableSeting.Kancelaria = Kancelaria;
+
+      await connect_SQL.query(
+        "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
+        [JSON.stringify(tableSeting), item]
+      );
+    }
+    console.log("finish");
   } catch (error) {
     console.error(error);
   }
@@ -1586,27 +2335,21 @@ const checkHistory = async () => {
 
 const repair = async () => {
   try {
-    const companies = ["KRT", "KEM", "RAC"];
-
-    // await addRoleRaports();
-
-    // await getOwnersMail("KRT");
-
-    // await generateHistoryDocuments("KRT");
-
-    // await checkHistory();
-
-    // await getAccountancyDataMsSQL("KRT");
+    // await rebuildDataBase();
+    // console.log("rebuildDataBase");
+    //
+    //
+    // chwilowa funkcja
+    // await temporaryFunc();
+    // console.log("temporaryFunc");
+    // await copyDataToLaw();
+    //
+    // await copyDefaultTableSettings();
   } catch (error) {
     console.error(error);
   }
 };
 
 module.exports = {
-  repairAdvisersName,
-  createAccounts,
-  generatePassword,
-  generateHistoryDocumentsRepair,
-  repairManagementDecision,
   repair,
 };

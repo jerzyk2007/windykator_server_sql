@@ -31,21 +31,21 @@ router
   .route("/change-roles/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    usersController.changeRoles
+    usersController.changeUserRoles
   );
 
 router
   .route("/change-columns/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    usersController.changeColumns
+    usersController.changeUserColumns
   );
 
 router
-  .route("/change-permissions/:id_user")
+  .route("/change-law-partner/:id_user")
   .patch(
     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    usersController.changeUserPermissions
+    usersController.changeLawPartner
   );
 
 router
@@ -77,37 +77,42 @@ router
   );
 
 router
-  .route("/save-table-settings/:id_user")
+  .route("/save-table-settings/:id_user/:profile")
   .patch(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
-    usersController.saveTableSettings
+    verifyRoles(
+      ROLES_LIST.User,
+      ROLES_LIST.Editor,
+      ROLES_LIST.LawPartner,
+      ROLES_LIST.SuperAdmin
+    ),
+    usersController.saveUserTableSettings
   );
 
 router
   .route("/save-raport-departments-settings/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.saveRaporDepartmentSettings
   );
 
 router
   .route("/get-raport-departments-settings/:id_user")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.getRaportDepartmentSettings
   );
 
 router
   .route("/save-raport-advisers-settings/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.saveRaporAdviserSettings
   );
 
 router
   .route("/get-raport-advisers-settings/:id_user")
   .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     usersController.getRaportAdviserSettings
   );
 

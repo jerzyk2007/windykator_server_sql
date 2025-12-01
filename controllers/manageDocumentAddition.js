@@ -13,103 +13,6 @@ const dzialMap = {
   D318: "D308/D318",
 };
 
-const raportSettings = {
-  raportAdvisers:
-    '{"size":{},"visible":{"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DORADCA","DZIAL","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","CEL_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}',
-  raportDepartments:
-    '{"size":{},"visible":{"CEL_BEZ_PZU_LINK4":false,"PRZETERMINOWANE_BEZ_PZU_LINK4":false,"ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4":false,"NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4":false,"KWOTA_NIEPOBRANYCH_VAT":false,"ILE_NIEPOBRANYCH_VAT":false,"KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI":false,"ILE_BLEDOW_DORADCY_I_DOKUMENTACJI":false},"density":"comfortable","order":["DZIALY","CEL","CEL_BEZ_PZU_LINK4","PRZETERMINOWANE_BEZ_PZU_LINK4","ILOSC_PRZETERMINOWANYCH_FV_BEZ_PZU_LINK4","NIEPRZETERMINOWANE_FV_BEZ_PZU_LINK4","CEL_CALOSC","PRZETERMINOWANE_FV","ILOSC_PRZETERMINOWANYCH_FV","NIEPRZETERMINOWANE_FV","CEL_BEZ_KANCELARII","PRZETERMINOWANE_BEZ_KANCELARII","ILOSC_PRZETERMINOWANYCH_FV_BEZ_KANCELARII","NIEPRZETERMINOWANE_FV_BEZ_KANCELARII","KWOTA_NIEPOBRANYCH_VAT","ILE_NIEPOBRANYCH_VAT","KWOTA_BLEDOW_DORADCY_I_DOKUMENTACJI","ILE_BLEDOW_DORADCY_I_DOKUMENTACJI","mrt-row-spacer"],"pinning":{"left":[],"right":[]},"pagination":{"pageIndex":0,"pageSize":20}}',
-};
-
-const newUserTableSettings = {
-  size: {
-    NIP: 100,
-    VIN: 100,
-    AREA: 100,
-    DZIAL: 100,
-    NETTO: 100,
-    BRUTTO: 111,
-    TERMIN: 122,
-    DATA_FV: 140,
-    DORADCA: 100,
-    NUMER_FV: 194,
-    KONTRAHENT: 270,
-    BLAD_DORADCY: 100,
-    TYP_PLATNOSCI: 100,
-    DO_ROZLICZENIA: 136,
-    UWAGI_ASYSTENT: 250,
-    JAKA_KANCELARIA: 100,
-    UWAGI_Z_FAKTURY: 100,
-    NR_REJESTRACYJNY: 100,
-    DATA_WYDANIA_AUTA: 100,
-    INFORMACJA_ZARZAD: 192,
-    CZY_PRZETERMINOWANE: 100,
-    ILE_DNI_PO_TERMINIE: 111,
-    ZAZNACZ_KONTRAHENTA: 100,
-    OSTATECZNA_DATA_ROZLICZENIA: 230,
-  },
-  order: [
-    "NUMER_FV",
-    "DATA_FV",
-    "TERMIN",
-    "ILE_DNI_PO_TERMINIE",
-    "BRUTTO",
-    "DO_ROZLICZENIA",
-    "KONTRAHENT",
-    "UWAGI_ASYSTENT",
-    "AREA",
-    "BLAD_DORADCY",
-    "CZY_PRZETERMINOWANE",
-    "DATA_WYDANIA_AUTA",
-    "DORADCA",
-    "DZIAL",
-    "INFORMACJA_ZARZAD",
-    "JAKA_KANCELARIA",
-    "NETTO",
-    "NIP",
-    "NR_REJESTRACYJNY",
-    "OSTATECZNA_DATA_ROZLICZENIA",
-    "TYP_PLATNOSCI",
-    "UWAGI_Z_FAKTURY",
-    "VIN",
-    "ZAZNACZ_KONTRAHENTA",
-    "mrt-row-spacer",
-  ],
-  pinning: {
-    left: ["NUMER_FV"],
-    right: [],
-  },
-  visible: {
-    NIP: false,
-    VIN: false,
-    AREA: false,
-    DZIAL: false,
-    NETTO: false,
-    BRUTTO: true,
-    TERMIN: true,
-    DATA_FV: true,
-    DORADCA: false,
-    NUMER_FV: true,
-    KONTRAHENT: true,
-    BLAD_DORADCY: false,
-    TYP_PLATNOSCI: false,
-    DO_ROZLICZENIA: true,
-    UWAGI_ASYSTENT: true,
-    JAKA_KANCELARIA: false,
-    UWAGI_Z_FAKTURY: false,
-    NR_REJESTRACYJNY: false,
-    DATA_WYDANIA_AUTA: false,
-    INFORMACJA_ZARZAD: false,
-    CZY_PRZETERMINOWANE: false,
-    ILE_DNI_PO_TERMINIE: true,
-    ZAZNACZ_KONTRAHENTA: false,
-    OSTATECZNA_DATA_ROZLICZENIA: false,
-  },
-  pagination: {
-    pageSize: 30,
-    pageIndex: 0,
-  },
-};
-
 // rozkodowuje nr działu na podstawie numeru faktury, chyba że RAC
 const addDepartment = (documents) => {
   return documents.map((document) => {
@@ -211,12 +114,20 @@ const generatePassword = async (length = 12) => {
   };
 };
 
+const userProfile = (profile) => {
+  const selectProfile = {
+    insider: "Pracownik",
+    partner: "Kancelaria",
+    insurance: "Polisy",
+  };
+  return selectProfile[profile];
+};
+
 module.exports = {
   addDepartment,
   checkDate,
   checkTime,
-  raportSettings,
-  newUserTableSettings,
   documentsType,
   generatePassword,
+  userProfile,
 };

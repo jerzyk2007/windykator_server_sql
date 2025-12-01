@@ -1,0 +1,60 @@
+DNiKN
+*** Oddział *tekst
+*** Tytuł roszczenia/numer dokumentu sprzedaży  *tekst
+*** opis dokumentu jesli nie będzie fv *tekst
+*** data wystawienia dokumentu *data
+*** Data przyjęcia sprawy przez Kancelarię *data
+*** Data przekazania sprawy do Kancelarii *data 
+*** kwota przekazana do kancelarii *decimal
+
+
+*** Wartość spłaconej kwoty - dane z tabeli mssql *JSON
+*** Wartość spłaconej kwoty *decimal
+
+
+
+kanelaria:
+*** Dłużnik/odbiorca dokumentu sprzedaży *tekst
+*** Status sprawy *JSON
+    EGZEKUCYJNA
+    PRZEDSĄDOWA
+    RESTRUKTURYZACYJNA
+    SĄDOWA
+    SĄDOWA/EGZEKUCYJNA
+*** Stan sprawy *JSON - chatData
+*** termin przedawnienia roszczenia *data
+*** Data wymagalności płatności *data
+*** Wartość dokumentu sprzedaży *kwota decimal
+*** Aktualna kwota zadłużenia *kwota decimal
+*** Wydział Sądu  *tekst
+*** sygn.sprawy sądowej  *tekst
+*** Organ egzekucyjny *tekst
+*** Sygn. Sprawy egzekucyjnej *tekst
+
+
+usuń kolumnę COLUMNS z tabeli company_settings
+
+
+wykaz kolumn 
+NUMER_DOKUMENTU
+KONTRAHENT
+NIP_NR
+DATA_PRZYJECIA_SPRAWY
+DATA_WYSTAWIENIA_DOKUMENTU
+KWOTA_BRUTTO_DOKUMENTU
+ODDZIAL
+OPIS_DOKUMENTU
+DATA_PRZEKAZANIA_SPRAWY
+KWOTA_ROSZCZENIA_DO_KANCELARII
+CZAT_KANCELARIA
+STATUS_SPRAWY
+SYGNATURA_SPRAWY
+TERMIN_PRZEDAWNIENIA_ROSZCZENIA
+DATA_WYMAGALNOSCI_PLATNOSCI
+WYDZIAL_SADU
+ORGAN_EGZEKUCYJNY
+SYGN_SPRAWY_EGZEKUCYJNEJ
+WYKAZ_SPLACONEJ_KWOTY_FK
+SUMA_SPLACONEJ_KWOTY_FK
+POZOSTALA_NALEZNOSC_FK
+

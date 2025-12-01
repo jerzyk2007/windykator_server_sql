@@ -3,208 +3,24 @@ const bcryptjs = require("bcryptjs");
 const ROLES_LIST = require("../config/roles_list");
 const { logEvents } = require("../middleware/logEvents");
 const {
+  raportUserSettings,
+  raportLawPartnerSettings,
   newUserTableSettings,
-  raportSettings,
-} = require("./manageDocumentAddition");
+  newLawPartnerTableSettings,
+  userDepartments,
+  userColumns,
+} = require("../config/userSettings");
+const {
+  verifyUserTableConfig,
+  prepareColumnConfigForUser,
+} = require("./tableController");
 const { generatePassword } = require("./manageDocumentAddition");
 const { sendEmail } = require("./mailController");
+const { userProfile } = require("./manageDocumentAddition");
 
-// funkcja sprawdzająca poprzednie ustawienia tabeli użytkownika i dopasowująca nowe po zmianie dostępu do działu
-const verifyUserTableConfig = async (
-  id_user,
-  departments,
-  columnsFromSettings
-) => {
-  try {
-    // zakładamy że `departments` to tablica obiektów jak { department: 'D001', company: 'KRT' }
-    if (!departments.length) return;
-
-    const whereClauses = departments
-      .map(() => `(ji.DEPARTMENT = ? AND ji.COMPANY = ?)`)
-      .join(" OR ");
-    const values = departments.flatMap((dep) => [dep.department, dep.company]);
-
-    const query = `
-  SELECT DISTINCT ji.AREA
-  FROM company_users AS u
-  LEFT JOIN company_join_items AS ji
-    ON (${whereClauses})
-  WHERE u.id_user = ?
-`;
-    // Dodaj id_user na końcu wartości
-    values.push(id_user);
-    const [getUserAreas] = await connect_SQL.query(query, values);
-
-    // pobieram ustawienia kolumn, przypisanych działów i ustawień tabeli danego użytkownika
-    const [checkDepartments] = await connect_SQL.query(
-      "SELECT columns, departments, tableSettings FROM company_users WHERE id_user = ?",
-      [id_user]
-    );
-
-    const areaDep = columnsFromSettings.reduce((acc, column) => {
-      column.areas.forEach((area) => {
-        if (area.available) {
-          const existingEntry = acc.find((entry) =>
-            entry.hasOwnProperty(area.name)
-          );
-          if (existingEntry) {
-            existingEntry[area.name].push({
-              accessorKey: column.accessorKey,
-              header: column.header,
-              filterVariant: column.filterVariant,
-              type: column.type,
-              // hide: area.hide
-            });
-          } else {
-            acc.push({
-              [area.name]: [
-                {
-                  accessorKey: column.accessorKey,
-                  header: column.header,
-                  filterVariant: column.filterVariant,
-                  type: column.type,
-                  // hide: area.hide
-                },
-              ],
-            });
-          }
-        }
-      });
-      return acc;
-    }, []);
-
-    //  obszary(area) do jakich ma dostęp uzytkownik
-    const areaUsers = getUserAreas.map((item) => item.AREA);
-
-    // 1. Przefiltruj areaDep, aby zostawić tylko obiekty o nazwach w areaUsers.
-    const filteredAreas = areaDep.filter((area) =>
-      Object.keys(area).some((key) => areaUsers.includes(key))
-    );
-
-    // 2. Wyciągnij wszystkie obiekty z pasujących kluczy.
-    const combinedObjects = filteredAreas.flatMap((area) =>
-      Object.entries(area)
-        .filter(([key]) => areaUsers.includes(key))
-        .flatMap(([, values]) => values)
-    );
-
-    // 3. Usuń duplikaty na podstawie accessorKey.
-    const uniqueObjects = combinedObjects.reduce((acc, obj) => {
-      if (!acc.some((item) => item.accessorKey === obj.accessorKey)) {
-        acc.push(obj);
-      }
-      return acc;
-    }, []);
-
-    // wyciągam unikalne nazwy accessorKey z przypisanych nowych kolumn
-    const assignedUserNewColumns = uniqueObjects.map(
-      (column) => column.accessorKey
-    );
-
-    const newFilteredSize = () => {
-      const newSize = assignedUserNewColumns.reduce((acc, key) => {
-        if (checkDepartments[0]?.tableSettings?.size.hasOwnProperty(key)) {
-          // Dodaj istniejące klucze z checkDepartments
-          acc[key] = checkDepartments[0]?.tableSettings?.size[key];
-        } else {
-          // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-          acc[key] = 100;
-        }
-        return acc;
-      }, {});
-      return newSize;
-    };
-
-    const newFilteredeOrder = () => {
-      const checkOrder = checkDepartments[0]?.tableSettings?.order
-        ? checkDepartments[0].tableSettings.order
-        : [];
-
-      if (checkOrder.length) {
-        const filteredOrder = checkOrder.filter(
-          (item) =>
-            assignedUserNewColumns.includes(item) || item === "mrt-row-spacer"
-        );
-
-        // Sprawdzamy, które elementy z `assignedUserNewColumns` są nowe (nie ma ich w `checkDepartments[0].tableSettings.order`)
-        const newColumns = assignedUserNewColumns.filter(
-          (item) => !checkDepartments[0].tableSettings.order.includes(item)
-        );
-
-        // Znajdujemy indeks przedostatniego elementu (przed 'mrt-row-spacer')
-        const indexBeforeSpacer = filteredOrder.indexOf("mrt-row-spacer");
-
-        // Tworzymy nową tablicę, dodając nowe elementy przed ostatnim elementem ('mrt-row-spacer')
-        const finalOrder = [
-          ...filteredOrder.slice(0, indexBeforeSpacer), // Wszystkie elementy przed 'mrt-row-spacer'
-          ...newColumns, // Dodajemy nowe elementy
-          "mrt-row-spacer", // Zachowujemy 'mrt-row-spacer' na końcu
-        ];
-        return finalOrder;
-      } else {
-        const finalOrder = [...assignedUserNewColumns, "mrt-row-spacer"];
-        return finalOrder;
-      }
-    };
-
-    const newFilteredeVisible = () => {
-      const newVisible = assignedUserNewColumns.reduce((acc, key) => {
-        if (checkDepartments[0]?.tableSettings?.visible.hasOwnProperty(key)) {
-          // Dodaj istniejące klucze z checkDepartments
-          acc[key] = checkDepartments[0]?.tableSettings?.visible[key];
-        } else {
-          // Stwórz klucz, jeśli go nie ma, i ustaw wartość 100
-          acc[key] = false;
-        }
-        return acc;
-      }, {});
-      return newVisible;
-    };
-
-    const newTableSettings = {
-      size:
-        checkDepartments[0]?.tableSettings?.size &&
-        Object.keys(checkDepartments[0]?.tableSettings?.size).length > 0
-          ? newFilteredSize()
-          : {},
-      order: checkDepartments[0]?.tableSettings?.order?.length
-        ? newFilteredeOrder()
-        : [],
-      visible:
-        checkDepartments[0]?.tableSettings?.visible &&
-        Object.keys(checkDepartments[0]?.tableSettings?.visible).length > 0
-          ? newFilteredeVisible()
-          : {},
-      pagination: checkDepartments[0]?.tableSettings?.pagination
-        ? checkDepartments[0].tableSettings.pagination
-        : { pageIndex: 0, pageSize: 10 },
-      pinning: checkDepartments[0]?.tableSettings?.pinning
-        ? checkDepartments[0].tableSettings.pinning
-        : { left: [], right: [] },
-    };
-
-    await connect_SQL.query(
-      "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
-      [JSON.stringify(newTableSettings), id_user]
-    );
-    await connect_SQL.query(
-      "Update company_users SET columns = ? WHERE id_user = ?",
-      [JSON.stringify(uniqueObjects), id_user]
-    );
-  } catch (error) {
-    logEvents(
-      `usersController, verifyUserTableConfig: ${error}`,
-      "reqServerErrors.txt"
-    );
-    // console.error(error);
-  }
-};
-
-// rejestracja nowego użytkownika SQL
 const createNewUser = async (req, res) => {
-  const { userlogin, username, usersurname } = req.body;
-
-  if (!userlogin || !username || !usersurname) {
+  const { userlogin, username, usersurname, permission } = req.body;
+  if (!userlogin || !username || !usersurname || !permission) {
     return res
       .status(400)
       .json({ message: "Userlogin and password are required." });
@@ -222,19 +38,32 @@ const createNewUser = async (req, res) => {
         .json({ message: `User ${userlogin} is existing in databse` });
 
     // encrypt the password
-    const roles = { Start: 1 };
+    const roles =
+      permission === "Pracownik" ? { Start: 1 } : { Start: 1, LawPartner: 500 };
     const password = await generatePassword();
 
+    const raportSettings =
+      permission === "Pracownik"
+        ? raportUserSettings
+        : raportLawPartnerSettings;
+    const tableSettings =
+      permission === "Pracownik"
+        ? newUserTableSettings
+        : newLawPartnerTableSettings;
+
     await connect_SQL.query(
-      "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO company_users (username, usersurname, userlogin, password, roles, tableSettings, raportSettings, permissions, departments, columns) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         username,
         usersurname,
         userlogin,
         password.hashedPwd,
         JSON.stringify(roles),
-        JSON.stringify(newUserTableSettings),
+        JSON.stringify(tableSettings),
         JSON.stringify(raportSettings),
+        permission,
+        JSON.stringify(userDepartments),
+        JSON.stringify(userColumns),
       ]
     );
 
@@ -243,18 +72,18 @@ const createNewUser = async (req, res) => {
       to: `${userlogin}`,
       subject: "Zostało założone konto dla Ciebie",
       html: `
-      <b>Dzień dobry</b><br>
-      <br>
-      Zostało założone konto dla Ciebie, aplikacja dostępna pod adresem <br>
-      <a href="https://raportbl.krotoski.com/" target="_blank">https://raportbl.krotoski.com</a><br>
-      <br>
-      Login: ${userlogin}<br>
-      Hasło: ${password.password}<br>
-    
-       <br>
-      Z poważaniem.<br>
-      Dział Nadzoru i Kontroli Należności <br>
-  `,
+        <b>Dzień dobry</b><br>
+        <br>
+        Zostało założone konto dla Ciebie, aplikacja dostępna pod adresem <br>
+        <a href="https://raportbl.krotoski.com/" target="_blank">https://raportbl.krotoski.com</a><br>
+        <br>
+        Login: ${userlogin}<br>
+        Hasło: ${password.password}<br>
+
+         <br>
+        Z poważaniem.<br>
+        Dział Nadzoru i Kontroli Należności <br>
+    `,
     };
     await sendEmail(mailOptions);
 
@@ -400,49 +229,56 @@ const changePasswordAnotherUser = async (req, res) => {
 };
 
 // zmiana uprawnień użytkownika Doradca/Asystentka SQL
-const changeUserPermissions = async (req, res) => {
-  const { id_user } = req.params;
-  const { permissions } = req.body;
-  try {
-    const [result] = await connect_SQL.query(
-      "UPDATE company_users SET permissions = ? WHERE id_user = ?",
-      [JSON.stringify(permissions), id_user]
-    );
-    if (result.affectedRows > 0) {
-      // Jeśli aktualizacja zakończyła się sukcesem
-      return res.status(201).json({ message: "Permissions are changed" });
-    } else {
-      // Jeśli aktualizacja nie powiodła się
-      return res.status(404).json({ message: "User not found." });
-    }
-  } catch (error) {
-    logEvents(
-      `usersController, changeUserPermissions: ${error}`,
-      "reqServerErrors.txt"
-    );
-    res.status(500).json({ message: error.message });
-  }
-};
+// const changeUserPermissions = async (req, res) => {
+//   const { id_user } = req.params;
+//   const { permissions } = req.body;
+//   try {
+//     const [result] = await connect_SQL.query(
+//       "UPDATE company_users SET permissions = ? WHERE id_user = ?",
+//       [JSON.stringify(permissions), id_user]
+//     );
+//     if (result.affectedRows > 0) {
+//       // Jeśli aktualizacja zakończyła się sukcesem
+//       return res.status(201).json({ message: "Permissions are changed" });
+//     } else {
+//       // Jeśli aktualizacja nie powiodła się
+//       return res.status(404).json({ message: "User not found." });
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `usersController, changeUserPermissions: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 // zmiana dostępu do działów SQL
 const changeUserDepartments = async (req, res) => {
   const { id_user } = req.params;
-  const { departments } = req.body;
+  const { activeDepartments } = req.body;
+
   try {
     // pobieram wszytskie kolumny dla tabel które sa opisane w programie
-    const [getColumns] = await connect_SQL.query(
-      "SELECT * FROM company_table_columns"
+    const [userPermission] = await connect_SQL.query(
+      "SELECT permissions, departments FROM company_users WHERE id_user = ?",
+      [id_user]
     );
-
-    if (departments?.length > 0) {
-      await verifyUserTableConfig(id_user, departments, getColumns);
+    const { permissions, departments } = userPermission[0];
+    departments[permissions] = activeDepartments;
+    if (departments[permissions].length && permissions === "Pracownik") {
+      const newDeps = [...departments[permissions]];
+      await verifyUserTableConfig(
+        id_user,
+        userPermission[0].permissions,
+        newDeps
+      );
     }
 
     const [result] = await connect_SQL.query(
       "UPDATE company_users SET departments = ? WHERE id_user = ?",
       [JSON.stringify(departments), id_user]
     );
-
     if (result.affectedRows > 0) {
       // Jeśli aktualizacja zakończyła się sukcesem
       return res.status(201).json({ message: "Departments are changed" });
@@ -453,6 +289,38 @@ const changeUserDepartments = async (req, res) => {
   } catch (error) {
     logEvents(
       `usersController, changeUserDepartments: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const changeLawPartner = async (req, res) => {
+  const { id_user } = req.params;
+  const { lawPartner } = req.body;
+  try {
+    const [departments] = await connect_SQL.query(
+      "SELECT departments FROM company_users WHERE id_user = ?",
+      [id_user]
+    );
+    if (lawPartner.length) {
+      departments[0].departments.Kancelaria = [...lawPartner];
+      await connect_SQL.query(
+        "UPDATE company_users SET departments = ? WHERE id_user = ?",
+        [JSON.stringify(departments[0].departments), id_user]
+      );
+      await prepareColumnConfigForUser(
+        id_user,
+        (permission = "Kancelaria"),
+        lawPartner
+      );
+      res.end();
+    } else {
+      res.status(500).json({ message: error.message });
+    }
+  } catch (error) {
+    logEvents(
+      `usersController, changeLawPartner: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ message: error.message });
@@ -483,28 +351,32 @@ const deleteUser = async (req, res) => {
 };
 
 // zapisanie ustawień tabeli dla użytkownika SQL
-const saveTableSettings = async (req, res) => {
-  const { id_user } = req.params;
-  const { tableSettings } = req.body;
-  if (!id_user) {
-    return res.status(400).json({ message: "Userlogin is required." });
-  }
+const saveUserTableSettings = async (req, res) => {
+  const { id_user, profile } = req.params;
+  const { newTableSettings } = req.body;
 
+  if (!id_user || !profile) {
+    return res
+      .status(400)
+      .json({ message: "Userlogin and profile are required." });
+  }
+  const userType = userProfile(profile);
   try {
-    const [result] = await connect_SQL.query(
-      "UPDATE company_users SET tableSettings = ? WHERE id_user = ?",
+    const [userTableSettings] = await connect_SQL.query(
+      "SELECT tableSettings, permissions FROM company_users WHERE id_user = ?",
+      [id_user]
+    );
+    const { tableSettings } = userTableSettings[0];
+    tableSettings[userType] = newTableSettings;
+    await connect_SQL.query(
+      "UPDATE company_users SET tableSettings =? WHERE id_user = ?",
       [JSON.stringify(tableSettings), id_user]
     );
-    if (result.affectedRows > 0) {
-      // Jeśli aktualizacja zakończyła się sukcesem
-      return res.status(201).json({ message: "Table settings are changed" });
-    } else {
-      // Jeśli aktualizacja nie powiodła się
-      res.status(400).json({ message: "Table settings are not changed" });
-    }
+
+    res.end();
   } catch (error) {
     logEvents(
-      `usersController, saveTableSettings: ${error}`,
+      `usersController, saveUserTableSettings: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ message: error.message });
@@ -516,23 +388,34 @@ const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
     const [result] = await connect_SQL.query(
-      "SELECT id_user, username, usersurname, userlogin, roles, tableSettings, raportSettings, permissions, departments, columns FROM company_users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
+      "SELECT id_user, username, usersurname, userlogin, roles, permissions, departments FROM company_users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
       [`%${search}%`, `%${search}%`, `%${search}%`]
     );
 
     if (result[0]?.userlogin.length > 0) {
-      const filteredUsers = result
-        .map((user) => {
-          if (user.roles) {
-            user.roles = Object.keys(user.roles).map((role) => role);
-          }
-          if (user.departments) {
-            user.oldDepartments = user.departments.map((dep) => dep.department);
-          }
-          return user;
-        })
-        .filter((user) => !user.roles.includes("Root"));
+      const { permissions = "" } = result[0];
+      const filteredUsers = result.map((user) => {
+        const roles = Object.keys(user.roles).map((role) => role);
+        const userDepartments = user.departments[permissions];
+        const oldDepartments = userDepartments?.length
+          ? userDepartments.map((dep) => dep.department)
+          : [];
+
+        return {
+          id_user: user.id_user,
+          username: user.username,
+          usersurname: user.usersurname,
+          userlogin: user.userlogin,
+          roles,
+          permissions,
+          departments: user.departments || [],
+          oldDepartments: oldDepartments || [],
+        };
+      });
       return res.json(filteredUsers);
+      // } else {
+      //   // kancelaria
+      // }
     } else {
       return res.json([]);
     }
@@ -543,14 +426,18 @@ const getUsersData = async (req, res) => {
 };
 
 // zmiana roli użytkownika User, Editor, Admin SQL
-const changeRoles = async (req, res) => {
+const changeUserRoles = async (req, res) => {
   const { id_user } = req.params;
   const { roles } = req.body;
   const newRoles = { ...ROLES_LIST };
+  // dodaję rolę STart, ktróra jest podstawowa do uruchomienia programu przez usera
+  const userRoles = [...roles, "Start"];
   const filteredRoles = Object.fromEntries(
-    Object.entries(newRoles).filter(([key]) => roles.includes(key))
+    Object.entries(newRoles).filter(([key]) => userRoles.includes(key))
   );
-
+  if (roles.includes("Insurance")) {
+    await prepareColumnConfigForUser(id_user, "Polisy");
+  }
   try {
     const [result] = await connect_SQL.query(
       "UPDATE company_users SET roles = ? WHERE id_user = ?",
@@ -565,13 +452,16 @@ const changeRoles = async (req, res) => {
       return res.status(400).json({ message: "Roles are not saved." });
     }
   } catch (error) {
-    logEvents(`usersController, changeRoles: ${error}`, "reqServerErrors.txt");
+    logEvents(
+      `usersController, changeUserRoles: ${error}`,
+      "reqServerErrors.txt"
+    );
     res.status(500).json({ error: "Server error" });
   }
 };
 
 // zmiana dostępu do kolumn tabeli dla użytkownika (jakie kolumny ma widzieć) SQL
-const changeColumns = async (req, res) => {
+const changeUserColumns = async (req, res) => {
   const { id_user } = req.params;
   const { columns } = req.body;
   try {
@@ -589,7 +479,7 @@ const changeColumns = async (req, res) => {
     }
   } catch (error) {
     logEvents(
-      `usersController, changeColumns: ${error}`,
+      `usersController, changeUserColumns: ${error}`,
       "reqServerErrors.txt"
     );
     res.status(500).json({ error: "Server error" });
@@ -759,16 +649,16 @@ module.exports = {
   changeName,
   changePassword,
   changePasswordAnotherUser,
-  changeUserPermissions,
+  // changeUserPermissions,
   changeUserDepartments,
+  changeLawPartner,
   deleteUser,
-  saveTableSettings,
+  saveUserTableSettings,
   getUsersData,
-  changeRoles,
-  changeColumns,
+  changeUserRoles,
+  changeUserColumns,
   saveRaporDepartmentSettings,
   getRaportDepartmentSettings,
   saveRaporAdviserSettings,
   getRaportAdviserSettings,
-  verifyUserTableConfig,
 };

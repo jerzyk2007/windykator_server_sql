@@ -106,7 +106,7 @@ router
 router
   .route("/add-decision-date-fk")
   .post(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
     fKRaport.addDecisionDate
   );
 

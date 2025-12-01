@@ -326,6 +326,7 @@ const documentsControlBL = async (cleanData) => {
             // Pobranie komórki, w której ma być wyświetlona liczba wystąpień słowa "BRAK"
             const sumCell = worksheet.getCell(startRow - 1, column.number); // np. wiersz 4, odpowiednia kolumna
             const dzialaniaCol = excelColumnMap["Płatność VAT"];
+
             sumCell.value = {
               formula: `SUMPRODUCT(SUBTOTAL(3, OFFSET(${dzialaniaCol}${excelStartRow}:${dzialaniaCol}${excelEndRow}, ROW(${dzialaniaCol}${excelStartRow}:${dzialaniaCol}${excelEndRow})-ROW(${dzialaniaCol}${excelStartRow}), 0, 1)), 
                                       --((${dzialaniaCol}${excelStartRow}:${dzialaniaCol}${excelEndRow}="NIE POBRANY 100%") + (${dzialaniaCol}${excelStartRow}:${dzialaniaCol}${excelEndRow}="NIE POBRANY 50%")))`,

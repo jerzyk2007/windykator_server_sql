@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const items = require("../../controllers/itemsController");
+const organization_structure = require("../../controllers/organizationStructureController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
@@ -15,11 +15,11 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.newItem
+    organization_structure.newItem
   );
 
 router
-  .route("/get-items")
+  .route("/get-org-str-data")
   .get(
     verifyRoles(
       ROLES_LIST.Admin,
@@ -28,7 +28,7 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.getDataItems
+    organization_structure.getDataItems
   );
 
 //usuwanie
@@ -42,7 +42,7 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.deleteItem
+    organization_structure.deleteItem
   );
 
 // zmiana pojedyńczego item
@@ -56,7 +56,7 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.changeItem
+    organization_structure.changeItem
   );
 
 // funkcja pobiera zapisane wartości dla działów, ownerów, lokalizacji, opiekunów i obszarów, z odrzuceniem danych zbędnych jak np aging
@@ -70,7 +70,7 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.getFKSettingsItems
+    organization_structure.getFKSettingsItems
   );
 
 // funkcja zapisujaca zmiany kpl - owner, dział, lokalizacja
@@ -84,7 +84,7 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.savePreparedItems
+    organization_structure.savePreparedItems
   );
 
 router
@@ -97,7 +97,7 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.deletePreparedItem
+    organization_structure.deletePreparedItem
   );
 
 router
@@ -110,7 +110,7 @@ router
       ROLES_LIST.FK_RAC,
       ROLES_LIST.SuperAdmin
     ),
-    items.checkDocPayment
+    organization_structure.checkDocPayment
   );
 
 module.exports = router;
