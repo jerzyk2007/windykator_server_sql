@@ -3,7 +3,7 @@ const { logEvents } = require("../middleware/logEvents");
 
 // zapytanie do pobrania danych
 const getDocumentsLawPartner =
-  "SELECT CLD.id_document, CLD.NUMER_DOKUMENTU, CLD.KONTRAHENT, CLD.NIP_NR, CLD.DATA_PRZYJECIA_SPRAWY, CLD.DATA_WYSTAWIENIA_DOKUMENTU, CLD.KWOTA_BRUTTO_DOKUMENTU, CLD.ODDZIAL, CLD.OPIS_DOKUMENTU, CLD.DATA_PRZEKAZANIA_SPRAWY, CLD.KWOTA_ROSZCZENIA_DO_KANCELARII, CLD.CZAT_KANCELARIA, CLD.STATUS_SPRAWY, CLD.SYGNATURA_SPRAWY_SADOWEJ, CLD.TERMIN_PRZEDAWNIENIA_ROSZCZENIA, CLD.DATA_WYMAGALNOSCI_PLATNOSCI, CLD.WYDZIAL_SADU, CLD.ORGAN_EGZEKUCYJNY, CLD.SYGN_SPRAWY_EGZEKUCYJNEJ, CLDS.WYKAZ_SPLACONEJ_KWOTY_FK, CLDS.SUMA_SPLACONEJ_KWOTY_FK, CLDS.POZOSTALA_NALEZNOSC_FK FROM company_law_documents as CLD LEFT JOIN company_law_documents_settlements as CLDS ON CLD.NUMER_DOKUMENTU = CLDS.NUMER_DOKUMENTU_FK";
+  "SELECT CLD.id_document, CLD.NUMER_DOKUMENTU, CLD.KONTRAHENT, CLD.NIP_NR, CLD.DATA_PRZYJECIA_SPRAWY, CLD.DATA_WYSTAWIENIA_DOKUMENTU, CLD.KWOTA_BRUTTO_DOKUMENTU, CLD.ODDZIAL, CLD.OPIS_DOKUMENTU, CLD.DATA_PRZEKAZANIA_SPRAWY, CLD.KWOTA_ROSZCZENIA_DO_KANCELARII, CLD.KANAL_KOMUNIKACJI, CLD.STATUS_SPRAWY, CLD.SYGNATURA_SPRAWY_SADOWEJ, CLD.TERMIN_PRZEDAWNIENIA_ROSZCZENIA, CLD.DATA_WYMAGALNOSCI_PLATNOSCI, CLD.WYDZIAL_SADU, CLD.ORGAN_EGZEKUCYJNY, CLD.SYGN_SPRAWY_EGZEKUCYJNEJ, CLDS.WYKAZ_SPLACONEJ_KWOTY_FK, CLDS.SUMA_SPLACONEJ_KWOTY_FK, CLDS.POZOSTALA_NALEZNOSC_FK FROM company_law_documents as CLD LEFT JOIN company_law_documents_settlements as CLDS ON CLD.NUMER_DOKUMENTU = CLDS.NUMER_DOKUMENTU_FK";
 
 // pobiera dane do tabeli w zaleźności od wywołania
 const getDataTable = async (req, res) => {
@@ -99,23 +99,27 @@ const changeSingleDocument = async (req, res) => {
     );
 
     // łącze stare i nowe dane czatu
-    const oldChatDoc = oldData[0]?.CZAT_KANCELARIA
-      ? oldData[0].CZAT_KANCELARIA
+    const oldChatDoc = oldData[0]?.KANAL_KOMUNIKACJI
+      ? oldData[0].KANAL_KOMUNIKACJI
       : [];
-    const newChat = chatLog?.CZAT_KANCELARIA?.length
-      ? chatLog.CZAT_KANCELARIA
+    const newChat = chatLog?.KANAL_KOMUNIKACJI?.length
+      ? chatLog.KANAL_KOMUNIKACJI
       : [];
 
     const mergeChat = [...(oldChatDoc ?? []), ...(newChat ?? [])];
 
     // łącze stare i nowe dane logów zdarzeń
-    const oldLogDoc = oldData[0]?.CZAT_LOGI ? oldData[0].CZAT_LOGI : [];
-    const newLog = chatLog?.CZAT_LOGI?.length ? chatLog.CZAT_LOGI : [];
+    const oldLogDoc = oldData[0]?.DZIENNIK_ZMIAN
+      ? oldData[0].DZIENNIK_ZMIAN
+      : [];
+    const newLog = chatLog?.DZIENNIK_ZMIAN?.length
+      ? chatLog.DZIENNIK_ZMIAN
+      : [];
 
     const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
 
     await connect_SQL.query(
-      "UPDATE company_law_documents SET CZAT_KANCELARIA = ?, CZAT_LOGI = ?, STATUS_SPRAWY = ?, SYGNATURA_SPRAWY_SADOWEJ = ?, TERMIN_PRZEDAWNIENIA_ROSZCZENIA = ?, DATA_WYMAGALNOSCI_PLATNOSCI = ?, WYDZIAL_SADU = ?, ORGAN_EGZEKUCYJNY = ?, SYGN_SPRAWY_EGZEKUCYJNEJ = ? WHERE id_document = ?",
+      "UPDATE company_law_documents SET KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ?, STATUS_SPRAWY = ?, SYGNATURA_SPRAWY_SADOWEJ = ?, TERMIN_PRZEDAWNIENIA_ROSZCZENIA = ?, DATA_WYMAGALNOSCI_PLATNOSCI = ?, WYDZIAL_SADU = ?, ORGAN_EGZEKUCYJNY = ?, SYGN_SPRAWY_EGZEKUCYJNEJ = ? WHERE id_document = ?",
       [
         mergeChat.length ? JSON.stringify(mergeChat) : null,
         mergeLog.length ? JSON.stringify(mergeLog) : null,
@@ -150,7 +154,7 @@ const acceptDocument = async (req, res) => {
   const { id_document, acceptDate, note } = req.body;
   try {
     await connect_SQL.query(
-      "UPDATE company_law_documents SET DATA_PRZYJECIA_SPRAWY = ?, CZAT_LOGI = ? WHERE id_document = ?",
+      "UPDATE company_law_documents SET DATA_PRZYJECIA_SPRAWY = ?, DZIENNIK_ZMIAN = ? WHERE id_document = ?",
       [acceptDate, JSON.stringify([note]), id_document]
     );
     res.end();
