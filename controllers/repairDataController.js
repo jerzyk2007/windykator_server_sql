@@ -688,20 +688,762 @@ const addDataToLawDocuments = async () => {
 
 const updateLawSettlements = async () => {
   try {
-    console.log("docs");
+    // console.log("docs");
 
-    const [docs] = await connect_SQL.query(
-      "SELECT distinct NUMER_DOKUMENTU FROM company_law_documents"
-    );
-    console.log(docs);
+    // const [docs] = await connect_SQL.query(
+    //   "SELECT distinct NUMER_DOKUMENTU FROM company_law_documents"
+    // );
+    // console.log(docs);
 
+    const docs = [
+      {
+        "Numer dokumentu": "FV/MN/5673/18/D7",
+      },
+      {
+        "Numer dokumentu": "KF/UP/78/19/D36",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2175/16/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6540/18/D7",
+      },
+      {
+        "Numer dokumentu": "109/08/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "121/05/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "126/08/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "130/06/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "134/07/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "136/06/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "138/07/RAC/2023",
+      },
+      {
+        "Numer dokumentu": "dot. nadpłaty",
+      },
+      {
+        "Numer dokumentu": "FC/UBL/238/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/AN/169/19/PCS",
+      },
+      {
+        "Numer dokumentu": "7/11/2019",
+      },
+      {
+        "Numer dokumentu": "FV/4/12/19",
+      },
+      {
+        "Numer dokumentu": "FV/AU/304/19/D54",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10248/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/10309/15/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1184/15/D38",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1215/15/D38",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1233/19/23/A/D118",
+      },
+      {
+        "Numer dokumentu": "FV/BL/125/09/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/1344/14/D8",
+      },
+      {
+        "Numer dokumentu": "FV/BL/21/23/A/D118",
+      },
+      {
+        "Numer dokumentu": "FV/BL/45/18/D78,",
+      },
+      {
+        "Numer dokumentu": "FV/BL/54/17/D78",
+      },
+      {
+        "Numer dokumentu": "FV/BL/992/14/D38",
+      },
+      {
+        "Numer dokumentu": "FV/I/156/16/D2",
+      },
+      {
+        "Numer dokumentu": "FV/I/19/21D3",
+      },
+      {
+        "Numer dokumentu": "FV/I/20/20/D31",
+      },
+      {
+        "Numer dokumentu": "FV/M/127/19/D87",
+      },
+      {
+        "Numer dokumentu": "FV/M/1292/19/D17",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3125/14/D37",
+      },
+      {
+        "Numer dokumentu": "FV/M/3819/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/M/3920/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/M/4021/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/1887/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/1904/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/1905/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2126/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2158/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2296/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2296/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2296/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2514/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2536/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2536/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2536/19/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2539/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2601/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2701/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2799/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/M/N/2987/18/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10864/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10871/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10920/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10920/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10921/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/10985/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11078/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11138/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/11645/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/126/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1262/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/128/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1351/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1351/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1454/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1509/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1509/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1509/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1516/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1517/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1544/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1553/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1577/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/16014/23/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1716/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1716/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1729/16/D37",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/194/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/195/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/196/24/S/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/1961/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2014/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2021/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2058/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2093/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2093/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2098/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2175/16/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2303/16/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2341/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2342/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2382/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2383/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2384/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2412/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2412/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2432/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2432/22/D67",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2480/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2481/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2482/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2483/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2548/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2552/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2558/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2639/18/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2656/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2711/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2712/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2749/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2804/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2805/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2806/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2858/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/2908/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/3649/18/d7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/3684/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/5661/18/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6646/17/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6671/18/D7 .",
+      },
+      {
+        "Numer dokumentu": "FV/MN/6750/17/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/717/18/D47",
+      },
+      {
+        "Numer dokumentu": "FV/MN/717/18/D47",
+      },
+      {
+        "Numer dokumentu": "FV/MN/9120/17/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/936/18/D57",
+      },
+      {
+        "Numer dokumentu": "FV/MN/986/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/986/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/MN/986/19/D7",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1503/16/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1627/17/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/165/24/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1656/19/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1788/17/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/1788/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/232/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/232/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/238/23/A/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/280/20/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/329/22/A/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/329/22/A/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/359/22/S/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/529/16/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/581/21/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/619/21/D78",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/672/22/A/D38",
+      },
+      {
+        "Numer dokumentu": "FV/UBL/975/18/D8",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1008/18/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1019/17/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/10204/15/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1119/18/D86",
+      },
+      {
+        "Numer dokumentu": "FV/UP/11538/15/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/12/20/D46",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1233/23/A/D116",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1365/18/D56",
+      },
+      {
+        "Numer dokumentu": "FV/UP/1437/19/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2519/16/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2991/19/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/2991/19/D36",
+      },
+      {
+        "Numer dokumentu": "KF/UP/78/19/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3192/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3478/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3478/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3671/19/D66",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3959/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3959/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/3959/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/4405/21/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/4426/18/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/444/19/D96",
+      },
+      {
+        "Numer dokumentu": "FV/UP/444/19/D96",
+      },
+      {
+        "Numer dokumentu": "FV/UP/5298/18/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/822/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/822/18/D36",
+      },
+      {
+        "Numer dokumentu": "FV/UP/843/13/D6",
+      },
+      {
+        "Numer dokumentu": "FV/UP/890/19/D76",
+      },
+      {
+        "Numer dokumentu": "FV/UP/991/19/D76",
+      },
+      {
+        "Numer dokumentu": "FV/WS/1/13/D1",
+      },
+      {
+        "Numer dokumentu": "FV/WS/15/17/D56",
+      },
+      {
+        "Numer dokumentu": "FV/WY/1/19/D72",
+      },
+      {
+        "Numer dokumentu": "FV/WY/105/19/D62",
+      },
+      {
+        "Numer dokumentu": "FV/WY/154/19/D62",
+      },
+      {
+        "Numer dokumentu": "FV/WY/159/19/D62",
+      },
+      {
+        "Numer dokumentu": "FV/WY/90/19/D62",
+      },
+    ];
+
+    // *******************************
     const sqlCondition =
       docs?.length > 0
         ? `(${docs
-            .map((dep) => `r.dsymbol = '${dep.NUMER_DOKUMENTU}' `)
+            .map((dep) => `r.dsymbol = '${dep["Numer dokumentu"]}' `)
             .join(" OR ")})`
         : null;
-    console.log(sqlCondition);
+
     await msSqlQuery("TRUNCATE TABLE [rapdb].dbo.fkkomandytowams");
 
     await msSqlQuery(
@@ -739,8 +1481,6 @@ const updateLawSettlements = async () => {
         SELECT *
         FROM [rapdb].dbo.fkkomandytowams
     `);
-
-    console.log(settlementDescription.length);
 
     const result = [];
 
@@ -787,19 +1527,21 @@ const updateLawSettlements = async () => {
       });
     });
 
-    for (const doc of result) {
-      console.log(doc);
-      await connect_SQL.query(
-        "INSERT IGNORE INTO company_law_documents_settlements (NUMER_DOKUMENTU_FK, WYKAZ_SPLACONEJ_KWOTY_FK, SUMA_SPLACONEJ_KWOTY_FK, POZOSTALA_NALEZNOSC_FK) VALUES (?, ?, ?, ?)",
-        [
-          doc.NUMER_DOKUMENTU,
-          JSON.stringify(doc.WYKAZ_SPLACONEJ_KWOTY),
-          doc.SUMA,
-          doc.NALEZNOSC,
-        ]
-      );
-    }
-    console.log(result.length);
+    // for (const doc of result) {
+    //   console.log(doc);
+    //   await connect_SQL.query(
+    //     "INSERT IGNORE INTO company_law_documents_settlements (NUMER_DOKUMENTU_FK, WYKAZ_SPLACONEJ_KWOTY_FK, SUMA_SPLACONEJ_KWOTY_FK, POZOSTALA_NALEZNOSC_FK) VALUES (?, ?, ?, ?)",
+    //     [
+    //       doc.NUMER_DOKUMENTU,
+    //       JSON.stringify(doc.WYKAZ_SPLACONEJ_KWOTY),
+    //       doc.SUMA,
+    //       doc.NALEZNOSC,
+    //     ]
+    //   );
+    // }
+    // console.log(result);
+    console.log(JSON.stringify(result, null, 2));
+    logEvents(JSON.stringify(result, null, 2), "json.txt");
   } catch (error) {
     console.error(error);
   }
