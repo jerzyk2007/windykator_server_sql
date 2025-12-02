@@ -59,8 +59,6 @@ const getSingleDocument = async (req, res) => {
 const changeSingleDocument = async (req, res) => {
   const { id_document, document, chatLog } = req.body;
   try {
-    console.log(id_document);
-
     const [oldData] = await connect_SQL.query(
       "SELECT * FROM company_insurance_documents WHERE id_document = ?",
       [id_document]
@@ -96,7 +94,6 @@ const changeSingleDocument = async (req, res) => {
         id_document,
       ]
     );
-    console.log(document);
 
     res.end();
   } catch (error) {

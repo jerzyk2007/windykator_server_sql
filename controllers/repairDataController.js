@@ -3166,7 +3166,7 @@ const insurancePrepare = async () => {
     // await changeColumnsLaw();
     //
     // zmiana tabeli company_insurance_documents
-    //  await createInsuranceTable()
+    // await createInsuranceTable();
     await addDataInsurance();
   } catch (error) {
     console.error(error);
@@ -3187,6 +3187,7 @@ const repair = async () => {
     // await copyDefaultTableSettings();
     // przygotowanie polis
     // await insurancePrepare();
+    // console.log("insurancePrepare");
   } catch (error) {
     console.error(error);
   }
