@@ -2333,6 +2333,846 @@ const copyDefaultTableSettings = async () => {
   }
 };
 
+const changeColumnsLaw = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_law_documents CHANGE COLUMN CZAT_KANCELARIA KANAL_KOMUNIKACJI JSON, CHANGE COLUMN CZAT_LOGI DZIENNIK_ZMIAN JSON"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const createInsuranceTable = async () => {
+  try {
+    await connect_SQL.query(`
+CREATE TABLE IF NOT EXISTS company_insurance_documents (
+    id_document INT NOT NULL AUTO_INCREMENT,
+    NUMER_POLISY VARCHAR(45) NOT NULL,
+    TERMIN_PLATNOSCI DATE NULL,
+    UBEZPIECZYCIEL VARCHAR(45) NULL,
+    KONTRAHENT_NAZWA VARCHAR(500) NULL,
+    KONTRAHENT_ADRES VARCHAR(500) NULL,
+    KONTRAHENT_NIP VARCHAR(45) NULL,
+    DZIAL VARCHAR(45) NULL,
+    DATA_PRZEKAZANIA DATE NULL,
+    FAKTURA_NR VARCHAR(45) NULL,
+    STATUS VARCHAR(45) NULL,
+    OW DATE NULL,
+    NALEZNOSC DECIMAL(12,2) NULL,
+    OSOBA_ZLECAJACA_WINDYKACJE VARCHAR(45) NULL,
+    KONTAKT_DO_KLIENTA JSON NULL,
+    NR_KONTA VARCHAR(45) NULL,
+    KANAL_KOMUNIKACJI JSON NULL,
+    DZIENNIK_ZMIAN JSON NULL,
+    PRIMARY KEY (id_document),
+    UNIQUE KEY unique_doc_firma (NUMER_POLISY)
+);
+`);
+    await connect_SQL.query(
+      "ALTER TABLE company_insurance_documents CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const addDataInsurance = async () => {
+  try {
+    const data = [
+      {
+        NUMER_POLISY: "912800317228",
+        TERMIN_PLATNOSCI: "2025-06-13",
+        UBEZPIECZYCIEL: "WARTA",
+        KONTRAHENT_NAZWA: "KAROLINA KONARSKI",
+        KONTRAHENT_ADRES: "ul. BRZOZOWA 2/8 m. BOX 112A \n 42-216 CZĘSTOCHOWA",
+        KONTRAHENT_NIP: null,
+        DZIAL: "D119",
+        DATA_PRZEKAZANIA: "2025-07-23",
+        NALEZNOSC: 3860,
+        OSOBA_ZLECAJACA_WINDYKACJE: "izabela.kuban-wronska@krotoski.com",
+        KONTAKT_DO_KLIENTA: {
+          TELEFON: ["691780096"],
+          MAIL: ["karolinagra@yahoo.com"],
+        },
+        NR_KONTA: "77114011240000302038001033",
+        KANAL_KOMUNIKACJI: [
+          {
+            date: "2025-07-24",
+            note: "Rozmawiałem z klientką telefonicznie, mam problemy finansowe, twierdzi, że jak dostanie przelewy od swoich kontrahentów to zapłaci",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-18",
+            note: "odpowiedź od płatności - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-20",
+            note: "klient nie odbiera tel, wysłałem sms z prośbą o kontakt i maila z prośbą o płatność",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-26",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-26",
+            note: "wysłałem mailowe ostateczne przedsądowe wezwanie do klienta",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-11",
+            note: "wysłałem papierowe, ostateczne wezwanie",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-23",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-25",
+            note: "info od płatności: brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-14",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-14",
+            note: "odp Płatności - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-23",
+            note: "klient odebrał papierowe wezwanie 29-09-2025",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-03",
+            note: "mail do płatności czy jest wplata ",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-13",
+            note: "mail do płatności czy jest wplata ",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+        ],
+      },
+      {
+        NUMER_POLISY: "450001199555",
+        TERMIN_PLATNOSCI: "2025-07-11",
+        UBEZPIECZYCIEL: "HESTIA",
+        KONTRAHENT_NAZWA: "VBPREF SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+        KONTRAHENT_ADRES: "ul. WILANOWSKA 14 m. 51 \n 00-422 WARSZAWA",
+        KONTRAHENT_NIP: null,
+        DZIAL: "D039",
+        DATA_PRZEKAZANIA: "2025-08-04",
+        NALEZNOSC: 5575,
+        OSOBA_ZLECAJACA_WINDYKACJE: "iwona.duchna@krotoski.com",
+        KONTAKT_DO_KLIENTA: {
+          TELEFON: ["605404698"],
+          MAIL: ["jerzy.sadoch@vbpref.pl"],
+        },
+        NR_KONTA: "93114011240000302038001036",
+        KANAL_KOMUNIKACJI: [
+          {
+            date: "2025-08-18",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-20",
+            note: "klient nie odbiera tel, wysłałem sms z prośbą o kontakt i maila z prośbą o płatność",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-20",
+            note: "klient oddzwonił, ma sprawdzić",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-26",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-11",
+            note: "wysłałem papierowe, ostateczne wezwanie",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-23",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-25",
+            note: "info od płatności: brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-14",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-20",
+            note: "odp Płatności - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-23",
+            note: "klient odebrał papierowe wezwanie 24-09-2025",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-03",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-13",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+        ],
+      },
+      {
+        NUMER_POLISY: "912800339400",
+        TERMIN_PLATNOSCI: "2025-08-29",
+        UBEZPIECZYCIEL: "WARTA",
+        KONTRAHENT_NAZWA: "COMFORTBE X-GATE PIOTR TUTAKOWSKI",
+        KONTRAHENT_ADRES: "ul. OSTRZYCKA 2 m. 4 \n 04-035 WARSZAWA",
+        KONTRAHENT_NIP: "5222185132",
+        DZIAL: "D079",
+        DATA_PRZEKAZANIA: "2025-09-22",
+        NALEZNOSC: 5908,
+        OSOBA_ZLECAJACA_WINDYKACJE: "anna.szczygiel@krotoski.com",
+        KONTAKT_DO_KLIENTA: {
+          TELEFON: ["501948363"],
+          MAIL: ["biuro@comfortbe.pl", "piotrtutakowski73@gmail.com"],
+        },
+        NR_KONTA: "66114011240000302038001037",
+        KANAL_KOMUNIKACJI: [
+          {
+            date: "2025-09-23",
+            note: "klient w rozmowie telefonicznej zapewnił że do jutra zapłaci",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-23",
+            note: "wysłałem mail z polisą do klienta z prośbą o potwierdzenie płatności",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-25",
+            note: "info od płatności: brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-25",
+            note: "rozmawiałem z klientem, ma dzisiaj wysłać potwierdzenie",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "wysłałem mailowe ostateczne przedsądowe wezwanie do klienta",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-14",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-20",
+            note: "odp Płatności - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-23",
+            note: "wysłałem ostateczne papierowe wezwanie",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-03",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-06",
+            note: "wpis do KRD",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-13",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+        ],
+      },
+      {
+        NUMER_POLISY: "450001201404",
+        TERMIN_PLATNOSCI: "2025-07-18",
+        UBEZPIECZYCIEL: "HESTIA",
+        KONTRAHENT_NAZWA: "Electrovolt Sp z o.o.",
+        KONTRAHENT_ADRES: "ul. Gdańska 145 m. 12 \n 90-536 Łódź",
+        KONTRAHENT_NIP: "5213906193",
+        DZIAL: "D084",
+        DATA_PRZEKAZANIA: "2025-10-01",
+        NALEZNOSC: 5908,
+        OSOBA_ZLECAJACA_WINDYKACJE: "wojciech.stawiak@audicentrumlodz.pl",
+        KONTAKT_DO_KLIENTA: {
+          TELEFON: ["502232422"],
+          MAIL: ["rk@ryba.me"],
+        },
+        NR_KONTA: "28114011240000302038001042",
+        KANAL_KOMUNIKACJI: [
+          {
+            date: "2025-10-01",
+            note: "mail do rk@ryba.me - Dzień dobry \n Zgodnie z rozmową telefoniczną proszę o zapłatę za polisę nr 450001201404 \n i przesłanie do mnie potwierdzenia przelewu najpóźniej do 08-10-2025 \n Kwota: 4 334,00 zł \n Konto: 28 1140 1124 0000 3020 3800 1042 \n Tytuł: polisa 450001201404",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "klient ma czas doi jutra na potwierdzenie przelewu",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-13",
+            note: "klient telefonicznie powtierdził płatność",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-14",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-20",
+            note: "odp Płatności - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-20",
+            note: "klient twierdzi że dzisiaj wpłacił, powiedziałem że jeśli nie dośle potwierdzenia przelewu to bedzie wpis do KRD",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-21",
+            note: "wysłałem mailowe ostateczne przedsądowe wezwanie do klienta",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-03",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-06",
+            note: "@ do Wojtka Stawiaka - Wojtek Sprawdź proszę czy były wystawione polisy 450001201404 i 450001201494 Bo zleciłeś do windykacji 450001201404, a klient (ten sam na obu polisach) wpłacił 2500 zł z tytułem 450001201494 Windykacja 450001201404 z odsetkami była na kwotę 4 672,40 zł",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-13",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+        ],
+      },
+      {
+        NUMER_POLISY: "450001195812",
+        TERMIN_PLATNOSCI: "2025-06-30",
+        UBEZPIECZYCIEL: "HESTIA",
+        KONTRAHENT_NAZWA: "KME KRZYSZTOF MATKOWSKI EKOLOGIA",
+        KONTRAHENT_ADRES: "MODRZEWIEC 7 \n 78-331 MODRZEWIEC",
+        KONTRAHENT_NIP: "6722026087",
+        DZIAL: "D089",
+        DATA_PRZEKAZANIA: "2025-09-15",
+        NALEZNOSC: 11351.62,
+        OSOBA_ZLECAJACA_WINDYKACJE: "wojciech.stawiak@audicentrumlodz.pl",
+        KONTAKT_DO_KLIENTA: {
+          TELEFON: ["510020942"],
+          MAIL: ["matkowskikrzysztof22@gmail.com"],
+        },
+        NR_KONTA: "28114011240000302038001042",
+        KANAL_KOMUNIKACJI: [
+          {
+            date: "2025-09-15",
+            note: "@ od Wojtka Stawiaka \n Cześć Jerzy, \n Mam nietypową sytuację. Mieliśmy wystawioną polisę w Hestii numer 450001195812 (załącznik). Przez przypadek polisa została uwzględniona na awizo i opłacona z naszej strony do VWSU. Klient nie opłacił nam składki bo nie odzyskał pojazdu z windykacji z VWFS. Wystąpiliśmy do Hestii oczywiście za pośrednictwem VWSU o zerwanie na polisie ryzyk dobrowolnych(AC, NNW , Assistance) i zwrot składki do Dealera. Niestety Hestia zwróciła środki Ubezpieczającemu czyli klientowi.Nie chce nam teraz pomóc w odzyskaniu kasy i musimy windykować klienta. Proszę o windykację klienta. W załączniku pismo z Hestii jaka kwota została zwrócona klientowi.",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-16",
+            note: "wysłałem mailowe ostateczne przedsądowe wezwanie do klienta",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-23",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-25",
+            note: "wysłałem papierowe, ostateczne wezwanie",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-14",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-20",
+            note: "odp Płatności - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-23",
+            note: "klient odebrał papierowe wezwanie 03-10-2025",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-03",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-13",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+        ],
+      },
+      {
+        NUMER_POLISY: "450001198803",
+        TERMIN_PLATNOSCI: "2025-07-09",
+        UBEZPIECZYCIEL: "HESTIA",
+        KONTRAHENT_NAZWA:
+          "PLATFORMA FOREX SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ SPÓŁKA KOMANDYTOWA",
+        KONTRAHENT_ADRES: "ul. Szarych Szeregów 23 \n 60-462 Poznań",
+        KONTRAHENT_NIP: "7811828707",
+        DZIAL: "D009",
+        DATA_PRZEKAZANIA: "2025-08-28",
+        NALEZNOSC: 6100,
+        OSOBA_ZLECAJACA_WINDYKACJE: "renata.szewczyk@krotoski.com",
+        KONTAKT_DO_KLIENTA: {
+          TELEFON: ["505022982"],
+          MAIL: ["kontojakub@gmail.com"],
+        },
+        NR_KONTA: "44114011240000302038001045",
+        KANAL_KOMUNIKACJI: [
+          {
+            date: "2025-09-01",
+            note: "dzwoniłem, klient nie odbiera",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-01",
+            note: "wysłałem mailowe ostateczne przedsądowe wezwanie do klienta",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-18",
+            note: "wysłałem papierowe, ostateczne wezwanie",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-23",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-25",
+            note: "info od płatności: brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-20",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-23",
+            note: "klient nie odebrał papierowego wezwania",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-03",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-13",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+        ],
+      },
+      {
+        NUMER_POLISY: "55256546",
+        TERMIN_PLATNOSCI: "2025-04-22",
+        UBEZPIECZYCIEL: "ALLIANZ",
+        KONTRAHENT_NAZWA:
+          "HERMES–ENERGY SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ",
+        KONTRAHENT_ADRES: "ul. TRAKTOROWA 109A \n 91-203 ŁÓDŹ",
+        KONTRAHENT_NIP: "9472010996",
+        DZIAL: "D099",
+        DATA_PRZEKAZANIA: "2025-08-01",
+        NALEZNOSC: 4678,
+        OSOBA_ZLECAJACA_WINDYKACJE:
+          "malwina.lewandowska@porschecentrumlodz.com",
+        KONTAKT_DO_KLIENTA: {
+          TELEFON: ["517436516"],
+          MAIL: ["biuro@hermes-energy.pl"],
+        },
+        NR_KONTA: "98114011240000302038001043",
+        KANAL_KOMUNIKACJI: [
+          {
+            date: "2025-08-01",
+            note: "klient nie odbiera telefonu, wysłałem maila z wezwaniem \n klient oddzownił, zadeklarował płatnośc 04-08-2025",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-18",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-18",
+            note: "odpowiedź od płatność - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-20",
+            note: "klient nie odbiera tel, wysłałem sms z prośbą o kontakt, wysłałem maila z wewaniem \n klient oddzwonił i twierdzi że zapłaci",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-26",
+            note: "mail do Płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-08-26",
+            note: "wysłałem mailowe ostateczne, przedsądowe wezwanie do klienta",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-11",
+            note: "wysłałem papierowe, ostateczne wezwanie",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-23",
+            note: "mail do Płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-09-25",
+            note: "info od płatności: brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-08",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-14",
+            note: "mail do płatności czy jest wpłata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-20",
+            note: "odp Płatności - brak wpłaty",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-10-23",
+            note: "klient nie odebrał papierowego wezwania ",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-03",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-13",
+            note: "mail do płatności czy jest wplata",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-20",
+            note: "@ od Wojtka \n Zrobiłem przy polisie 55256546 wpis nie znajduję polisy pod tym numerem Powiem szczere dziwna sytuacja. \n Na dokumencie jest inny numer polisy i w systemie. Jest jakiś błąd po stronie VWSU, ale tak kasy od klienta dalej brakuje.",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-20",
+            note: "@ do Wojtek \n Czy możesz wyjaśnić sprawę z @Malwina Lewandowska \n Malwina proszę zapoznaj się z całym mailem i załącznikiem ",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+          {
+            date: "2025-11-20",
+            note: "@ od Malwiny \n Cześć, \n W systemie NSU  widnieje nr polisy  89987178, a na polisie generuje się 55256546 Jest jakiś błąd systemowy \n Jeżeli chodzi o klienta to windykacja jest zasadna  \n Pozdrawiam",
+            profile: "Pracownik",
+            username: "Komorowski",
+            userlogin: "jerzy.komorowski@krotoski.com",
+          },
+        ],
+      },
+    ];
+
+    for (const doc of data) {
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_insurance_documents (NUMER_POLISY, TERMIN_PLATNOSCI, UBEZPIECZYCIEL, KONTRAHENT_NAZWA, KONTRAHENT_ADRES, KONTRAHENT_NIP, DZIAL, DATA_PRZEKAZANIA, NALEZNOSC, OSOBA_ZLECAJACA_WINDYKACJE, KONTAKT_DO_KLIENTA, NR_KONTA, KANAL_KOMUNIKACJI) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          doc.NUMER_POLISY || null,
+          doc.TERMIN_PLATNOSCI || null,
+          doc.UBEZPIECZYCIEL || null,
+          doc.KONTRAHENT_NAZWA || null,
+          doc.KONTRAHENT_ADRES || null,
+          doc.KONTRAHENT_NIP || null,
+          doc.DZIAL || null,
+          doc.DATA_PRZEKAZANIA || null,
+          doc.NALEZNOSC || null,
+          doc.OSOBA_ZLECAJACA_WINDYKACJE || null,
+          JSON.stringify(doc.KONTAKT_DO_KLIENTA) || null,
+          doc.NR_KONTA || null,
+          JSON.stringify(doc.KANAL_KOMUNIKACJI) || null,
+        ]
+      );
+    }
+    console.log("finish add data");
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const insurancePrepare = async () => {
+  try {
+    // zmiana company_law_documents
+    // await changeColumnsLaw();
+    //
+    // zmiana tabeli company_insurance_documents
+    //  await createInsuranceTable()
+    await addDataInsurance();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 const repair = async () => {
   try {
     // await rebuildDataBase();
@@ -2345,6 +3185,8 @@ const repair = async () => {
     // await copyDataToLaw();
     //
     // await copyDefaultTableSettings();
+    // przygotowanie polis
+    // await insurancePrepare();
   } catch (error) {
     console.error(error);
   }

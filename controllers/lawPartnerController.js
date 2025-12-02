@@ -117,7 +117,6 @@ const changeSingleDocument = async (req, res) => {
       : [];
 
     const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
-
     await connect_SQL.query(
       "UPDATE company_law_documents SET KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ?, STATUS_SPRAWY = ?, SYGNATURA_SPRAWY_SADOWEJ = ?, TERMIN_PRZEDAWNIENIA_ROSZCZENIA = ?, DATA_WYMAGALNOSCI_PLATNOSCI = ?, WYDZIAL_SADU = ?, ORGAN_EGZEKUCYJNY = ?, SYGN_SPRAWY_EGZEKUCYJNEJ = ? WHERE id_document = ?",
       [
@@ -126,7 +125,9 @@ const changeSingleDocument = async (req, res) => {
         document.STATUS_SPRAWY && document.STATUS_SPRAWY !== "BRAK"
           ? document.STATUS_SPRAWY
           : null,
-        document?.SYGNATURA_SPRAWY ? document.SYGNATURA_SPRAWY : null,
+        document?.SYGNATURA_SPRAWY_SADOWEJ
+          ? document.SYGNATURA_SPRAWY_SADOWEJ
+          : null,
         document?.TERMIN_PRZEDAWNIENIA_ROSZCZENIA
           ? document.TERMIN_PRZEDAWNIENIA_ROSZCZENIA
           : null,
