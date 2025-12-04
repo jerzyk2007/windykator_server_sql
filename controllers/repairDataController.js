@@ -2255,7 +2255,7 @@ const copyDataToLaw = async () => {
         ]
       );
     }
-    await updateLawSettlements();
+    // await updateLawSettlements();
   } catch (error) {
     console.error(error);
   }
@@ -2719,7 +2719,7 @@ const addDataInsurance = async () => {
         KONTRAHENT_NIP: "5213906193",
         DZIAL: "D084",
         DATA_PRZEKAZANIA: "2025-10-01",
-        NALEZNOSC: 5908,
+        NALEZNOSC: 4334,
         OSOBA_ZLECAJACA_WINDYKACJE: "wojciech.stawiak@audicentrumlodz.pl",
         KONTAKT_DO_KLIENTA: {
           TELEFON: ["502232422"],
@@ -3133,6 +3133,7 @@ const addDataInsurance = async () => {
         ],
       },
     ];
+    await connect_SQL.query("TRUNCATE TABLE company_insurance_documents");
 
     for (const doc of data) {
       await connect_SQL.query(

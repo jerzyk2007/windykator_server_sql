@@ -85,12 +85,13 @@ const changeSingleDocument = async (req, res) => {
     const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
 
     await connect_SQL.query(
-      "UPDATE company_insurance_documents SET STATUS = ?, OW = ?, KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ? WHERE id_document = ?",
+      "UPDATE company_insurance_documents SET STATUS = ?, OW = ?, KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ?, NALEZNOSC = ? WHERE id_document = ?",
       [
         document.STATUS || null,
         document.OW || null,
         mergeChat.length ? JSON.stringify(mergeChat) : null,
         mergeLog.length ? JSON.stringify(mergeLog) : null,
+        document.NALEZNOSC || 0,
         id_document,
       ]
     );
