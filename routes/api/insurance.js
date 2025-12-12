@@ -18,4 +18,11 @@ router
     insurance.getSingleDocument
   );
 
+router
+  .route("/change-single-document")
+  .patch(
+    verifyRoles(ROLES_LIST.Insurance, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    insurance.changeSingleDocument
+  );
+
 module.exports = router;

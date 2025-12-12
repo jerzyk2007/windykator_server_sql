@@ -43,6 +43,31 @@ const becaredFile = async (rows, res) => {
     return res.status(500).json({ error: "Invalid file" });
   }
   try {
+    // zamiana formatu liczby od VOTUM z kropką na liczbe z przecinkiem
+    const parseKwotaPolska = (raw) => {
+      if (raw === null || raw === undefined || raw === "") return 0;
+
+      // jeśli to już number → zwróć bez zmian
+      if (typeof raw === "number" && !isNaN(raw)) {
+        return raw;
+      }
+
+      let str = String(raw).trim();
+
+      // usuń spacje (np. separatorem tysięcy)
+      str = str.replace(/\s+/g, "");
+
+      // jeśli jest przecinek → zamień na kropkę
+      if (str.includes(",")) {
+        // opcjonalnie: jeśli jest też kropka — usuń najpierw tysiące np. "1.234,56"
+        str = str.replace(/\./g, "");
+        str = str.replace(",", ".");
+      }
+
+      const val = parseFloat(str);
+      return isNaN(val) ? 0 : val;
+    };
+
     for (const row of rows) {
       const [findDoc] = await connect_SQL.query(
         "SELECT id_document FROM company_documents WHERE NUMER_FV = ?",
@@ -68,9 +93,17 @@ const becaredFile = async (rows, res) => {
           const NUMER_SPRAWY_BECARED = row["Numer sprawy"]
             ? row["Numer sprawy"]
             : null;
-          const KWOTA_WINDYKOWANA_BECARED = row["Suma roszczeń"]
-            ? row["Suma roszczeń"]
-            : 0;
+          // const KWOTA_WINDYKOWANA_BECARED = row["Suma roszczeń"]
+          //   ? row["Suma roszczeń"]
+          //   : 0;
+          // const KWOTA_WINDYKOWANA_BECARED = parseFloat(
+          //   (row["Suma roszczeń"] || "0").replace(",", ".")
+          // );
+
+          const KWOTA_WINDYKOWANA_BECARED = parseKwotaPolska(
+            row["Suma roszczeń"]
+          );
+
           await connect_SQL.query(
             "UPDATE company_documents_actions SET STATUS_SPRAWY_KANCELARIA = ?, KOMENTARZ_KANCELARIA_BECARED = ?, NUMER_SPRAWY_BECARED = ?, KWOTA_WINDYKOWANA_BECARED = ?, DATA_KOMENTARZA_BECARED = ? WHERE document_id = ?",
             [
@@ -150,7 +183,8 @@ const rubiconFile = async (rows, res) => {
         if (status !== "BRAK") {
           return {
             NUMER_FV: row["Faktura nr"],
-            STATUS_AKTUALNY: status !== "BRAK" ? status : row.ETAP_SPRAWY,
+            STATUS_AKTUALNY:
+              status !== "BRAK" ? status : row["Status aktualny"],
             JAKA_KANCELARIA: status !== "BRAK" ? row["Firma zewnętrzna"] : null,
             DATA_PRZENIESIENIA_DO_WP: row["data przeniesienia<br>do WP"],
             FIRMA: "KRT",
@@ -159,8 +193,10 @@ const rubiconFile = async (rows, res) => {
       })
       .filter(Boolean);
 
+    await connect_SQL.query(`TRUNCATE TABLE company_rubicon_data`);
+
     const query = `
-      INSERT INTO company_rubicon_data ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY) 
+      INSERT INTO company_rubicon_data ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY)
       VALUES ?
       ON DUPLICATE KEY UPDATE
         STATUS_AKTUALNY = VALUES(STATUS_AKTUALNY),

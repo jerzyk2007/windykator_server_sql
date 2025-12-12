@@ -443,7 +443,6 @@ const generateRaportCompany = async (company) => {
       ) {
         TYP_PLATNOSCI = "PRZELEW";
       }
-
       return {
         BRAK_DATY_WYSTAWIENIA_FV: doc.DATA_FV ? null : "TAK",
         CZY_SAMOCHOD_WYDANY_AS: CZY_SAMOCHOD_WYDANY,
