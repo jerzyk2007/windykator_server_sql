@@ -163,47 +163,37 @@ const rubiconFile = async (rows, res) => {
     return res.status(500).json({ error: "Error file" });
   }
   try {
-    // const filteredData = rows
-    //   .map((row) => {
-    //     const status =
-    //       row["Status aktualny"] !== "Brak działań" &&
-    //       row["Status aktualny"] !== "Rozliczona" &&
-    //       row["Status aktualny"] !== "sms/mail +3" &&
-    //       row["Status aktualny"] !== "sms/mail -2" &&
-    //       row["Status aktualny"] !== "Zablokowana" &&
-    //       row["Status aktualny"] !== "Zablokowana BL" &&
-    //       row["Status aktualny"] !== "Zablokowana KF" &&
-    //       row["Status aktualny"] !== "Zablokowana KF BL" &&
-    //       row["Status aktualny"] !== "Do decyzji" &&
-    //       row["Status aktualny"] !== "Windykacja zablokowana bezterminowo" &&
-    //       row["Status aktualny"] !== "Do wyjaśnienia"
-    //         ? row["Status aktualny"]
-    //         : "BRAK";
-
-    //     if (status !== "BRAK") {
-    //       return {
-    //         NUMER_FV: row["Faktura nr"],
-    //         STATUS_AKTUALNY:
-    //           status !== "BRAK" ? status : row["Status aktualny"],
-    //         JAKA_KANCELARIA: status !== "BRAK" ? row["Firma zewnętrzna"] : null,
-    //         DATA_PRZENIESIENIA_DO_WP: row["data przeniesienia<br>do WP"],
-    //         FIRMA: "KRT",
-    //       };
-    //     }
-    //   })
-    //   .filter(Boolean);
-
     const filteredData = rows
       .map((row) => {
-        return {
-          NUMER_FV: row["Faktura nr"],
-          STATUS_AKTUALNY: row["Status aktualny"],
-          JAKA_KANCELARIA: row["Firma zewnętrzna"],
-          DATA_PRZENIESIENIA_DO_WP: row["data przeniesienia<br>do WP"],
-          FIRMA: "KRT",
-        };
+        const status =
+          row["Status aktualny"] !== "Brak działań" &&
+          row["Status aktualny"] !== "Rozliczona" &&
+          row["Status aktualny"] !== "sms/mail +3" &&
+          row["Status aktualny"] !== "sms/mail -2" &&
+          row["Status aktualny"] !== "Zablokowana" &&
+          row["Status aktualny"] !== "Zablokowana BL" &&
+          row["Status aktualny"] !== "Zablokowana KF" &&
+          row["Status aktualny"] !== "Zablokowana KF BL" &&
+          row["Status aktualny"] !== "Do decyzji" &&
+          row["Status aktualny"] !== "Windykacja zablokowana bezterminowo" &&
+          row["Status aktualny"] !== "Do wyjaśnienia"
+            ? row["Status aktualny"]
+            : "BRAK";
+
+        if (status !== "BRAK") {
+          return {
+            NUMER_FV: row["Faktura nr"],
+            STATUS_AKTUALNY:
+              status !== "BRAK" ? status : row["Status aktualny"],
+            JAKA_KANCELARIA: status !== "BRAK" ? row["Firma zewnętrzna"] : null,
+            DATA_PRZENIESIENIA_DO_WP: row["data przeniesienia<br>do WP"],
+            FIRMA: "KRT",
+          };
+        }
       })
       .filter(Boolean);
+
+    await connect_SQL.query(`TRUNCATE TABLE company_rubicon_data`);
 
     const query = `
       INSERT INTO company_rubicon_data ( NUMER_FV, STATUS_AKTUALNY,  FIRMA_ZEWNETRZNA, DATA_PRZENIESIENIA_DO_WP, COMPANY)
