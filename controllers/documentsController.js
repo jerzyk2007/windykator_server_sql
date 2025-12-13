@@ -2,8 +2,71 @@ const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { userProfile } = require("./manageDocumentAddition");
 
-const getAllDocumentsSQL =
-  "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.KANAL_KOMUNIKACJI, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  DA.INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU, DA.KRD   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_fk_settlements AS FS ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA";
+// const getAllDocumentsSQL1 =
+//   "SELECT IFNULL(JI.area, 'BRAK') as AREA, D.id_document, D.NUMER_FV, D.BRUTTO, D.TERMIN, D.NETTO, IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA, D.DZIAL, D.DATA_FV, D.KONTRAHENT, D.DORADCA, D.NR_REJESTRACYJNY, D.NR_SZKODY, D.UWAGI_Z_FAKTURY, UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI, D.NIP, D.VIN,  datediff(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE, ROUND((D.BRUTTO - D.NETTO), 2) AS '100_VAT', ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS '50_VAT', IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE, D.FIRMA, IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,  R.STATUS_AKTUALNY, DA.id_action, DA.document_id, IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA, IFNULL(IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL), 'BRAK') AS KOMENTARZ_KANCELARIA_BECARED, KWOTA_WINDYKOWANA_BECARED, IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,   IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT, IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA, IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA, IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,  DA.KANAL_KOMUNIKACJI, IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY, IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED, DA.DATA_WYDANIA_AUTA, IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,  DA.INFORMACJA_ZARZAD, IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU, DA.KRD   FROM company_documents AS D LEFT JOIN company_documents_actions AS DA ON D.id_document = DA.document_id LEFT JOIN company_settlements AS S ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY LEFT JOIN company_rubicon_data AS R ON R.NUMER_FV = D.NUMER_FV LEFT JOIN company_mark_documents AS MD ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY LEFT JOIN company_join_items AS JI ON D.DZIAL = JI.department LEFT JOIN company_fk_settlements AS FS ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA";
+
+const getAllDocumentsSQL = `
+SELECT
+  IFNULL(JI.area, 'BRAK') AS AREA,
+  D.id_document,
+  D.NUMER_FV,
+  D.BRUTTO,
+  D.TERMIN,
+  D.NETTO,
+  IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA,
+  IFNULL(FS.DO_ROZLICZENIA, 0) AS FK_DO_ROZLICZENIA,
+  D.DZIAL,
+  D.DATA_FV,
+  D.KONTRAHENT,
+  D.DORADCA,
+  D.NR_REJESTRACYJNY,
+  D.NR_SZKODY,
+  D.UWAGI_Z_FAKTURY,
+  UPPER(D.TYP_PLATNOSCI) AS TYP_PLATNOSCI,
+  D.NIP,
+  D.VIN,
+  DATEDIFF(NOW(), D.TERMIN) AS ILE_DNI_PO_TERMINIE,
+  ROUND((D.BRUTTO - D.NETTO), 2) AS VAT_100,
+  ROUND(((D.BRUTTO - D.NETTO) / 2), 2) AS VAT_50,
+  IF(D.TERMIN >= CURDATE(), 'N', 'P') AS CZY_PRZETERMINOWANE,
+  D.FIRMA,
+  IFNULL(UPPER(R.FIRMA_ZEWNETRZNA), 'BRAK') AS JAKA_KANCELARIA,
+  R.STATUS_AKTUALNY,
+  DA.id_action,
+  DA.document_id,
+  IFNULL(DA.DZIALANIA, 'BRAK') AS DZIALANIA,
+  IFNULL(
+    IF(DA.KOMENTARZ_KANCELARIA_BECARED IS NOT NULL, 'KOMENTARZ ...', NULL),
+    'BRAK'
+  ) AS KOMENTARZ_KANCELARIA_BECARED,
+  DA.KWOTA_WINDYKOWANA_BECARED,
+  IFNULL(DA.NUMER_SPRAWY_BECARED, 'BRAK') AS NUMER_SPRAWY_BECARED,
+  IFNULL(DA.POBRANO_VAT, 'Nie dotyczy') AS POBRANO_VAT,
+  IFNULL(UPPER(DA.STATUS_SPRAWY_KANCELARIA), 'BRAK') AS STATUS_SPRAWY_KANCELARIA,
+  IFNULL(UPPER(DA.STATUS_SPRAWY_WINDYKACJA), 'BRAK') AS STATUS_SPRAWY_WINDYKACJA,
+  IFNULL(DA.ZAZNACZ_KONTRAHENTA, 'NIE') AS ZAZNACZ_KONTRAHENTA,
+  DA.KANAL_KOMUNIKACJI,
+  IFNULL(DA.BLAD_DORADCY, 'NIE') AS BLAD_DORADCY,
+  IFNULL(DA.DATA_KOMENTARZA_BECARED, 'BRAK') AS DATA_KOMENTARZA_BECARED,
+  DA.DATA_WYDANIA_AUTA,
+  IFNULL(DA.OSTATECZNA_DATA_ROZLICZENIA, 'BRAK') AS OSTATECZNA_DATA_ROZLICZENIA,
+  DA.INFORMACJA_ZARZAD,
+  IFNULL(DA.JAKA_KANCELARIA_TU, 'BRAK') AS JAKA_KANCELARIA_TU,
+  DA.KRD
+FROM company_documents AS D
+LEFT JOIN company_documents_actions AS DA
+  ON D.id_document = DA.document_id
+LEFT JOIN company_settlements AS S
+  ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
+LEFT JOIN company_fk_settlements AS FS
+  ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA
+LEFT JOIN company_rubicon_data AS R
+  ON R.NUMER_FV = D.NUMER_FV
+LEFT JOIN company_mark_documents AS MD
+  ON D.NUMER_FV = MD.NUMER_FV AND D.FIRMA = MD.COMPANY
+LEFT JOIN company_join_items AS JI
+  ON D.DZIAL = JI.department
+`;
 
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 // const getDataDocuments = async (id_user, info, profile) => {
@@ -96,10 +159,96 @@ const getAllDocumentsSQL =
 // };
 
 // zoptymalizowane zapytanie do pobierania danych do tabeli
+// const getDataDocuments1 = async (id_user, info, profile) => {
+//   const userType = userProfile(profile);
+//   try {
+//     // 1. Pobierz uprawnienia (możesz tu dodać proste cache'owanie w Redis, jeśli user klika często)
+//     const [findUser] = await connect_SQL.query(
+//       "SELECT departments FROM company_users WHERE id_user = ?",
+//       [id_user]
+//     );
+
+//     const { departments = {} } = findUser[0] || {};
+//     const allDepartments = departments[userType] || [];
+
+//     if (!allDepartments.length) {
+//       return { data: [] };
+//     }
+
+//     // 2. Budowanie warunku uprawnień
+//     // Optymalizacja: Używamy parametrów (?) zamiast wklejania stringów (SQL Injection risk protection + wydajność cache bazy)
+//     // UWAGA: Przy dynamicznej liczbie działów trudniej o bind parameters w czystym SQL,
+//     // więc zostajemy przy Twoim podejściu, ale upewnij się, że dane w 'dep' są bezpieczne.
+//     const permissionCondition = `(${allDepartments
+//       .map(
+//         (dep) => `(D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}')`
+//       )
+//       .join(" OR ")})`;
+
+//     // 3. Budowanie warunku specyficznego dla filtra (info)
+//     let filterCondition = "";
+
+//     // Słownik warunków zamiast if/else if
+//     const filters = {
+//       actual: "AND S.NALEZNOSC > 0", // Usunięto IFNULL dla wydajności
+//       obligations: "AND S.NALEZNOSC < 0",
+//       archive: "AND (S.NALEZNOSC = 0 OR S.NALEZNOSC IS NULL)",
+//       all: "",
+//       raport_fk: "AND MD.RAPORT_FK = 1",
+//       disabled_fk: "AND MD.RAPORT_FK = 0",
+//       krd: "AND DA.KRD IS NOT NULL",
+//       critical: `
+//         AND S.NALEZNOSC > 0
+//         AND D.TERMIN >= DATE_SUB(NOW(), INTERVAL 3 DAY)
+//         AND R.FIRMA_ZEWNETRZNA IS NULL
+//         AND DA.JAKA_KANCELARIA_TU IS NULL
+//         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
+//       `,
+//       "control-bl": `
+//         AND JI.area = 'BLACHARNIA'
+//         AND S.NALEZNOSC > 0
+//         AND DA.JAKA_KANCELARIA_TU IS NULL
+//         AND R.FIRMA_ZEWNETRZNA IS NULL
+//         AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+//         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
+//       `,
+//       different: `AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0`,
+//     };
+
+//     // Obsługa przypadku "different" który ma nieco inny SELECT
+//     let baseQuery = getAllDocumentsSQL;
+
+//     if (info === "different") {
+//       // Tu dodałeś kolumnę FK_DO_ROZLICZENIA, więc musimy podmienić baseQuery
+//       // Warto wyciągnąć ten SQL do stałej na górze pliku, żeby nie zaśmiecać funkcji
+//       baseQuery =
+//         "SELECT ..., IFNULL(FS.DO_ROZLICZENIA, 0) AS FK_DO_ROZLICZENIA, ... FROM ..."; // (Twój SQL dla different)
+//     }
+
+//     // Jeśli info nie pasuje do żadnego klucza, zwróć pustą tablicę lub domyślny
+//     if (!filters.hasOwnProperty(info)) {
+//       return { data: [] };
+//     }
+
+//     filterCondition = filters[info];
+
+//     // 4. Wykonanie jednego zapytania
+//     // Dodajemy WHERE tylko raz. Zakładamy, że getAllDocumentsSQL nie ma słowa "WHERE" na końcu.
+//     const finalQuery = `${baseQuery} WHERE ${permissionCondition} ${filterCondition}`;
+
+//     const [filteredData] = await connect_SQL.query(finalQuery);
+//     return { data: filteredData };
+//   } catch (error) {
+//     logEvents(`documentsController: ${error}`, "reqServerErrors.txt");
+//     return { data: [] }; // Zwróć cokolwiek, żeby frontend się nie wysypał
+//   }
+// };
+
+//pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info, profile) => {
   const userType = userProfile(profile);
+
   try {
-    // 1. Pobierz uprawnienia (możesz tu dodać proste cache'owanie w Redis, jeśli user klika często)
     const [findUser] = await connect_SQL.query(
       "SELECT departments FROM company_users WHERE id_user = ?",
       [id_user]
@@ -112,22 +261,15 @@ const getDataDocuments = async (id_user, info, profile) => {
       return { data: [] };
     }
 
-    // 2. Budowanie warunku uprawnień
-    // Optymalizacja: Używamy parametrów (?) zamiast wklejania stringów (SQL Injection risk protection + wydajność cache bazy)
-    // UWAGA: Przy dynamicznej liczbie działów trudniej o bind parameters w czystym SQL,
-    // więc zostajemy przy Twoim podejściu, ale upewnij się, że dane w 'dep' są bezpieczne.
     const permissionCondition = `(${allDepartments
       .map(
-        (dep) => `(D.DZIAL = '${dep.department}' AND D.FIRMA ='${dep.company}')`
+        (dep) =>
+          `(D.DZIAL = '${dep.department}' AND D.FIRMA = '${dep.company}')`
       )
       .join(" OR ")})`;
 
-    // 3. Budowanie warunku specyficznego dla filtra (info)
-    let filterCondition = "";
-
-    // Słownik warunków zamiast if/else if
     const filters = {
-      actual: "AND S.NALEZNOSC > 0", // Usunięto IFNULL dla wydajności
+      actual: "AND S.NALEZNOSC > 0",
       obligations: "AND S.NALEZNOSC < 0",
       archive: "AND (S.NALEZNOSC = 0 OR S.NALEZNOSC IS NULL)",
       all: "",
@@ -135,49 +277,41 @@ const getDataDocuments = async (id_user, info, profile) => {
       disabled_fk: "AND MD.RAPORT_FK = 0",
       krd: "AND DA.KRD IS NOT NULL",
       critical: `
-        AND S.NALEZNOSC > 0 
-        AND D.TERMIN >= DATE_SUB(NOW(), INTERVAL 3 DAY) 
-        AND R.FIRMA_ZEWNETRZNA IS NULL 
-        AND DA.JAKA_KANCELARIA_TU IS NULL 
+        AND S.NALEZNOSC > 0
+        AND D.TERMIN >= DATE_SUB(NOW(), INTERVAL 3 DAY)
+        AND R.FIRMA_ZEWNETRZNA IS NULL
+        AND DA.JAKA_KANCELARIA_TU IS NULL
         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
       `,
       "control-bl": `
-        AND JI.area = 'BLACHARNIA' 
-        AND S.NALEZNOSC > 0 
-        AND DA.JAKA_KANCELARIA_TU IS NULL 
-        AND R.FIRMA_ZEWNETRZNA IS NULL 
-        AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY) 
+        AND JI.area = 'BLACHARNIA'
+        AND S.NALEZNOSC > 0
+        AND DA.JAKA_KANCELARIA_TU IS NULL
+        AND R.FIRMA_ZEWNETRZNA IS NULL
+        AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
       `,
-      different: `AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0`,
+      different: `
+        AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0
+      `,
     };
 
-    // Obsługa przypadku "different" który ma nieco inny SELECT
-    let baseQuery = getAllDocumentsSQL;
-
-    if (info === "different") {
-      // Tu dodałeś kolumnę FK_DO_ROZLICZENIA, więc musimy podmienić baseQuery
-      // Warto wyciągnąć ten SQL do stałej na górze pliku, żeby nie zaśmiecać funkcji
-      baseQuery =
-        "SELECT ..., IFNULL(FS.DO_ROZLICZENIA, 0) AS FK_DO_ROZLICZENIA, ... FROM ..."; // (Twój SQL dla different)
-    }
-
-    // Jeśli info nie pasuje do żadnego klucza, zwróć pustą tablicę lub domyślny
     if (!filters.hasOwnProperty(info)) {
       return { data: [] };
     }
 
-    filterCondition = filters[info];
-
-    // 4. Wykonanie jednego zapytania
-    // Dodajemy WHERE tylko raz. Zakładamy, że getAllDocumentsSQL nie ma słowa "WHERE" na końcu.
-    const finalQuery = `${baseQuery} WHERE ${permissionCondition} ${filterCondition}`;
+    const finalQuery = `
+      ${getAllDocumentsSQL}
+      WHERE ${permissionCondition}
+      ${filters[info]}
+    `;
 
     const [filteredData] = await connect_SQL.query(finalQuery);
+
     return { data: filteredData };
   } catch (error) {
     logEvents(`documentsController: ${error}`, "reqServerErrors.txt");
-    return { data: [] }; // Zwróć cokolwiek, żeby frontend się nie wysypał
+    return { data: [] };
   }
 };
 
