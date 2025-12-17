@@ -99,7 +99,7 @@ const getDataDocuments = async (id_user, info, profile) => {
       krd: "AND DA.KRD IS NOT NULL",
       critical: `
         AND S.NALEZNOSC > 0
-        AND D.TERMIN >= DATE_SUB(NOW(), INTERVAL 3 DAY)
+        AND D.TERMIN <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)
         AND R.FIRMA_ZEWNETRZNA IS NULL
         AND DA.JAKA_KANCELARIA_TU IS NULL
         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
