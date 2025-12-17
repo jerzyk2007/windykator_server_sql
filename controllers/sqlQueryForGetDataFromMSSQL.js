@@ -297,7 +297,7 @@ const updateSettlementDescriptionQuery = (company) => {
 
 const accountancyFKData = (company, endDate) => {
   // dla kont 201, 203, 249
-  const queryKRT = `
+  const queryKRTOLD = `
      DECLARE @datado DATETIME = '${endDate}';
     DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
 DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
@@ -441,7 +441,7 @@ ORDER BY
      `;
 
   // tylko dla kont 201 i 203
-  const queryKRT1 = `
+  const queryKRT = `
  DECLARE @datado DATETIME = '${endDate}';
 DECLARE @DataDoDate DATE = CAST(@datado AS DATE);
 DECLARE @DataDoPlusJedenDzien DATE = DATEADD(day, 1, @DataDoDate);
@@ -461,7 +461,7 @@ cte_Rozrachunki AS (
 cte_Zobowiazania_Aggr AS (
     SELECT
         t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania,
-        SUM(t.overdue) AS płatność
+        SUM(t.płatność) AS płatność
     FROM (
         -- Wewnętrzna podselekcja dla Zobowiązań z UNION
         SELECT
@@ -471,12 +471,12 @@ cte_Zobowiazania_Aggr AS (
             ROUND(
                 (CASE WHEN orgstrona = 0 THEN SUM(rozdata.kwota) ELSE -SUM(rozdata.kwota) END) +
                 SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
-            , 2) AS overdue
+            , 2) AS płatność
         FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
         LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
         LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
-        WHERE rozdata.potencjalna = 0 AND rozdata.synt IN (201, 203)
-          AND rozdata.dataokr < @DataDoPlusJedenDzien AND rozdata.baza = 2
+        WHERE rozdata.potencjalna = 0 AND (rozdata.synt IN (203, 249) or (rozdata.synt IN (201) and rozdata.poz1=1)) -- Dodano 249
+          AND rozdata.dataokr < @DataDoPlusJedenDzien -- AND rozdata.baza = 2
           AND (rozdata.strona = 1 OR (rozdata.strona = 0 AND rozdata.kwota < 0))
           AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
           AND rozdata.strona = 1
@@ -491,15 +491,15 @@ cte_Zobowiazania_Aggr AS (
             ROUND(
                 SUM(rozdata.kwota) -
                 SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
-            , 2) AS overdue
+            , 2) AS płatność
         FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
         LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
         LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
-        WHERE rozdata.potencjalna = 0 AND rozdata.baza = 2
+        WHERE rozdata.potencjalna = 0 --AND rozdata.baza = 2
           AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
           AND rozdata.rozliczona = 0 AND rozdata.termin <= @DataDoDate
           AND rozdata.strona = 0 AND rozdata.kwota < 0 AND rozdata.doRozlZl > 0
-          AND rozdata.synt IN (201, 203)
+          AND (rozdata.synt IN (203, 249) or (rozdata.synt IN (201) and rozdata.poz1=1)) -- Dodano 249
         GROUP BY dSymbol, termin, synt, poz1, poz2, kpu.nazwa
     ) AS t
     GROUP BY t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania
@@ -508,7 +508,7 @@ cte_Zobowiazania_Aggr AS (
 cte_Naleznosci_Aggr AS (
     SELECT
         t.dsymbol, t.kontrahent, t.synt, t.poz1, t.poz2, t.termin, t.dniPrzetreminowania,
-        SUM(t.overdue) AS płatność
+        SUM(t.płatność) AS płatność
     FROM (
         -- Wewnętrzna podselekcja dla Należności
         SELECT
@@ -518,12 +518,12 @@ cte_Naleznosci_Aggr AS (
             ROUND(
                 SUM(rozdata.kwota) +
                 SUM(CASE WHEN rr.WnMaRozliczono < 0 AND kurs <> 0 THEN ISNULL(rr.WnMaRozliczono_w, 0) * rozdata.kurs ELSE ISNULL(rr.WnMaRozliczono, 0) END)
-            , 2) AS overdue
+            , 2) AS płatność
         FROM [fkkomandytowa].[FK].[fk_rozdata] AS rozdata
         LEFT JOIN cte_Rozrachunki AS rr ON rr.transakcja = rozdata.id
         LEFT JOIN [fkkomandytowa].[FK].[fk_kontrahenci] AS kpu ON rozdata.kontrahent = kpu.pozycja
         WHERE rozdata.potencjalna = 0 AND rozdata.dataokr < @DataDoPlusJedenDzien
-          AND rozdata.synt IN (201, 203) AND rozdata.baza = 2
+          AND (rozdata.synt IN (203, 249) or (rozdata.synt IN (201) and rozdata.poz1=1)) --AND rozdata.baza = 2 -- Dodano 249
           AND (rozdata.strona = 0 OR (rozdata.strona = 1 AND rozdata.kwota < 0))
           AND NOT (rozdata.rozliczona = 1 AND rozdata.dataOstat < @DataDoPlusJedenDzien)
           AND strona = 0 AND rozdata.orgStrona = 0
@@ -552,7 +552,13 @@ cte_Final_Calculation AS (
             ELSE '> 360'
         END AS przedział,
         SUM(płatność) OVER (
-            PARTITION BY synt, CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END
+            PARTITION BY synt,
+            -- Dostosowanie partycji dla nowego konta 249
+            CASE
+                WHEN synt IN (201, 249) THEN poz2 -- Jeśli 201 lub 249, użyj poz2
+                WHEN synt = 203 THEN poz1     -- Jeśli 203, użyj poz1
+                ELSE NULL                     -- Domyślne dla innych kont (lub jeśli chcesz je pominąć)
+            END
         ) AS saldoKontrahent
     FROM cte_Combined_Results
     WHERE ROUND(płatność, 2) <> 0
@@ -570,8 +576,12 @@ SELECT
 FROM cte_Final_Calculation
 ORDER BY
     synt,
-    CASE WHEN synt = 201 THEN poz2 WHEN synt = 203 THEN poz1 END,
-    termin;
+    CASE
+        WHEN synt IN (201, 249) THEN poz2
+        WHEN synt = 203 THEN poz1
+        ELSE NULL
+    END,
+    termin
 `;
 
   //nowe zoptymalizowane zapytanie KEM
