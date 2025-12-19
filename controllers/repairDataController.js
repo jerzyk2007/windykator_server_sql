@@ -235,7 +235,10 @@ const changeDocumentsTable = async () => {
 const changeControlBLTable = async () => {
   try {
     await connect_SQL.query(
-      "ALTER TABLE company_control_documents ADD COLUMN CONTROL_LOGI JSON NULL AFTER CONTROL_UWAGI"
+      "ALTER TABLE company_control_documents CHANGE COLUMN CONTROL_UWAGI KANAL_KOMUNIKACJI JSON"
+    );
+    await connect_SQL.query(
+      "ALTER TABLE company_control_documents ADD COLUMN DZIENNIK_ZMIAN JSON NULL AFTER KANAL_KOMUNIKACJI"
     );
 
     const [chatControlBL] = await connect_SQL.query(

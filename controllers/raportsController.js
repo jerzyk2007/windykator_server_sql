@@ -272,15 +272,28 @@ const getRaportDocumentsControlBL = async (req, res) => {
     const cleanedData = dataReport.map(
       ({ id_control_documents, ...rest }) => rest
     );
-
     const filteredData = cleanedData.map((item) => {
+      // const uwagi =
+      //   Array.isArray(item.KANAL_KOMUNIKACJI) && item?.KANAL_KOMUNIKACJI?.length
+      //     ? item.KANAL_KOMUNIKACJI.length === 1
+      //       ? item.KANAL_KOMUNIKACJI[0]
+      //       : `Ilość poprzednich wpisów - ${
+      //           item.KANAL_KOMUNIKACJI.length - 1
+      //         }\n\n${item.KANAL_KOMUNIKACJI[item.KANAL_KOMUNIKACJI.length - 1]}`
+      //     : " ";
+
+      const formatEntry = ({ date, username, note }) =>
+        [date, username, note].filter(Boolean).join(" - ");
+
       const uwagi =
-        Array.isArray(item.CONTROL_UWAGI) && item?.CONTROL_UWAGI?.length
-          ? item.CONTROL_UWAGI.length === 1
-            ? item.CONTROL_UWAGI[0]
-            : `Ilość poprzednich wpisów - ${item.CONTROL_UWAGI.length - 1}\n\n${
-                item.CONTROL_UWAGI[item.CONTROL_UWAGI.length - 1]
-              }`
+        Array.isArray(item.KANAL_KOMUNIKACJI) && item.KANAL_KOMUNIKACJI.length
+          ? item.KANAL_KOMUNIKACJI.length === 1
+            ? formatEntry(item.KANAL_KOMUNIKACJI[0])
+            : `Ilość poprzednich wpisów - ${
+                item.KANAL_KOMUNIKACJI.length - 1
+              }\n\n${formatEntry(
+                item.KANAL_KOMUNIKACJI[item.KANAL_KOMUNIKACJI.length - 1]
+              )}`
           : " ";
 
       return {
@@ -297,7 +310,7 @@ const getRaportDocumentsControlBL = async (req, res) => {
         CONTROL_POLISA: item.CONTROL_POLISA ? item.CONTROL_POLISA : " ",
         CONTROL_PR_JAZ: item.CONTROL_PR_JAZ ? item.CONTROL_PR_JAZ : " ",
         CONTROL_UPOW: item.CONTROL_UPOW ? item.CONTROL_UPOW : " ",
-        CONTROL_UWAGI: uwagi,
+        KANAL_KOMUNIKACJI: uwagi,
         CONTROL_BRAK_DZIALAN_OD_OST: item.CONTROL_BRAK_DZIALAN_OD_OST
           ? item.CONTROL_BRAK_DZIALAN_OD_OST
           : " ",
