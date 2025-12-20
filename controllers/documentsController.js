@@ -543,9 +543,7 @@ const changeDocumentControl = async (req, res) => {
         ]
       );
     } else {
-      console.log(documentControlBL);
-
-      const test = await connect_SQL.query(
+      await connect_SQL.query(
         `INSERT INTO company_control_documents (
     COMPANY,
     CONTROL_ODPOWIEDZIALNOSC,
