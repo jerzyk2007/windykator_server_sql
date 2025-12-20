@@ -317,76 +317,238 @@ const updateFKSettlements = async (companies) => {
   }
 };
 
+// pobranie opisów rozrachunków dla KRT - stara funckja - cały opis jako string
+// const updateSettlementDescriptionCompany = async (company) => {
+//   try {
+//     const settlementDescription = await msSqlQuery(
+//       updateSettlementDescriptionQuery(company)
+//     );
+
+//     const updatedSettlements = Object.values(
+//       settlementDescription.reduce((acc, item) => {
+//         // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
+//         const formattedAmount =
+//           typeof item.WARTOSC_OPERACJI === "number" &&
+//           !isNaN(item.WARTOSC_OPERACJI)
+//             ? item.WARTOSC_OPERACJI.toLocaleString("pl-PL", {
+//                 minimumFractionDigits: 2,
+//                 maximumFractionDigits: 2,
+//                 useGrouping: true,
+//               })
+//             : "brak danych";
+
+//         // Pomijanie wpisów, jeśli wszystkie dane są null lub brak danych
+//         if (
+//           item.DATA_OPERACJI === null &&
+//           item.NUMER_OPIS === null &&
+//           formattedAmount === "brak danych"
+//         ) {
+//           return acc;
+//         }
+
+//         const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
+//         const newDataRozliczenia = new Date(item.DATA_ROZLICZENIA);
+//         const DATA_OPERACJI = item.DATA_OPERACJI;
+
+//         if (!acc[item.NUMER_FV]) {
+//           // Jeśli jeszcze nie ma wpisu dla tego NUMER_FV, tworzymy nowy obiekt
+//           acc[item.NUMER_FV] = {
+//             NUMER_FV: item.NUMER_FV,
+//             DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
+//             OPIS_ROZRACHUNKU: [description],
+//             COMPANY: company,
+//           };
+//         } else {
+//           // Jeśli już istnieje obiekt, dodajemy opis
+//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
+
+//           // Porównujemy daty i aktualizujemy na najnowszą (najbliższą dzisiejszej)
+//           const currentDataRozliczenia = new Date(
+//             acc[item.NUMER_FV].DATA_ROZLICZENIA
+//           );
+//           if (
+//             new Date(DATA_OPERACJI) > newDataRozliczenia &&
+//             !item.DATA_ROZLICZENIA
+//           ) {
+//             acc[item.NUMER_FV].DATA_ROZLICZENIA = null;
+//           } else if (newDataRozliczenia > currentDataRozliczenia) {
+//             acc[item.NUMER_FV].DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
+//           }
+
+//           // Sortowanie opisów według daty
+//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
+//             const dateA = new Date(a.split(" - ")[0]);
+//             const dateB = new Date(b.split(" - ")[0]);
+//             return dateB - dateA;
+//           });
+//         }
+
+//         return acc;
+//       }, {})
+//     );
+//     return updatedSettlements;
+//   } catch (error) {
+//     logEvents(
+//       `getDataFromMSSQL, updateSettlementDescription_${company}: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//   }
+// };
+
 // pobranie opisów rozrachunków dla KRT
+// const updateSettlementDescriptionCompany = async (company) => {
+//   try {
+//     const settlementDescription = await msSqlQuery(
+//       updateSettlementDescriptionQuery(company)
+//     );
+
+//     const updatedSettlements = Object.values(
+//       settlementDescription.reduce((acc, item) => {
+//         // Sprawdzenie kwoty - ma pozostać jako Number
+//         const amount =
+//           typeof item.WARTOSC_OPERACJI === "number" &&
+//           !isNaN(item.WARTOSC_OPERACJI)
+//             ? item.WARTOSC_OPERACJI
+//             : 0;
+
+//         // Pomijanie wpisów, jeśli wszystkie kluczowe dane są puste
+//         if (
+//           item.DATA_OPERACJI === null &&
+//           item.NUMER_OPIS === null &&
+//           amount === 0
+//         ) {
+//           return acc;
+//         }
+
+//         // Tworzenie obiektu opisu zamiast stringa
+//         const currentDescriptionEntry = {
+//           data: item.DATA_OPERACJI,
+//           opis: item.NUMER_OPIS,
+//           kwota: amount,
+//         };
+
+//         const newDataRozliczenia = item.DATA_ROZLICZENIA
+//           ? new Date(item.DATA_ROZLICZENIA)
+//           : null;
+//         const DATA_OPERACJI_DATE = item.DATA_OPERACJI
+//           ? new Date(item.DATA_OPERACJI)
+//           : null;
+
+//         if (!acc[item.NUMER_FV]) {
+//           // Jeśli jeszcze nie ma wpisu dla tego NUMER_FV, tworzymy nowy obiekt
+//           acc[item.NUMER_FV] = {
+//             NUMER_FV: item.NUMER_FV,
+//             DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
+//             OPIS_ROZRACHUNKU: [currentDescriptionEntry],
+//             COMPANY: company,
+//           };
+//         } else {
+//           // Jeśli już istnieje obiekt, dodajemy nowy obiekt opisu do tablicy
+//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(currentDescriptionEntry);
+
+//           // Logika aktualizacji daty rozliczenia
+//           const currentDataRozliczenia = acc[item.NUMER_FV].DATA_ROZLICZENIA
+//             ? new Date(acc[item.NUMER_FV].DATA_ROZLICZENIA)
+//             : null;
+
+//           if (
+//             DATA_OPERACJI_DATE > newDataRozliczenia &&
+//             !item.DATA_ROZLICZENIA
+//           ) {
+//             acc[item.NUMER_FV].DATA_ROZLICZENIA = null;
+//           } else if (
+//             newDataRozliczenia &&
+//             (!currentDataRozliczenia ||
+//               newDataRozliczenia > currentDataRozliczenia)
+//           ) {
+//             acc[item.NUMER_FV].DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
+//           }
+
+//           // Sortowanie tablicy obiektów według daty (od najnowszej)
+//           acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
+//             const dateA = a.data ? new Date(a.data) : 0;
+//             const dateB = b.data ? new Date(b.data) : 0;
+//             return dateB - dateA;
+//           });
+//         }
+
+//         return acc;
+//       }, {})
+//     );
+
+//     return updatedSettlements;
+//   } catch (error) {
+//     logEvents(
+//       `getDataFromMSSQL, updateSettlementDescription_${company}: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//   }
+// };
+
 const updateSettlementDescriptionCompany = async (company) => {
   try {
     const settlementDescription = await msSqlQuery(
       updateSettlementDescriptionQuery(company)
     );
 
-    const updatedSettlements = Object.values(
-      settlementDescription.reduce((acc, item) => {
-        // Sprawdzenie, czy WARTOSC_OPERACJI jest liczbą, jeśli nie to przypisanie pustego pola
-        const formattedAmount =
-          typeof item.WARTOSC_OPERACJI === "number" &&
-          !isNaN(item.WARTOSC_OPERACJI)
-            ? item.WARTOSC_OPERACJI.toLocaleString("pl-PL", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-                useGrouping: true,
-              })
-            : "brak danych";
+    // Używamy Map zamiast zwykłego obiektu - jest znacznie szybszy przy milionach kluczy
+    const grouped = new Map();
 
-        // Pomijanie wpisów, jeśli wszystkie dane są null lub brak danych
-        if (
-          item.DATA_OPERACJI === null &&
-          item.NUMER_OPIS === null &&
-          formattedAmount === "brak danych"
-        ) {
-          return acc;
-        }
+    for (const item of settlementDescription) {
+      const amount =
+        typeof item.WARTOSC_OPERACJI === "number" &&
+        !isNaN(item.WARTOSC_OPERACJI)
+          ? item.WARTOSC_OPERACJI
+          : 0;
 
-        const description = `${item.DATA_OPERACJI} - ${item.NUMER_OPIS} - ${formattedAmount}`;
-        const newDataRozliczenia = new Date(item.DATA_ROZLICZENIA);
-        const DATA_OPERACJI = item.DATA_OPERACJI;
+      // Pomijanie pustych wpisów
+      if (!item.DATA_OPERACJI && !item.NUMER_OPIS && amount === 0) {
+        continue;
+      }
 
-        if (!acc[item.NUMER_FV]) {
-          // Jeśli jeszcze nie ma wpisu dla tego NUMER_FV, tworzymy nowy obiekt
-          acc[item.NUMER_FV] = {
-            NUMER_FV: item.NUMER_FV,
-            DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
-            OPIS_ROZRACHUNKU: [description],
-            COMPANY: company,
-          };
-        } else {
-          // Jeśli już istnieje obiekt, dodajemy opis
-          acc[item.NUMER_FV].OPIS_ROZRACHUNKU.push(description);
+      const currentEntry = {
+        data: item.DATA_OPERACJI,
+        opis: item.NUMER_OPIS,
+        kwota: amount,
+      };
 
-          // Porównujemy daty i aktualizujemy na najnowszą (najbliższą dzisiejszej)
-          const currentDataRozliczenia = new Date(
-            acc[item.NUMER_FV].DATA_ROZLICZENIA
-          );
-          if (
-            new Date(DATA_OPERACJI) > newDataRozliczenia &&
-            !item.DATA_ROZLICZENIA
-          ) {
-            acc[item.NUMER_FV].DATA_ROZLICZENIA = null;
-          } else if (newDataRozliczenia > currentDataRozliczenia) {
-            acc[item.NUMER_FV].DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
+      if (!grouped.has(item.NUMER_FV)) {
+        grouped.set(item.NUMER_FV, {
+          NUMER_FV: item.NUMER_FV,
+          DATA_ROZLICZENIA: item.DATA_ROZLICZENIA,
+          OPIS_ROZRACHUNKU: [currentEntry],
+          COMPANY: company,
+        });
+      } else {
+        const existing = grouped.get(item.NUMER_FV);
+        existing.OPIS_ROZRACHUNKU.push(currentEntry);
+
+        // --- Logika aktualizacji DATA_ROZLICZENIA ---
+        const newDataRozliczenia = item.DATA_ROZLICZENIA
+          ? new Date(item.DATA_ROZLICZENIA)
+          : null;
+        const currentDataRozliczenia = existing.DATA_ROZLICZENIA
+          ? new Date(existing.DATA_ROZLICZENIA)
+          : null;
+
+        if (item.DATA_OPERACJI && !item.DATA_ROZLICZENIA) {
+          const opDate = new Date(item.DATA_OPERACJI);
+          if (newDataRozliczenia && opDate > newDataRozliczenia) {
+            existing.DATA_ROZLICZENIA = null;
           }
-
-          // Sortowanie opisów według daty
-          acc[item.NUMER_FV].OPIS_ROZRACHUNKU.sort((a, b) => {
-            const dateA = new Date(a.split(" - ")[0]);
-            const dateB = new Date(b.split(" - ")[0]);
-            return dateB - dateA;
-          });
+        } else if (newDataRozliczenia) {
+          if (
+            !currentDataRozliczenia ||
+            newDataRozliczenia > currentDataRozliczenia
+          ) {
+            existing.DATA_ROZLICZENIA = item.DATA_ROZLICZENIA;
+          }
         }
+      }
+    }
 
-        return acc;
-      }, {})
-    );
-    return updatedSettlements;
+    // Zamiana Mapy z powrotem na tablicę wyników
+    return Array.from(grouped.values());
   } catch (error) {
     logEvents(
       `getDataFromMSSQL, updateSettlementDescription_${company}: ${error}`,
@@ -394,7 +556,6 @@ const updateSettlementDescriptionCompany = async (company) => {
     );
   }
 };
-
 // aktualizacja opisów rozrachunków
 const updateSettlementDescription = async () => {
   const companies = ["KRT", "KEM"];

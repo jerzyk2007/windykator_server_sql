@@ -774,6 +774,34 @@ const generateRaportData = async (req, res) => {
         mergedInfoFK.unshift(raportCounter);
         return mergedInfoFK.join("\n");
       };
+
+      const opisRozrachunku = Array.isArray(item.OPIS_ROZRACHUNKU)
+        ? [...item.OPIS_ROZRACHUNKU]
+            // 1. Sortowanie od najnowszej daty (malejąco)
+            .sort((a, b) => {
+              const dateA = a.data || "";
+              const dateB = b.data || "";
+              return dateB.localeCompare(dateA);
+            })
+            // 2. Mapowanie na sformatowany string
+            .map((entry) => {
+              const formattedAmount =
+                typeof entry.kwota === "number" && !isNaN(entry.kwota)
+                  ? entry.kwota.toLocaleString("pl-PL", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                      useGrouping: true,
+                    })
+                  : "0,00";
+
+              return `${entry.data || "brak daty"} - ${
+                entry.opis || "brak opisu"
+              } - ${formattedAmount}`;
+            })
+            // 3. Połączenie wpisów w jeden tekst
+            .join("\n\n")
+        : "NULL";
+
       return {
         ...item,
         ILE_DNI_NA_PLATNOSC_FV: item.ILE_DNI_NA_PLATNOSC_FV,
@@ -802,9 +830,10 @@ const generateRaportData = async (req, res) => {
         OPIEKUN_OBSZARU_CENTRALI: Array.isArray(item.OPIEKUN_OBSZARU_CENTRALI)
           ? item.OPIEKUN_OBSZARU_CENTRALI.join("\n")
           : item.OPIEKUN_OBSZARU_CENTRALI,
-        OPIS_ROZRACHUNKU: Array.isArray(item.OPIS_ROZRACHUNKU)
-          ? item.OPIS_ROZRACHUNKU.join("\n\n")
-          : "NULL",
+        // OPIS_ROZRACHUNKU: Array.isArray(item.OPIS_ROZRACHUNKU)
+        //   ? item.OPIS_ROZRACHUNKU.join("\n\n")
+        //   : "NULL",
+        OPIS_ROZRACHUNKU: opisRozrachunku,
         OWNER: Array.isArray(item.OWNER) ? item.OWNER.join("\n") : item.OWNER,
         DATA_WYSTAWIENIA_FV: convertToDateIfPossible(item.DATA_WYSTAWIENIA_FV),
         TERMIN_PLATNOSCI_FV: convertToDateIfPossible(item.TERMIN_PLATNOSCI_FV),

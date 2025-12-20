@@ -5,7 +5,7 @@ const { updateData } = require("./getDataFromMSSQL");
 
 const getTime = async (req, res) => {
   try {
-    await repair();
+    // await repair();
     // await updateData();
     const [getUpdatesData] = await connect_SQL.query(
       "SELECT DATA_NAME, DATE, HOUR, UPDATE_SUCCESS FROM company_updates"
