@@ -176,32 +176,37 @@ const changeSingleDocument = async (req, res) => {
 
     const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
 
+    // łączę stare i nowy wpisy ostatecznej daty i decyzji dla Raportu FK
+    const oldInfoManagement = oldData[0]?.INFORMACJA_ZARZAD
+      ? oldData[0].INFORMACJA_ZARZAD
+      : [];
+
+    const newInfoManagement = chatLog?.raportFK?.KANAL_KOMUNIKACJI?.length
+      ? chatLog.raportFK.KANAL_KOMUNIKACJI
+      : [];
+
+    const mergeInfoManagement = [
+      ...(oldInfoManagement ?? []),
+      ...(newInfoManagement ?? []),
+    ];
+
+    const oldDateManagement = oldData[0]?.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+      ? oldData[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA
+      : [];
+
+    const newDateManagement = chatLog?.raportFK?.DZIENNIK_ZMIAN?.length
+      ? chatLog.raportFK.DZIENNIK_ZMIAN
+      : [];
+
+    const mergeDateManagement = [
+      ...(oldDateManagement ?? []),
+      ...(newDateManagement ?? []),
+    ];
+
     const [documents_actionsExist] = await connect_SQL.query(
       "SELECT id_action from company_documents_actions WHERE document_id = ?",
       [id_document]
     );
-
-    // if (documents_actionsExist[0]?.id_action) {
-    //   await connect_SQL.query(
-    //     "UPDATE company_documents_actions SET KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ?  WHERE document_id = ?",
-    //     [
-    //       mergeChat.length ? JSON.stringify(mergeChat) : null,
-    //       mergeLog.length ? JSON.stringify(mergeLog) : null,
-    //       id_document,
-    //     ]
-    //   );
-    // } else {
-    //   await connect_SQL.query(
-    //     "INSERT INTO company_documents_actions (document_id, KANAL_KOMUNIKACJI, DZIENNIK_ZMIAN) VALUES (?, ?, ?)",
-    //     [
-    //       id_document,
-    //       mergeChat.length ? JSON.stringify(mergeChat) : null,
-    //       mergeLog.length ? JSON.stringify(mergeLog) : null,
-    //     ]
-    //   );
-    // }
-
-    // console.log(document);
 
     if (documents_actionsExist[0]?.id_action) {
       await connect_SQL.query(
@@ -231,10 +236,10 @@ const changeSingleDocument = async (req, res) => {
             ? document.OSTATECZNA_DATA_ROZLICZENIA
             : null,
           document.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            ? JSON.stringify(document.HISTORIA_ZMIANY_DATY_ROZLICZENIA)
+            ? JSON.stringify(mergeDateManagement)
             : null,
           document.INFORMACJA_ZARZAD
-            ? JSON.stringify(document.INFORMACJA_ZARZAD)
+            ? JSON.stringify(mergeInfoManagement)
             : null,
           document.KRD && document.KRD !== "BRAK" ? document.KRD : null,
           mergeChat.length ? JSON.stringify(mergeChat) : null,
@@ -270,10 +275,10 @@ const changeSingleDocument = async (req, res) => {
             ? document.OSTATECZNA_DATA_ROZLICZENIA
             : null,
           document.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            ? JSON.stringify(document.HISTORIA_ZMIANY_DATY_ROZLICZENIA)
+            ? JSON.stringify(mergeDateManagement)
             : null,
           document.INFORMACJA_ZARZAD
-            ? JSON.stringify(document.INFORMACJA_ZARZAD)
+            ? JSON.stringify(mergeInfoManagement)
             : null,
           document.KRD && document.KRD !== "BRAK" ? document.KRD : null,
           mergeChat.length ? JSON.stringify(mergeChat) : null,

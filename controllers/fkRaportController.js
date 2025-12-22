@@ -1477,6 +1477,7 @@ const changeMark = async (req, res) => {
 
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, FIRMA, data } = req.body;
+  console.log(data);
   try {
     const [raportDate] = await connect_SQL.query(
       `SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'generate' AND COMPANY = ?`,
@@ -1492,50 +1493,50 @@ const addDecisionDate = async (req, res) => {
       [NUMER_FV, raportDate[0].DATE, FIRMA]
     );
 
-    if (searchDuplicate[0]?.id_management_date_description_FK) {
-      const id = searchDuplicate[0].id_management_date_description_FK;
-      // const NUMER_FV = searchDuplicate[0].NUMER_FV;
-      const HISTORIA_ZMIANY_DATY_ROZLICZENIA =
-        searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA;
-      const INFORMACJA_ZARZAD = searchDuplicate[0].INFORMACJA_ZARZAD;
-      // const WYKORZYSTANO_RAPORT_FK = searchDuplicate[0].WYKORZYSTANO_RAPORT_FK;
+    // if (searchDuplicate[0]?.id_management_date_description_FK) {
+    //   const id = searchDuplicate[0].id_management_date_description_FK;
+    //   // const NUMER_FV = searchDuplicate[0].NUMER_FV;
+    //   const HISTORIA_ZMIANY_DATY_ROZLICZENIA =
+    //     searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA;
+    //   const INFORMACJA_ZARZAD = searchDuplicate[0].INFORMACJA_ZARZAD;
+    //   // const WYKORZYSTANO_RAPORT_FK = searchDuplicate[0].WYKORZYSTANO_RAPORT_FK;
 
-      if (
-        Array.isArray(data.INFORMACJA_ZARZAD) &&
-        data.INFORMACJA_ZARZAD.length
-      ) {
-        INFORMACJA_ZARZAD.push(...data.INFORMACJA_ZARZAD);
-      }
+    //   if (
+    //     Array.isArray(data.INFORMACJA_ZARZAD) &&
+    //     data.INFORMACJA_ZARZAD.length
+    //   ) {
+    //     INFORMACJA_ZARZAD.push(...data.INFORMACJA_ZARZAD);
+    //   }
 
-      if (
-        Array.isArray(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA) &&
-        data.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length
-      ) {
-        HISTORIA_ZMIANY_DATY_ROZLICZENIA.push(
-          ...data.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-        );
-      }
+    //   if (
+    //     Array.isArray(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA) &&
+    //     data.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length
+    //   ) {
+    //     HISTORIA_ZMIANY_DATY_ROZLICZENIA.push(
+    //       ...data.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+    //     );
+    //   }
 
-      await connect_SQL.query(
-        `UPDATE company_management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?  `,
-        [
-          JSON.stringify(INFORMACJA_ZARZAD),
-          JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA),
-          id,
-        ]
-      );
-    } else {
-      await connect_SQL.query(
-        `INSERT INTO company_management_date_description_FK (NUMER_FV, INFORMACJA_ZARZAD, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK, COMPANY) VALUES (?, ?, ?, ?, ?)`,
-        [
-          NUMER_FV,
-          JSON.stringify(data.INFORMACJA_ZARZAD),
-          JSON.stringify(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA),
-          raportDate[0].DATE,
-          FIRMA,
-        ]
-      );
-    }
+    //   await connect_SQL.query(
+    //     `UPDATE company_management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?  `,
+    //     [
+    //       JSON.stringify(INFORMACJA_ZARZAD),
+    //       JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA),
+    //       id,
+    //     ]
+    //   );
+    // } else {
+    //   await connect_SQL.query(
+    //     `INSERT INTO company_management_date_description_FK (NUMER_FV, INFORMACJA_ZARZAD, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK, COMPANY) VALUES (?, ?, ?, ?, ?)`,
+    //     [
+    //       NUMER_FV,
+    //       JSON.stringify(data.INFORMACJA_ZARZAD),
+    //       JSON.stringify(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA),
+    //       raportDate[0].DATE,
+    //       FIRMA,
+    //     ]
+    //   );
+    // }
     res.end();
   } catch (error) {
     logEvents(

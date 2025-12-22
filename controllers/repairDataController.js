@@ -287,11 +287,125 @@ const repairVatColumns = async () => {
         );
       }
     }
+  } catch (error) {
+    console.error(error);
+  }
+};
 
-    // const [userSettings] = await connect_SQL.query(
-    //   "SELECT id_user, tableSettings, columns FROM company_users"
-    // );
-    // console.log(userSettings);
+// naprawa ostatecznej decyzji i historii daty rozliczenia
+const managementRepair = async () => {
+  try {
+    await connect_SQL.query(`
+        UPDATE company_documents_actions
+        SET
+            INFORMACJA_ZARZAD = CASE
+                WHEN JSON_TYPE(INFORMACJA_ZARZAD) = 'NULL' THEN NULL
+                ELSE INFORMACJA_ZARZAD
+            END,
+            HISTORIA_ZMIANY_DATY_ROZLICZENIA = CASE
+                WHEN JSON_TYPE(HISTORIA_ZMIANY_DATY_ROZLICZENIA) = 'NULL' THEN NULL
+                ELSE HISTORIA_ZMIANY_DATY_ROZLICZENIA
+            END
+        WHERE
+            JSON_TYPE(INFORMACJA_ZARZAD) = 'NULL'
+            OR JSON_TYPE(HISTORIA_ZMIANY_DATY_ROZLICZENIA) = 'NULL'
+    `);
+
+    const [docActions] = await connect_SQL.query(
+      `
+    SELECT
+      id_action,
+      HISTORIA_ZMIANY_DATY_ROZLICZENIA,
+      INFORMACJA_ZARZAD
+    FROM company_documents_actions
+    WHERE
+      (
+        HISTORIA_ZMIANY_DATY_ROZLICZENIA IS NOT NULL
+        AND JSON_TYPE(HISTORIA_ZMIANY_DATY_ROZLICZENIA) <> 'NULL'
+      )
+      OR
+      (
+        INFORMACJA_ZARZAD IS NOT NULL
+        AND JSON_TYPE(INFORMACJA_ZARZAD) <> 'NULL'
+      )
+    `
+    );
+
+    const safeJsonArray = (value) => {
+      if (!value) return [];
+
+      if (Array.isArray(value)) return value;
+
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+
+      return [];
+    };
+
+    for (const doc of docActions) {
+      const infoZarzad = safeJsonArray(doc.INFORMACJA_ZARZAD);
+      const historiaRozl = safeJsonArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
+
+      const newInfo = infoZarzad.map((item) => ({
+        date: "",
+        note: item,
+        profile: "Pracownik",
+        username: "",
+        userlogin: "brak danych",
+      }));
+
+      const newHistoria = historiaRozl.map((item) => ({
+        date: "",
+        note: item,
+        profile: "Pracownik",
+        username: "",
+        userlogin: "brak danych",
+      }));
+
+      await connect_SQL.query(
+        "UPDATE company_documents_actions SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_action = ?",
+        [JSON.stringify(newInfo), JSON.stringify(newHistoria), doc.id_action]
+      );
+    }
+
+    const [manageDateDecision] = await connect_SQL.query(
+      "SELECT * FROM company_management_date_description_FK"
+    );
+    for (const doc of manageDateDecision) {
+      const infoZarzad = safeJsonArray(doc.INFORMACJA_ZARZAD);
+      const historiaRozl = safeJsonArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA);
+
+      const newInfo = infoZarzad.map((item) => ({
+        date: "",
+        note: item,
+        profile: "Pracownik",
+        username: "",
+        userlogin: "brak danych",
+      }));
+
+      const newHistoria = historiaRozl.map((item) => ({
+        date: "",
+        note: item,
+        profile: "Pracownik",
+        username: "",
+        userlogin: "brak danych",
+      }));
+
+      await connect_SQL.query(
+        "UPDATE company_management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?",
+        [
+          JSON.stringify(newInfo) ?? [],
+          JSON.stringify(newHistoria) ?? [],
+          doc.id_management_date_description_FK,
+        ]
+      );
+    }
   } catch (error) {
     console.error(error);
   }
@@ -305,6 +419,8 @@ const repair = async () => {
     // console.log("changeControlBLTable");
     // await repairVatColumns();
     // console.log("repairVatColumns");
+    // await managementRepair();
+    // console.log("managementRepair");
   } catch (error) {
     console.error(error);
   }
