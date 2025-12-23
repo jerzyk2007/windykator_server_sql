@@ -141,7 +141,7 @@ const getDataDocuments = async (id_user, info, profile) => {
 // funkcja zmieniająca dane w poszczególnym dokumncie (editRowTable)
 const changeSingleDocument = async (req, res) => {
   // const { id_document, documentItem, changeDeps, lawFirmData } = req.body;
-  const { id_document, document, chatLog } = req.body;
+  const { id_document, document, chatLog, lawFirmData } = req.body;
 
   try {
     if (document?.DZIAL) {
@@ -286,19 +286,21 @@ const changeSingleDocument = async (req, res) => {
         ]
       );
     }
-    // if (lawFirmData.zapisz) {
-    //   await connect_SQL.query(
-    //     "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA_DO_KANCELARII, KWOTA_BRUTTO_DOKUMENTU, FIRMA) VALUES (?, ?, ?, ?, ?, ?) ",
-    //     [
-    //       lawFirmData.numerFv,
-    //       lawFirmData.kontrahent,
-    //       lawFirmData.kancelaria,
-    //       lawFirmData.kwotaRoszczenia,
-    //       lawFirmData.kwota_brutto,
-    //       lawFirmData.firma,
-    //     ]
-    //   );
-    // }
+    console.log("lawFirmData");
+    if (lawFirmData.zapisz) {
+      console.log(lawFirmData);
+      // await connect_SQL.query(
+      //   "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA_DO_KANCELARII, KWOTA_BRUTTO_DOKUMENTU, FIRMA) VALUES (?, ?, ?, ?, ?, ?) ",
+      //   [
+      //     lawFirmData.numerFv,
+      //     lawFirmData.kontrahent,
+      //     lawFirmData.kancelaria,
+      //     lawFirmData.kwotaRoszczenia,
+      //     lawFirmData.kwota_brutto,
+      //     lawFirmData.firma,
+      //   ]
+      // );
+    }
     res.end();
   } catch (error) {
     logEvents(

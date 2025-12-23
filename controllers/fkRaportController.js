@@ -74,6 +74,98 @@ const generateHistoryDocuments = async (company) => {
         [item.NUMER_FV, company]
       );
 
+      // tworzę string z danych obiektu
+      const formatHistoryItem = ({ date, note, username }) =>
+        [date, note, username].filter(Boolean).join(" - ");
+
+      //jesli nie ma historycznych wpisów tworzę nowy
+      if (!getDocHist.length) {
+        const newHistory = {
+          info: `1 raport utworzono ${raportDate[0].DATE}`,
+          historyDate: [],
+          historyText: [],
+        };
+
+        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+        getDoc.forEach((doc) => {
+          if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+            newHistory.historyDate.push(
+              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+            );
+          }
+
+          if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+            newHistory.historyText.push(
+              ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+            );
+          }
+        });
+
+        await connect_SQL.query(
+          `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+          [item.NUMER_FV, JSON.stringify([newHistory]), company]
+        );
+      } else {
+        const newHistory = {
+          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
+            raportDate[0].DATE
+          }`,
+          historyDate: [],
+          historyText: [],
+        };
+        getDoc.forEach((doc) => {
+          if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+            newHistory.historyDate.push(
+              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+            );
+          }
+
+          if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+            newHistory.historyText.push(
+              ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+            );
+          }
+        });
+        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
+        await connect_SQL.query(
+          `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
+          [JSON.stringify(prepareArray), item.NUMER_FV, company]
+        );
+      }
+    }
+  } catch (error) {
+    logEvents(
+      `fKRaportController, generateHistoryDocuments: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+const generateHistoryDocuments2 = async (company) => {
+  try {
+    const [raportDate] = await connect_SQL.query(
+      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
+      [company]
+    );
+
+    const [markDocuments] = await connect_SQL.query(
+      `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
+      [company]
+    );
+
+    for (item of markDocuments) {
+      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+      const [getDoc] = await connect_SQL.query(
+        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
+        [item.NUMER_FV, raportDate[0].DATE, company]
+      );
+
+      //szukam czy jest wpis histori w tabeli history_fk_documents
+      const [getDocHist] = await connect_SQL.query(
+        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
+        [item.NUMER_FV, company]
+      );
+
       //jesli nie ma historycznych wpisów tworzę nowy
       if (!getDocHist.length) {
         const newHistory = {
@@ -497,7 +589,14 @@ const generateRaportCompany = async (company) => {
       item.ETAP_SPRAWY ?? null,
       item.HISTORIA_ZMIANY_DATY_ROZLICZENIA ?? null,
       item.ILE_DNI_NA_PLATNOSC_FV ?? null,
-      JSON.stringify(item.INFORMACJA_ZARZAD) ?? null,
+      // JSON.stringify(item.INFORMACJA_ZARZAD) ?? null,
+      JSON.stringify(
+        Array.isArray(item.INFORMACJA_ZARZAD) && item.INFORMACJA_ZARZAD.length
+          ? item.INFORMACJA_ZARZAD.map(({ date, username, note }) =>
+              [date, username, note].filter(Boolean).join(" - ")
+            )
+          : null
+      ),
       item.JAKA_KANCELARIA ?? null,
       item.KONTRAHENT ?? null,
       item.KWOTA_DO_ROZLICZENIA_FK ?? null,
@@ -1232,6 +1331,44 @@ const getMainRaportFK = async (req, res) => {
 
     const reportInfo = await gerReportDate(company);
 
+    const rowsColor = getData.map((item) => {
+      const data = item.data.map((doc) => {
+        const date = new Date(doc.DATA_WYSTAWIENIA_FV);
+
+        const year = date.getFullYear();
+        const month = date.getMonth(); // 0 = styczeń, 11 = grudzień
+        const currentYear = new Date().getFullYear();
+
+        let color = "";
+
+        if (year < currentYear) {
+          // color = "red"; // poprzednie lata
+          color = "FFFC4A53"; // poprzednie lata
+          // poprzednie lata
+        } else {
+          if (month >= 0 && month <= 2) {
+            color = "FFFFC000"; // pomarańczowy
+          } else if (month >= 3 && month <= 5) {
+            color = "FFFFFF00"; // żółty
+          } else if (month >= 6 && month <= 8) {
+            color = "FF92D050"; // zielony
+          } else if (month >= 9 && month <= 11) {
+            color = "FF00B0F0"; // niebieski
+          }
+        }
+
+        return {
+          ...doc,
+          KOLOR: color,
+        };
+      });
+
+      return {
+        ...item,
+        data,
+      };
+    });
+
     // const changeData = getData.map((item) => {
     //   if (item.name === "KSIĘGOWOŚĆ") {
     //     const data = [...item.data];
@@ -1298,7 +1435,8 @@ const getMainRaportFK = async (req, res) => {
     //   return item;
     // });
 
-    const excelBuffer = await getExcelRaport(getData, reportInfo);
+    // const excelBuffer = await getExcelRaport(getData, reportInfo);
+    const excelBuffer = await getExcelRaport(rowsColor, reportInfo);
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -1477,7 +1615,6 @@ const changeMark = async (req, res) => {
 
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, FIRMA, data } = req.body;
-  console.log(data);
   try {
     const [raportDate] = await connect_SQL.query(
       `SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'generate' AND COMPANY = ?`,
@@ -1493,50 +1630,49 @@ const addDecisionDate = async (req, res) => {
       [NUMER_FV, raportDate[0].DATE, FIRMA]
     );
 
-    // if (searchDuplicate[0]?.id_management_date_description_FK) {
-    //   const id = searchDuplicate[0].id_management_date_description_FK;
-    //   // const NUMER_FV = searchDuplicate[0].NUMER_FV;
-    //   const HISTORIA_ZMIANY_DATY_ROZLICZENIA =
-    //     searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA;
-    //   const INFORMACJA_ZARZAD = searchDuplicate[0].INFORMACJA_ZARZAD;
-    //   // const WYKORZYSTANO_RAPORT_FK = searchDuplicate[0].WYKORZYSTANO_RAPORT_FK;
+    if (searchDuplicate[0]?.id_management_date_description_FK) {
+      const id = searchDuplicate[0].id_management_date_description_FK;
+      // console.log(searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA);
 
-    //   if (
-    //     Array.isArray(data.INFORMACJA_ZARZAD) &&
-    //     data.INFORMACJA_ZARZAD.length
-    //   ) {
-    //     INFORMACJA_ZARZAD.push(...data.INFORMACJA_ZARZAD);
-    //   }
+      const HISTORIA_ZMIANY_DATY_ROZLICZENIA =
+        searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA;
+      const INFORMACJA_ZARZAD = searchDuplicate[0].INFORMACJA_ZARZAD;
+      // const WYKORZYSTANO_RAPORT_FK = searchDuplicate[0].WYKORZYSTANO_RAPORT_FK;
 
-    //   if (
-    //     Array.isArray(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA) &&
-    //     data.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length
-    //   ) {
-    //     HISTORIA_ZMIANY_DATY_ROZLICZENIA.push(
-    //       ...data.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-    //     );
-    //   }
+      if (Array.isArray(data.decision) && data.decision.length) {
+        INFORMACJA_ZARZAD.push(...data.decision);
+      }
 
-    //   await connect_SQL.query(
-    //     `UPDATE company_management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?  `,
-    //     [
-    //       JSON.stringify(INFORMACJA_ZARZAD),
-    //       JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA),
-    //       id,
-    //     ]
-    //   );
-    // } else {
-    //   await connect_SQL.query(
-    //     `INSERT INTO company_management_date_description_FK (NUMER_FV, INFORMACJA_ZARZAD, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK, COMPANY) VALUES (?, ?, ?, ?, ?)`,
-    //     [
-    //       NUMER_FV,
-    //       JSON.stringify(data.INFORMACJA_ZARZAD),
-    //       JSON.stringify(data.HISTORIA_ZMIANY_DATY_ROZLICZENIA),
-    //       raportDate[0].DATE,
-    //       FIRMA,
-    //     ]
-    //   );
-    // }
+      if (Array.isArray(data.date) && data.date.length) {
+        HISTORIA_ZMIANY_DATY_ROZLICZENIA.push(...data.date);
+      }
+
+      await connect_SQL.query(
+        `UPDATE company_management_date_description_FK SET INFORMACJA_ZARZAD = ?, HISTORIA_ZMIANY_DATY_ROZLICZENIA = ? WHERE id_management_date_description_FK = ?  `,
+        [
+          JSON.stringify(INFORMACJA_ZARZAD),
+          JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA),
+          id,
+        ]
+      );
+    } else {
+      const INFORMACJA_ZARZAD =
+        Array.isArray(data.decision) && data.decision.length
+          ? data.decision
+          : [];
+      const HISTORIA_ZMIANY_DATY_ROZLICZENIA =
+        Array.isArray(data.date) && data.date.length ? data.date : [];
+      await connect_SQL.query(
+        `INSERT INTO company_management_date_description_FK (NUMER_FV, INFORMACJA_ZARZAD, HISTORIA_ZMIANY_DATY_ROZLICZENIA, WYKORZYSTANO_RAPORT_FK, COMPANY) VALUES (?, ?, ?, ?, ?)`,
+        [
+          NUMER_FV,
+          JSON.stringify(INFORMACJA_ZARZAD),
+          JSON.stringify(HISTORIA_ZMIANY_DATY_ROZLICZENIA),
+          raportDate[0].DATE,
+          FIRMA,
+        ]
+      );
+    }
     res.end();
   } catch (error) {
     logEvents(

@@ -11,6 +11,8 @@ const {
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getDataDocuments } = require("./documentsController");
 
+const { updateSettlementDescription } = require("./getDataFromMSSQL");
+
 const changeDocumentsTable = async () => {
   try {
     await connect_SQL.query(
@@ -45,70 +47,6 @@ const changeDocumentsTable = async () => {
     const [userSettings] = await connect_SQL.query(
       "SELECT id_user, tableSettings, columns FROM company_users"
     );
-    // const replaceKey = (key) =>
-    //   key === "UWAGI_ASYSTENT" ? "KANAL_KOMUNIKACJI" : key;
-    // const updateColumnsPracownik = (pracownik = []) =>
-    //   pracownik.map((item) => {
-    //     if (item.accessorKey === "UWAGI_ASYSTENT") {
-    //       return {
-    //         ...item,
-    //         accessorKey: "KANAL_KOMUNIKACJI",
-    //       };
-    //     }
-    //     return item;
-    //   });
-    // const updateTableSettingsPracownik = (pracownik) => {
-    //   if (!pracownik) return pracownik;
-    //   return {
-    //     ...pracownik,
-    //     size: Object.fromEntries(
-    //       Object.entries(pracownik.size || {}).map(([k, v]) => [
-    //         replaceKey(k),
-    //         v,
-    //       ])
-    //     ),
-    //     visible: Object.fromEntries(
-    //       Object.entries(pracownik.visible || {}).map(([k, v]) => [
-    //         replaceKey(k),
-    //         v,
-    //       ])
-    //     ),
-    //     order: (pracownik.order || []).map(replaceKey),
-    //     pinning: {
-    //       ...pracownik.pinning,
-    //       left: (pracownik.pinning?.left || []).map(replaceKey),
-    //       right: (pracownik.pinning?.right || []).map(replaceKey),
-    //     },
-    //   };
-    // };
-    // for (const user of userSettings) {
-    //   const { id_user, columns, tableSettings } = user;
-    //   // zabezpieczenie
-    //   if (!columns?.Pracownik || !tableSettings?.Pracownik) continue;
-    //   const updatedColumns = {
-    //     ...columns,
-    //     Pracownik: updateColumnsPracownik(columns.Pracownik),
-    //   };
-    //   const updatedTableSettings = {
-    //     ...tableSettings,
-    //     Pracownik: updateTableSettingsPracownik(tableSettings.Pracownik),
-    //   };
-    //   await connect_SQL.query(
-    //     `
-    //       UPDATE company_users
-    //       SET columns = ?, tableSettings = ?
-    //       WHERE id_user = ?
-    //     `,
-    //     [
-    //       JSON.stringify(updatedColumns),
-    //       JSON.stringify(updatedTableSettings),
-    //       id_user,
-    //     ]
-    //   );
-    // }
-    // mapowanie starych kluczy na nowe
-
-    // zmiany bez kancelaria
 
     // ======= Pracownik =======
     const keyMapPracownik = {
@@ -234,13 +172,6 @@ const changeDocumentsTable = async () => {
 
 const changeControlBLTable = async () => {
   try {
-    await connect_SQL.query(
-      "ALTER TABLE company_control_documents CHANGE COLUMN CONTROL_UWAGI KANAL_KOMUNIKACJI JSON"
-    );
-    await connect_SQL.query(
-      "ALTER TABLE company_control_documents ADD COLUMN DZIENNIK_ZMIAN JSON NULL AFTER KANAL_KOMUNIKACJI"
-    );
-
     const [chatControlBL] = await connect_SQL.query(
       "SELECT id_control_documents, CONTROL_UWAGI FROM company_control_documents"
     );
@@ -263,6 +194,13 @@ const changeControlBLTable = async () => {
         );
       }
     }
+
+    await connect_SQL.query(
+      "ALTER TABLE company_control_documents CHANGE COLUMN CONTROL_UWAGI KANAL_KOMUNIKACJI JSON"
+    );
+    await connect_SQL.query(
+      "ALTER TABLE company_control_documents ADD COLUMN DZIENNIK_ZMIAN JSON NULL AFTER KANAL_KOMUNIKACJI"
+    );
   } catch (error) {
     console.error(error);
   }
@@ -411,6 +349,117 @@ const managementRepair = async () => {
   }
 };
 
+// / generuję historię decyzji i ostatecznej daty rozliczenia
+// const generateHistoryDocuments = async (company) => {
+//   console.log(company);
+//   try {
+//     const [raportDate] = await connect_SQL.query(
+//       `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
+//       [company]
+//     );
+
+//     const [markDocuments] = await connect_SQL.query(
+//       `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
+//       [company]
+//     );
+
+//     for (item of markDocuments) {
+//       // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+//       const [getDoc] = await connect_SQL.query(
+//         `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
+//         [item.NUMER_FV, raportDate[0].DATE, company]
+//       );
+
+//       // if (item.NUMER_FV === "FV/UP/885/25/D/D66") {
+//       //   console.log(item);
+//       // }
+//       //szukam czy jest wpis histori w tabeli history_fk_documents
+//       const [getDocHist] = await connect_SQL.query(
+//         `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
+//         [item.NUMER_FV, company]
+//       );
+//       if (getDocHist.length) {
+//         console.log(getDocHist[0].HISTORY_DOC);
+//       }
+
+//       // tworzę string z danych obiektu
+//       const formatHistoryItem = ({ date, note, username }) =>
+//         [date, note, username].filter(Boolean).join(" - ");
+//       //jesli nie ma historycznych wpisów tworzę nowy
+//       if (!getDocHist.length) {
+//         const newHistory = {
+//           info: `1 raport utworzono ${raportDate[0].DATE}`,
+//           historyDate: [],
+//           historyText: [],
+//         };
+
+//         // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+//         getDoc.forEach((doc) => {
+//           if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+//             newHistory.historyDate.push(
+//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+//             );
+//           }
+
+//           if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+//             newHistory.historyText.push(
+//               ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+//             );
+//           }
+//         });
+//         // console.log([newHistory]);
+//         // await connect_SQL.query(
+//         //   `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+//         //   [item.NUMER_FV, JSON.stringify([newHistory]), company]
+//         // );
+//       } else {
+//         const newHistory = {
+//           info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
+//             raportDate[0].DATE
+//           }`,
+//           historyDate: [],
+//           historyText: [],
+//         };
+//         // getDoc.forEach((doc) => {
+//         //   if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+//         //     newHistory.historyDate.push(
+//         //       ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+//         //     );
+//         //   }
+//         //   if (doc.INFORMACJA_ZARZAD) {
+//         //     newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+//         //   }
+//         // });
+//         getDoc.forEach((doc) => {
+//           if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+//             newHistory.historyDate.push(
+//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+//             );
+//           }
+
+//           if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+//             newHistory.historyText.push(
+//               ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+//             );
+//           }
+//         });
+//         const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
+//         console.log(prepareArray);
+//         console.log(item);
+//         // await connect_SQL.query(
+//         //   `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
+//         //   [JSON.stringify(prepareArray), item.NUMER_FV, company]
+//         // );
+//       }
+//     }
+//   } catch (error) {
+//     logEvents(
+//       `fKRaportController, generateHistoryDocuments: ${error}`,
+//       "reqServerErrors.txt"
+//     );
+//   }
+// };
+
 const repair = async () => {
   try {
     // await changeDocumentsTable();
@@ -421,6 +470,10 @@ const repair = async () => {
     // console.log("repairVatColumns");
     // await managementRepair();
     // console.log("managementRepair");
+    // // aktualizacja rozrachunków - czas kilka min
+    // await updateSettlementDescription();
+    // console.log("updateSettlementDescription");
+    // await generateHistoryDocuments("KRT");
   } catch (error) {
     console.error(error);
   }
