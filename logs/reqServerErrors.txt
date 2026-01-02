@@ -1,3 +1,0 @@
-20251222	13:19:56	documentsController: Error: Unknown column 'DA.KANAL_KOMUNIKACJI' in 'field list'
-20251222	17:54:10	documentsController, changeSingleDocument: ReferenceError: lawFirmData is not defined
-20251222	17:54:26	documentsController, changeSingleDocument: ReferenceError: lawFirmData is not defined
