@@ -363,93 +363,93 @@ const repairLawDocuments = async () => {
 // zmiana w tabeli dokumentów polisowych
 const lawDocuments = async () => {
   try {
-    // await connect_SQL.query(
-    //   "ALTER TABLE company_insurance_documents  ADD COLUMN KONTRAHENT_ULICA VARCHAR(45) NULL AFTER KONTRAHENT_NAZWA, ADD COLUMN KONTRAHENT_NR_BUDYNKU VARCHAR(10) NULL AFTER KONTRAHENT_ULICA, ADD COLUMN KONTRAHENT_NR_LOKALU VARCHAR(10) NULL AFTER KONTRAHENT_NR_BUDYNKU, ADD COLUMN KONTRAHENT_KOD_POCZTOWY VARCHAR(10) NULL AFTER KONTRAHENT_NR_LOKALU, ADD COLUMN KONTRAHENT_MIASTO VARCHAR(45) NULL AFTER KONTRAHENT_KOD_POCZTOWY, ADD COLUMN KONTRAHENT_KRAJ VARCHAR(45) NULL AFTER KONTRAHENT_MIASTO, ADD COLUMN KONTRAHENT_REGON VARCHAR(45) NULL AFTER KONTRAHENT_NIP"
-    // );
-    //
+    await connect_SQL.query(
+      "ALTER TABLE company_insurance_documents  ADD COLUMN KONTRAHENT_ULICA VARCHAR(45) NULL AFTER KONTRAHENT_NAZWA, ADD COLUMN KONTRAHENT_NR_BUDYNKU VARCHAR(10) NULL AFTER KONTRAHENT_ULICA, ADD COLUMN KONTRAHENT_NR_LOKALU VARCHAR(10) NULL AFTER KONTRAHENT_NR_BUDYNKU, ADD COLUMN KONTRAHENT_KOD_POCZTOWY VARCHAR(10) NULL AFTER KONTRAHENT_NR_LOKALU, ADD COLUMN KONTRAHENT_MIASTO VARCHAR(45) NULL AFTER KONTRAHENT_KOD_POCZTOWY, ADD COLUMN KONTRAHENT_KRAJ VARCHAR(45) NULL AFTER KONTRAHENT_MIASTO, ADD COLUMN KONTRAHENT_REGON VARCHAR(45) NULL AFTER KONTRAHENT_NIP"
+    );
+
     // ********************
     // const [lawDoc] = await connect_SQL.query(
     //   "SELECT id_document, NUMER_POLISY, KONTRAHENT_ADRES FROM company_insurance_documents"
     // );
     // console.log(lawDoc);
     // ********************
-    //
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   [
-    //     "Brzozowa",
-    //     "2/8",
-    //     "BOX 112A",
-    //     "42-216",
-    //     "Częstochowa",
-    //     "Polska",
-    //     "912800317228",
-    //   ]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   ["Wilanowska", "14", "51", "00-422", "Warszawa", "Polska", "450001199555"]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   ["Ostrzycka", "2", "4", "00-035", "Warszawa", "Polska", "912800339400"]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY= ?",
-    //   ["Gdańska", "145", "12", "90-536", "Łódź", "Polska", "450001201404"]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   [
-    //     "Modrzewiec",
-    //     "7",
-    //     null,
-    //     "78-331",
-    //     "Modrzewiec",
-    //     "Polska",
-    //     "450001195812",
-    //   ]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   [
-    //     "Szarych Szeregów",
-    //     "23",
-    //     null,
-    //     "60-462",
-    //     "Poznań",
-    //     "Polska",
-    //     "450001198803",
-    //   ]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   ["Traktorowa", "109A", null, "91-203", "Łódź", "Polska", "55256546"]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   [
-    //     "Aleja Wyzwolenia",
-    //     "6",
-    //     "15",
-    //     "42-224",
-    //     "Częstochowa",
-    //     "Polska",
-    //     "912800368213",
-    //   ]
-    // );
-    // await connect_SQL.query(
-    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
-    //   [
-    //     "Wojska Polskiego",
-    //     "48A",
-    //     null,
-    //     "14-200",
-    //     "Iława",
-    //     "Polska",
-    //     "912800359032",
-    //   ]
-    // );
+
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      [
+        "Brzozowa",
+        "2/8",
+        "BOX 112A",
+        "42-216",
+        "Częstochowa",
+        "Polska",
+        "912800317228",
+      ]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      ["Wilanowska", "14", "51", "00-422", "Warszawa", "Polska", "450001199555"]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      ["Ostrzycka", "2", "4", "00-035", "Warszawa", "Polska", "912800339400"]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY= ?",
+      ["Gdańska", "145", "12", "90-536", "Łódź", "Polska", "450001201404"]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      [
+        "Modrzewiec",
+        "7",
+        null,
+        "78-331",
+        "Modrzewiec",
+        "Polska",
+        "450001195812",
+      ]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      [
+        "Szarych Szeregów",
+        "23",
+        null,
+        "60-462",
+        "Poznań",
+        "Polska",
+        "450001198803",
+      ]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      ["Traktorowa", "109A", null, "91-203", "Łódź", "Polska", "55256546"]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      [
+        "Aleja Wyzwolenia",
+        "6",
+        "15",
+        "42-224",
+        "Częstochowa",
+        "Polska",
+        "912800368213",
+      ]
+    );
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+      [
+        "Wojska Polskiego",
+        "48A",
+        null,
+        "14-200",
+        "Iława",
+        "Polska",
+        "912800359032",
+      ]
+    );
   } catch (error) {
     console.error(error);
   }
@@ -581,7 +581,7 @@ const repair = async () => {
     // console.log("updateSettlementDescription");
     // await repairLawDocuments();
     // console.log("repairLawDocuments");
-    await lawDocuments();
+    // await lawDocuments();
     // console.log("lawDocuments");
     //nie używać przy zmianie
     // await generateHistoryDocuments("KRT");
