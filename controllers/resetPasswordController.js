@@ -75,6 +75,7 @@ const newConfirmPass = async (req, res) => {
     };
 
     await sendEmail(mailOptions);
+    res.end();
   } catch (error) {
     logEvents(
       `resetPasswordController, newConfirmPass: ${error}`,

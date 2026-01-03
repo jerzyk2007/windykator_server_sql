@@ -349,116 +349,222 @@ const managementRepair = async () => {
   }
 };
 
+// naprawa kolumny DATA_PRZEKAZANIA_SPRAWY w company_law_documents
+const repairLawDocuments = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_law_documents MODIFY DATA_PRZEKAZANIA_SPRAWY DATE DEFAULT (CURRENT_DATE)"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+// zmiana w tabeli dokumentów polisowych
+const lawDocuments = async () => {
+  try {
+    // await connect_SQL.query(
+    //   "ALTER TABLE company_insurance_documents  ADD COLUMN KONTRAHENT_ULICA VARCHAR(45) NULL AFTER KONTRAHENT_NAZWA, ADD COLUMN KONTRAHENT_NR_BUDYNKU VARCHAR(10) NULL AFTER KONTRAHENT_ULICA, ADD COLUMN KONTRAHENT_NR_LOKALU VARCHAR(10) NULL AFTER KONTRAHENT_NR_BUDYNKU, ADD COLUMN KONTRAHENT_KOD_POCZTOWY VARCHAR(10) NULL AFTER KONTRAHENT_NR_LOKALU, ADD COLUMN KONTRAHENT_MIASTO VARCHAR(45) NULL AFTER KONTRAHENT_KOD_POCZTOWY, ADD COLUMN KONTRAHENT_KRAJ VARCHAR(45) NULL AFTER KONTRAHENT_MIASTO, ADD COLUMN KONTRAHENT_REGON VARCHAR(45) NULL AFTER KONTRAHENT_NIP"
+    // );
+    //
+    // ********************
+    // const [lawDoc] = await connect_SQL.query(
+    //   "SELECT id_document, NUMER_POLISY, KONTRAHENT_ADRES FROM company_insurance_documents"
+    // );
+    // console.log(lawDoc);
+    // ********************
+    //
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   [
+    //     "Brzozowa",
+    //     "2/8",
+    //     "BOX 112A",
+    //     "42-216",
+    //     "Częstochowa",
+    //     "Polska",
+    //     "912800317228",
+    //   ]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   ["Wilanowska", "14", "51", "00-422", "Warszawa", "Polska", "450001199555"]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   ["Ostrzycka", "2", "4", "00-035", "Warszawa", "Polska", "912800339400"]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY= ?",
+    //   ["Gdańska", "145", "12", "90-536", "Łódź", "Polska", "450001201404"]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   [
+    //     "Modrzewiec",
+    //     "7",
+    //     null,
+    //     "78-331",
+    //     "Modrzewiec",
+    //     "Polska",
+    //     "450001195812",
+    //   ]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   [
+    //     "Szarych Szeregów",
+    //     "23",
+    //     null,
+    //     "60-462",
+    //     "Poznań",
+    //     "Polska",
+    //     "450001198803",
+    //   ]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   ["Traktorowa", "109A", null, "91-203", "Łódź", "Polska", "55256546"]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   [
+    //     "Aleja Wyzwolenia",
+    //     "6",
+    //     "15",
+    //     "42-224",
+    //     "Częstochowa",
+    //     "Polska",
+    //     "912800368213",
+    //   ]
+    // );
+    // await connect_SQL.query(
+    //   "UPDATE company_insurance_documents SET KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_KRAJ = ? WHERE NUMER_POLISY = ?",
+    //   [
+    //     "Wojska Polskiego",
+    //     "48A",
+    //     null,
+    //     "14-200",
+    //     "Iława",
+    //     "Polska",
+    //     "912800359032",
+    //   ]
+    // );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 // / generuję historię decyzji i ostatecznej daty rozliczenia
-// const generateHistoryDocuments = async (company) => {
-//   console.log(company);
-//   try {
-//     const [raportDate] = await connect_SQL.query(
-//       `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
-//       [company]
-//     );
+const generateHistoryDocuments = async (company) => {
+  // console.log(company);
+  try {
+    const [raportDate] = await connect_SQL.query(
+      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
+      [company]
+    );
 
-//     const [markDocuments] = await connect_SQL.query(
-//       `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
-//       [company]
-//     );
+    const [markDocuments] = await connect_SQL.query(
+      `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
+      [company]
+    );
 
-//     for (item of markDocuments) {
-//       // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
-//       const [getDoc] = await connect_SQL.query(
-//         `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
-//         [item.NUMER_FV, raportDate[0].DATE, company]
-//       );
+    for (item of markDocuments) {
+      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+      const [getDoc] = await connect_SQL.query(
+        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
+        [item.NUMER_FV, raportDate[0].DATE, company]
+      );
 
-//       // if (item.NUMER_FV === "FV/UP/885/25/D/D66") {
-//       //   console.log(item);
-//       // }
-//       //szukam czy jest wpis histori w tabeli history_fk_documents
-//       const [getDocHist] = await connect_SQL.query(
-//         `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
-//         [item.NUMER_FV, company]
-//       );
-//       if (getDocHist.length) {
-//         console.log(getDocHist[0].HISTORY_DOC);
-//       }
+      // if (item.NUMER_FV === "FV/UP/885/25/D/D66") {
+      //   console.log(item);
+      // }
+      //szukam czy jest wpis histori w tabeli history_fk_documents
+      const [getDocHist] = await connect_SQL.query(
+        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
+        [item.NUMER_FV, company]
+      );
+      // if (getDocHist.length) {
+      //   console.log(getDocHist[0].HISTORY_DOC);
+      // }
 
-//       // tworzę string z danych obiektu
-//       const formatHistoryItem = ({ date, note, username }) =>
-//         [date, note, username].filter(Boolean).join(" - ");
-//       //jesli nie ma historycznych wpisów tworzę nowy
-//       if (!getDocHist.length) {
-//         const newHistory = {
-//           info: `1 raport utworzono ${raportDate[0].DATE}`,
-//           historyDate: [],
-//           historyText: [],
-//         };
+      // tworzę string z danych obiektu
+      const formatHistoryItem = ({ date, note, username }) =>
+        [date, note, username].filter(Boolean).join(" - ");
+      //jesli nie ma historycznych wpisów tworzę nowy
+      if (!getDocHist.length) {
+        const newHistory = {
+          info: `1 raport utworzono ${raportDate[0].DATE}`,
+          historyDate: [],
+          historyText: [],
+        };
 
-//         // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
-//         getDoc.forEach((doc) => {
-//           if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
-//             newHistory.historyDate.push(
-//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
-//             );
-//           }
+        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+        getDoc.forEach((doc) => {
+          if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+            newHistory.historyDate.push(
+              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+            );
+          }
 
-//           if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
-//             newHistory.historyText.push(
-//               ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
-//             );
-//           }
-//         });
-//         // console.log([newHistory]);
-//         // await connect_SQL.query(
-//         //   `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-//         //   [item.NUMER_FV, JSON.stringify([newHistory]), company]
-//         // );
-//       } else {
-//         const newHistory = {
-//           info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
-//             raportDate[0].DATE
-//           }`,
-//           historyDate: [],
-//           historyText: [],
-//         };
-//         // getDoc.forEach((doc) => {
-//         //   if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-//         //     newHistory.historyDate.push(
-//         //       ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-//         //     );
-//         //   }
-//         //   if (doc.INFORMACJA_ZARZAD) {
-//         //     newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-//         //   }
-//         // });
-//         getDoc.forEach((doc) => {
-//           if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
-//             newHistory.historyDate.push(
-//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
-//             );
-//           }
+          if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+            newHistory.historyText.push(
+              ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+            );
+          }
+        });
+        // console.log([newHistory]);
+        // await connect_SQL.query(
+        //   `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+        //   [item.NUMER_FV, JSON.stringify([newHistory]), company]
+        // );
+      } else {
+        const newHistory = {
+          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
+            raportDate[0].DATE
+          }`,
+          historyDate: [],
+          historyText: [],
+        };
+        // getDoc.forEach((doc) => {
+        //   if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
+        //     newHistory.historyDate.push(
+        //       ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
+        //     );
+        //   }
+        //   if (doc.INFORMACJA_ZARZAD) {
+        //     newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
+        //   }
+        // });
+        getDoc.forEach((doc) => {
+          if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+            newHistory.historyDate.push(
+              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+            );
+          }
 
-//           if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
-//             newHistory.historyText.push(
-//               ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
-//             );
-//           }
-//         });
-//         const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
-//         console.log(prepareArray);
-//         console.log(item);
-//         // await connect_SQL.query(
-//         //   `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
-//         //   [JSON.stringify(prepareArray), item.NUMER_FV, company]
-//         // );
-//       }
-//     }
-//   } catch (error) {
-//     logEvents(
-//       `fKRaportController, generateHistoryDocuments: ${error}`,
-//       "reqServerErrors.txt"
-//     );
-//   }
-// };
+          if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+            newHistory.historyText.push(
+              ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+            );
+          }
+        });
+        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
+        // console.log(prepareArray);
+        // console.log(item);
+        // await connect_SQL.query(
+        //   `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
+        //   [JSON.stringify(prepareArray), item.NUMER_FV, company]
+        // );
+      }
+    }
+  } catch (error) {
+    logEvents(
+      `fKRaportController, generateHistoryDocuments: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
 
 const repair = async () => {
   try {
@@ -473,6 +579,11 @@ const repair = async () => {
     // // aktualizacja rozrachunków - czas kilka min
     // await updateSettlementDescription();
     // console.log("updateSettlementDescription");
+    // await repairLawDocuments();
+    // console.log("repairLawDocuments");
+    await lawDocuments();
+    // console.log("lawDocuments");
+    //nie używać przy zmianie
     // await generateHistoryDocuments("KRT");
   } catch (error) {
     console.error(error);

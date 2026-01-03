@@ -105,8 +105,76 @@ const changeSingleDocument = async (req, res) => {
   }
 };
 
+const insertNewDocuments = async (req, res) => {
+  const { data } = req.body;
+  try {
+    const [checkDuplicate] = await connect_SQL.query(
+      "SELECT id_document FROM company_insurance_documents WHERE NUMER_POLISY = ?",
+      [data.numerDokumentu]
+    );
+
+    if (checkDuplicate.length > 0)
+      return res
+        .status(409)
+        .json({ message: `Numer dokumentu istnieje w bazie danych.` });
+
+    const contact = {
+      MAIL: [...data.telefony],
+      TELEFON: [...data.maile],
+    };
+
+    await connect_SQL.query(
+      "INSERT INTO company_insurance_documents (NUMER_POLISY, TERMIN_PLATNOSCI, UBEZPIECZYCIEL, KONTRAHENT_NAZWA, KONTRAHENT_ULICA, KONTRAHENT_NR_BUDYNKU, KONTRAHENT_NR_LOKALU, KONTRAHENT_KOD_POCZTOWY, KONTRAHENT_MIASTO, KONTRAHENT_NIP, KONTRAHENT_REGON, DZIAL, NALEZNOSC, OSOBA_ZLECAJACA_WINDYKACJE, KONTAKT_DO_KLIENTA, NR_KONTA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        data.numerDokumentu,
+        data.terminPlatnosci,
+        data.ubezpieczyciel,
+        data.kontrahentNazwa,
+        data.kontrahentUlica,
+        data.kontrahentNrDomu,
+        data.kontrahentNrLokalu,
+        data.kontrahentKod,
+        data.kontrahentMiasto,
+        data.kontrahentNip,
+        data.kontrahentRegon,
+        data.dzial,
+        data.kwotaNaleznosci,
+        data.mail,
+        JSON.stringify(contact),
+        data.konto,
+      ]
+    );
+
+    res.status(201).json({ message: `Nowy dokument został dodany.` });
+  } catch (error) {
+    logEvents(
+      `insuranceController, insertNewDocuments: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+// pobieram możliwe działy dla wprowadzenia polisu
+const getDepartments = async (req, res) => {
+  try {
+    const [result] = await connect_SQL.query(
+      'SELECT distinct DEPARTMENT FROM company_join_items WHERE AREA = "F&I"'
+    );
+    const departments = result.map((item) => item.DEPARTMENT);
+
+    res.json(departments.sort() ?? []);
+  } catch (error) {
+    logEvents(
+      `insuranceController, getDepartments: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 module.exports = {
   getDataTable,
   getSingleDocument,
   changeSingleDocument,
+  insertNewDocuments,
+  getDepartments,
 };

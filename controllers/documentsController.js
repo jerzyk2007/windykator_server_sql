@@ -286,20 +286,18 @@ const changeSingleDocument = async (req, res) => {
         ]
       );
     }
-    console.log("lawFirmData");
     if (lawFirmData.zapisz) {
-      console.log(lawFirmData);
-      // await connect_SQL.query(
-      //   "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA_DO_KANCELARII, KWOTA_BRUTTO_DOKUMENTU, FIRMA) VALUES (?, ?, ?, ?, ?, ?) ",
-      //   [
-      //     lawFirmData.numerFv,
-      //     lawFirmData.kontrahent,
-      //     lawFirmData.kancelaria,
-      //     lawFirmData.kwotaRoszczenia,
-      //     lawFirmData.kwota_brutto,
-      //     lawFirmData.firma,
-      //   ]
-      // );
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_law_documents (NUMER_DOKUMENTU, KONTRAHENT, NAZWA_KANCELARII, KWOTA_ROSZCZENIA_DO_KANCELARII, KWOTA_BRUTTO_DOKUMENTU, FIRMA) VALUES (?, ?, ?, ?, ?, ?) ",
+        [
+          lawFirmData.numerFv,
+          lawFirmData.kontrahent,
+          lawFirmData.kancelaria,
+          lawFirmData.kwotaRoszczenia,
+          lawFirmData.kwota_brutto,
+          lawFirmData.firma,
+        ]
+      );
     }
     res.end();
   } catch (error) {
