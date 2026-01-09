@@ -1,6 +1,7 @@
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { userProfile } = require("./manageDocumentAddition");
+const { mergeJsonLogs } = require("./manageDocumentAddition");
 
 const getAllDocumentsSQL = `
 SELECT
@@ -157,24 +158,7 @@ const changeSingleDocument = async (req, res) => {
     );
 
     // łącze stare i nowe dane czatu
-    const oldChatDoc = oldData[0]?.KANAL_KOMUNIKACJI
-      ? oldData[0].KANAL_KOMUNIKACJI
-      : [];
-    const newChat = chatLog?.documents?.KANAL_KOMUNIKACJI?.length
-      ? chatLog.documents.KANAL_KOMUNIKACJI
-      : [];
-
-    const mergeChat = [...(oldChatDoc ?? []), ...(newChat ?? [])];
-
-    // łącze stare i nowe dane logów zdarzeń
-    const oldLogDoc = oldData[0]?.DZIENNIK_ZMIAN
-      ? oldData[0].DZIENNIK_ZMIAN
-      : [];
-    const newLog = chatLog?.documents?.DZIENNIK_ZMIAN?.length
-      ? chatLog.documents.DZIENNIK_ZMIAN
-      : [];
-
-    const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
+    const { mergeChat, mergeLog } = mergeJsonLogs(oldData, chatLog);
 
     // łączę stare i nowy wpisy ostatecznej daty i decyzji dla Raportu FK
     const oldInfoManagement = oldData[0]?.INFORMACJA_ZARZAD
@@ -488,11 +472,6 @@ const changeDocumentControl = async (req, res) => {
       [NUMER_FV]
     );
 
-    //  const [oldData] = await connect_SQL.query(
-    //   "SELECT * FROM company_documents_actions WHERE document_id = ?",
-    //   [id_document]
-    // );
-
     // łącze stare i nowe dane czatu
     const oldChatDoc = findDoc[0]?.KANAL_KOMUNIKACJI
       ? findDoc[0].KANAL_KOMUNIKACJI
@@ -512,6 +491,7 @@ const changeDocumentControl = async (req, res) => {
       : [];
 
     const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
+
     if (findDoc[0]?.NUMER_FV) {
       await connect_SQL.query(
         `UPDATE company_control_documents SET

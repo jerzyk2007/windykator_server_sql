@@ -1,5 +1,6 @@
 const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
+const { mergeJsonLogs } = require("./manageDocumentAddition");
 
 // zapytanie do pobrania danych
 const queryTable = "SELECT * FROM company_insurance_documents ";
@@ -63,26 +64,7 @@ const changeSingleDocument = async (req, res) => {
       "SELECT * FROM company_insurance_documents WHERE id_document = ?",
       [id_document]
     );
-
-    // łącze stare i nowe dane czatu
-    const oldChatDoc = oldData[0]?.KANAL_KOMUNIKACJI
-      ? oldData[0].KANAL_KOMUNIKACJI
-      : [];
-    const newChat = chatLog?.documents?.KANAL_KOMUNIKACJI?.length
-      ? chatLog.documents.KANAL_KOMUNIKACJI
-      : [];
-
-    const mergeChat = [...(oldChatDoc ?? []), ...(newChat ?? [])];
-
-    // łącze stare i nowe dane logów zdarzeń
-    const oldLogDoc = oldData[0]?.DZIENNIK_ZMIAN
-      ? oldData[0].DZIENNIK_ZMIAN
-      : [];
-    const newLog = chatLog?.documents?.DZIENNIK_ZMIAN?.length
-      ? chatLog.documents.DZIENNIK_ZMIAN
-      : [];
-
-    const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
+    const { mergeChat, mergeLog } = mergeJsonLogs(oldData, chatLog);
 
     await connect_SQL.query(
       "UPDATE company_insurance_documents SET STATUS = ?, OW = ?, KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ?, NALEZNOSC = ? WHERE id_document = ?",
