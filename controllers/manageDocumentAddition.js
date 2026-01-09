@@ -122,6 +122,36 @@ const userProfile = (profile) => {
   };
   return selectProfile[profile];
 };
+function safeParseJSON(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    console.error("Błąd parsowania JSON:", err);
+    return [];
+  }
+}
+
+const mergeJsonLogs = (oldData, chatLog) => {
+  const oldChat = safeParseJSON(oldData?.[0]?.KANAL_KOMUNIKACJI);
+  const newChat = chatLog?.documents?.KANAL_KOMUNIKACJI?.length
+    ? chatLog.documents.KANAL_KOMUNIKACJI
+    : [];
+
+  const oldLog = safeParseJSON(oldData?.[0]?.DZIENNIK_ZMIAN);
+  const newLog = chatLog?.documents?.DZIENNIK_ZMIAN?.length
+    ? chatLog.documents.DZIENNIK_ZMIAN
+    : [];
+
+  return {
+    mergeChat: [...oldChat, ...newChat],
+    mergeLog: [...oldLog, ...newLog],
+  };
+};
+
+module.exports = mergeJsonLogs;
 
 module.exports = {
   addDepartment,
@@ -130,4 +160,5 @@ module.exports = {
   documentsType,
   generatePassword,
   userProfile,
+  mergeJsonLogs,
 };

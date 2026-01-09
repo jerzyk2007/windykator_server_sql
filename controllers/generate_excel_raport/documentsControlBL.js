@@ -88,7 +88,7 @@ const columnsName = [
     header: "Upoważnienie",
   },
   {
-    accessorKey: "CONTROL_UWAGI",
+    accessorKey: "KANAL_KOMUNIKACJI",
     header: "Uwagi do sprawy",
   },
   {

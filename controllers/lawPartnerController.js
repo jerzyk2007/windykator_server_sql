@@ -1,5 +1,6 @@
 const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
+const { mergeJsonLogs } = require("./manageDocumentAddition");
 
 // zapytanie do pobrania danych
 const getDocumentsLawPartner =
@@ -97,26 +98,8 @@ const changeSingleDocument = async (req, res) => {
       "SELECT * FROM company_law_documents WHERE id_document = ?",
       [id_document]
     );
+    const { mergeChat, mergeLog } = mergeJsonLogs(oldData, chatLog);
 
-    // łącze stare i nowe dane czatu
-    const oldChatDoc = oldData[0]?.KANAL_KOMUNIKACJI
-      ? oldData[0].KANAL_KOMUNIKACJI
-      : [];
-    const newChat = chatLog?.KANAL_KOMUNIKACJI?.length
-      ? chatLog.KANAL_KOMUNIKACJI
-      : [];
-
-    const mergeChat = [...(oldChatDoc ?? []), ...(newChat ?? [])];
-
-    // łącze stare i nowe dane logów zdarzeń
-    const oldLogDoc = oldData[0]?.DZIENNIK_ZMIAN
-      ? oldData[0].DZIENNIK_ZMIAN
-      : [];
-    const newLog = chatLog?.DZIENNIK_ZMIAN?.length
-      ? chatLog.DZIENNIK_ZMIAN
-      : [];
-
-    const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
     await connect_SQL.query(
       "UPDATE company_law_documents SET KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ?, STATUS_SPRAWY = ?, SYGNATURA_SPRAWY_SADOWEJ = ?, TERMIN_PRZEDAWNIENIA_ROSZCZENIA = ?, DATA_WYMAGALNOSCI_PLATNOSCI = ?, WYDZIAL_SADU = ?, ORGAN_EGZEKUCYJNY = ?, SYGN_SPRAWY_EGZEKUCYJNEJ = ? WHERE id_document = ?",
       [

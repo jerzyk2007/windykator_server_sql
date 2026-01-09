@@ -25,4 +25,32 @@ router
     insurance.changeSingleDocument
   );
 
+router
+  .route("/insert-new-document")
+  .post(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    insurance.insertNewDocuments
+  );
+
+router
+  .route("/get-available-departments")
+  .get(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    insurance.getDepartments
+  );
+
+router
+  .route("/get-insurance-nr")
+  .get(
+    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
+    insurance.getInsuranceNr
+  );
+
+router
+  .route("/edit-document")
+  .post(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    insurance.editSingleDocument
+  );
+
 module.exports = router;

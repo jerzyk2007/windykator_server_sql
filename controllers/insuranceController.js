@@ -1,5 +1,6 @@
 const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
+const { mergeJsonLogs } = require("./manageDocumentAddition");
 
 // zapytanie do pobrania danych
 const queryTable = "SELECT * FROM company_insurance_documents ";
@@ -63,26 +64,7 @@ const changeSingleDocument = async (req, res) => {
       "SELECT * FROM company_insurance_documents WHERE id_document = ?",
       [id_document]
     );
-
-    // łącze stare i nowe dane czatu
-    const oldChatDoc = oldData[0]?.KANAL_KOMUNIKACJI
-      ? oldData[0].KANAL_KOMUNIKACJI
-      : [];
-    const newChat = chatLog?.KANAL_KOMUNIKACJI?.length
-      ? chatLog.KANAL_KOMUNIKACJI
-      : [];
-
-    const mergeChat = [...(oldChatDoc ?? []), ...(newChat ?? [])];
-
-    // łącze stare i nowe dane logów zdarzeń
-    const oldLogDoc = oldData[0]?.DZIENNIK_ZMIAN
-      ? oldData[0].DZIENNIK_ZMIAN
-      : [];
-    const newLog = chatLog?.DZIENNIK_ZMIAN?.length
-      ? chatLog.DZIENNIK_ZMIAN
-      : [];
-
-    const mergeLog = [...(oldLogDoc ?? []), ...(newLog ?? [])];
+    const { mergeChat, mergeLog } = mergeJsonLogs(oldData, chatLog);
 
     await connect_SQL.query(
       "UPDATE company_insurance_documents SET STATUS = ?, OW = ?, KANAL_KOMUNIKACJI = ?, DZIENNIK_ZMIAN = ?, NALEZNOSC = ? WHERE id_document = ?",
@@ -105,8 +87,132 @@ const changeSingleDocument = async (req, res) => {
   }
 };
 
+const insertNewDocuments = async (req, res) => {
+  const { data } = req.body;
+  try {
+    const [checkDuplicate] = await connect_SQL.query(
+      "SELECT id_document FROM company_insurance_documents WHERE NUMER_POLISY = ?",
+      [data.numerDokumentu]
+    );
+
+    if (checkDuplicate.length > 0)
+      return res
+        .status(409)
+        .json({ message: `Numer dokumentu istnieje w bazie danych.` });
+
+    const contact = {
+      MAIL: [...data.maile],
+      TELEFON: [...data.telefony],
+    };
+    await connect_SQL.query(
+      "INSERT INTO company_insurance_documents (NUMER_POLISY, TERMIN_PLATNOSCI, DATA_PRZEKAZANIA, UBEZPIECZYCIEL, KONTRAHENT_NAZWA, KONTRAHENT_ULICA, KONTRAHENT_NR_BUDYNKU, KONTRAHENT_NR_LOKALU, KONTRAHENT_KOD_POCZTOWY, KONTRAHENT_MIASTO, KONTRAHENT_NIP, KONTRAHENT_REGON, DZIAL, NALEZNOSC, OSOBA_ZLECAJACA_WINDYKACJE, KONTAKT_DO_KLIENTA, NR_KONTA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        data.numerDokumentu,
+        data.terminPlatnosci,
+        data.dataPrzekazania,
+        data.ubezpieczyciel,
+        data.kontrahentNazwa,
+        data.kontrahentUlica,
+        data.kontrahentNrDomu,
+        data.kontrahentNrLokalu,
+        data.kontrahentKod,
+        data.kontrahentMiasto,
+        data.kontrahentNip,
+        data.kontrahentRegon,
+        data.dzial,
+        data.kwotaNaleznosci,
+        data.osobaZlecajaca,
+        JSON.stringify(contact),
+        data.konto,
+      ]
+    );
+
+    res.status(201).json({ message: `Nowy dokument został dodany.` });
+  } catch (error) {
+    logEvents(
+      `insuranceController, insertNewDocuments: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+// pobieram możliwe działy dla wprowadzenia polisu
+const getDepartments = async (req, res) => {
+  try {
+    const [result] = await connect_SQL.query(
+      'SELECT distinct DEPARTMENT FROM company_join_items WHERE AREA = "F&I"'
+    );
+    const departments = result.map((item) => item.DEPARTMENT);
+
+    res.json(departments.sort() ?? []);
+  } catch (error) {
+    logEvents(
+      `insuranceController, getDepartments: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+const getInsuranceNr = async (req, res) => {
+  const { search } = req.query;
+  try {
+    const [result] = await connect_SQL.query(
+      `SELECT * FROM company_insurance_documents  WHERE NUMER_POLISY LIKE '%${search}%'`
+    );
+    res.json(result ?? []);
+  } catch (error) {
+    logEvents(
+      `insuranceController, getInsuranceNr: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+const editSingleDocument = async (req, res) => {
+  const { id, data } = req.body;
+  try {
+    const contact = {
+      MAIL: [...data.maile],
+      TELEFON: [...data.telefony],
+    };
+    await connect_SQL.query(
+      "UPDATE company_insurance_documents SET NUMER_POLISY = ?, TERMIN_PLATNOSCI = ?, DATA_PRZEKAZANIA = ?, UBEZPIECZYCIEL = ?, KONTRAHENT_NAZWA = ?, KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_NIP = ?, KONTRAHENT_REGON = ?, DZIAL = ?, NALEZNOSC = ?, OSOBA_ZLECAJACA_WINDYKACJE = ?, KONTAKT_DO_KLIENTA = ?, NR_KONTA = ? WHERE id_document = ?",
+      [
+        data.numerDokumentu,
+        data.terminPlatnosci,
+        data.dataPrzekazania,
+        data.ubezpieczyciel,
+        data.kontrahentNazwa,
+        data.kontrahentUlica,
+        data.kontrahentNrDomu,
+        data.kontrahentNrLokalu,
+        data.kontrahentKod,
+        data.kontrahentMiasto,
+        data.kontrahentNip,
+        data.kontrahentRegon,
+        data.dzial,
+        data.kwotaNaleznosci,
+        data.osobaZlecajaca,
+        JSON.stringify(contact),
+        data.konto,
+        id,
+      ]
+    );
+    res.status(201).json({ message: `Dane zostały zmienione.` });
+  } catch (error) {
+    logEvents(
+      `insuranceController, editSingleDocument: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 module.exports = {
   getDataTable,
   getSingleDocument,
   changeSingleDocument,
+  insertNewDocuments,
+  getDepartments,
+  getInsuranceNr,
+  editSingleDocument,
 };
