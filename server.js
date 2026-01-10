@@ -86,7 +86,7 @@ const options = {
 //     );
 //   });
 
-// ustawienie servera lokalnego
+// ustawienie servera lokalnego *
 app.listen(3500, () => {
   console.log(`Server is listening on port 3500`);
 });
