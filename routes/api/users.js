@@ -116,4 +116,11 @@ router
     usersController.getRaportAdviserSettings
   );
 
+router
+  .route("/change-user-companies/:id")
+  .patch(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    usersController.changeUserCompanies
+  );
+
 module.exports = router;

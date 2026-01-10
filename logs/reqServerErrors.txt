@@ -1,0 +1,2 @@
+20260110	15:33:57	insuranceController, getDataTable: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'company_users  WHERE  refreshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c' at line 1
+20260110	15:34:24	insuranceController, getDataTable: Error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'company_users  WHERE  refreshToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c' at line 1

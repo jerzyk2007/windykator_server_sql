@@ -388,7 +388,7 @@ const getUsersData = async (req, res) => {
   const { search } = req.query;
   try {
     const [result] = await connect_SQL.query(
-      "SELECT id_user, username, usersurname, userlogin, roles, permissions, departments FROM company_users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
+      "SELECT id_user, username, usersurname, userlogin, roles, company, permissions, departments FROM company_users WHERE userlogin LIKE ? OR  username LIKE ? OR  usersurname LIKE ?",
       [`%${search}%`, `%${search}%`, `%${search}%`]
     );
 
@@ -407,6 +407,7 @@ const getUsersData = async (req, res) => {
           usersurname: user.usersurname,
           userlogin: user.userlogin,
           roles,
+          company: user.company || [],
           permissions,
           departments: user.departments || [],
           oldDepartments: oldDepartments || [],
@@ -643,6 +644,23 @@ const getRaportAdviserSettings = async (req, res) => {
   }
 };
 
+const changeUserCompanies = async (req, res) => {
+  const { id } = req.params;
+  const { activeCompanies } = req.body;
+  try {
+    await connect_SQL.query(
+      "UPDATE company_users SET company = ? WHERE id_user = ?",
+      [JSON.stringify(activeCompanies), id]
+    );
+    res.end();
+  } catch (error) {
+    logEvents(
+      `usersController, changeUserCompanies: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 module.exports = {
   createNewUser,
   changeLogin,
@@ -661,4 +679,5 @@ module.exports = {
   getRaportDepartmentSettings,
   saveRaporAdviserSettings,
   getRaportAdviserSettings,
+  changeUserCompanies,
 };

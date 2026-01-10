@@ -8,30 +8,37 @@ const queryTable = "SELECT * FROM company_insurance_documents ";
 // pobiera dane do tabeli w zaleźności od wywołania
 const getDataTable = async (req, res) => {
   const { info } = req.params;
+  console.log(info);
+  const refreshToken = req.cookies.jwt;
   try {
-    let data = [];
-    if (info === "vindication") {
-      [data] = await connect_SQL.query(
-        `${queryTable} WHERE (STATUS != 'ZAKOŃCZONA' OR STATUS IS NULL)`
-      );
-    } else if (info === "completed") {
-      [data] = await connect_SQL.query(
-        `${queryTable} WHERE STATUS = 'ZAKOŃCZONA'`
-      );
-    } else if (info === "all") {
-      [data] = await connect_SQL.query(`${queryTable}`);
-    } else if (info === "settled") {
-      [data] = await connect_SQL.query(
-        `${queryTable} WHERE STATUS = 'ZAKOŃCZONA' AND OW IS NOT NULL`
-      );
-    } else if (info === "pending") {
-      [data] = await connect_SQL.query(
-        `${queryTable} WHERE STATUS = 'ZAKOŃCZONA' AND OW IS NULL`
-      );
-    } else {
-      data = [];
-    }
-    res.json(data);
+    const [user] = await connect_SQL.query(
+      "SELECT * company_users  WHERE  refreshToken = ? ",
+      [refreshToken]
+    );
+    console.log(user);
+    // let data = [];
+    // if (info === "vindication") {
+    //   [data] = await connect_SQL.query(
+    //     `${queryTable} WHERE (STATUS != 'ZAKOŃCZONA' OR STATUS IS NULL)`
+    //   );
+    // } else if (info === "completed") {
+    //   [data] = await connect_SQL.query(
+    //     `${queryTable} WHERE STATUS = 'ZAKOŃCZONA'`
+    //   );
+    // } else if (info === "all") {
+    //   [data] = await connect_SQL.query(`${queryTable}`);
+    // } else if (info === "settled") {
+    //   [data] = await connect_SQL.query(
+    //     `${queryTable} WHERE STATUS = 'ZAKOŃCZONA' AND OW IS NOT NULL`
+    //   );
+    // } else if (info === "pending") {
+    //   [data] = await connect_SQL.query(
+    //     `${queryTable} WHERE STATUS = 'ZAKOŃCZONA' AND OW IS NULL`
+    //   );
+    // } else {
+    //   data = [];
+    // }
+    // res.json(data);
   } catch (error) {
     logEvents(
       `insuranceController, getDataTable: ${error}`,
