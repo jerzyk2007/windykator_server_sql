@@ -8,14 +8,14 @@ const verifyRoles = require("../../middleware/verifyRoles");
 router
   .route("/get-settings")
   .get(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     settings.getSettings
   );
 
 router
   .route("/save-target-percent")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     settings.saveTargetPercent
   );
 
@@ -29,7 +29,7 @@ router
 router
   .route("/get-permissions")
   .get(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     settings.getPermissions
   );
 
@@ -40,18 +40,18 @@ router
 //     table.changeTableColumns
 //   );
 
-router
-  .route("/delete-table-columns/:id")
-  .delete(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-    table.deleteTableColumn
-  );
+// router
+//   .route("/delete-table-columns/:id")
+//   .delete(
+//     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+//     table.deleteTableColumn
+//   );
 
-router
-  .route("/get-table-columns")
-  .get(
-    verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
-    table.getTableColumns
-  );
+// router
+//   .route("/get-table-columns")
+//   .get(
+//     verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
+//     table.getTableColumns
+//   );
 
 module.exports = router;

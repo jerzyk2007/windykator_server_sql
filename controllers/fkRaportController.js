@@ -1632,7 +1632,6 @@ const addDecisionDate = async (req, res) => {
 
     if (searchDuplicate[0]?.id_management_date_description_FK) {
       const id = searchDuplicate[0].id_management_date_description_FK;
-      // console.log(searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA);
 
       const HISTORIA_ZMIANY_DATY_ROZLICZENIA =
         searchDuplicate[0].HISTORIA_ZMIANY_DATY_ROZLICZENIA;

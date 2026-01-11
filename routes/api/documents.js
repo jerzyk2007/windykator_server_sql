@@ -4,14 +4,6 @@ const documents = require("../../controllers/documentsController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
-// pobiera wszytskie faktury wg uprawnień oraz actula/archive/all
-// router
-//   .route("/get-all/:id_user/:info")
-//   .get(
-//     verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
-//     documents.getAllDocuments
-//   );
-
 // zmienia dane pojedyńczego dokumenty - edit row table
 router
   .route("/change-single-document")
@@ -40,14 +32,6 @@ router
     ),
     documents.getDataTable
   );
-
-// pobiera wszytskie  ustawienia tabeli
-// router
-//   .route("/get-settings-colums-table/:id_user/")
-//   .get(
-//     verifyRoles(ROLES_LIST.User, ROLES_LIST.SuperAdmin),
-//     documents.getSettingsColumnsTable
-//   );
 
 //pobiera pojedyńczy dokument
 router

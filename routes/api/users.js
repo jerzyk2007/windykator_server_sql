@@ -9,70 +9,70 @@ router.route("/change-pass/:id_user").patch(usersController.changePassword);
 router
   .route("/another-user-change-pass/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.changePasswordAnotherUser
   );
 
 router
   .route("/change-login/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.changeLogin
   );
 
 router
   .route("/change-name/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.changeName
   );
 
 router
   .route("/change-roles/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.changeUserRoles
   );
 
 router
   .route("/change-columns/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.changeUserColumns
   );
 
 router
   .route("/change-law-partner/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.changeLawPartner
   );
 
 router
   .route("/change-departments/:id_user")
   .patch(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.changeUserDepartments
   );
 
 router
   .route("/register")
   .post(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.createNewUser
   );
 
 router
   .route("/delete-user/:id_user")
   .delete(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.deleteUser
   );
 
 router
   .route("/get-userdata")
   .get(
-    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
+    verifyRoles(ROLES_LIST.Admin, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     usersController.getUsersData
   );
 

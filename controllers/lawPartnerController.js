@@ -61,7 +61,6 @@ const getDataTable = async (req, res) => {
     const finalQuery = `${getDocumentsLawPartner} WHERE ${infoFilter} AND CLD.FIRMA IN (?)`;
 
     const [data] = await connect_SQL.query(finalQuery, [companyArray]);
-
     return res.json(data);
   } catch (error) {
     logEvents(

@@ -29,6 +29,8 @@ const syncColumns = async (permission) => {
         );
       } else if (permission === "Polisy" && user.roles?.Insurance) {
         await prepareColumnConfigForUser(user.id_user, permission);
+      } else if (permission === "Koordynator") {
+        await prepareColumnConfigForUser(user.id_user, permission);
       }
     }
   } catch (error) {
@@ -231,17 +233,16 @@ const prepareColumnConfigForUser = async (id_user, permission) => {
   try {
     // if (!lawPartner.length) return;
     const [userData] = await connect_SQL.query(
-      "SELECT departments, tableSettings, columns  FROM company_users WHERE id_user = ?",
+      "SELECT departments, tableSettings, columns, company  FROM company_users WHERE id_user = ?",
       [id_user]
     );
     if (!userData.length) return;
-    const { departments, tableSettings, columns } = userData[0];
+    const { departments, tableSettings, columns, company } = userData[0];
 
     const [columnsFromSettings] = await connect_SQL.query(
       "SELECT * FROM company_table_columns WHERE EMPLOYEE = ?",
       [permission]
     );
-
     //  1️⃣ //  sprawdzam jakie kolumny powinny byc przypisane do usera
     let trueDepartments = [];
     if (permission === "Kancelaria") {
@@ -250,6 +251,8 @@ const prepareColumnConfigForUser = async (id_user, permission) => {
         .map((obj) => Object.keys(obj)[0]);
     } else if (permission === "Polisy") {
       trueDepartments = ["Polisy"];
+    } else if (permission === "Koordynator") {
+      trueDepartments = ["Koordynator"];
     }
     const newUserColumns = columnsFromSettings.filter((col) =>
       col.AREAS.some(
@@ -442,8 +445,9 @@ const getTableColumns = async (req, res) => {
     const [columns] = await connect_SQL.query(
       "SELECT * FROM company_table_columns"
     );
+
     const [permissions] = await connect_SQL.query(
-      "SELECT PERMISSIONS, EXT_COMPANY FROM company_settings WHERE id_setting = 1"
+      "SELECT PERMISSIONS, EXT_COMPANY, COMPANY FROM company_settings WHERE id_setting = 1"
     );
 
     const grouped = permissions[0].PERMISSIONS.reduce((acc, role) => {
@@ -466,10 +470,13 @@ const getTableColumns = async (req, res) => {
     const [areas] = await connect_SQL.query(
       "SELECT AREA FROM company_area_items"
     );
+
     const filteredAreas = areas.map((item) => item.AREA);
     grouped.Pracownik.areas = filteredAreas;
     grouped.Kancelaria.areas = permissions[0].EXT_COMPANY || [];
     grouped.Polisy.areas = ["Polisy"];
+    grouped.Koordynator.areas = ["Koordynator"];
+
     res.json({
       permissions: permissions[0].PERMISSIONS || [],
       employees: grouped,
@@ -516,4 +523,5 @@ module.exports = {
   deleteTableColumn,
   getTableColumns,
   getSettingsColumnsTable,
+  syncColumns,
 };

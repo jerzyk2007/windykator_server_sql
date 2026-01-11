@@ -119,6 +119,7 @@ const userProfile = (profile) => {
     insider: "Pracownik",
     partner: "Kancelaria",
     insurance: "Polisy",
+    vindex: "Koordynator",
   };
   return selectProfile[profile];
 };

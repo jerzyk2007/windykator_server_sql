@@ -20,6 +20,7 @@ router
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.SuperAdmin
     ),
     raports.getStructureOrganization
@@ -29,7 +30,12 @@ router
 router
   .route("/get-fifferences-as-fk/:id_user/:profile")
   .get(
-    verifyRoles(ROLES_LIST.Editor, ROLES_LIST.Raports, ROLES_LIST.SuperAdmin),
+    verifyRoles(
+      ROLES_LIST.Editor,
+      ROLES_LIST.Raports,
+      ROLES_LIST.DNiKN,
+      ROLES_LIST.SuperAdmin
+    ),
     raports.getRaportDifferncesAsFk
   );
 
@@ -45,13 +51,7 @@ router
 router
   .route("/get-data-raports-control-BL")
   .get(
-    verifyRoles(
-      ROLES_LIST.Admin,
-      ROLES_LIST.FK_KRT,
-      ROLES_LIST.FK_KEM,
-      ROLES_LIST.FK_RAC,
-      ROLES_LIST.SuperAdmin
-    ),
+    verifyRoles(ROLES_LIST.Controller, ROLES_LIST.SuperAdmin),
     raports.getRaportDocumentsControlBL
   );
 

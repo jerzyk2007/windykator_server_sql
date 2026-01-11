@@ -17,6 +17,7 @@ const {
 const { generatePassword } = require("./manageDocumentAddition");
 const { sendEmail } = require("./mailController");
 const { userProfile } = require("./manageDocumentAddition");
+const { syncColumns } = require("./tableController");
 
 const createNewUser = async (req, res) => {
   const { userlogin, username, usersurname, permission } = req.body;
@@ -652,6 +653,7 @@ const changeUserCompanies = async (req, res) => {
       "UPDATE company_users SET company = ? WHERE id_user = ?",
       [JSON.stringify(activeCompanies), id]
     );
+
     res.end();
   } catch (error) {
     logEvents(

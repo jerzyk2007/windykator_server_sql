@@ -9,7 +9,7 @@ router
   .route("/generate-data/:company")
   .get(
     verifyRoles(
-      ROLES_LIST.Admin,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,
@@ -23,7 +23,7 @@ router
   .route("/get-main-report/:company")
   .post(
     verifyRoles(
-      ROLES_LIST.Admin,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,
@@ -37,7 +37,7 @@ router
   .route("/get-business-report/:company")
   .post(
     verifyRoles(
-      ROLES_LIST.Admin,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,
@@ -51,7 +51,7 @@ router
   .route("/get-owners-mail/:company")
   .get(
     verifyRoles(
-      ROLES_LIST.Admin,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,
@@ -65,7 +65,7 @@ router
   .route("/get-date-counter/:company")
   .get(
     verifyRoles(
-      ROLES_LIST.Admin,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,
@@ -79,7 +79,7 @@ router
   .route("/create-raport/:company")
   .get(
     verifyRoles(
-      ROLES_LIST.Admin,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,
@@ -93,7 +93,7 @@ router
   .route("/change-mark-document")
   .patch(
     verifyRoles(
-      ROLES_LIST.Admin,
+      ROLES_LIST.DNiKN,
       ROLES_LIST.FK_KRT,
       ROLES_LIST.FK_KEM,
       ROLES_LIST.FK_RAC,

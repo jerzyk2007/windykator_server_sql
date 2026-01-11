@@ -6,22 +6,37 @@ const verifyRoles = require("../../middleware/verifyRoles");
 
 router
   .route("/get-contractor-data/:docID")
-  .get(verifyRoles(ROLES_LIST.LawPartner), lawPartner.getContractor);
+  .get(
+    verifyRoles(ROLES_LIST.LawPartner, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    lawPartner.getContractor
+  );
 
 router
   .route("/get-single-document/:docID")
-  .get(verifyRoles(ROLES_LIST.LawPartner), lawPartner.getSingleDocument);
+  .get(
+    verifyRoles(ROLES_LIST.LawPartner, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    lawPartner.getSingleDocument
+  );
 
 router
   .route("/change-single-document")
-  .patch(verifyRoles(ROLES_LIST.LawPartner), lawPartner.changeSingleDocument);
+  .patch(
+    verifyRoles(ROLES_LIST.LawPartner, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    lawPartner.changeSingleDocument
+  );
 
 router
   .route("/accept-document")
-  .patch(verifyRoles(ROLES_LIST.LawPartner), lawPartner.acceptDocument);
+  .patch(
+    verifyRoles(ROLES_LIST.LawPartner, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    lawPartner.acceptDocument
+  );
 
 router
   .route("/get-data-table/:id_user/:info/:profile")
-  .get(verifyRoles(ROLES_LIST.LawPartner), lawPartner.getDataTable);
+  .get(
+    verifyRoles(ROLES_LIST.LawPartner, ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    lawPartner.getDataTable
+  );
 
 module.exports = router;

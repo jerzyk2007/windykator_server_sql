@@ -56,6 +56,7 @@ app.use("/structure", require("./routes/api/organizationStructure"));
 app.use("/add-data", require("./routes/api/addDataFromExcelFile"));
 app.use("/law-partner", require("./routes/api/lawPartner"));
 app.use("/insurance", require("./routes/api/insurance"));
+app.use("/vindex", require("./routes/api/vindex"));
 
 app.all("*", (req, res) => {
   res.status(404);
