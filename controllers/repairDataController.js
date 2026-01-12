@@ -171,7 +171,7 @@ const repair = async () => {
     // console.log("changUserTable");
     // await changeSettingsPermissions();
     // console.log("changeSettingsPermissions");
-    await changeUserColumnsTableSettings();
+    // await changeUserColumnsTableSettings();
     // console.log("changeUserColumnsTableSettings");
     // await changePartnerColumn();
     // console.log("changePartnerColumn");
