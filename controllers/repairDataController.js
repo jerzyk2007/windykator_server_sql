@@ -26,7 +26,9 @@ const changeInsuranceTable = async () => {
     await connect_SQL.query(
       "ALTER TABLE company_insurance_documents  ADD COLUMN FIRMA VARCHAR(45) NULL AFTER DZIAL"
     );
-
+    await connect_SQL.query(
+      "ALTER TABLE company_insurance_documents  ADD KWOTA_DOKUMENT  DECIMAL(12,2) NULL AFTER OW"
+    );
     await connect_SQL.query(
       ' UPDATE company_insurance_documents SET FIRMA = "KRT"'
     );

@@ -33,10 +33,10 @@ router
   );
 
 router
-  .route("/get-available-departments")
+  .route("/get-available-dep-comp")
   .get(
     verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
-    insurance.getDepartments
+    insurance.getDepsComp
   );
 
 router

@@ -156,7 +156,7 @@ const insertNewDocuments = async (req, res) => {
       TELEFON: [...data.telefony],
     };
     await connect_SQL.query(
-      "INSERT INTO company_insurance_documents (NUMER_POLISY, TERMIN_PLATNOSCI, DATA_PRZEKAZANIA, UBEZPIECZYCIEL, KONTRAHENT_NAZWA, KONTRAHENT_ULICA, KONTRAHENT_NR_BUDYNKU, KONTRAHENT_NR_LOKALU, KONTRAHENT_KOD_POCZTOWY, KONTRAHENT_MIASTO, KONTRAHENT_NIP, KONTRAHENT_REGON, DZIAL, NALEZNOSC, OSOBA_ZLECAJACA_WINDYKACJE, KONTAKT_DO_KLIENTA, NR_KONTA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO company_insurance_documents (NUMER_POLISY, TERMIN_PLATNOSCI, DATA_PRZEKAZANIA, UBEZPIECZYCIEL, KONTRAHENT_NAZWA, KONTRAHENT_ULICA, KONTRAHENT_NR_BUDYNKU, KONTRAHENT_NR_LOKALU, KONTRAHENT_KOD_POCZTOWY, KONTRAHENT_MIASTO, KONTRAHENT_NIP, KONTRAHENT_REGON, DZIAL, FIRMA, KWOTA_DOKUMENT, NALEZNOSC, OSOBA_ZLECAJACA_WINDYKACJE, KONTAKT_DO_KLIENTA, NR_KONTA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         data.numerDokumentu,
         data.terminPlatnosci,
@@ -171,6 +171,8 @@ const insertNewDocuments = async (req, res) => {
         data.kontrahentNip,
         data.kontrahentRegon,
         data.dzial,
+        data.firma,
+        data.kwotaDokument,
         data.kwotaNaleznosci,
         data.osobaZlecajaca,
         JSON.stringify(contact),
@@ -187,15 +189,23 @@ const insertNewDocuments = async (req, res) => {
   }
 };
 
-// pobieram możliwe działy dla wprowadzenia polisu
-const getDepartments = async (req, res) => {
+// pobieram możliwe działy i spółki dla wprowadzenia polisu
+const getDepsComp = async (req, res) => {
   try {
-    const [result] = await connect_SQL.query(
+    const [deps] = await connect_SQL.query(
       'SELECT distinct DEPARTMENT FROM company_join_items WHERE AREA = "F&I"'
     );
-    const departments = result.map((item) => item.DEPARTMENT);
+    const departments = deps.map((item) => item.DEPARTMENT);
 
-    res.json(departments.sort() ?? []);
+    const [company] = await connect_SQL.query(
+      "SELECT COMPANY  FROM company_settings WHERE id_setting = 1"
+    );
+
+    const data = {
+      departments: departments.sort() ?? [],
+      company: company[0].COMPANY ?? [],
+    };
+    res.json(data);
   } catch (error) {
     logEvents(
       `insuranceController, getDepartments: ${error}`,
@@ -227,7 +237,7 @@ const editSingleDocument = async (req, res) => {
       TELEFON: [...data.telefony],
     };
     await connect_SQL.query(
-      "UPDATE company_insurance_documents SET NUMER_POLISY = ?, TERMIN_PLATNOSCI = ?, DATA_PRZEKAZANIA = ?, UBEZPIECZYCIEL = ?, KONTRAHENT_NAZWA = ?, KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_NIP = ?, KONTRAHENT_REGON = ?, DZIAL = ?, NALEZNOSC = ?, OSOBA_ZLECAJACA_WINDYKACJE = ?, KONTAKT_DO_KLIENTA = ?, NR_KONTA = ? WHERE id_document = ?",
+      "UPDATE company_insurance_documents SET NUMER_POLISY = ?, TERMIN_PLATNOSCI = ?, DATA_PRZEKAZANIA = ?, UBEZPIECZYCIEL = ?, KONTRAHENT_NAZWA = ?, KONTRAHENT_ULICA = ?, KONTRAHENT_NR_BUDYNKU = ?, KONTRAHENT_NR_LOKALU = ?, KONTRAHENT_KOD_POCZTOWY = ?, KONTRAHENT_MIASTO = ?, KONTRAHENT_NIP = ?, KONTRAHENT_REGON = ?, DZIAL = ?, FIRMA = ?, KWOTA_DOKUMENT = ?, NALEZNOSC = ?, OSOBA_ZLECAJACA_WINDYKACJE = ?, KONTAKT_DO_KLIENTA = ?, NR_KONTA = ? WHERE id_document = ?",
       [
         data.numerDokumentu,
         data.terminPlatnosci,
@@ -242,6 +252,8 @@ const editSingleDocument = async (req, res) => {
         data.kontrahentNip,
         data.kontrahentRegon,
         data.dzial,
+        data.firma,
+        data.kwotaDokument,
         data.kwotaNaleznosci,
         data.osobaZlecajaca,
         JSON.stringify(contact),
@@ -263,7 +275,7 @@ module.exports = {
   getSingleDocument,
   changeSingleDocument,
   insertNewDocuments,
-  getDepartments,
+  getDepsComp,
   getInsuranceNr,
   editSingleDocument,
 };
