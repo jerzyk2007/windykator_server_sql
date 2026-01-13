@@ -2,6 +2,16 @@ const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { logEvents } = require("../middleware/logEvents");
 const { connect_SQL } = require("../config/dbConn");
+const { repair } = require("./repairDataController");
+
+const XXXhandleLogin = async (req, res) => {
+  try {
+    await repair();
+    res.sendStatus(401);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 const handleLogin = async (req, res) => {
   const { userlogin, password } = req.body;

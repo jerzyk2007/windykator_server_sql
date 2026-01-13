@@ -75,6 +75,8 @@ const userDepartments = {
 const userColumns = {
   Pracownik: [],
   Kancelaria: [],
+  Polisy: [],
+  Koordynator: [],
 };
 
 module.exports = {

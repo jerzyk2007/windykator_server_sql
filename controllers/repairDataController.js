@@ -62,7 +62,7 @@ const changeSettingsPermissions = async () => {
     const [settings] = await connect_SQL.query(
       "SELECT * FROM company_settings WHERE id_setting = 1"
     );
-    const permissions = [...settings[0].PERMISSIONS, "Vindicon"];
+    const permissions = [...settings[0].PERMISSIONS, "Koordynator"];
     // const permissions = ["Pracownik", "Kancelaria", "Polisy", "Koordynator"];
     await connect_SQL.query(
       "UPDATE company_settings SET PERMISSIONS = ? WHERE id_setting = 1",
@@ -123,7 +123,7 @@ const changeUserColumnsTableSettings = async () => {
       departments.Koordynator = [];
 
       await connect_SQL.query(
-        "UPDATE company_users SET tableSettings = ?, raportSettings = ?, columns = ?, departments WHERE id_user = ?",
+        "UPDATE company_users SET tableSettings = ?, raportSettings = ?, columns = ?, departments = ? WHERE id_user = ?",
         [
           JSON.stringify(tableSettings),
           JSON.stringify(raportSettings),

@@ -15,7 +15,6 @@ const compression = require("compression");
 //wywołuje cykleczne funkcje z pliku getDataFromMSSQL
 require("./controllers/getDataFromMSSQL");
 // const http = require("http");
-
 // limit to 10 MB
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ limit: "100mb", extended: true }));

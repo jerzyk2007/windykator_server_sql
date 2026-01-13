@@ -258,7 +258,6 @@ const changePasswordAnotherUser = async (req, res) => {
 const changeUserDepartments = async (req, res) => {
   const { id_user } = req.params;
   const { activeDepartments } = req.body;
-
   try {
     // pobieram wszytskie kolumny dla tabel które sa opisane w programie
     const [userPermission] = await connect_SQL.query(
@@ -355,7 +354,6 @@ const deleteUser = async (req, res) => {
 const saveUserTableSettings = async (req, res) => {
   const { id_user, profile } = req.params;
   const { newTableSettings } = req.body;
-
   if (!id_user || !profile) {
     return res
       .status(400)

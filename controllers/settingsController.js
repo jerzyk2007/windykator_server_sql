@@ -132,7 +132,9 @@ const getPermissions = async (req, res) => {
     const [permissions] = await connect_SQL.query(
       "SELECT PERMISSIONS FROM company_settings"
     );
-    const perm = permissions[0].PERMISSIONS.filter((item) => item !== "Polisy");
+    const perm = permissions[0].PERMISSIONS.filter(
+      (item) => item !== "Polisy" && item !== "Koordynator"
+    );
     res.json({
       permissions: perm.length ? perm : [],
     });

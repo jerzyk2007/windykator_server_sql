@@ -445,7 +445,6 @@ const getTableColumns = async (req, res) => {
     const [columns] = await connect_SQL.query(
       "SELECT * FROM company_table_columns"
     );
-
     const [permissions] = await connect_SQL.query(
       "SELECT PERMISSIONS, EXT_COMPANY, COMPANY FROM company_settings WHERE id_setting = 1"
     );
