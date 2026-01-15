@@ -1331,43 +1331,44 @@ const getMainRaportFK = async (req, res) => {
 
     const reportInfo = await gerReportDate(company);
 
-    const rowsColor = getData.map((item) => {
-      const data = item.data.map((doc) => {
-        const date = new Date(doc.DATA_WYSTAWIENIA_FV);
+    // dodanie kolorów do raportu głównego
+    // const rowsColor = getData.map((item) => {
+    //   const data = item.data.map((doc) => {
+    //     const date = new Date(doc.DATA_WYSTAWIENIA_FV);
 
-        const year = date.getFullYear();
-        const month = date.getMonth(); // 0 = styczeń, 11 = grudzień
-        const currentYear = new Date().getFullYear();
+    //     const year = date.getFullYear();
+    //     const month = date.getMonth(); // 0 = styczeń, 11 = grudzień
+    //     const currentYear = new Date().getFullYear();
 
-        let color = "";
+    //     let color = "";
 
-        if (year < currentYear) {
-          // color = "red"; // poprzednie lata
-          color = "FFFC4A53"; // poprzednie lata
-          // poprzednie lata
-        } else {
-          if (month >= 0 && month <= 2) {
-            color = "FFFFC000"; // pomarańczowy
-          } else if (month >= 3 && month <= 5) {
-            color = "FFFFFF00"; // żółty
-          } else if (month >= 6 && month <= 8) {
-            color = "FF92D050"; // zielony
-          } else if (month >= 9 && month <= 11) {
-            color = "FF00B0F0"; // niebieski
-          }
-        }
+    //     if (year < currentYear) {
+    //       // color = "red"; // poprzednie lata
+    //       color = "FFFC4A53"; // poprzednie lata
+    //       // poprzednie lata
+    //     } else {
+    //       if (month >= 0 && month <= 2) {
+    //         color = "FFFFC000"; // pomarańczowy
+    //       } else if (month >= 3 && month <= 5) {
+    //         color = "FFFFFF00"; // żółty
+    //       } else if (month >= 6 && month <= 8) {
+    //         color = "FF92D050"; // zielony
+    //       } else if (month >= 9 && month <= 11) {
+    //         color = "FF00B0F0"; // niebieski
+    //       }
+    //     }
 
-        return {
-          ...doc,
-          KOLOR: color,
-        };
-      });
+    //     return {
+    //       ...doc,
+    //       KOLOR: color,
+    //     };
+    //   });
 
-      return {
-        ...item,
-        data,
-      };
-    });
+    //   return {
+    //     ...item,
+    //     data,
+    //   };
+    // });
 
     // const changeData = getData.map((item) => {
     //   if (item.name === "KSIĘGOWOŚĆ") {
@@ -1436,7 +1437,8 @@ const getMainRaportFK = async (req, res) => {
     // });
 
     // const excelBuffer = await getExcelRaport(getData, reportInfo);
-    const excelBuffer = await getExcelRaport(rowsColor, reportInfo);
+    // const excelBuffer = await getExcelRaport(rowsColor, reportInfo);
+    const excelBuffer = await getExcelRaport(getData, reportInfo);
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
