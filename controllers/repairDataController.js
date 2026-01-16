@@ -12,171 +12,91 @@ const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getDataDocuments } = require("./documentsController");
 const { updateSettlementDescription } = require("./getDataFromMSSQL");
 const { syncColumns } = require("./tableController");
+const { calculateCommercialInterest } = require("./payGuard");
 
 //zebrane kawałki kodu, nieużywac funkcji
 const test = async () => {
   await connect_SQL.query(
     "ALTER TABLE company_documents_actions CHANGE COLUMN UWAGI_ASYSTENT KANAL_KOMUNIKACJI JSON"
   );
+  await connect_SQL.query(
+    "ALTER TABLE company_insurance_documents  ADD KWOTA_DOKUMENT  DECIMAL(12,2) NULL AFTER OW"
+  );
+
+  await connect_SQL.query(
+    "CREATE TABLE company_pay_guard (  id_pay_guard INT UNSIGNED AUTO_INCREMENT,  value VARCHAR(255) NULL,  PROCENTY_ROK JSON  NULL,  WOLNE_USTAWOWE JSON NULL,  PRIMARY KEY (id_pay_guard),  UNIQUE KEY uq_id_pay_guard (id_pay_guard)) ENGINE=InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci"
+  );
 };
 
-// zmiana w yablei z polisami, dodaję kolumnę Firma
-const changeInsuranceTable = async () => {
+const changeTableSettings = async () => {
   try {
     await connect_SQL.query(
-      "ALTER TABLE company_insurance_documents  ADD COLUMN FIRMA VARCHAR(45) NULL AFTER DZIAL"
-    );
-    await connect_SQL.query(
-      "ALTER TABLE company_insurance_documents  ADD KWOTA_DOKUMENT  DECIMAL(12,2) NULL AFTER OW"
-    );
-    await connect_SQL.query(
-      ' UPDATE company_insurance_documents SET FIRMA = "KRT"'
+      "ALTER TABLE company_settings ADD PROCENTY_ROK JSON NULL AFTER COMPANY, ADD WOLNE_USTAWOWE JSON NULL AFTER PROCENTY_ROK"
     );
   } catch (error) {
     console.error(error);
   }
 };
 
-const changUserTable = async () => {
+//zapisuje do tabeli odsetki ustawowe i obowiązujące okresy
+const saveHistorical = async () => {
   try {
+    const historyczneOdsetki = [
+      { date: "2016-01-01", percent: 9.5 },
+      { date: "2020-01-01", percent: 11.5 },
+      { date: "2020-07-01", percent: 10.1 },
+      { date: "2022-01-01", percent: 11.75 },
+      { date: "2022-07-01", percent: 16.0 },
+      { date: "2023-01-01", percent: 16.75 },
+      { date: "2024-01-01", percent: 15.75 },
+      { date: "2025-07-01", percent: 15.25 },
+      { date: "2026-01-01", percent: 14.0 },
+    ];
+    const polishMonts = [
+      { day: 1, month: 1, name: "Nowy Rok" },
+      { day: 6, month: 1, name: "Trzech Króli" },
+      { day: 1, month: 5, name: "1 Maja" },
+      { day: 3, month: 5, name: "3 Maja" },
+      { day: 15, month: 8, name: "Wniebowzięcie NMP" },
+      { day: 1, month: 11, name: "Wszystkich Świętych" },
+      { day: 11, month: 11, name: "Święto Niepodległości" },
+      { day: 24, month: 12, name: "Wigilia" },
+      { day: 25, month: 12, name: "Boże Narodzenie" },
+      { day: 26, month: 12, name: "Boże Narodzenie" },
+    ];
     await connect_SQL.query(
-      "ALTER TABLE company_users  ADD COLUMN company JSON NULL AFTER roles"
-    );
-    const [users] = await connect_SQL.query("SELECT * FROM company_users");
-    for (const user of users) {
-      if (user?.roles?.Insurance || user?.roles?.LawPartner) {
-        await connect_SQL.query(
-          "UPDATE company_users SET company = ? WHERE id_user = ?",
-          [JSON.stringify(["KRT"]), user.id_user]
-        );
-      }
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-const changeSettingsPermissions = async () => {
-  try {
-    await connect_SQL.query(
-      "ALTER TABLE company_settings DROP COLUMN `COLUMNS`"
-    );
-    const [settings] = await connect_SQL.query(
-      "SELECT * FROM company_settings WHERE id_setting = 1"
-    );
-    const permissions = [...settings[0].PERMISSIONS, "Koordynator"];
-    // const permissions = ["Pracownik", "Kancelaria", "Polisy", "Koordynator"];
-    await connect_SQL.query(
-      "UPDATE company_settings SET PERMISSIONS = ? WHERE id_setting = 1",
-      [JSON.stringify(permissions)]
+      "UPDATE company_settings SET PROCENTY_ROK = ?, WOLNE_USTAWOWE = ? WHERE id_setting = 1",
+      [JSON.stringify(historyczneOdsetki), JSON.stringify(polishMonts)]
     );
   } catch (error) {
     console.error(error);
   }
 };
 
-const changeUserColumnsTableSettings = async () => {
-  try {
-    const [users] = await connect_SQL.query("SELECT * FROM company_users");
-    for (const user of users) {
-      const tableSettings = user.tableSettings;
-      tableSettings.Kancelaria = {
-        size: {},
-        order: ["mrt-row-spacer"],
-        pinning: { left: [], right: [] },
-        visible: {},
-        pagination: {
-          pageSize: 30,
-          pageIndex: 0,
-        },
-      };
-      tableSettings.Polisy = {
-        size: {},
-        order: ["mrt-row-spacer"],
-        pinning: { left: [], right: [] },
-        visible: {},
-        pagination: {
-          pageSize: 30,
-          pageIndex: 0,
-        },
-      };
-      tableSettings.Koordynator = {
-        size: {},
-        order: ["mrt-row-spacer"],
-        pinning: { left: [], right: [] },
-        visible: {},
-        pagination: {
-          pageSize: 30,
-          pageIndex: 0,
-        },
-      };
-      const raportSettings = user.raportSettings;
-      raportSettings.Kancelaria = {};
-      raportSettings.Polisy = {};
-      raportSettings.Koordynator = {};
+// wywołuje liczenie odsetek
+const checkPercent = async () => {
+  const kwota = 5789;
+  const terminZaplaty = "2017-01-01"; // Sobota
+  const dataZaplaty = "2026-01-15"; // Czwartek
 
-      const columns = user.columns;
-      columns.Kancelaria = [];
-      columns.Polisy = [];
-      columns.Koordynator = [];
+  const wynik = await calculateCommercialInterest(
+    kwota,
+    terminZaplaty,
+    dataZaplaty,
+    (type = "single1")
+  );
 
-      const departments = user.departments;
-      departments.Polisy = [];
-      departments.Koordynator = [];
-
-      await connect_SQL.query(
-        "UPDATE company_users SET tableSettings = ?, raportSettings = ?, columns = ?, departments = ? WHERE id_user = ?",
-        [
-          JSON.stringify(tableSettings),
-          JSON.stringify(raportSettings),
-          JSON.stringify(columns),
-          JSON.stringify(departments),
-          user.id_user,
-        ]
-      );
-    }
-
-    const [permissions] = await connect_SQL.query(
-      "SELECT PERMISSIONS FROM company_settings"
-    );
-    for (const permission of permissions[0].PERMISSIONS) {
-      await syncColumns(permission);
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
-
-const changePartnerColumn = async () => {
-  try {
-    const [columns] = await connect_SQL.query(
-      'SELECT * FROM company_table_columns WHERE EMPLOYEE = "Kancelaria"'
-    );
-    for (const column of columns) {
-      if (column.ACCESSOR_KEY === "CZAT_KANCELARIA") {
-        await connect_SQL.query(
-          `UPDATE company_table_columns SET ACCESSOR_KEY = "KANAL_KOMUNIKACJI" WHERE id_table_columns = ?`,
-          [column.id_table_columns]
-        );
-      }
-    }
-  } catch (error) {
-    console.error(error);
-  }
+  // console.log(`Łączna kwota odsetek: ${wynik.toFixed(2)} zł`);
+  console.log(wynik);
 };
 
 const repair = async () => {
   try {
-    // await changeInsuranceTable();
-    // console.log("changeInsuranceTable");
-    // await changUserTable();
-    // console.log("changUserTable");
-    // await changeSettingsPermissions();
-    // console.log("changeSettingsPermissions");
-    // await changeUserColumnsTableSettings();
-    // console.log("changeUserColumnsTableSettings");
-    // await changePartnerColumn();
-    // console.log("changePartnerColumn");
+    // await changeTableSettings();
+    // console.log("changeTableSettings");
+    // await saveHistorical();
+    // console.log("saveHistorical");
+    // await checkPercent();
   } catch (error) {
     console.error(error);
   }

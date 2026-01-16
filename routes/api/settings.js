@@ -33,25 +33,32 @@ router
     settings.getPermissions
   );
 
-// router
-//   .route("/change-table-columns")
-//   .patch(
-//     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-//     table.changeTableColumns
-//   );
+router
+  .route("/get-rates-data")
+  .get(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    settings.getRatesData
+  );
 
-// router
-//   .route("/delete-table-columns/:id")
-//   .delete(
-//     verifyRoles(ROLES_LIST.Admin, ROLES_LIST.SuperAdmin),
-//     table.deleteTableColumn
-//   );
+router
+  .route("/change-percent")
+  .patch(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    settings.changePercentYear
+  );
 
-// router
-//   .route("/get-table-columns")
-//   .get(
-//     verifyRoles(ROLES_LIST.User, ROLES_LIST.Editor, ROLES_LIST.SuperAdmin),
-//     table.getTableColumns
-//   );
+router
+  .route("/change-holidays")
+  .patch(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    settings.changeHolidays
+  );
+
+router
+  .route("/calculate-interest")
+  .post(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    settings.calculateInterest
+  );
 
 module.exports = router;

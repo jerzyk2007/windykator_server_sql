@@ -1,5 +1,6 @@
 const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
+const { calculateCommercialInterest } = require("./payGuard");
 
 //pobieranie unikalnych nazw Działów z documentów, dzięki temu jesli jakiś przybędzie/ubędzie to na Front będzie to widac w ustawieniach użytkonika
 const getFilteredDepartments = async (res) => {
@@ -18,7 +19,6 @@ const getFilteredDepartments = async (res) => {
       `settingsController, getFilteredDepartments: ${error}`,
       "reqServerErrors.txt"
     );
-    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -81,7 +81,6 @@ const getSettings = async (req, res) => {
       `settingsController, getSettings: ${error}`,
       "reqServerErrors.txt"
     );
-    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -103,7 +102,6 @@ const getDepartments = async (req, res) => {
       `settingsController, getDepartments: ${error}`,
       "reqServerErrors.txt"
     );
-    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -122,7 +120,6 @@ const saveTargetPercent = async (req, res) => {
       `settingsController, saveTargetPercent: ${error}`,
       "reqServerErrors.txt"
     );
-    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -143,7 +140,75 @@ const getPermissions = async (req, res) => {
       `settingsController, getPermissions: ${error}`,
       "reqServerErrors.txt"
     );
-    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const getRatesData = async (req, res) => {
+  try {
+    const [data] = await connect_SQL.query(
+      "SELECT PROCENTY_ROK, WOLNE_USTAWOWE FROM company_settings WHERE id_setting = 1"
+    );
+    res.json(data);
+  } catch (error) {
+    logEvents(
+      `settingsController, getRatesData: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+// zmiana obowiązujących odsetek
+const changePercentYear = async (req, res) => {
+  const { data } = req.body;
+  try {
+    await connect_SQL.query(
+      "UPDATE company_settings SET PROCENTY_ROK = ? WHERE id_setting = 1",
+      [JSON.stringify(data)]
+    );
+    res.end();
+  } catch (error) {
+    logEvents(
+      `settingsController, changePercentYear: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500);
+  }
+};
+
+// zmiana dni wolnych od pracy - odsetki
+const changeHolidays = async (req, res) => {
+  const { data } = req.body;
+  try {
+    await connect_SQL.query(
+      "UPDATE company_settings SET WOLNE_USTAWOWE = ? WHERE id_setting = 1",
+      [JSON.stringify(data)]
+    );
+    res.end();
+  } catch (error) {
+    logEvents(
+      `settingsController, changePercentYear: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500);
+  }
+};
+
+//obliczanie odsetek
+const calculateInterest = async (req, res) => {
+  const { amount, deadlineDate, paymentDate } = req.body;
+  try {
+    const interest = await calculateCommercialInterest(
+      amount,
+      deadlineDate,
+      paymentDate,
+      (type = "full")
+    );
+    res.json(interest);
+  } catch (error) {
+    logEvents(
+      `settingsController, changePercentYear: ${error}`,
+      "reqServerErrors.txt"
+    );
   }
 };
 
@@ -152,4 +217,8 @@ module.exports = {
   getDepartments,
   saveTargetPercent,
   getPermissions,
+  getRatesData,
+  changePercentYear,
+  changeHolidays,
+  calculateInterest,
 };
