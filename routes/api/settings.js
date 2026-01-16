@@ -36,7 +36,12 @@ router
 router
   .route("/get-rates-data")
   .get(
-    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    verifyRoles(
+      ROLES_LIST.User,
+      ROLES_LIST.Editor,
+      ROLES_LIST.DNiKN,
+      ROLES_LIST.SuperAdmin
+    ),
     settings.getRatesData
   );
 
@@ -57,7 +62,12 @@ router
 router
   .route("/calculate-interest")
   .post(
-    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    verifyRoles(
+      ROLES_LIST.User,
+      ROLES_LIST.Editor,
+      ROLES_LIST.DNiKN,
+      ROLES_LIST.SuperAdmin
+    ),
     settings.calculateInterest
   );
 
