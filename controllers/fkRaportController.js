@@ -1617,6 +1617,7 @@ const changeMark = async (req, res) => {
 
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, FIRMA, data } = req.body;
+
   try {
     const [raportDate] = await connect_SQL.query(
       `SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'generate' AND COMPANY = ?`,
@@ -1677,7 +1678,7 @@ const addDecisionDate = async (req, res) => {
     res.end();
   } catch (error) {
     logEvents(
-      `fKRaportController, addDecision: ${error}`,
+      `fKRaportController, addDecisionDate: ${error}`,
       "reqServerErrors.txt"
     );
   }
