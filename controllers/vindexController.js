@@ -1,91 +1,89 @@
 const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
-const { mergeJsonLogs } = require("./manageDocumentAddition");
+const { b } = require("./manageDocumentAddition");
+
+const getDataSQL = `
+SELECT
+  D.id_document,
+  D.NUMER_FV,
+  D.DATA_FV,
+   D.TERMIN,
+  D.BRUTTO,
+   D.NETTO,
+    IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA,
+  IFNULL(FS.DO_ROZLICZENIA, 0) AS FK_DO_ROZLICZENIA,
+   D.KONTRAHENT,
+  D.DZIAL
+ FROM company_documents AS D
+ LEFT JOIN company_settlements AS S
+  ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
+  LEFT JOIN company_fk_settlements AS FS
+  ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA
+`;
 
 // pobiera dane do tabeli w zaleźności od wywołania
-
 const getDataTable = async (req, res) => {
   const { info } = req.params;
   const refreshToken = req.cookies?.jwt;
-  // Zabezpieczenie przed brakiem tokena
+
   if (!refreshToken) {
     return res.status(401).json({ message: "Brak autoryzacji." });
   }
+
   try {
-    // 1. Pobranie danych o firmach użytkownika
-    const [user] = await connect_SQL.query(
+    const [userRows] = await connect_SQL.query(
       "SELECT company FROM company_users WHERE refreshToken = ?",
       [refreshToken]
     );
 
-    // Zabezpieczenie: jeśli nie ma użytkownika
-    if (!user || user.length === 0) {
-      return res.json([]);
-    }
+    if (!userRows || userRows.length === 0) return res.json([]);
 
-    // 2. Przygotowanie tablicy companyArray (obsługa JSON lub stringa)
     let companyArray = [];
+    const rawCompany = userRows[0].company;
+
+    // Obsługa różnych formatów zapisu kolumny company
     try {
-      const rawCompany = user[0].company;
-      if (Array.isArray(rawCompany)) {
-        companyArray = rawCompany;
-      } else if (typeof rawCompany === "string" && rawCompany.trim() !== "") {
-        companyArray = JSON.parse(rawCompany);
-      }
-    } catch (error) {
-      console.error("Błąd parsowania kolumny company:", error);
-      companyArray = [];
+      companyArray =
+        typeof rawCompany === "string" ? JSON.parse(rawCompany) : rawCompany;
+    } catch (e) {
+      companyArray = [rawCompany];
     }
 
-    // Zabezpieczenie: jeśli tablica jest pusta, zwracamy pusty wynik (user nie ma przypisanych firm)
     if (!Array.isArray(companyArray) || companyArray.length === 0) {
       return res.json([]);
     }
 
-    // 3. Budowanie zapytania SQL w zależności od parametru "info"
-    const baseQuery = "SELECT * FROM company_insurance_documents";
-    let statusFilter = "";
+    // --- TYMCZASOWA ZMIANA: WYMUSZENIE TYLKO 'KEM' ---
+    companyArray = ["KEM"];
+    // ------------------------------------------------
+    let finalQuery = "";
+    let queryParams = [];
 
     switch (info) {
-      case "critical":
-        statusFilter = "(STATUS != 'ZAKOŃCZONA' OR STATUS IS NULL)";
+      case "all-kem":
+        // 1. Filtr firm (D.FIRMA IN (?))
+        // AND
+        // 2. Warunek (S.NALEZNOSC != 0 LUB FS.DO_ROZLICZENIA != 0)
+        finalQuery = `
+          ${getDataSQL} 
+          WHERE D.FIRMA IN (?) 
+          AND (IFNULL(S.NALEZNOSC, 0) != 0 OR IFNULL(FS.DO_ROZLICZENIA, 0) != 0)
+        `;
+        queryParams = [companyArray];
         break;
-      case "completed":
-        statusFilter = "STATUS = 'ZAKOŃCZONA'";
-        break;
-      case "settled":
-        statusFilter = "STATUS = 'ZAKOŃCZONA' AND OW IS NOT NULL";
-        break;
-      case "pending":
-        statusFilter = "STATUS = 'ZAKOŃCZONA' AND OW IS NULL";
-        break;
-      case "all":
-        statusFilter = "1=1"; // Prawda dla każdego wiersza, aby łatwo dokleić AND FIRMA IN
-        break;
+
       default:
-        // Jeśli info nie pasuje do żadnego klucza, zwracamy pustą tablicę
         return res.json([]);
     }
 
-    // 4. Wykonanie zapytania z filtrem firm (FIRMA IN (?))
-    // mysql2 automatycznie obsłuży tablicę companyArray jako listę wartości
-    const finalQuery = `${baseQuery} WHERE ${statusFilter} AND FIRMA IN (?)`;
-
-    const [data] = await connect_SQL.query(finalQuery, [companyArray]);
-
+    const [data] = await connect_SQL.query(finalQuery, queryParams);
     return res.json(data);
   } catch (error) {
-    // Logowanie błędów
-    if (typeof logEvents === "function") {
-      logEvents(
-        `insuranceController, getDataTable: ${error.message}`,
-        "reqServerErrors.txt"
-      );
-    }
-    console.error("Database Error:", error);
-    return res
-      .status(500)
-      .json({ message: "Błąd serwera podczas pobierania danych." });
+    logEvents(
+      `insuranceController, getDataTable: ${error.message}`,
+      "reqServerErrors.txt"
+    );
+    return res.json([]);
   }
 };
 

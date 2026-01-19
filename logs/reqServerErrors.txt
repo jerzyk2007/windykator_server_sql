@@ -1,0 +1,30 @@
+20260117	13:50:09	insuranceController, getDataTable: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM company_documents AS D
+ WHERE D.FIRMA IN ('KRT', 'KEM', 'RAC')' at line 25
+20260117	13:50:32	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:50:47	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:50:56	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:51:11	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:51:19	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:51:29	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:51:31	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:51:46	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:52:05	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:54:00	insuranceController, getDataTable: Unknown column 'JI.area' in 'field list'
+20260117	13:54:35	insuranceController, getDataTable: Unknown column 'S.NALEZNOSC' in 'field list'
+20260117	13:54:38	insuranceController, getDataTable: Unknown column 'S.NALEZNOSC' in 'field list'
+20260117	14:01:03	insuranceController, getDataTable: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM company_documents AS D
+ LEFT JOIN company_settlements AS S
+  ON D.NUMER_FV ' at line 11
+20260117	14:01:51	insuranceController, getDataTable: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM company_documents AS D
+ LEFT JOIN company_settlements AS S
+  ON D.NUMER_FV ' at line 11
+20260117	14:01:54	insuranceController, getDataTable: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM company_documents AS D
+ LEFT JOIN company_settlements AS S
+  ON D.NUMER_FV ' at line 11
+20260117	14:02:00	insuranceController, getDataTable: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM company_documents AS D
+ LEFT JOIN company_settlements AS S
+  ON D.NUMER_FV ' at line 11
+20260117	14:02:16	insuranceController, getDataTable: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM company_documents AS D
+
+
+ WHERE D.FIRMA IN ('KEM')' at line 11
