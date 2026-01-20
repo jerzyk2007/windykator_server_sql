@@ -48,18 +48,15 @@ const addDocumentToDatabase = async (type) => {
         .split(/[\s,;]+/)
         .filter((p) => p.length >= 7);
 
-      return phoneArray.map((p) => {
-        // 1. Czyścimy numer z wszystkiego poza cyframi
-        let clean = p.replace(/\D/g, "");
+      const uniqueMap = new Map();
 
-        // 2. Obsługa prefiksu krajowego 48 (jeśli numer ma 11 cyfr i zaczyna się od 48)
+      for (const p of phoneArray) {
+        let clean = p.replace(/\D/g, "");
         if (clean.length === 11 && clean.startsWith("48")) {
           clean = clean.slice(2);
         }
 
-        // 3. Próba parsowania przez bibliotekę
         const phoneNumber = parsePhoneNumberFromString(clean, "PL");
-
         let isMobile = false;
         let isValid = false;
         let finalValue = clean;
@@ -70,9 +67,6 @@ const addDocumentToDatabase = async (type) => {
           finalValue = phoneNumber.nationalNumber;
         }
 
-        // --- ZABEZPIECZENIE DLA POLSKICH NUMERÓW ---
-        // Jeśli biblioteka ma wątpliwości, sprawdzamy polskie prefiksy komórkowe
-        // Pula komórkowa w PL to: 45, 50, 51, 53, 57, 60, 66, 69, 72, 73, 78, 79, 88
         const mobilePrefixes = [
           "45",
           "50",
@@ -94,16 +88,19 @@ const addDocumentToDatabase = async (type) => {
           isMobile = true;
           isValid = true;
         }
-        // -------------------------------------------
 
-        return {
-          value: finalValue,
-          verified: false,
-          debtCollection: false,
-          invalid: !isValid || finalValue.length !== 9,
-          isMobile: isMobile,
-        };
-      });
+        // KLUCZOWE: Jeśli numeru jeszcze nie ma w mapie, dodaj go
+        if (!uniqueMap.has(finalValue)) {
+          uniqueMap.set(finalValue, {
+            value: finalValue,
+            verified: false,
+            debtCollection: false,
+            invalid: !isValid || finalValue.length !== 9,
+            isMobile: isMobile,
+          });
+        }
+      }
+      return Array.from(uniqueMap.values());
     };
 
     const processEmails = (rawEmails) => {
@@ -112,16 +109,23 @@ const addDocumentToDatabase = async (type) => {
         .split(/[\s,;]+/)
         .filter((e) => e.length > 3);
 
-      return emailArray.map((e) => {
+      const uniqueMap = new Map();
+
+      for (const e of emailArray) {
         const email = e.trim().toLowerCase();
         const isValid = validator.isEmail(email);
-        return {
-          value: email,
-          verified: false,
-          debtCollection: false,
-          invalid: !isValid,
-        };
-      });
+
+        // KLUCZOWE: Jeśli maila nie ma w mapie, dodaj go
+        if (!uniqueMap.has(email)) {
+          uniqueMap.set(email, {
+            value: email,
+            verified: false,
+            debtCollection: false,
+            invalid: !isValid,
+          });
+        }
+      }
+      return Array.from(uniqueMap.values());
     };
 
     // if (type === "KRT" || type === "KEM") {
@@ -253,18 +257,25 @@ const addDocumentToDatabase = async (type) => {
           // BEZPIECZNE PARSOWANIE TELEFONÓW
           try {
             const rawT = existing[0].TELEFON;
-            // Jeśli sterownik nie sparsował JSONa automatycznie (jest stringiem), parsujemy go sami
-            finalPhones =
+            const parsedT =
               typeof rawT === "string" ? JSON.parse(rawT) : rawT || [];
+            // To usunie duplikaty, które już masz w bazie:
+            const cleanMapT = new Map();
+            parsedT.forEach((item) => cleanMapT.set(item.value, item));
+            finalPhones = Array.from(cleanMapT.values());
           } catch (e) {
             finalPhones = [];
           }
 
-          // BEZPIECZNE PARSOWANIE MAILI
+          // BEZPIECZNE PARSOWANIE I CZYSZCZENIE MAILI Z BAZY
           try {
             const rawE = existing[0].EMAIL;
-            finalEmails =
+            const parsedE =
               typeof rawE === "string" ? JSON.parse(rawE) : rawE || [];
+            // To usunie duplikaty, które już masz w bazie:
+            const cleanMapE = new Map();
+            parsedE.forEach((item) => cleanMapE.set(item.value, item));
+            finalEmails = Array.from(cleanMapE.values());
           } catch (e) {
             finalEmails = [];
           }
