@@ -10,46 +10,258 @@ const addDocumentToDatabaseQuery = (company, twoDaysAgo) => {
   if (company !== "RAC") {
     const dbCompany = companyDbMap[company];
 
-    return `SELECT 
+    //     return `SELECT
+    //        fv.[NUMER],
+    //         CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+    //     CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+    //        fv.[KONTR_NAZWA],
+    //        fv.[KONTR_NIP],
+    //        fv.[KONTRAHENT_ID],
+    //        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+    //        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
+    //        fv.[NR_SZKODY],
+    //        fv.[NR_AUTORYZACJI],
+    //        fv.[UWAGI],
+    //        fv.[KOREKTA_NUMER],
+    //        zap.[NAZWA] AS TYP_PLATNOSCI,
+    //        us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
+    //        auto.[REJESTRACJA],
+    //        auto.[NR_NADWOZIA],
+    //        tr.[WARTOSC_NAL]
+    // FROM [${dbCompany}].[dbo].[FAKTDOC] AS fv
+    // LEFT JOIN [${dbCompany}].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
+    // LEFT JOIN [${dbCompany}].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+    // LEFT JOIN [${dbCompany}].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
+    // LEFT JOIN [${dbCompany}].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
+    // LEFT JOIN [${dbCompany}].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+    // WHERE fv.[NUMER] != 'POTEM'
+    //   AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
+    // GROUP BY
+    //        fv.[NUMER],
+    //        CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
+    //        CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
+    //            fv.[KONTR_NAZWA],
+    //        fv.[KONTR_NIP],
+    //     fv.[KONTRAHENT_ID],
+    //        fv.[NR_SZKODY],
+    //        fv.[NR_AUTORYZACJI],
+    //        fv.[UWAGI],
+    //        fv.[KOREKTA_NUMER],
+    //        zap.[NAZWA],
+    //        us.[NAZWA] + ' ' + us.[IMIE],
+    //        auto.[REJESTRACJA],
+    //        auto.[NR_NADWOZIA],
+    //        tr.[WARTOSC_NAL];
+    // `
+
+    //     return `
+    // SELECT
+    //        -- DANE Z FAKTURY
+    //        fv.[NUMER],
+    //        CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+    //        CONVERT(VARCHAR(10), fv.[DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+    //        fv.[KONTR_NAZWA],
+    //        fv.[KONTR_NIP],
+    //        fv.[KONTRAHENT_ID],
+    //        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
+    //        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
+    //        fv.[NR_SZKODY],
+    //        fv.[NR_AUTORYZACJI],
+    //        fv.[UWAGI],
+    //        fv.[KOREKTA_NUMER],
+    //        zap_fv.[NAZWA] AS TYP_PLATNOSCI, -- Płatność wybrana na fakturze
+    //        us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
+    //        auto.[REJESTRACJA],
+    //        auto.[NR_NADWOZIA],
+    //        tr.[WARTOSC_NAL],
+
+    //        -- DODATKOWE DANE KONTRAHENTA Z KARTOTEKI
+    //        k.[NAZWA] AS NAZWA_KONTRAHENTA_SLOWNIK,
+    //        zap_k.[NAZWA] AS PRZYPISANA_FORMA_PLATNOSCI, -- Domyślna płatność kontrahenta
+    //        k.[IS_FIRMA],
+    //        k.[REGON],
+    //        k.[PESEL],
+    //        k.[PLATNOSCPOTEM_DNI],
+    //        k.[TELKOMORKA],
+    //        k.[TELEFON_NORM],
+    //        k.[E_MAIL],
+    //        k.[KOD_KONTR_LISTA],
+    //        k.[A_ULICA_EXT],
+    //        k.[A_NRDOMU],
+    //        k.[A_NRLOKALU],
+    //        k.[A_KOD],
+    //        k.[A_MIASTO],
+    //        k.[A_KRAJ],
+    //        k.[AK_ULICA_EXT],
+    //        k.[AK_NRDOMU],
+    //        k.[AK_NRLOKALU],
+    //        k.[AK_KOD],
+    //        k.[AK_MIASTO],
+    //        k.[AK_KRAJ]
+
+    // FROM [${dbCompany}].[dbo].[FAKTDOC] AS fv
+    // LEFT JOIN [${dbCompany}].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
+    // LEFT JOIN [${dbCompany}].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
+    // LEFT JOIN [${dbCompany}].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
+    // LEFT JOIN [${dbCompany}].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+    // -- Join dla formy płatności z faktury
+    // LEFT JOIN [${dbCompany}].[dbo].[DOC_ZAPLATA] AS zap_fv ON fv.FAKT_ZAPLATA_ID = zap_fv.DOC_ZAPLATA_ID
+    // -- Połączenie z kartoteką kontrahenta
+    // LEFT JOIN [${dbCompany}].[dbo].[KONTRAHENT] AS k ON fv.[KONTRAHENT_ID] = k.[KONTRAHENT_ID]
+    // -- Join dla domyślnej formy płatności przypisanej do kontrahenta w słowniku
+    // LEFT JOIN [${dbCompany}].[dbo].[DOC_ZAPLATA] AS zap_k ON k.[DOC_ZAPLATA_ID] = zap_k.[DOC_ZAPLATA_ID]
+
+    // WHERE fv.[NUMER] != 'POTEM'
+    //   AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
+
+    // GROUP BY
+    //        fv.[NUMER],
+    //        CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23),
+    //        CONVERT(VARCHAR(10), fv.[DATA_ZAPLATA], 23),
+    //        fv.[KONTR_NAZWA],
+    //        fv.[KONTR_NIP],
+    //        fv.[KONTRAHENT_ID],
+    //        fv.[NR_SZKODY],
+    //        fv.[NR_AUTORYZACJI],
+    //        fv.[UWAGI],
+    //        fv.[KOREKTA_NUMER],
+    //        zap_fv.[NAZWA],
+    //        us.[NAZWA] + ' ' + us.[IMIE],
+    //        auto.[REJESTRACJA],
+    //        auto.[NR_NADWOZIA],
+    //        tr.[WARTOSC_NAL],
+    //        -- Pola kontrahenta dodane do GROUP BY
+    //        k.[NAZWA],
+    //        zap_k.[NAZWA],
+    //        k.[IS_FIRMA],
+    //        k.[REGON],
+    //        k.[PESEL],
+    //        k.[PLATNOSCPOTEM_DNI],
+    //        k.[TELKOMORKA],
+    //        k.[TELEFON_NORM],
+    //        k.[E_MAIL],
+    //        k.[KOD_KONTR_LISTA],
+    //        k.[A_ULICA_EXT],
+    //        k.[A_NRDOMU],
+    //        k.[A_NRLOKALU],
+    //        k.[A_KOD],
+    //        k.[A_MIASTO],
+    //        k.[A_KRAJ],
+    //        k.[AK_ULICA_EXT],
+    //        k.[AK_NRDOMU],
+    //        k.[AK_NRLOKALU],
+    //        k.[AK_KOD],
+    //        k.[AK_MIASTO],
+    //        k.[AK_KRAJ];
+    // `;
+
+    return `
+SELECT 
+       -- DANE Z FAKTURY
        fv.[NUMER],
-        CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
-    CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
+       CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23) AS DATA_WYSTAWIENIA,
+       CONVERT(VARCHAR(10), fv.[DATA_ZAPLATA], 23) AS DATA_ZAPLATA,
        fv.[KONTR_NAZWA],
-       fv.[KONTR_NIP],
+       fv.[KONTR_NIP], 
+       fv.[KONTRAHENT_ID],
        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_BRUTTO] ELSE 0 END) AS WARTOSC_BRUTTO,
        SUM(CASE WHEN pos.[NAZWA] NOT LIKE '%Faktura zaliczkowa%' THEN pos.[WARTOSC_RABAT_NETTO] ELSE 0 END) AS WARTOSC_NETTO,
        fv.[NR_SZKODY],
        fv.[NR_AUTORYZACJI],
        fv.[UWAGI],
        fv.[KOREKTA_NUMER],
-       zap.[NAZWA] AS TYP_PLATNOSCI,
+       zap_fv.[NAZWA] AS TYP_PLATNOSCI,
        us.[NAZWA] + ' ' + us.[IMIE] AS PRZYGOTOWAL,
        auto.[REJESTRACJA],
        auto.[NR_NADWOZIA],
-       tr.[WARTOSC_NAL]
+       tr.[WARTOSC_NAL],
+
+       -- PODZAPYTANIE WYCIĄGAJĄCE TYLKO JEDNO CUSTOMER_ID (MAX POMIJA NULLe)
+       ckk.[CUSTOMER_ID],
+
+       -- DODATKOWE DANE KONTRAHENTA Z KARTOTEKI
+       k.[NAZWA] AS NAZWA_KONTRAHENTA_SLOWNIK,
+       zap_k.[NAZWA] AS PRZYPISANA_FORMA_PLATNOSCI,
+       k.[IS_FIRMA],
+       k.[REGON],
+       k.[PESEL],
+       k.[PLATNOSCPOTEM_DNI],
+       k.[TELKOMORKA],
+       k.[TELEFON_NORM],
+       k.[E_MAIL],
+       k.[KOD_KONTR_LISTA],
+       k.[A_ULICA_EXT],
+       k.[A_NRDOMU],
+       k.[A_NRLOKALU],
+       k.[A_KOD],
+       k.[A_MIASTO],
+       k.[A_KRAJ],
+       k.[AK_ULICA_EXT],
+       k.[AK_NRDOMU],
+       k.[AK_NRLOKALU],
+       k.[AK_KOD],
+       k.[AK_MIASTO],
+       k.[AK_KRAJ]
+
 FROM [${dbCompany}].[dbo].[FAKTDOC] AS fv
 LEFT JOIN [${dbCompany}].[dbo].[MYUSER] AS us ON fv.[MYUSER_PRZYGOTOWAL_ID] = us.[MYUSER_ID]
 LEFT JOIN [${dbCompany}].[dbo].[TRANSDOC] AS tr ON fv.[FAKTDOC_ID] = tr.[FAKTDOC_ID]
-LEFT JOIN [${dbCompany}].[dbo].[DOC_ZAPLATA] AS zap ON fv.FAKT_ZAPLATA_ID = zap.DOC_ZAPLATA_ID
 LEFT JOIN [${dbCompany}].[dbo].[AUTO] AS auto ON fv.AUTO_ID = auto.AUTO_ID
 LEFT JOIN [${dbCompany}].[dbo].[FAKTDOC_POS] AS pos ON fv.[FAKTDOC_ID] = pos.[FAKTDOC_ID]
+LEFT JOIN [${dbCompany}].[dbo].[DOC_ZAPLATA] AS zap_fv ON fv.FAKT_ZAPLATA_ID = zap_fv.DOC_ZAPLATA_ID
+LEFT JOIN [${dbCompany}].[dbo].[KONTRAHENT] AS k ON fv.[KONTRAHENT_ID] = k.[KONTRAHENT_ID]
+LEFT JOIN [${dbCompany}].[dbo].[DOC_ZAPLATA] AS zap_k ON k.[DOC_ZAPLATA_ID] = zap_k.[DOC_ZAPLATA_ID]
+
+-- ZMIANA TUTAJ: Łączymy się z pogrupowaną tabelą CKK
+LEFT JOIN (
+    SELECT KONTRAHENT_ID, MAX(CUSTOMER_ID) as CUSTOMER_ID
+    FROM [${dbCompany}].[dbo].[KONTRAHENT_CKK_CON]
+    WHERE CUSTOMER_ID IS NOT NULL
+    GROUP BY KONTRAHENT_ID
+) AS ckk ON fv.[KONTRAHENT_ID] = ckk.[KONTRAHENT_ID]
+
 WHERE fv.[NUMER] != 'POTEM' 
   AND fv.[DATA_WYSTAWIENIA] > '${twoDaysAgo}'
+
 GROUP BY 
        fv.[NUMER],
-       CONVERT(VARCHAR(10), [DATA_WYSTAWIENIA], 23),
-       CONVERT(VARCHAR(10), [DATA_ZAPLATA], 23),
-           fv.[KONTR_NAZWA],
+       CONVERT(VARCHAR(10), fv.[DATA_WYSTAWIENIA], 23),
+       CONVERT(VARCHAR(10), fv.[DATA_ZAPLATA], 23),
+       fv.[KONTR_NAZWA],
        fv.[KONTR_NIP],
+       fv.[KONTRAHENT_ID],
        fv.[NR_SZKODY],
        fv.[NR_AUTORYZACJI],
        fv.[UWAGI],
        fv.[KOREKTA_NUMER],
-       zap.[NAZWA],
+       zap_fv.[NAZWA],
        us.[NAZWA] + ' ' + us.[IMIE],
        auto.[REJESTRACJA],
        auto.[NR_NADWOZIA],
-       tr.[WARTOSC_NAL];
+       tr.[WARTOSC_NAL],
+       ckk.[CUSTOMER_ID],
+       k.[NAZWA],
+       zap_k.[NAZWA],
+       k.[IS_FIRMA],
+       k.[REGON],
+       k.[PESEL],
+       k.[PLATNOSCPOTEM_DNI],
+       k.[TELKOMORKA],
+       k.[TELEFON_NORM],
+       k.[E_MAIL],
+       k.[KOD_KONTR_LISTA],
+       k.[A_ULICA_EXT],
+       k.[A_NRDOMU],
+       k.[A_NRLOKALU],
+       k.[A_KOD],
+       k.[A_MIASTO],
+       k.[A_KRAJ],
+       k.[AK_ULICA_EXT],
+       k.[AK_NRDOMU],
+       k.[AK_NRLOKALU],
+       k.[AK_KOD],
+       k.[AK_MIASTO],
+       k.[AK_KRAJ];
 `;
   } else {
     return `    

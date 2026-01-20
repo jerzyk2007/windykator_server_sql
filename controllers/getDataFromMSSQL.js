@@ -11,6 +11,8 @@ const {
   updateSettlementDescriptionQuery,
   accountancyFKData,
 } = require("./sqlQueryForGetDataFromMSSQL");
+const { parsePhoneNumberFromString } = require("libphonenumber-js");
+const validator = require("validator");
 
 const today = new Date();
 today.setDate(today.getDate() - 2); // Odejmujemy 2 dni
@@ -28,7 +30,6 @@ const formatDate = (date) => {
 //pobieram dokumenty z bazy mssql AS
 const addDocumentToDatabase = async (type) => {
   const query = addDocumentToDatabaseQuery(type, twoDaysAgo);
-
   try {
     const documents = await msSqlQuery(query);
 
@@ -40,30 +41,330 @@ const addDocumentToDatabase = async (type) => {
       row.DATA_ZAPLATA = formatDate(row.DATA_ZAPLATA);
     });
 
-    for (const doc of addDep) {
-      await connect_SQL.query(
-        "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DO_ROZLICZENIA, DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          doc.NUMER,
-          doc.WARTOSC_BRUTTO,
-          doc.WARTOSC_NETTO,
-          doc.DZIAL,
-          doc.WARTOSC_NAL || 0,
-          doc.DATA_WYSTAWIENIA,
-          doc.DATA_ZAPLATA,
-          doc.KONTR_NAZWA,
-          doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
-          doc.REJESTRACJA,
-          doc.NR_SZKODY || null,
-          doc.UWAGI,
-          doc.TYP_PLATNOSCI || null,
-          doc.KONTR_NIP || null,
-          doc.NR_NADWOZIA,
-          doc.NR_AUTORYZACJI || null,
-          doc.KOREKTA_NUMER,
-          type,
-        ]
-      );
+    const processPhones = (rawPhones) => {
+      if (!rawPhones) return [];
+
+      const phoneArray = String(rawPhones)
+        .split(/[\s,;]+/)
+        .filter((p) => p.length >= 7);
+
+      return phoneArray.map((p) => {
+        // 1. Czyścimy numer z wszystkiego poza cyframi
+        let clean = p.replace(/\D/g, "");
+
+        // 2. Obsługa prefiksu krajowego 48 (jeśli numer ma 11 cyfr i zaczyna się od 48)
+        if (clean.length === 11 && clean.startsWith("48")) {
+          clean = clean.slice(2);
+        }
+
+        // 3. Próba parsowania przez bibliotekę
+        const phoneNumber = parsePhoneNumberFromString(clean, "PL");
+
+        let isMobile = false;
+        let isValid = false;
+        let finalValue = clean;
+
+        if (phoneNumber) {
+          isValid = phoneNumber.isValid();
+          isMobile = phoneNumber.getType() === "MOBILE";
+          finalValue = phoneNumber.nationalNumber;
+        }
+
+        // --- ZABEZPIECZENIE DLA POLSKICH NUMERÓW ---
+        // Jeśli biblioteka ma wątpliwości, sprawdzamy polskie prefiksy komórkowe
+        // Pula komórkowa w PL to: 45, 50, 51, 53, 57, 60, 66, 69, 72, 73, 78, 79, 88
+        const mobilePrefixes = [
+          "45",
+          "50",
+          "51",
+          "53",
+          "57",
+          "60",
+          "66",
+          "69",
+          "72",
+          "73",
+          "78",
+          "79",
+          "88",
+        ];
+        const prefix = finalValue.substring(0, 2);
+
+        if (mobilePrefixes.includes(prefix) && finalValue.length === 9) {
+          isMobile = true;
+          isValid = true;
+        }
+        // -------------------------------------------
+
+        return {
+          value: finalValue,
+          verified: false,
+          debtCollection: false,
+          invalid: !isValid || finalValue.length !== 9,
+          isMobile: isMobile,
+        };
+      });
+    };
+
+    const processEmails = (rawEmails) => {
+      if (!rawEmails) return [];
+      const emailArray = String(rawEmails)
+        .split(/[\s,;]+/)
+        .filter((e) => e.length > 3);
+
+      return emailArray.map((e) => {
+        const email = e.trim().toLowerCase();
+        const isValid = validator.isEmail(email);
+        return {
+          value: email,
+          verified: false,
+          debtCollection: false,
+          invalid: !isValid,
+        };
+      });
+    };
+
+    // if (type === "KRT" || type === "KEM") {
+    //   for (const doc of addDep) {
+    //     await connect_SQL.query(
+    //       "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL,  DATA_FV, TERMIN, KONTRAHENT, KONTRAHENT_ID, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    //       [
+    //         doc.NUMER,
+    //         doc.WARTOSC_BRUTTO,
+    //         doc.WARTOSC_NETTO,
+    //         doc.DZIAL,
+    //         // doc.WARTOSC_NAL || 0,
+    //         doc.DATA_WYSTAWIENIA,
+    //         doc.DATA_ZAPLATA,
+    //         doc.KONTR_NAZWA,
+    //         doc.KONTRAHENT_ID,
+    //         doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
+    //         doc.REJESTRACJA,
+    //         doc.NR_SZKODY || null,
+    //         doc.UWAGI,
+    //         doc.TYP_PLATNOSCI || null,
+    //         doc.KONTR_NIP || null,
+    //         doc.NR_NADWOZIA,
+    //         doc.NR_AUTORYZACJI || null,
+    //         doc.KOREKTA_NUMER,
+    //         type,
+    //       ]
+    //     );
+
+    //     // ZAPIS KONTRAHENTA (Słownik)
+    //     const rawPhoneString = `${doc.TELKOMORKA || ""} ${doc.TELEFON_NORM || ""}`;
+    //     const processedPhones = processPhones(rawPhoneString);
+
+    //     // Usuwamy duplikaty numerów w obrębie jednego kontrahenta
+    //     const uniquePhones = Array.from(
+    //       new Map(processedPhones.map((item) => [item.value, item])).values()
+    //     );
+
+    //     const processedEmails = processEmails(doc.E_MAIL);
+
+    //         await connect_SQL.query(
+    //           `INSERT INTO company_contractor (
+    //         AK_KOD, AK_KRAJ, AK_MIASTO, AK_NRDOMU, AK_NRLOKALU, AK_ULICA_EXT,
+    //         A_KOD, A_KRAJ, A_MIASTO, A_NRDOMU, A_NRLOKALU, A_ULICA_EXT, CUSTOMER_ID_CKK,
+    //         EMAIL, IS_FIRMA, KOD_KONTR_LISTA, KONTR_NIP, KONTRAHENT_ID,
+    //         NAZWA_KONTRAHENTA_SLOWNIK, PESEL, PLATNOSCPOTEM_DNI,
+    //         PRZYPISANA_FORMA_PLATNOSCI, REGON, SPOLKA, TELEFON
+    //     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    //     ON DUPLICATE KEY UPDATE
+    //         NAZWA_KONTRAHENTA_SLOWNIK = VALUES(NAZWA_KONTRAHENTA_SLOWNIK),
+    //         EMAIL = VALUES(EMAIL),
+    //         TELEFON = VALUES(TELEFON),
+    //         KONTR_NIP = VALUES(KONTR_NIP),
+    //         PLATNOSCPOTEM_DNI = VALUES(PLATNOSCPOTEM_DNI),
+    //         AK_MIASTO = VALUES(AK_MIASTO),
+    //         A_MIASTO = VALUES(A_MIASTO)`,
+    //           [
+    //             doc.AK_KOD || null,
+    //             doc.AK_KRAJ || null,
+    //             doc.AK_MIASTO || null,
+    //             doc.AK_NRDOMU || null,
+    //             doc.AK_NRLOKALU || null,
+    //             doc.AK_ULICA_EXT || null,
+    //             doc.A_KOD || null,
+    //             doc.A_KRAJ || null,
+    //             doc.A_MIASTO || null,
+    //             doc.A_NRDOMU || null,
+    //             doc.A_NRLOKALU || null,
+    //             doc.A_ULICA_EXT || null,
+    //             doc.CUSTOMER_ID || null,
+    //             JSON.stringify(processedEmails),
+    //             doc.IS_FIRMA ? 1 : 0,
+    //             doc.KOD_KONTR_LISTA || null,
+    //             doc.KONTR_NIP || null,
+    //             doc.KONTRAHENT_ID,
+    //             doc.NAZWA_KONTRAHENTA_SLOWNIK || null,
+    //             doc.PESEL || null,
+    //             doc.PLATNOSCPOTEM_DNI || null,
+    //             doc.PRZYPISANA_FORMA_PLATNOSCI || null,
+    //             doc.REGON || null,
+    //             type,
+    //             JSON.stringify(uniquePhones),
+    //           ]
+    //         );
+    //   }
+    // }
+    if (type === "KRT" || type === "KEM") {
+      for (const doc of addDep) {
+        // 1. Zapis dokumentu (Faktury)
+        await connect_SQL.query(
+          "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DATA_FV, TERMIN, KONTRAHENT, KONTRAHENT_ID, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            doc.NUMER,
+            doc.WARTOSC_BRUTTO,
+            doc.WARTOSC_NETTO,
+            doc.DZIAL,
+            doc.DATA_WYSTAWIENIA,
+            doc.DATA_ZAPLATA,
+            doc.KONTR_NAZWA,
+            doc.KONTRAHENT_ID,
+            doc.PRZYGOTOWAL || "Brak danych",
+            doc.REJESTRACJA,
+            doc.NR_SZKODY || null,
+            doc.UWAGI,
+            doc.TYP_PLATNOSCI || null,
+            doc.KONTR_NIP || null,
+            doc.NR_NADWOZIA,
+            doc.NR_AUTORYZACJI || null,
+            doc.KOREKTA_NUMER,
+            type,
+          ]
+        );
+
+        // 2. Przygotowanie nowych danych z obiektu 'doc'
+        const rawPhoneString = `${doc.TELKOMORKA || ""} ${doc.TELEFON_NORM || ""}`;
+        const newProcessedPhones = processPhones(rawPhoneString);
+        const newProcessedEmails = processEmails(doc.E_MAIL);
+
+        // 3. Pobranie istniejących danych
+        const [existing] = await connect_SQL.query(
+          "SELECT EMAIL, TELEFON FROM company_contractor WHERE KONTRAHENT_ID = ? AND SPOLKA = ?",
+          [doc.KONTRAHENT_ID, type]
+        );
+
+        let finalPhones = [];
+        let finalEmails = [];
+
+        if (existing.length > 0) {
+          // BEZPIECZNE PARSOWANIE TELEFONÓW
+          try {
+            const rawT = existing[0].TELEFON;
+            // Jeśli sterownik nie sparsował JSONa automatycznie (jest stringiem), parsujemy go sami
+            finalPhones =
+              typeof rawT === "string" ? JSON.parse(rawT) : rawT || [];
+          } catch (e) {
+            finalPhones = [];
+          }
+
+          // BEZPIECZNE PARSOWANIE MAILI
+          try {
+            const rawE = existing[0].EMAIL;
+            finalEmails =
+              typeof rawE === "string" ? JSON.parse(rawE) : rawE || [];
+          } catch (e) {
+            finalEmails = [];
+          }
+
+          // Dodatkowe upewnienie się, że to na pewno tablice
+          if (!Array.isArray(finalPhones)) finalPhones = [];
+          if (!Array.isArray(finalEmails)) finalEmails = [];
+
+          // MERGE TELEFONÓW: Dodaj tylko unikalne wartości
+          for (const newP of newProcessedPhones) {
+            if (!finalPhones.some((oldP) => oldP.value === newP.value)) {
+              finalPhones.push(newP);
+            }
+          }
+
+          // MERGE MAILI: Dodaj tylko unikalne wartości
+          for (const newE of newProcessedEmails) {
+            if (!finalEmails.some((oldE) => oldE.value === newE.value)) {
+              finalEmails.push(newE);
+            }
+          }
+        } else {
+          // Jeśli kontrahent nie istnieje, bierzemy po prostu nowe dane
+          finalPhones = newProcessedPhones;
+          finalEmails = newProcessedEmails;
+        }
+
+        // 4. Zapis do bazy (INSERT / UPDATE)
+        await connect_SQL.query(
+          `INSERT INTO company_contractor (
+        AK_KOD, AK_KRAJ, AK_MIASTO, AK_NRDOMU, AK_NRLOKALU, AK_ULICA_EXT,
+        A_KOD, A_KRAJ, A_MIASTO, A_NRDOMU, A_NRLOKALU, A_ULICA_EXT, CUSTOMER_ID_CKK,
+        EMAIL, IS_FIRMA, KOD_KONTR_LISTA, KONTR_NIP, KONTRAHENT_ID,
+        NAZWA_KONTRAHENTA_SLOWNIK, PESEL, PLATNOSCPOTEM_DNI,
+        PRZYPISANA_FORMA_PLATNOSCI, REGON, SPOLKA, TELEFON
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        NAZWA_KONTRAHENTA_SLOWNIK = VALUES(NAZWA_KONTRAHENTA_SLOWNIK),
+        EMAIL = VALUES(EMAIL),
+        TELEFON = VALUES(TELEFON),
+        KONTR_NIP = VALUES(KONTR_NIP),
+        PLATNOSCPOTEM_DNI = VALUES(PLATNOSCPOTEM_DNI),
+        AK_MIASTO = VALUES(AK_MIASTO),
+        A_MIASTO = VALUES(A_MIASTO),
+        CUSTOMER_ID_CKK = VALUES(CUSTOMER_ID_CKK)`,
+          [
+            doc.AK_KOD || null,
+            doc.AK_KRAJ || null,
+            doc.AK_MIASTO || null,
+            doc.AK_NRDOMU || null,
+            doc.AK_NRLOKALU || null,
+            doc.AK_ULICA_EXT || null,
+            doc.A_KOD || null,
+            doc.A_KRAJ || null,
+            doc.A_MIASTO || null,
+            doc.A_NRDOMU || null,
+            doc.A_NRLOKALU || null,
+            doc.A_ULICA_EXT || null,
+            doc.CUSTOMER_ID || null,
+            JSON.stringify(finalEmails),
+            doc.IS_FIRMA ? 1 : 0,
+            doc.KOD_KONTR_LISTA || null,
+            doc.KONTR_NIP || null,
+            doc.KONTRAHENT_ID,
+            doc.NAZWA_KONTRAHENTA_SLOWNIK || null,
+            doc.PESEL || null,
+            doc.PLATNOSCPOTEM_DNI || null,
+            doc.PRZYPISANA_FORMA_PLATNOSCI || null,
+            doc.REGON || null,
+            type,
+            JSON.stringify(finalPhones),
+          ]
+        );
+      }
+    } else if (type === "RAC") {
+      for (const doc of addDep) {
+        await connect_SQL.query(
+          "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL,  DATA_FV, TERMIN, KONTRAHENT, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            doc.NUMER,
+            doc.WARTOSC_BRUTTO,
+            doc.WARTOSC_NETTO,
+            doc.DZIAL,
+            // doc.WARTOSC_NAL || 0,
+            doc.DATA_WYSTAWIENIA,
+            doc.DATA_ZAPLATA,
+            doc.KONTR_NAZWA,
+            doc.PRZYGOTOWAL ? doc.PRZYGOTOWAL : "Brak danych",
+            doc.REJESTRACJA,
+            doc.NR_SZKODY || null,
+            doc.UWAGI,
+            doc.TYP_PLATNOSCI || null,
+            doc.KONTR_NIP || null,
+            doc.NR_NADWOZIA,
+            doc.NR_AUTORYZACJI || null,
+            doc.KOREKTA_NUMER,
+            type,
+          ]
+        );
+      }
     }
 
     return true;
