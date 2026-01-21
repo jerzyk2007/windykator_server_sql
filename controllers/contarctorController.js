@@ -44,13 +44,23 @@ const getReportData = async (req, res) => {
       [id, company]
     );
 
+    // const filteredData = result
+    //   ?.map((item) => ({
+    //     ...item,
+    //     docType: documentsType(item.NUMER_FV),
+    //   }))
+    //   .filter((item) =>
+    //     ["Faktura", "Faktura zaliczkowa"].includes(item.docType)
+    //   );
     const filteredData = result
       ?.map((item) => ({
         ...item,
         docType: documentsType(item.NUMER_FV),
       }))
-      .filter((item) =>
-        ["Faktura", "Faktura zaliczkowa"].includes(item.docType)
+      .filter(
+        (item) =>
+          ["Faktura", "Faktura zaliczkowa"].includes(item.docType) &&
+          item.TYP_PLATNOSCI?.toLowerCase().includes("przelew")
       );
     res.json(filteredData ?? []);
   } catch (error) {

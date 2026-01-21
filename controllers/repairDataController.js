@@ -50,10 +50,10 @@ const createKontrahentTable = async () => {
   }
 };
 
-const updateKontrahentIDKRT = async () => {
+const updateKontrahentIDKRT1 = async () => {
   try {
-    const BATCH_SIZE = 1000;
-    const MAX_ITERATIONS = 600;
+    const BATCH_SIZE = 400;
+    const MAX_ITERATIONS = 1000;
 
     // Zmienna, która będzie pamiętać, gdzie skończyliśmy w poprzedniej paczce
     let lastProcessedId = 0;
@@ -123,7 +123,143 @@ const updateKontrahentIDKRT = async () => {
   }
 };
 
+const updateKontrahentIDKRT = async () => {
+  try {
+    const BATCH_SIZE = 1000; // Możesz zwiększyć do 1000-2000
+    let lastProcessedId = 0;
+
+    // Pętla będzie działać dopóki są dane
+    while (true) {
+      console.log(
+        `Pobieram paczkę dokumentów powyżej ID: ${lastProcessedId}...`
+      );
+
+      const [documents] = await connect_SQL.query(
+        `SELECT id_document, NUMER_FV FROM company_documents 
+         WHERE FIRMA = 'KRT' 
+         AND DATA_FV > '2024-01-01' 
+         AND KONTRAHENT_ID IS NULL 
+         AND id_document > ? 
+         ORDER BY id_document ASC 
+         LIMIT ?`,
+        [lastProcessedId, BATCH_SIZE]
+      );
+
+      if (documents.length === 0) {
+        console.log("Koniec danych.");
+        break;
+      }
+
+      lastProcessedId = documents[documents.length - 1].id_document;
+      const numerFVArray = documents.map((doc) => doc.NUMER_FV);
+
+      try {
+        // 1. Pobieramy dane z MSSQL
+        // Używamy parametrów, aby uniknąć problemów z zapytaniem
+        const matches = await msSqlQuery(
+          `SELECT NUMER, KONTRAHENT_ID FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] 
+           WHERE NUMER IN (${numerFVArray.map((n) => `'${n}'`).join(",")})`
+        );
+
+        if (matches.length > 0) {
+          console.log(
+            `Znaleziono ${matches.length} dopasowań. Aktualizuję grupowo...`
+          );
+
+          // 2. OPTYMALIZACJA: Zamiast pętli z UPDATE, budujemy jedno zapytanie CASE
+          // lub wykonujemy aktualizacje równolegle (Promise.all)
+
+          // Opcja A: Równoległe Promise.all (Szybsze niż pętla for-await)
+          // Limitujemy konkurencję, żeby nie "zabić" puli połączeń
+          const updatePromises = matches
+            .filter((row) => row.KONTRAHENT_ID !== null)
+            .map((row) =>
+              connect_SQL.query(
+                "UPDATE company_documents SET KONTRAHENT_ID = ? WHERE NUMER_FV = ? AND FIRMA = 'KRT'",
+                [row.KONTRAHENT_ID, row.NUMER]
+              )
+            );
+
+          await Promise.all(updatePromises);
+        }
+      } catch (err) {
+        console.error(`Błąd w trakcie przetwarzania paczki:`, err);
+      }
+    }
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
 const updateKontrahentIDKEM = async () => {
+  try {
+    const BATCH_SIZE = 1000; // Możesz zwiększyć do 1000-2000
+    let lastProcessedId = 0;
+
+    // Pętla będzie działać dopóki są dane
+    while (true) {
+      console.log(
+        `Pobieram paczkę dokumentów powyżej ID: ${lastProcessedId}...`
+      );
+
+      const [documents] = await connect_SQL.query(
+        `SELECT id_document, NUMER_FV FROM company_documents 
+         WHERE FIRMA = 'KEM' 
+         AND DATA_FV > '2024-01-01' 
+         AND KONTRAHENT_ID IS NULL 
+         AND id_document > ? 
+         ORDER BY id_document ASC 
+         LIMIT ?`,
+        [lastProcessedId, BATCH_SIZE]
+      );
+
+      if (documents.length === 0) {
+        console.log("Koniec danych.");
+        break;
+      }
+
+      lastProcessedId = documents[documents.length - 1].id_document;
+      const numerFVArray = documents.map((doc) => doc.NUMER_FV);
+
+      try {
+        // 1. Pobieramy dane z MSSQL
+        // Używamy parametrów, aby uniknąć problemów z zapytaniem
+        const matches = await msSqlQuery(
+          `SELECT NUMER, KONTRAHENT_ID FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[FAKTDOC] 
+           WHERE NUMER IN (${numerFVArray.map((n) => `'${n}'`).join(",")})`
+        );
+
+        if (matches.length > 0) {
+          console.log(
+            `Znaleziono ${matches.length} dopasowań. Aktualizuję grupowo...`
+          );
+
+          // 2. OPTYMALIZACJA: Zamiast pętli z UPDATE, budujemy jedno zapytanie CASE
+          // lub wykonujemy aktualizacje równolegle (Promise.all)
+
+          // Opcja A: Równoległe Promise.all (Szybsze niż pętla for-await)
+          // Limitujemy konkurencję, żeby nie "zabić" puli połączeń
+          const updatePromises = matches
+            .filter((row) => row.KONTRAHENT_ID !== null)
+            .map((row) =>
+              connect_SQL.query(
+                "UPDATE company_documents SET KONTRAHENT_ID = ? WHERE NUMER_FV = ? AND FIRMA = 'KEM'",
+                [row.KONTRAHENT_ID, row.NUMER]
+              )
+            );
+
+          await Promise.all(updatePromises);
+        }
+      } catch (err) {
+        console.error(`Błąd w trakcie przetwarzania paczki:`, err);
+      }
+    }
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
+const xxxupdateKontrahentIDKEM = async () => {
   try {
     const BATCH_SIZE = 1000;
     const MAX_ITERATIONS = 50;
@@ -670,7 +806,7 @@ const xxxxxupdateTableContractorKEM1 = async () => {
   }
 };
 
-const updateTableContractorKRT = async () => {
+const xxxupdateTableContractorKRT = async () => {
   const BATCH_SIZE = 1000;
   const type = "KRT";
 
@@ -898,7 +1034,248 @@ const updateTableContractorKRT = async () => {
   }
 };
 
-const updateTableContractorKEM = async () => {
+const updateTableContractorKRT = async () => {
+  const BATCH_SIZE = 1000;
+  const type = "KRT";
+
+  // --- FUNKCJE POMOCNICZE WEWNĄTRZ ---
+  const processPhones = (rawPhones) => {
+    if (!rawPhones) return [];
+    const phoneArray = String(rawPhones)
+      .split(/[\s,;]+/)
+      .filter((p) => p.length >= 7);
+    const uniqueMap = new Map();
+    const mobilePrefixes = [
+      "45",
+      "50",
+      "51",
+      "53",
+      "57",
+      "60",
+      "66",
+      "69",
+      "72",
+      "73",
+      "78",
+      "79",
+      "88",
+    ];
+
+    for (const p of phoneArray) {
+      let clean = p.replace(/\D/g, "");
+      if (clean.length === 11 && clean.startsWith("48")) clean = clean.slice(2);
+      const phoneNumber = parsePhoneNumberFromString(clean, "PL");
+      let isMobile = false;
+      let isValid = false;
+      let finalValue = clean;
+
+      if (phoneNumber) {
+        isValid = phoneNumber.isValid();
+        isMobile = phoneNumber.getType() === "MOBILE";
+        finalValue = phoneNumber.nationalNumber;
+      }
+      const prefix = finalValue.substring(0, 2);
+      if (mobilePrefixes.includes(prefix) && finalValue.length === 9) {
+        isMobile = true;
+        isValid = true;
+      }
+      if (!uniqueMap.has(finalValue)) {
+        uniqueMap.set(finalValue, {
+          value: finalValue,
+          verified: false,
+          debtCollection: false,
+          invalid: !isValid || finalValue.length !== 9,
+          isMobile: isMobile,
+        });
+      }
+    }
+    return Array.from(uniqueMap.values());
+  };
+
+  const processEmails = (rawEmails) => {
+    if (!rawEmails) return [];
+    const emailArray = String(rawEmails)
+      .split(/[\s,;]+/)
+      .filter((e) => e.length > 3);
+    const uniqueMap = new Map();
+    for (const e of emailArray) {
+      const email = e.trim().toLowerCase();
+      const isValid = validator.isEmail(email);
+      if (!uniqueMap.has(email)) {
+        uniqueMap.set(email, {
+          value: email,
+          verified: false,
+          debtCollection: false,
+          invalid: !isValid,
+        });
+      }
+    }
+    return Array.from(uniqueMap.values());
+  };
+
+  const mergeData = (oldJson, newData) => {
+    try {
+      const oldData =
+        typeof oldJson === "string" ? JSON.parse(oldJson) : oldJson || [];
+      if (!Array.isArray(oldData)) return newData;
+
+      const map = new Map();
+      oldData.forEach((item) => {
+        if (item.value) map.set(item.value, item);
+      });
+      newData.forEach((item) => {
+        if (!map.has(item.value)) map.set(item.value, item);
+      });
+
+      return Array.from(map.values());
+    } catch (e) {
+      return newData;
+    }
+  };
+
+  try {
+    console.log("Pobieram listę KONTRAHENT_ID z MySQL...");
+    const [resultId] = await connect_SQL.query(
+      `SELECT DISTINCT KONTRAHENT_ID FROM company_documents 
+       WHERE DATA_FV > '2024-01-01' AND FIRMA = ? AND KONTRAHENT_ID IS NOT NULL`,
+      [type]
+    );
+
+    const idList = resultId.map((row) => row.KONTRAHENT_ID);
+    console.log(`Znaleziono ${idList.length} kontrahentów do przetworzenia.`);
+
+    for (let i = 0; i < idList.length; i += BATCH_SIZE) {
+      const batchIds = idList.slice(i, i + BATCH_SIZE);
+      console.log(
+        `Przetwarzam paczkę ${Math.floor(i / BATCH_SIZE) + 1} / ${Math.ceil(idList.length / BATCH_SIZE)}...`
+      );
+
+      // 1. MSSQL - Pobranie danych dla paczki
+      const mssqlResults = await msSqlQuery(`
+        SELECT k.KONTRAHENT_ID, k.TELKOMORKA, k.TELEFON_NORM, k.E_MAIL, k.IS_FIRMA,
+               k.NIP AS KONTR_NIP, k.REGON, k.PESEL, k.PLATNOSCPOTEM_DNI,
+               zap_k.NAZWA AS PRZYPISANA_FORMA_PLATNOSCI,
+               k.NAZWA AS NAZWA_KONTRAHENTA_SLOWNIK,
+               k.KOD_KONTR_LISTA, k.A_ULICA_EXT, k.A_NRDOMU, k.A_NRLOKALU,
+               k.A_KOD, k.A_MIASTO, k.A_KRAJ, k.AK_ULICA_EXT, k.AK_NRDOMU,
+               k.AK_NRLOKALU, k.AK_KOD, k.AK_MIASTO, k.AK_KRAJ, ckk.CUSTOMER_ID
+        FROM [AS3_KROTOSKI_PRACA].[dbo].[KONTRAHENT] k
+        LEFT JOIN [AS3_KROTOSKI_PRACA].[dbo].[DOC_ZAPLATA] zap_k ON k.DOC_ZAPLATA_ID = zap_k.DOC_ZAPLATA_ID
+        LEFT JOIN (
+            SELECT KONTRAHENT_ID, MAX(CUSTOMER_ID) AS CUSTOMER_ID
+            FROM [AS3_KROTOSKI_PRACA].[dbo].[KONTRAHENT_CKK_CON]
+            WHERE CUSTOMER_ID IS NOT NULL
+            GROUP BY KONTRAHENT_ID
+        ) ckk ON k.KONTRAHENT_ID = ckk.KONTRAHENT_ID
+        WHERE k.KONTRAHENT_ID IN (${batchIds.join(",")})
+      `);
+
+      // 2. MySQL - Pobranie istniejących rekordów dla paczki
+      const [existingRows] = await connect_SQL.query(
+        "SELECT KONTRAHENT_ID, EMAIL, TELEFON FROM company_contractor WHERE KONTRAHENT_ID IN (?) AND SPOLKA = ?",
+        [batchIds, type]
+      );
+      const existingMap = new Map(
+        existingRows.map((row) => [row.KONTRAHENT_ID, row])
+      );
+
+      // 3. Budowanie danych do wstawienia
+      const valuesToInsert = [];
+
+      for (const doc of mssqlResults) {
+        const rawPhoneString = `${doc.TELKOMORKA || ""} ${doc.TELEFON_NORM || ""}`;
+        const newPhones = processPhones(rawPhoneString);
+        const newEmails = processEmails(doc.E_MAIL);
+
+        let finalPhones = newPhones;
+        let finalEmails = newEmails;
+
+        const existing = existingMap.get(doc.KONTRAHENT_ID);
+        if (existing) {
+          finalPhones = mergeData(existing.TELEFON, newPhones);
+          finalEmails = mergeData(existing.EMAIL, newEmails);
+        }
+
+        valuesToInsert.push([
+          doc.AK_KOD || null,
+          doc.AK_KRAJ || null,
+          doc.AK_MIASTO || null,
+          doc.AK_NRDOMU || null,
+          doc.AK_NRLOKALU || null,
+          doc.AK_ULICA_EXT || null,
+          doc.A_KOD || null,
+          doc.A_KRAJ || null,
+          doc.A_MIASTO || null,
+          doc.A_NRDOMU || null,
+          doc.A_NRLOKALU || null,
+          doc.A_ULICA_EXT || null,
+          doc.CUSTOMER_ID || null,
+          JSON.stringify(finalEmails),
+          doc.IS_FIRMA ? 1 : 0,
+          doc.KOD_KONTR_LISTA || null,
+          doc.KONTR_NIP || null,
+          doc.KONTRAHENT_ID,
+          doc.NAZWA_KONTRAHENTA_SLOWNIK || null,
+          doc.PESEL || null,
+          doc.PLATNOSCPOTEM_DNI || null,
+          doc.PRZYPISANA_FORMA_PLATNOSCI || null,
+          doc.REGON || null,
+          type,
+          JSON.stringify(finalPhones),
+        ]);
+      }
+
+      // 4. Masowy UPDATE/INSERT
+      if (valuesToInsert.length > 0) {
+        await connect_SQL.query(
+          `INSERT INTO company_contractor (
+            AK_KOD, AK_KRAJ, AK_MIASTO, AK_NRDOMU, AK_NRLOKALU, AK_ULICA_EXT,
+            A_KOD, A_KRAJ, A_MIASTO, A_NRDOMU, A_NRLOKALU, A_ULICA_EXT, CUSTOMER_ID_CKK,
+            EMAIL, IS_FIRMA, KOD_KONTR_LISTA, KONTR_NIP, KONTRAHENT_ID,
+            NAZWA_KONTRAHENTA_SLOWNIK, PESEL, PLATNOSCPOTEM_DNI,
+            PRZYPISANA_FORMA_PLATNOSCI, REGON, SPOLKA, TELEFON
+          ) VALUES ? 
+          ON DUPLICATE KEY UPDATE
+            NAZWA_KONTRAHENTA_SLOWNIK = VALUES(NAZWA_KONTRAHENTA_SLOWNIK),
+            EMAIL = VALUES(EMAIL),
+            TELEFON = VALUES(TELEFON),
+            KONTR_NIP = VALUES(KONTR_NIP),
+            PLATNOSCPOTEM_DNI = VALUES(PLATNOSCPOTEM_DNI),
+            AK_MIASTO = VALUES(AK_MIASTO),
+            A_MIASTO = VALUES(A_MIASTO),
+            CUSTOMER_ID_CKK = VALUES(CUSTOMER_ID_CKK)`,
+          [valuesToInsert]
+        );
+      }
+    }
+    console.log("AKTUALIZACJA ZAKOŃCZONA SUKCESEM.");
+  } catch (error) {
+    console.error("Błąd krytyczny:", error);
+  }
+};
+
+// Funkcja pomocnicza do merge'owania JSONów (wyciągnięta na zewnątrz dla czytelności)
+function mergeData(oldJson, newData) {
+  try {
+    const oldData =
+      typeof oldJson === "string" ? JSON.parse(oldJson) : oldJson || [];
+    if (!Array.isArray(oldData)) return newData;
+
+    const map = new Map();
+    oldData.forEach((item) => {
+      if (item.value) map.set(item.value, item);
+    });
+    newData.forEach((item) => {
+      if (!map.has(item.value)) map.set(item.value, item);
+    });
+
+    return Array.from(map.values());
+  } catch (e) {
+    return newData;
+  }
+}
+
+const xxxupdateTableContractorKEM = async () => {
   const BATCH_SIZE = 1000;
   const type = "KEM";
 
@@ -1123,6 +1500,232 @@ const updateTableContractorKEM = async () => {
     console.log("AKTUALIZACJA ZAKOŃCZONA SUKCESEM.");
   } catch (error) {
     console.error("Błąd krytyczny:", error);
+  }
+};
+
+const updateTableContractorKEM = async () => {
+  const BATCH_SIZE = 1000;
+  const type = "KEM";
+
+  // --- FUNKCJE POMOCNICZE ---
+  const processPhones = (rawPhones) => {
+    if (!rawPhones) return [];
+    const phoneArray = String(rawPhones)
+      .split(/[\s,;]+/)
+      .filter((p) => p.length >= 7);
+    const uniqueMap = new Map();
+    const mobilePrefixes = [
+      "45",
+      "50",
+      "51",
+      "53",
+      "57",
+      "60",
+      "66",
+      "69",
+      "72",
+      "73",
+      "78",
+      "79",
+      "88",
+    ];
+
+    for (const p of phoneArray) {
+      let clean = p.replace(/\D/g, "");
+      if (clean.length === 11 && clean.startsWith("48")) clean = clean.slice(2);
+      const phoneNumber = parsePhoneNumberFromString(clean, "PL");
+      let isMobile = false;
+      let isValid = false;
+      let finalValue = clean;
+
+      if (phoneNumber) {
+        isValid = phoneNumber.isValid();
+        isMobile = phoneNumber.getType() === "MOBILE";
+        finalValue = phoneNumber.nationalNumber;
+      }
+      const prefix = finalValue.substring(0, 2);
+      if (mobilePrefixes.includes(prefix) && finalValue.length === 9) {
+        isMobile = true;
+        isValid = true;
+      }
+      if (!uniqueMap.has(finalValue)) {
+        uniqueMap.set(finalValue, {
+          value: finalValue,
+          verified: false,
+          debtCollection: false,
+          invalid: !isValid || finalValue.length !== 9,
+          isMobile: isMobile,
+        });
+      }
+    }
+    return Array.from(uniqueMap.values());
+  };
+
+  const processEmails = (rawEmails) => {
+    if (!rawEmails) return [];
+    const emailArray = String(rawEmails)
+      .split(/[\s,;]+/)
+      .filter((e) => e.length > 3);
+    const uniqueMap = new Map();
+    for (const e of emailArray) {
+      const email = e.trim().toLowerCase();
+      const isValid = validator.isEmail(email);
+      if (!uniqueMap.has(email)) {
+        uniqueMap.set(email, {
+          value: email,
+          verified: false,
+          debtCollection: false,
+          invalid: !isValid,
+        });
+      }
+    }
+    return Array.from(uniqueMap.values());
+  };
+
+  const mergeData = (oldJson, newData) => {
+    try {
+      const oldData =
+        typeof oldJson === "string" ? JSON.parse(oldJson) : oldJson || [];
+      if (!Array.isArray(oldData)) return newData;
+
+      const map = new Map();
+      oldData.forEach((item) => {
+        if (item.value) map.set(item.value, item);
+      });
+      newData.forEach((item) => {
+        if (!map.has(item.value)) map.set(item.value, item);
+      });
+
+      return Array.from(map.values());
+    } catch (e) {
+      return newData;
+    }
+  };
+
+  try {
+    // 1. POBIERAMY LISTĘ ID Z MYSQL
+    console.log(`Pobieram listę KONTRAHENT_ID dla ${type} z MySQL...`);
+    const [resultId] = await connect_SQL.query(
+      `SELECT DISTINCT KONTRAHENT_ID FROM company_documents 
+       WHERE DATA_FV > '2024-01-01' AND FIRMA = ? AND KONTRAHENT_ID IS NOT NULL`,
+      [type]
+    );
+
+    const idList = resultId.map((row) => row.KONTRAHENT_ID);
+    console.log(`Znaleziono ${idList.length} kontrahentów do aktualizacji.`);
+
+    // 2. PRZETWARZANIE W PACZKACH
+    for (let i = 0; i < idList.length; i += BATCH_SIZE) {
+      const batchIds = idList.slice(i, i + BATCH_SIZE);
+      console.log(
+        `Przetwarzam paczkę ${Math.floor(i / BATCH_SIZE) + 1} / ${Math.ceil(idList.length / BATCH_SIZE)}...`
+      );
+
+      // 3. MSSQL - Pobranie danych (inna baza: AS3_PRACA_KROTOSKI_ELECTROMOBILITY)
+      const query = `
+        SELECT
+            k.KONTRAHENT_ID, k.TELKOMORKA, k.TELEFON_NORM, k.E_MAIL, k.IS_FIRMA,
+            k.NIP AS KONTR_NIP, k.REGON, k.PESEL, k.PLATNOSCPOTEM_DNI,
+            zap_k.NAZWA AS PRZYPISANA_FORMA_PLATNOSCI,
+            k.NAZWA AS NAZWA_KONTRAHENTA_SLOWNIK,
+            k.KOD_KONTR_LISTA, k.A_ULICA_EXT, k.A_NRDOMU, k.A_NRLOKALU,
+            k.A_KOD, k.A_MIASTO, k.A_KRAJ, k.AK_ULICA_EXT, k.AK_NRDOMU,
+            k.AK_NRLOKALU, k.AK_KOD, k.AK_MIASTO, k.AK_KRAJ,
+            ckk.CUSTOMER_ID
+        FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[KONTRAHENT] k
+        LEFT JOIN [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[DOC_ZAPLATA] zap_k ON k.DOC_ZAPLATA_ID = zap_k.DOC_ZAPLATA_ID
+        LEFT JOIN (
+            SELECT KONTRAHENT_ID, MAX(CUSTOMER_ID) AS CUSTOMER_ID
+            FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[KONTRAHENT_CKK_CON]
+            WHERE CUSTOMER_ID IS NOT NULL
+            GROUP BY KONTRAHENT_ID
+        ) ckk ON k.KONTRAHENT_ID = ckk.KONTRAHENT_ID
+        WHERE k.KONTRAHENT_ID IN (${batchIds.join(",")})
+      `;
+
+      const mssqlResults = await msSqlQuery(query);
+
+      // 4. MYSQL - Pobranie istniejących danych (maile/telefony) do merge'owania
+      const [existingRows] = await connect_SQL.query(
+        "SELECT KONTRAHENT_ID, EMAIL, TELEFON FROM company_contractor WHERE KONTRAHENT_ID IN (?) AND SPOLKA = ?",
+        [batchIds, type]
+      );
+      const existingMap = new Map(
+        existingRows.map((row) => [row.KONTRAHENT_ID, row])
+      );
+
+      // 5. Budowanie tablicy wartości do masowego insertu
+      const valuesToInsert = [];
+
+      for (const doc of mssqlResults) {
+        const rawPhoneString = `${doc.TELKOMORKA || ""} ${doc.TELEFON_NORM || ""}`;
+        const newPhones = processPhones(rawPhoneString);
+        const newEmails = processEmails(doc.E_MAIL);
+
+        let finalPhones = newPhones;
+        let finalEmails = newEmails;
+
+        const existing = existingMap.get(doc.KONTRAHENT_ID);
+        if (existing) {
+          finalPhones = mergeData(existing.TELEFON, newPhones);
+          finalEmails = mergeData(existing.EMAIL, newEmails);
+        }
+
+        valuesToInsert.push([
+          doc.AK_KOD || null,
+          doc.AK_KRAJ || null,
+          doc.AK_MIASTO || null,
+          doc.AK_NRDOMU || null,
+          doc.AK_NRLOKALU || null,
+          doc.AK_ULICA_EXT || null,
+          doc.A_KOD || null,
+          doc.A_KRAJ || null,
+          doc.A_MIASTO || null,
+          doc.A_NRDOMU || null,
+          doc.A_NRLOKALU || null,
+          doc.A_ULICA_EXT || null,
+          doc.CUSTOMER_ID || null,
+          JSON.stringify(finalEmails),
+          doc.IS_FIRMA ? 1 : 0,
+          doc.KOD_KONTR_LISTA || null,
+          doc.KONTR_NIP || null,
+          doc.KONTRAHENT_ID,
+          doc.NAZWA_KONTRAHENTA_SLOWNIK || null,
+          doc.PESEL || null,
+          doc.PLATNOSCPOTEM_DNI || null,
+          doc.PRZYPISANA_FORMA_PLATNOSCI || null,
+          doc.REGON || null,
+          type,
+          JSON.stringify(finalPhones),
+        ]);
+      }
+
+      // 6. MASOWA AKTUALIZACJA W MYSQL
+      if (valuesToInsert.length > 0) {
+        await connect_SQL.query(
+          `INSERT INTO company_contractor (
+            AK_KOD, AK_KRAJ, AK_MIASTO, AK_NRDOMU, AK_NRLOKALU, AK_ULICA_EXT,
+            A_KOD, A_KRAJ, A_MIASTO, A_NRDOMU, A_NRLOKALU, A_ULICA_EXT, CUSTOMER_ID_CKK,
+            EMAIL, IS_FIRMA, KOD_KONTR_LISTA, KONTR_NIP, KONTRAHENT_ID,
+            NAZWA_KONTRAHENTA_SLOWNIK, PESEL, PLATNOSCPOTEM_DNI,
+            PRZYPISANA_FORMA_PLATNOSCI, REGON, SPOLKA, TELEFON
+          ) VALUES ? 
+          ON DUPLICATE KEY UPDATE
+            NAZWA_KONTRAHENTA_SLOWNIK = VALUES(NAZWA_KONTRAHENTA_SLOWNIK),
+            EMAIL = VALUES(EMAIL),
+            TELEFON = VALUES(TELEFON),
+            KONTR_NIP = VALUES(KONTR_NIP),
+            PLATNOSCPOTEM_DNI = VALUES(PLATNOSCPOTEM_DNI),
+            AK_MIASTO = VALUES(AK_MIASTO),
+            A_MIASTO = VALUES(A_MIASTO),
+            CUSTOMER_ID_CKK = VALUES(CUSTOMER_ID_CKK)`,
+          [valuesToInsert]
+        );
+      }
+    }
+    console.log(`AKTUALIZACJA ${type} ZAKOŃCZONA SUKCESEM.`);
+  } catch (error) {
+    console.error(`Błąd krytyczny w updateTableContractor${type}:`, error);
   }
 };
 
