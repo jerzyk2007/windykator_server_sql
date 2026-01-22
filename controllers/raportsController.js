@@ -447,18 +447,12 @@ const getRaportDifferncesAsFk = async (req, res) => {
   try {
     const documents = await getDataDocuments(id_user, "different", profile);
     const prevBusinessDayStr = getPreviousBusinessDayString();
+    const rawData = documents?.data || [];
 
-    const filteredData = documents?.data
-      ?.filter((doc) => {
-        const docDateStr = doc.DATA_FV; // np. '2025-10-09'
-        return (
-          documentsType(doc.NUMER_FV) === "Faktura" &&
-          docDateStr < prevBusinessDayStr && // porównujemy tylko same daty jako stringi
-          doc.DO_ROZLICZENIA > 0 &&
-          doc.FK_DO_ROZLICZENIA === 0
-        );
-      })
-      .map((doc) => ({
+    const prepareData = (data) => {
+      if (!data || data.length === 0) return [];
+
+      const mapped = data.map((doc) => ({
         NUMER_FV: doc.NUMER_FV,
         DATA_FV: doc.DATA_FV,
         TERMIN: doc.TERMIN,
@@ -471,38 +465,64 @@ const getRaportDifferncesAsFk = async (req, res) => {
         COMPANY: doc.FIRMA,
       }));
 
-    // --- krok 1: sprawdź unikalne wartości ---
-    const uniqueDZIAL = [...new Set(filteredData.map((d) => d.DZIAL))];
-    const uniqueAREA = [...new Set(filteredData.map((d) => d.AREA))];
-    const uniqueCOMPANY = [...new Set(filteredData.map((d) => d.COMPANY))];
+      const uniqueDZIAL = [...new Set(mapped.map((d) => d.DZIAL))];
+      const uniqueAREA = [...new Set(mapped.map((d) => d.AREA))];
+      const uniqueCOMPANY = [...new Set(mapped.map((d) => d.COMPANY))];
 
-    // --- krok 2: usuń klucze, które mają tylko jedną unikalną wartość ---
-    const finalData = filteredData.map((d) => {
-      const obj = { ...d };
-      if (uniqueDZIAL.length === 1) delete obj.DZIAL;
-      if (uniqueAREA.length === 1) delete obj.AREA;
-      if (uniqueCOMPANY.length === 1) delete obj.COMPANY;
-      return obj;
+      return mapped.map((d) => {
+        const obj = { ...d };
+        if (uniqueDZIAL.length === 1) delete obj.DZIAL;
+        if (uniqueAREA.length === 1) delete obj.AREA;
+        if (uniqueCOMPANY.length === 1) delete obj.COMPANY;
+        return obj;
+      });
+    };
+
+    // --- GRUPA 1: AS = 0 (Rozliczone w AS, ale w FK jeszcze wisi) ---
+    const dataAsZero = rawData.filter((doc) => {
+      return (
+        documentsType(doc.NUMER_FV) === "Faktura" &&
+        doc.DATA_FV < prevBusinessDayStr &&
+        doc.FK_DO_ROZLICZENIA > 0 &&
+        doc.DO_ROZLICZENIA === 0
+      );
+    });
+
+    // --- GRUPA 2: FK = 0 (Rozliczone w FK, ale w AS jeszcze wisi) ---
+    const dataFkZero = rawData.filter((doc) => {
+      return (
+        documentsType(doc.NUMER_FV) === "Faktura" &&
+        doc.DATA_FV < prevBusinessDayStr &&
+        doc.DO_ROZLICZENIA > 0 &&
+        doc.FK_DO_ROZLICZENIA === 0
+      );
+    });
+
+    // --- GRUPA 3: Różnice (Wszystkie niezgodności, ale bez obustronnych zer) ---
+    const dataDifferences = rawData.filter((doc) => {
+      return (
+        documentsType(doc.NUMER_FV) === "Faktura" &&
+        doc.DATA_FV < prevBusinessDayStr &&
+        // Warunek: oba muszą być różne od zera
+        doc.DO_ROZLICZENIA !== 0 &&
+        doc.FK_DO_ROZLICZENIA !== 0
+      );
+    });
+
+    const noFiltres = rawData.filter((doc) => {
+      return (
+        documentsType(doc.NUMER_FV) === "Faktura" &&
+        doc.DATA_FV < prevBusinessDayStr
+      );
     });
 
     const cleanData = [
-      {
-        name: "Różnice",
-        data: finalData,
-      },
+      { name: "AS = 0", data: prepareData(dataAsZero) },
+      { name: "FK = 0", data: prepareData(dataFkZero) },
+      { name: "Różnice", data: prepareData(dataDifferences) },
+      { name: "Brak filtrów", data: prepareData(noFiltres) },
     ];
 
-    // jeśli użytkownik ma id 130 lub 131 — dodaj drugi obiekt
-    if (
-      Number(id_user) === 130 ||
-      Number(id_user) === 131 ||
-      Number(id_user) === 117
-    ) {
-      cleanData.push({
-        name: "Bez filtrów",
-        data: getRaportDifferncesAsFkAnia_Julia(documents.data), // tu możesz wstawić inne dane, jeśli trzeba
-      });
-    }
     const excelBuffer = await differencesAsFk(cleanData);
 
     res.setHeader(
@@ -513,10 +533,8 @@ const getRaportDifferncesAsFk = async (req, res) => {
     res.send(excelBuffer);
     res.end();
   } catch (error) {
-    logEvents(
-      `raportsController, getRaportDifferncesAsFk: ${error}`,
-      "reqServerErrors.txt"
-    );
+    logEvents(`documentsController: ${error}`, "reqServerErrors.txt");
+    return res.status(500).json({ error: "Błąd serwera" });
   }
 };
 

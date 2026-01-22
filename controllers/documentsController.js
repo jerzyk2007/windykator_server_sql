@@ -73,11 +73,11 @@ const getDataDocuments = async (id_user, info, profile) => {
 
   try {
     const [findUser] = await connect_SQL.query(
-      "SELECT departments FROM company_users WHERE id_user = ?",
+      "SELECT departments, roles, company FROM company_users WHERE id_user = ?",
       [id_user]
     );
 
-    const { departments = {} } = findUser[0] || {};
+    const { departments = {}, roles = {}, company = [] } = findUser[0] || {};
     const allDepartments = departments[userType] || [];
 
     if (!allDepartments.length) {
@@ -90,6 +90,12 @@ const getDataDocuments = async (id_user, info, profile) => {
           `(D.DZIAL = '${dep.department}' AND D.FIRMA = '${dep.company}')`
       )
       .join(" OR ")})`;
+
+    //specjalny kod dla roles Raports: 400 żeby pobierać wszytskie dane róznic AS - FK
+    const permissionsRolesRaports = `(${company
+      .map((item) => `(D.FIRMA = '${item}')`)
+      .join(" OR ")})`;
+    const raportsRoles = roles.hasOwnProperty("Raports") ? true : false;
 
     const filters = {
       actual: "AND S.NALEZNOSC > 0",
@@ -114,16 +120,26 @@ const getDataDocuments = async (id_user, info, profile) => {
         AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
       `,
+      // different: `
+      //   AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0
+      // `,
       different: `
-        AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0
-      `,
+    AND ROUND(IFNULL(S.NALEZNOSC, 0), 2) <> ROUND(IFNULL(FS.DO_ROZLICZENIA, 0), 2)
+  `,
     };
 
     if (!filters.hasOwnProperty(info)) {
       return { data: [] };
     }
 
-    const finalQuery = `
+    const finalQuery =
+      raportsRoles && company.length
+        ? `
+      ${getAllDocumentsSQL}
+      WHERE ${permissionsRolesRaports}
+      ${filters[info]}
+    `
+        : `
       ${getAllDocumentsSQL}
       WHERE ${permissionCondition}
       ${filters[info]}
