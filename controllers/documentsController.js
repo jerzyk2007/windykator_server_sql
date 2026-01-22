@@ -70,7 +70,7 @@ LEFT JOIN company_join_items AS JI
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info, profile) => {
   const userType = userProfile(profile);
-
+  console.log(info);
   try {
     const [findUser] = await connect_SQL.query(
       "SELECT departments, roles, company FROM company_users WHERE id_user = ?",
@@ -133,7 +133,7 @@ const getDataDocuments = async (id_user, info, profile) => {
     }
 
     const finalQuery =
-      raportsRoles && company.length
+      raportsRoles && company.length && info === "different"
         ? `
       ${getAllDocumentsSQL}
       WHERE ${permissionsRolesRaports}
