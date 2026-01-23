@@ -11,4 +11,18 @@ router
     vindex.getDataTable
   );
 
+router
+  .route("/get-single-document/:docID")
+  .get(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    vindex.getSingleDocument
+  );
+
+router
+  .route("/change-single-document")
+  .patch(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    vindex.changeSingleDocument
+  );
+
 module.exports = router;

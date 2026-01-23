@@ -87,6 +87,57 @@ const getDataTable = async (req, res) => {
   }
 };
 
+const getSingleDocument = async (req, res) => {
+  const { docID } = req.params;
+  try {
+    console.log(docID);
+    const [singleDocument] = await connect_SQL.query(
+      `SELECT
+  D.id_document,
+  D.NUMER_FV,
+  D.DATA_FV,
+   D.TERMIN,
+  D.BRUTTO,
+   D.NETTO,
+    IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA,
+  IFNULL(FS.DO_ROZLICZENIA, 0) AS FK_DO_ROZLICZENIA,
+   D.KONTRAHENT,
+   D.KONTRAHENT_ID,
+  D.DZIAL
+ FROM company_documents AS D
+ LEFT JOIN company_settlements AS S
+  ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
+  LEFT JOIN company_fk_settlements AS FS
+  ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA
+    WHERE D.id_document = ?`,
+      [docID]
+    );
+    // res.json(singleDocument.length ? singleDocsingleDocument[0] : {});
+    res.json(singleDocument.length ? { singleDoc: singleDocument[0] } : {});
+  } catch (error) {
+    logEvents(
+      `insuranceController, getSingleDocument: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const changeSingleDocument = async (req, res) => {
+  const { id_document, document, chatLog } = req.body;
+  try {
+    console.log(id_document, document, chatLog);
+    res.end();
+  } catch (error) {
+    logEvents(
+      `insuranceController, changeSingleDocument: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
 module.exports = {
   getDataTable,
+  getSingleDocument,
+  changeSingleDocument,
 };

@@ -72,8 +72,27 @@ const getReportData = async (req, res) => {
   }
 };
 
+const getSingleContractor = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await connect_SQL.query(
+      `SELECT * FROM company_contractor  WHERE id_kontrahent = ?`,
+      [id]
+    );
+
+    return res.json(result[0] ?? []);
+  } catch (error) {
+    logEvents(
+      `contractorController, getSingleContractor: ${error.message}`,
+      "reqServerErrors.txt"
+    );
+    res.status(500).json([]);
+  }
+};
+
 module.exports = {
   getContarctorList,
   changeDataContractor,
   getReportData,
+  getSingleContractor,
 };

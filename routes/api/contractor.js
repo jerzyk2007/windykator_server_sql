@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const contractor = require("../../controllers/contarctorController");
+const contractor = require("../../controllers/contractorController");
 const ROLES_LIST = require("../../config/roles_list");
 const verifyRoles = require("../../middleware/verifyRoles");
 
@@ -9,6 +9,13 @@ router
   .get(
     verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
     contractor.getContarctorList
+  );
+
+router
+  .route("/get-single-contractor/:id")
+  .get(
+    verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin),
+    contractor.getSingleContractor
   );
 
 router

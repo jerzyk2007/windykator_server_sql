@@ -119,7 +119,8 @@ const getSingleDocument = async (req, res) => {
       "SELECT CLD.*, CLDS.* FROM company_law_documents as CLD LEFT JOIN company_law_documents_settlements as CLDS ON CLD.NUMER_DOKUMENTU = CLDS.NUMER_DOKUMENTU_FK WHERE CLD.id_document = ?",
       [docID]
     );
-    res.json(singleDocument.length ? singleDocument[0] : {});
+    // res.json(singleDocument.length ? singleDocsingleDocument[0] : {});
+    res.json(singleDocument.length ? { singleDoc: singleDocument[0] } : {});
   } catch (error) {
     logEvents(
       `lawPartnerController, getSingleDocument: ${error}`,

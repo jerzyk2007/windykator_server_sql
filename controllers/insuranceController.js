@@ -98,7 +98,8 @@ const getSingleDocument = async (req, res) => {
       "SELECT * FROM company_insurance_documents WHERE id_document = ?",
       [docID]
     );
-    res.json(singleDocument.length ? singleDocument[0] : {});
+    // res.json(singleDocument.length ? singleDocument[0] : {});
+    res.json(singleDocument.length ? { singleDoc: singleDocument[0] } : {});
   } catch (error) {
     logEvents(
       `insuranceController, getSingleDocument: ${error}`,
