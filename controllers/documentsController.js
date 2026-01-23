@@ -70,7 +70,6 @@ LEFT JOIN company_join_items AS JI
 //pobiera faktury wg upranień uzytkownika z uwględnienień actual/archive/all SQL
 const getDataDocuments = async (id_user, info, profile) => {
   const userType = userProfile(profile);
-  console.log(info);
   try {
     const [findUser] = await connect_SQL.query(
       "SELECT departments, roles, company FROM company_users WHERE id_user = ?",
@@ -84,12 +83,16 @@ const getDataDocuments = async (id_user, info, profile) => {
       return { data: [] };
     }
 
-    const permissionCondition = `(${allDepartments
-      .map(
-        (dep) =>
-          `(D.DZIAL = '${dep.department}' AND D.FIRMA = '${dep.company}')`
-      )
-      .join(" OR ")})`;
+    // const permissionCondition = `(${allDepartments
+    //   .map(
+    //     (dep) =>
+    //       `(D.DZIAL = '${dep.department}' AND D.FIRMA = '${dep.company}')`
+    //   )
+    //   .join(" OR ")})`;
+
+    const permissionCondition = `(D.DZIAL, D.FIRMA) IN (${allDepartments
+      .map((dep) => `('${dep.department}', '${dep.company}')`)
+      .join(", ")})`;
 
     //specjalny kod dla roles Raports: 400 żeby pobierać wszytskie dane róznic AS - FK
     const permissionsRolesRaports = `(${company
@@ -123,9 +126,13 @@ const getDataDocuments = async (id_user, info, profile) => {
       // different: `
       //   AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0
       // `,
+      //     different: `
+      //   AND ROUND(IFNULL(S.NALEZNOSC, 0), 2) <> ROUND(IFNULL(FS.DO_ROZLICZENIA, 0), 2)
+      // `,
       different: `
-    AND ROUND(IFNULL(S.NALEZNOSC, 0), 2) <> ROUND(IFNULL(FS.DO_ROZLICZENIA, 0), 2)
-  `,
+  AND S.NALEZNOSC != FS.DO_ROZLICZENIA 
+  AND ABS(IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) > 0.01
+`,
     };
 
     if (!filters.hasOwnProperty(info)) {

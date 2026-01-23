@@ -404,43 +404,43 @@ const getPreviousBusinessDayString = () => {
   return result.toISOString().split("T")[0];
 };
 
-const getRaportDifferncesAsFkAnia_Julia = (docData) => {
-  const filteredData = docData
-    ?.filter((doc) => documentsType(doc.NUMER_FV) === "Faktura")
-    .map((doc) => {
-      // if (doc.DO_ROZLICZENIA > 0 && doc.FK_DO_ROZLICZENIA === 0) {
-      if (doc.DO_ROZLICZENIA > 0) {
-        return {
-          NUMER_FV: doc.NUMER_FV,
-          DATA_FV: doc.DATA_FV,
-          TERMIN: doc.TERMIN,
-          BRUTTO: doc.BRUTTO,
-          KONTR: doc.KONTRAHENT,
-          AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
-          FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
-          DZIAL: doc.DZIAL,
-          AREA: doc.AREA,
-          COMPANY: doc.FIRMA,
-        };
-      }
-    })
-    .filter(Boolean);
+// const getRaportDifferncesAsFkAnia_Julia = (docData) => {
+//   const filteredData = docData
+//     ?.filter((doc) => documentsType(doc.NUMER_FV) === "Faktura")
+//     .map((doc) => {
+//       // if (doc.DO_ROZLICZENIA > 0 && doc.FK_DO_ROZLICZENIA === 0) {
+//       if (doc.DO_ROZLICZENIA > 0) {
+//         return {
+//           NUMER_FV: doc.NUMER_FV,
+//           DATA_FV: doc.DATA_FV,
+//           TERMIN: doc.TERMIN,
+//           BRUTTO: doc.BRUTTO,
+//           KONTR: doc.KONTRAHENT,
+//           AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
+//           FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
+//           DZIAL: doc.DZIAL,
+//           AREA: doc.AREA,
+//           COMPANY: doc.FIRMA,
+//         };
+//       }
+//     })
+//     .filter(Boolean);
 
-  // --- krok 1: sprawdź unikalne wartości ---
-  const uniqueDZIAL = [...new Set(filteredData.map((d) => d.DZIAL))];
-  const uniqueAREA = [...new Set(filteredData.map((d) => d.AREA))];
-  const uniqueCOMPANY = [...new Set(filteredData.map((d) => d.COMPANY))];
+//   // --- krok 1: sprawdź unikalne wartości ---
+//   const uniqueDZIAL = [...new Set(filteredData.map((d) => d.DZIAL))];
+//   const uniqueAREA = [...new Set(filteredData.map((d) => d.AREA))];
+//   const uniqueCOMPANY = [...new Set(filteredData.map((d) => d.COMPANY))];
 
-  // --- krok 2: usuń klucze, które mają tylko jedną unikalną wartość ---
-  const finalData = filteredData.map((d) => {
-    const obj = { ...d };
-    if (uniqueDZIAL.length === 1) delete obj.DZIAL;
-    if (uniqueAREA.length === 1) delete obj.AREA;
-    if (uniqueCOMPANY.length === 1) delete obj.COMPANY;
-    return obj;
-  });
-  return finalData;
-};
+//   // --- krok 2: usuń klucze, które mają tylko jedną unikalną wartość ---
+//   const finalData = filteredData.map((d) => {
+//     const obj = { ...d };
+//     if (uniqueDZIAL.length === 1) delete obj.DZIAL;
+//     if (uniqueAREA.length === 1) delete obj.AREA;
+//     if (uniqueCOMPANY.length === 1) delete obj.COMPANY;
+//     return obj;
+//   });
+//   return finalData;
+// };
 
 const getRaportDifferncesAsFk = async (req, res) => {
   const { id_user, profile } = req.params;
