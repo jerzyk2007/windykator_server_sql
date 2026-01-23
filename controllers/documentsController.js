@@ -76,29 +76,42 @@ const getDataDocuments = async (id_user, info, profile) => {
       [id_user]
     );
 
-    const { departments = {}, roles = {}, company = [] } = findUser[0] || {};
-    const allDepartments = departments[userType] || [];
+    // Pobieramy dane, pilnując żeby null zamienić na puste obiekty/tablice
+    const userData = findUser[0] || {};
+    const departments = userData.departments || {};
+    const roles = userData.roles || {};
 
-    if (!allDepartments.length) {
+    // Kluczowa poprawka: jeśli w DB jest null, zamieniamy na []
+    const company = userData.company || [];
+
+    const allDepartments = departments[userType] || [];
+    const raportsRoles = roles.hasOwnProperty("Raports");
+
+    // Budujemy warunek dla uprawnień działowych
+    const permissionCondition =
+      allDepartments.length > 0
+        ? `(D.DZIAL, D.FIRMA) IN (${allDepartments
+            .map((dep) => `('${dep.department}', '${dep.company}')`)
+            .join(", ")})`
+        : "1=0";
+
+    // Budujemy warunek dla roli Raport (zabezpieczone przed null i pustą tablicą)
+    const permissionsRolesRaports =
+      Array.isArray(company) && company.length > 0
+        ? `D.FIRMA IN (${company.map((item) => `'${item}'`).join(", ")})`
+        : "1=0";
+
+    // Sprawdzamy czy to specjalny przypadek raportu
+    const isSpecialRaportCase =
+      raportsRoles &&
+      Array.isArray(company) &&
+      company.length > 0 &&
+      info === "different";
+
+    // Early exit
+    if (!allDepartments.length && !isSpecialRaportCase) {
       return { data: [] };
     }
-
-    // const permissionCondition = `(${allDepartments
-    //   .map(
-    //     (dep) =>
-    //       `(D.DZIAL = '${dep.department}' AND D.FIRMA = '${dep.company}')`
-    //   )
-    //   .join(" OR ")})`;
-
-    const permissionCondition = `(D.DZIAL, D.FIRMA) IN (${allDepartments
-      .map((dep) => `('${dep.department}', '${dep.company}')`)
-      .join(", ")})`;
-
-    //specjalny kod dla roles Raports: 400 żeby pobierać wszytskie dane róznic AS - FK
-    const permissionsRolesRaports = `(${company
-      .map((item) => `(D.FIRMA = '${item}')`)
-      .join(" OR ")})`;
-    const raportsRoles = roles.hasOwnProperty("Raports") ? true : false;
 
     const filters = {
       actual: "AND S.NALEZNOSC > 0",
@@ -124,42 +137,206 @@ const getDataDocuments = async (id_user, info, profile) => {
         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
       `,
       // different: `
-      //   AND (IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) <> 0
-      // `,
-      //     different: `
-      //   AND ROUND(IFNULL(S.NALEZNOSC, 0), 2) <> ROUND(IFNULL(FS.DO_ROZLICZENIA, 0), 2)
+      //   AND S.NALEZNOSC != FS.DO_ROZLICZENIA
+      //   AND ABS(IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) > 0.01
       // `,
       different: `
-  AND S.NALEZNOSC != FS.DO_ROZLICZENIA 
-  AND ABS(IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) > 0.01
-`,
+        AND ROUND(IFNULL(S.NALEZNOSC, 0), 2) <> ROUND(IFNULL(FS.DO_ROZLICZENIA, 0), 2)
+      `,
     };
 
     if (!filters.hasOwnProperty(info)) {
       return { data: [] };
     }
 
-    const finalQuery =
-      raportsRoles && company.length && info === "different"
-        ? `
+    const finalQuery = `
       ${getAllDocumentsSQL}
-      WHERE ${permissionsRolesRaports}
-      ${filters[info]}
-    `
-        : `
-      ${getAllDocumentsSQL}
-      WHERE ${permissionCondition}
+      WHERE ${isSpecialRaportCase ? permissionsRolesRaports : permissionCondition}
       ${filters[info]}
     `;
 
     const [filteredData] = await connect_SQL.query(finalQuery);
-
     return { data: filteredData };
   } catch (error) {
     logEvents(`documentsController: ${error}`, "reqServerErrors.txt");
     return { data: [] };
   }
 };
+
+// const getDataDocuments2 = async (id_user, info, profile) => {
+//   const userType = userProfile(profile);
+//   try {
+//     const [findUser] = await connect_SQL.query(
+//       "SELECT departments, roles, company FROM company_users WHERE id_user = ?",
+//       [id_user]
+//     );
+
+//     const { departments = {}, roles = {}, company = [] } = findUser[0] || {};
+//     const allDepartments = departments[userType] || [];
+//     const raportsRoles = roles.hasOwnProperty("Raports");
+//     console.log(company);
+//     // Budujemy warunek dla uprawnień działowych (Row Constructor IN)
+//     // Jeśli tablica jest pusta, używamy 1=0, aby zapytanie było poprawne, ale nic nie zwróciło
+//     const permissionCondition =
+//       allDepartments.length > 0
+//         ? `(D.DZIAL, D.FIRMA) IN (${allDepartments
+//             .map((dep) => `('${dep.department}', '${dep.company}')`)
+//             .join(", ")})`
+//         : "1=0";
+//     console.log(permissionCondition);
+//     // Budujemy warunek dla roli Raport (IN zamiast wielu OR)
+//     const permissionsRolesRaports =
+//       company.length > 0
+//         ? `D.FIRMA IN (${company.map((item) => `'${item}'`).join(", ")})`
+//         : "1=0";
+//     console.log(permissionsRolesRaports);
+
+//     // Flaga sprawdzająca, czy używamy specjalnego widoku dla raportów
+//     const isSpecialRaportCase =
+//       raportsRoles && company.length > 0 && info === "different";
+
+//     // Early exit: jeśli nie ma działów I nie jest to specjalny raport -> nie ma po co pytać bazy
+//     if (!allDepartments.length && !isSpecialRaportCase) {
+//       return { data: [] };
+//     }
+
+//     const filters = {
+//       actual: "AND S.NALEZNOSC > 0",
+//       obligations: "AND S.NALEZNOSC < 0",
+//       archive: "AND (S.NALEZNOSC = 0 OR S.NALEZNOSC IS NULL)",
+//       all: "",
+//       raport_fk: "AND MD.RAPORT_FK = 1",
+//       disabled_fk: "AND MD.RAPORT_FK = 0",
+//       krd: "AND DA.KRD IS NOT NULL",
+//       critical: `
+//         AND S.NALEZNOSC > 0
+//         AND D.TERMIN <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+//         AND R.FIRMA_ZEWNETRZNA IS NULL
+//         AND DA.JAKA_KANCELARIA_TU IS NULL
+//         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
+//       `,
+//       "control-bl": `
+//         AND JI.area = 'BLACHARNIA'
+//         AND S.NALEZNOSC > 0
+//         AND DA.JAKA_KANCELARIA_TU IS NULL
+//         AND R.FIRMA_ZEWNETRZNA IS NULL
+//         AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+//         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
+//       `,
+//       different: `
+//         AND S.NALEZNOSC != FS.DO_ROZLICZENIA
+//         AND ABS(IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) > 0.01
+//       `,
+//     };
+
+//     if (!filters.hasOwnProperty(info)) {
+//       return { data: [] };
+//     }
+
+//     // Wybór odpowiedniego warunku WHERE w zależności od roli i wybranego filtra
+//     const finalQuery = `
+//       ${getAllDocumentsSQL}
+//       WHERE ${isSpecialRaportCase ? permissionsRolesRaports : permissionCondition}
+//       ${filters[info]}
+//     `;
+
+//     const [filteredData] = await connect_SQL.query(finalQuery);
+//     console.log(filteredData);
+//     return { data: filteredData };
+//   } catch (error) {
+//     logEvents(`documentsController: ${error}`, "reqServerErrors.txt");
+//     return { data: [] };
+//   }
+// };
+// const getDataDocuments1 = async (id_user, info, profile) => {
+//   const userType = userProfile(profile);
+//   try {
+//     const [findUser] = await connect_SQL.query(
+//       "SELECT departments, roles, company FROM company_users WHERE id_user = ?",
+//       [id_user]
+//     );
+
+//     const { departments = {}, roles = {}, company = [] } = findUser[0] || {};
+//     const allDepartments = departments[userType] || [];
+
+//     if (!allDepartments.length) {
+//       return { data: [] };
+//     }
+
+//     // const permissionCondition = `(${allDepartments
+//     //   .map(
+//     //     (dep) =>
+//     //       `(D.DZIAL = '${dep.department}' AND D.FIRMA = '${dep.company}')`
+//     //   )
+//     //   .join(" OR ")})`;
+
+//     const permissionCondition = `(D.DZIAL, D.FIRMA) IN (${allDepartments
+//       .map((dep) => `('${dep.department}', '${dep.company}')`)
+//       .join(", ")})`;
+
+//     //specjalny kod dla roles Raports: 400 żeby pobierać wszytskie dane róznic AS - FK
+//     const permissionsRolesRaports = `(${company
+//       .map((item) => `(D.FIRMA = '${item}')`)
+//       .join(" OR ")})`;
+
+//     console.log(permissionCondition);
+
+//     const raportsRoles = roles.hasOwnProperty("Raports") ? true : false;
+//     const filters = {
+//       actual: "AND S.NALEZNOSC > 0",
+//       obligations: "AND S.NALEZNOSC < 0",
+//       archive: "AND (S.NALEZNOSC = 0 OR S.NALEZNOSC IS NULL)",
+//       all: "",
+//       raport_fk: "AND MD.RAPORT_FK = 1",
+//       disabled_fk: "AND MD.RAPORT_FK = 0",
+//       krd: "AND DA.KRD IS NOT NULL",
+//       critical: `
+//         AND S.NALEZNOSC > 0
+//         AND D.TERMIN <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+//         AND R.FIRMA_ZEWNETRZNA IS NULL
+//         AND DA.JAKA_KANCELARIA_TU IS NULL
+//         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
+//       `,
+//       "control-bl": `
+//         AND JI.area = 'BLACHARNIA'
+//         AND S.NALEZNOSC > 0
+//         AND DA.JAKA_KANCELARIA_TU IS NULL
+//         AND R.FIRMA_ZEWNETRZNA IS NULL
+//         AND D.TERMIN < DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+//         AND (DA.DZIALANIA != 'WINDYKACJA WEWNĘTRZNA' OR DA.DZIALANIA IS NULL)
+//       `,
+
+//       different: `
+//   AND S.NALEZNOSC != FS.DO_ROZLICZENIA
+//   AND ABS(IFNULL(S.NALEZNOSC, 0) - IFNULL(FS.DO_ROZLICZENIA, 0)) > 0.01
+// `,
+//     };
+
+//     if (!filters.hasOwnProperty(info)) {
+//       return { data: [] };
+//     }
+
+//     const finalQuery =
+//       raportsRoles && company.length && info === "different"
+//         ? `
+//       ${getAllDocumentsSQL}
+//       WHERE ${permissionsRolesRaports}
+//       ${filters[info]}
+//     `
+//         : `
+//       ${getAllDocumentsSQL}
+//       WHERE ${permissionCondition}
+//       ${filters[info]}
+//     `;
+
+//     const [filteredData] = await connect_SQL.query(finalQuery);
+
+//     return { data: filteredData };
+//   } catch (error) {
+//     logEvents(`documentsController: ${error}`, "reqServerErrors.txt");
+//     return { data: [] };
+//   }
+// };
 
 //SQL zmienia tylko pojedyńczy dokument, w tabeli BL po edycji wiersza
 // funkcja zmieniająca dane w poszczególnym dokumncie (editRowTable)
