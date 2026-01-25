@@ -170,7 +170,7 @@ const differencesAsFk = async (cleanData) => {
             vertical: "middle",
             wrapText: true,
           };
-          column.width = header === "Kontrahent" ? 50 : 25;
+          column.width = header === "Kontrahent" ? 40 : 25;
 
           const extraCellBorder = {
             top: { style: "thin" },
