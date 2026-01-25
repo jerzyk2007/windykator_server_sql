@@ -9,7 +9,7 @@ const {
   documentsControlBL,
 } = require("./generate_excel_raport/documentsControlBL");
 const { lawStatement } = require("./generate_excel_raport/lawStatement");
-const { documentsType } = require("./manageDocumentAddition");
+const { documentsType, userProfile } = require("./manageDocumentAddition");
 
 // pobiera dane do tabeli Raportu w zalezności od uprawnień użytkownika, jesli nie ma pobierac rozliczonych faktur to ważne jest żeby klucz w kolekcji był DOROZLICZ_
 const getDataRaport = async (req, res) => {
@@ -442,7 +442,7 @@ const getPreviousBusinessDayString = () => {
 //   return finalData;
 // };
 
-const getRaportDifferncesAsFk = async (req, res) => {
+const xxxgetRaportDifferncesAsFk = async (req, res) => {
   const { id_user, profile } = req.params;
   try {
     const documents = await getDataDocuments(id_user, "different", profile);
@@ -535,6 +535,161 @@ const getRaportDifferncesAsFk = async (req, res) => {
   } catch (error) {
     logEvents(`documentsController: ${error}`, "reqServerErrors.txt");
     return res.status(500).json({ error: "Błąd serwera" });
+  }
+};
+
+const getRaportDifferncesAsFk = async (req, res) => {
+  const { id_user, profile } = req.params;
+  const info = "different"; // Raport zawsze dotyczy różnic
+
+  try {
+    // 1. POBRANIE UPRAWNIEŃ (Logika z getDataDocuments)
+    const userType = userProfile(profile);
+    const [findUser] = await connect_SQL.query(
+      "SELECT departments, roles, company FROM company_users WHERE id_user = ?",
+      [id_user]
+    );
+
+    const userData = findUser[0] || {};
+    const departments = userData.departments || {};
+    const roles = userData.roles || {};
+    const company = userData.company || [];
+    const allDepartments = departments[userType] || [];
+    const raportsRoles = roles.hasOwnProperty("Raports");
+
+    // Budujemy warunki uprawnień
+    const permissionCondition =
+      allDepartments.length > 0
+        ? `(D.DZIAL, D.FIRMA) IN (${allDepartments.map((dep) => `('${dep.department}', '${dep.company}')`).join(", ")})`
+        : "1=0";
+
+    const permissionsRolesRaports =
+      Array.isArray(company) && company.length > 0
+        ? `D.FIRMA IN (${company.map((item) => `'${item}'`).join(", ")})`
+        : "1=0";
+
+    const isSpecialRaportCase =
+      raportsRoles &&
+      Array.isArray(company) &&
+      company.length > 0 &&
+      info === "different";
+
+    // Sprawdzenie dostępu
+    if (!allDepartments.length && !isSpecialRaportCase) {
+      return res.status(200).json({ data: [] });
+    }
+
+    // 2. WYKONANIE ZAPYTANIA SQL (Zoptymalizowane pod raport)
+    const finalQuery = `
+      SELECT
+        IFNULL(JI.area, 'BRAK') AS AREA,
+        D.NUMER_FV,
+        D.BRUTTO,
+        D.TERMIN,
+        IFNULL(S.NALEZNOSC, 0) AS DO_ROZLICZENIA,
+        IFNULL(FS.DO_ROZLICZENIA, 0) AS FK_DO_ROZLICZENIA,
+        D.DZIAL,
+        D.DATA_FV,
+        D.KONTRAHENT,
+        D.FIRMA,
+        SD.DATA_ROZL_AS
+      FROM company_documents AS D
+      LEFT JOIN company_settlements AS S
+        ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
+      LEFT JOIN company_fk_settlements AS FS
+        ON D.NUMER_FV = FS.NUMER_FV AND D.FIRMA = FS.FIRMA
+      LEFT JOIN company_join_items AS JI
+        ON D.DZIAL = JI.department
+      LEFT JOIN company_settlements_description AS SD ON D.NUMER_FV = SD.NUMER AND D.FIRMA = SD.COMPANY
+      WHERE ${isSpecialRaportCase ? permissionsRolesRaports : permissionCondition}
+      AND ROUND(IFNULL(S.NALEZNOSC, 0), 2) <> ROUND(IFNULL(FS.DO_ROZLICZENIA, 0), 2)
+    `;
+
+    const [filteredData] = await connect_SQL.query(finalQuery);
+    const rawData = filteredData || [];
+    const prevBusinessDayStr = getPreviousBusinessDayString();
+
+    // 3. PRZYGOTOWANIE DANYCH DO EXCELA (Funkcja pomocnicza)
+    const prepareData = (data) => {
+      if (!data || data.length === 0) return [];
+
+      const mapped = data.map((doc) => ({
+        NUMER_FV: doc.NUMER_FV,
+        DATA_FV: doc.DATA_FV,
+        TERMIN: doc.TERMIN,
+        BRUTTO: doc.BRUTTO,
+        KONTR: doc.KONTRAHENT,
+        AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
+        FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
+        DATA_ROZL_AS: doc.DATA_ROZL_AS,
+        DZIAL: doc.DZIAL,
+        AREA: doc.AREA,
+        COMPANY: doc.FIRMA,
+      }));
+
+      // Logika usuwania kolumn, jeśli w całym secie jest tylko jedna wartość
+      const uniqueDZIAL = [...new Set(mapped.map((d) => d.DZIAL))];
+      const uniqueAREA = [...new Set(mapped.map((d) => d.AREA))];
+      const uniqueCOMPANY = [...new Set(mapped.map((d) => d.COMPANY))];
+
+      return mapped.map((d) => {
+        const obj = { ...d };
+        if (uniqueDZIAL.length === 1) delete obj.DZIAL;
+        if (uniqueAREA.length === 1) delete obj.AREA;
+        if (uniqueCOMPANY.length === 1) delete obj.COMPANY;
+        return obj;
+      });
+    };
+
+    // 4. FILTROWANIE GRUP
+    const commonFilter = (doc) =>
+      documentsType(doc.NUMER_FV) === "Faktura" &&
+      doc.DATA_FV < prevBusinessDayStr;
+
+    const dataAsZero = rawData.filter(
+      (doc) =>
+        commonFilter(doc) &&
+        doc.FK_DO_ROZLICZENIA > 0 &&
+        doc.DO_ROZLICZENIA === 0
+    );
+    const dataFkZero = rawData.filter(
+      (doc) =>
+        commonFilter(doc) &&
+        doc.DO_ROZLICZENIA > 0 &&
+        doc.FK_DO_ROZLICZENIA === 0
+    );
+    const dataDifferences = rawData.filter(
+      (doc) =>
+        commonFilter(doc) &&
+        doc.DO_ROZLICZENIA !== 0 &&
+        doc.FK_DO_ROZLICZENIA !== 0
+    );
+    const noFiltres = rawData.filter(commonFilter);
+
+    const cleanData = [
+      { name: "AS = 0", data: prepareData(dataAsZero) },
+      { name: "FK = 0", data: prepareData(dataFkZero) },
+      { name: "Różnice", data: prepareData(dataDifferences) },
+      { name: "Brak filtrów", data: prepareData(noFiltres) },
+    ];
+
+    // 5. GENEROWANIE I WYSYŁKA PLIKU
+    const excelBuffer = await differencesAsFk(cleanData);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=raport_roznic.xlsx"
+    );
+    res.send(excelBuffer);
+  } catch (error) {
+    logEvents(`getRaportDifferncesAsFk Error: ${error}`, "reqServerErrors.txt");
+    return res
+      .status(500)
+      .json({ error: "Błąd serwera podczas generowania raportu" });
   }
 };
 

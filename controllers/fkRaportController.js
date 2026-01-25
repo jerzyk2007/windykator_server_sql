@@ -4,6 +4,7 @@ const {
   documentsType,
   checkDate,
   checkTime,
+  getLastMonthDate,
 } = require("./manageDocumentAddition");
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getExcelRaport } = require("./fkRaportExcelGenerate");
@@ -141,104 +142,21 @@ const generateHistoryDocuments = async (company) => {
   }
 };
 
-const generateHistoryDocuments2 = async (company) => {
-  try {
-    const [raportDate] = await connect_SQL.query(
-      `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
-      [company]
-    );
+// //wyznaczam datę ostatniego dnia poprzedniego miesiąca
+// const getLastMonthDate = () => {
+//   const today = new Date();
+//   const year =
+//     today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+//   const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
 
-    const [markDocuments] = await connect_SQL.query(
-      `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
-      [company]
-    );
+//   // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
+//   const lastDay = new Date(year, month, 0);
+//   const yyyy = lastDay.getFullYear();
+//   const mm = String(lastDay.getMonth() + 1).padStart(2, "0"); // getMonth() zwraca 0-11
+//   const dd = String(lastDay.getDate()).padStart(2, "0");
 
-    for (item of markDocuments) {
-      // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
-      const [getDoc] = await connect_SQL.query(
-        `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
-        [item.NUMER_FV, raportDate[0].DATE, company]
-      );
-
-      //szukam czy jest wpis histori w tabeli history_fk_documents
-      const [getDocHist] = await connect_SQL.query(
-        `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
-        [item.NUMER_FV, company]
-      );
-
-      //jesli nie ma historycznych wpisów tworzę nowy
-      if (!getDocHist.length) {
-        const newHistory = {
-          info: `1 raport utworzono ${raportDate[0].DATE}`,
-          historyDate: [],
-          historyText: [],
-        };
-
-        // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
-        });
-
-        await connect_SQL.query(
-          `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
-          [item.NUMER_FV, JSON.stringify([newHistory]), company]
-        );
-      } else {
-        const newHistory = {
-          info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
-            raportDate[0].DATE
-          }`,
-          historyDate: [],
-          historyText: [],
-        };
-        getDoc.forEach((doc) => {
-          if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA) {
-            newHistory.historyDate.push(
-              ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA
-            );
-          }
-          if (doc.INFORMACJA_ZARZAD) {
-            newHistory.historyText.push(...doc.INFORMACJA_ZARZAD);
-          }
-        });
-        const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
-
-        await connect_SQL.query(
-          `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
-          [JSON.stringify(prepareArray), item.NUMER_FV, company]
-        );
-      }
-    }
-  } catch (error) {
-    logEvents(
-      `fKRaportController, generateHistoryDocuments: ${error}`,
-      "reqServerErrors.txt"
-    );
-  }
-};
-
-//wyznaczam datę ostatniego dnia poprzedniego miesiąca
-const getLastMonthDate = () => {
-  const today = new Date();
-  const year =
-    today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-  const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
-
-  // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
-  const lastDay = new Date(year, month, 0);
-  const yyyy = lastDay.getFullYear();
-  const mm = String(lastDay.getMonth() + 1).padStart(2, "0"); // getMonth() zwraca 0-11
-  const dd = String(lastDay.getDate()).padStart(2, "0");
-
-  return `${yyyy}-${mm}-${dd}`;
-};
+//   return `${yyyy}-${mm}-${dd}`;
+// };
 
 // pobieram nowe dane wiekowania
 const getAccountancyDataMsSQL = async (company, res) => {
@@ -506,10 +424,10 @@ const generateRaportCompany = async (company) => {
       const JAKA_KANCELARIA = doc.FIRMA_ZEWNETRZNA
         ? doc.FIRMA_ZEWNETRZNA
         : doc.AREA === "BLACHARNIA" &&
-          doc.JAKA_KANCELARIA_TU &&
-          doc.JAKA_KANCELARIA_TU !== "WINDYKACJA WEWNĘTRZNA"
-        ? doc.JAKA_KANCELARIA_TU
-        : null;
+            doc.JAKA_KANCELARIA_TU &&
+            doc.JAKA_KANCELARIA_TU !== "WINDYKACJA WEWNĘTRZNA"
+          ? doc.JAKA_KANCELARIA_TU
+          : null;
 
       const CZY_W_KANCELARI = JAKA_KANCELARIA ? "TAK" : "NIE";
       const HISTORIA_ZMIANY_DATY_ROZLICZENIA = doc

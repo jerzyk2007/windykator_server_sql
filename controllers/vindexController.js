@@ -1,6 +1,7 @@
 const { connect_SQL } = require("../config/dbConn");
 const { logEvents } = require("../middleware/logEvents");
 const { b } = require("./manageDocumentAddition");
+const { generateDebtNoticePdf } = require("./vindex-utils/letterCreate");
 
 const getDataSQL = `
 SELECT
@@ -90,7 +91,6 @@ const getDataTable = async (req, res) => {
 const getSingleDocument = async (req, res) => {
   const { docID } = req.params;
   try {
-    console.log(docID);
     const [singleDocument] = await connect_SQL.query(
       `SELECT
   D.id_document,
@@ -136,8 +136,49 @@ const changeSingleDocument = async (req, res) => {
   }
 };
 
+//pobieranie pliku pdf
+const getLetter1 = async (req, res) => {
+  try {
+    const pdfBuffer = await generateDebtNoticePdf();
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=wezwanie.pdf", // Sugerowana nazwa
+      "Content-Length": pdfBuffer.length,
+    });
+
+    // Wysyłamy buffer bezpośrednio do Reacta
+    res.status(200).send(pdfBuffer);
+  } catch (error) {
+    logEvents(
+      `letterGeneratorController, getLetter: ${error}`,
+      "reqServerErrors.txt"
+    );
+  }
+};
+
+const getLetter = async (req, res) => {
+  try {
+    const pdfBuffer = await generateDebtNoticePdf();
+
+    res.status(200);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="wezwanie.pdf"');
+    res.setHeader("Content-Length", pdfBuffer.length);
+
+    // ❗❗❗ KLUCZOWE
+    res.end(pdfBuffer);
+  } catch (error) {
+    logEvents(
+      `letterGeneratorController, getLetter: ${error}`,
+      "reqServerErrors.txt"
+    );
+    res.sendStatus(500);
+  }
+};
+
 module.exports = {
   getDataTable,
   getSingleDocument,
   changeSingleDocument,
+  getLetter,
 };

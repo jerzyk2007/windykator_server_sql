@@ -2,7 +2,11 @@ const { connect_SQL, msSqlQuery } = require("../config/dbConn");
 const cron = require("node-cron");
 const { logEvents } = require("../middleware/logEvents");
 const { addDepartment, documentsType } = require("./manageDocumentAddition");
-const { checkDate, checkTime } = require("./manageDocumentAddition");
+const {
+  checkDate,
+  checkTime,
+  getLastMonthDate,
+} = require("./manageDocumentAddition");
 const {
   addDocumentToDatabaseQuery,
   updateDocZaLQuery,
@@ -586,11 +590,13 @@ const updateSettlements = async (companies) => {
 
 const updateFKSettlements = async (companies) => {
   try {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0"); // miesiące 0–11
-    const dd = String(today.getDate()).padStart(2, "0");
-    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    // const today = new Date();
+    // const yyyy = today.getFullYear();
+    // const mm = String(today.getMonth() + 1).padStart(2, "0"); // miesiące 0–11
+    // const dd = String(today.getDate()).padStart(2, "0");
+    // const formattedDate = `${yyyy}-${mm}-${dd}`;
+    const formattedDate = getLastMonthDate();
+
     for (const company of companies) {
       const queryMS = accountancyFKData(company, formattedDate);
       const accountancyData = await msSqlQuery(queryMS);

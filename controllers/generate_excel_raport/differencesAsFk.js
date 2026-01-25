@@ -9,6 +9,7 @@ const columnsOrder = [
   "Kontrahent",
   "Do rozliczenia AS",
   "Do rozliczenia FK",
+  "Data rozliczenia AS",
   "Dział",
   "Obszar",
   "Firma",
@@ -42,6 +43,10 @@ const columnsName = [
   {
     accessorKey: "FK_DO_ROZLICZENIA",
     header: "Do rozliczenia FK",
+  },
+  {
+    accessorKey: "DATA_ROZL_AS",
+    header: "Data rozliczenia AS",
   },
   {
     accessorKey: "DZIAL",

@@ -25,4 +25,9 @@ router
     vindex.changeSingleDocument
   );
 
+// pobiera plik pdf wygenerowany w node
+router
+  .route("/get-letter")
+  .get(verifyRoles(ROLES_LIST.DNiKN, ROLES_LIST.SuperAdmin), vindex.getLetter);
+
 module.exports = router;

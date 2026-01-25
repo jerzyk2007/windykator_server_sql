@@ -152,7 +152,21 @@ const mergeJsonLogs = (oldData, chatLog) => {
   };
 };
 
-module.exports = mergeJsonLogs;
+//wyznaczam datę ostatniego dnia poprzedniego miesiąca
+const getLastMonthDate = () => {
+  const today = new Date();
+  const year =
+    today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+  const month = today.getMonth() === 0 ? 12 : today.getMonth(); // 1–12 dla Date(rok, miesiac, 0)
+
+  // Ustawiamy datę na 0. dzień bieżącego miesiąca, co oznacza ostatni dzień poprzedniego miesiąca
+  const lastDay = new Date(year, month, 0);
+  const yyyy = lastDay.getFullYear();
+  const mm = String(lastDay.getMonth() + 1).padStart(2, "0"); // getMonth() zwraca 0-11
+  const dd = String(lastDay.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+};
 
 module.exports = {
   addDepartment,
@@ -162,4 +176,5 @@ module.exports = {
   generatePassword,
   userProfile,
   mergeJsonLogs,
+  getLastMonthDate,
 };

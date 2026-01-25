@@ -7,6 +7,7 @@ const {
   generatePassword,
   documentsType,
   addDepartment,
+  getLastMonthDate,
 } = require("./manageDocumentAddition");
 const { accountancyFKData } = require("./sqlQueryForGetDataFromMSSQL");
 const { getDataDocuments } = require("./documentsController");
@@ -1729,6 +1730,11 @@ const updateTableContractorKEM = async () => {
   }
 };
 
+const testDate = () => {
+  const date = getLastMonthDate();
+  console.log(date);
+};
+
 const repair = async () => {
   try {
     // await changedocumentsTable();
@@ -1746,6 +1752,7 @@ const repair = async () => {
     //
     //
     //
+    testDate();
     // await addDocumentToDatabase("KRT");
   } catch (error) {
     console.error(error);
