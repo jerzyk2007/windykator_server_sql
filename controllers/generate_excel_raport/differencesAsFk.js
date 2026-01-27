@@ -9,6 +9,7 @@ const columnsOrder = [
   "Kontrahent",
   "Do rozliczenia AS",
   "Do rozliczenia FK",
+  "Opis rozrachunku",
   "Data rozliczenia AS",
   "Dział",
   "Obszar",
@@ -37,9 +38,14 @@ const columnsName = [
     header: "Kontrahent",
   },
   {
+    accessorKey: "OPIS_ROZRACHUNKU",
+    header: "Opis rozrachunku",
+  },
+  {
     accessorKey: "AS_DO_ROZLICZENIA",
     header: "Do rozliczenia AS",
   },
+
   {
     accessorKey: "FK_DO_ROZLICZENIA",
     header: "Do rozliczenia FK",
@@ -246,6 +252,10 @@ const differencesAsFk = async (cleanData) => {
               pattern: "solid",
               fgColor: { argb: "FFFF00" },
             };
+          }
+
+          if (header === "Opis rozrachunku") {
+            column.width = 40;
           }
         });
 

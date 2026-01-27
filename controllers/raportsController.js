@@ -592,7 +592,8 @@ const getRaportDifferncesAsFk = async (req, res) => {
         D.DATA_FV,
         D.KONTRAHENT,
         D.FIRMA,
-        SD.DATA_ROZL_AS
+        SD.DATA_ROZL_AS,
+        SD.OPIS_ROZRACHUNKU
       FROM company_documents AS D
       LEFT JOIN company_settlements AS S
         ON D.NUMER_FV = S.NUMER_FV AND D.FIRMA = S.COMPANY
@@ -604,7 +605,6 @@ const getRaportDifferncesAsFk = async (req, res) => {
       WHERE ${isSpecialRaportCase ? permissionsRolesRaports : permissionCondition}
       AND ROUND(IFNULL(S.NALEZNOSC, 0), 2) <> ROUND(IFNULL(FS.DO_ROZLICZENIA, 0), 2)
     `;
-
     const [filteredData] = await connect_SQL.query(finalQuery);
     const rawData = filteredData || [];
     const prevBusinessDayStr = getPreviousBusinessDayString();
@@ -613,19 +613,48 @@ const getRaportDifferncesAsFk = async (req, res) => {
     const prepareData = (data) => {
       if (!data || data.length === 0) return [];
 
-      const mapped = data.map((doc) => ({
-        NUMER_FV: doc.NUMER_FV,
-        DATA_FV: doc.DATA_FV,
-        TERMIN: doc.TERMIN,
-        BRUTTO: doc.BRUTTO,
-        KONTR: doc.KONTRAHENT,
-        AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
-        FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
-        DATA_ROZL_AS: doc.DATA_ROZL_AS,
-        DZIAL: doc.DZIAL,
-        AREA: doc.AREA,
-        COMPANY: doc.FIRMA,
-      }));
+      const mapped = data.map((doc) => {
+        const opisRozrachunku = Array.isArray(doc.OPIS_ROZRACHUNKU)
+          ? [...doc.OPIS_ROZRACHUNKU]
+              // 1. Sortowanie od najnowszej daty (malejąco)
+              .sort((a, b) => {
+                const dateA = a.data || "";
+                const dateB = b.data || "";
+                return dateB.localeCompare(dateA);
+              })
+              // 2. Mapowanie na sformatowany string
+              .map((entry) => {
+                const formattedAmount =
+                  typeof entry.kwota === "number" && !isNaN(entry.kwota)
+                    ? entry.kwota.toLocaleString("pl-PL", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                        useGrouping: true,
+                      })
+                    : "0,00";
+
+                return `${entry.data || "brak daty"} - ${
+                  entry.opis || "brak opisu"
+                } - ${formattedAmount}`;
+              })
+              // 3. Połączenie wpisów w jeden tekst
+              .join("\n\n")
+          : "Brak wpisów";
+        return {
+          NUMER_FV: doc.NUMER_FV,
+          DATA_FV: doc.DATA_FV,
+          TERMIN: doc.TERMIN,
+          BRUTTO: doc.BRUTTO,
+          KONTR: doc.KONTRAHENT,
+          AS_DO_ROZLICZENIA: doc.DO_ROZLICZENIA,
+          FK_DO_ROZLICZENIA: doc.FK_DO_ROZLICZENIA,
+          DATA_ROZL_AS: doc.DATA_ROZL_AS,
+          OPIS_ROZRACHUNKU: opisRozrachunku,
+          DZIAL: doc.DZIAL,
+          AREA: doc.AREA,
+          COMPANY: doc.FIRMA,
+        };
+      });
 
       // Logika usuwania kolumn, jeśli w całym secie jest tylko jedna wartość
       const uniqueDZIAL = [...new Set(mapped.map((d) => d.DZIAL))];
