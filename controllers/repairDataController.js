@@ -19,26 +19,15 @@ const validator = require("validator");
 
 //zebrane kawałki kodu, nieużywac funkcji
 const test = async () => {
-  await connect_SQL.query(
-    "ALTER TABLE company_documents_actions CHANGE COLUMN UWAGI_ASYSTENT KANAL_KOMUNIKACJI JSON"
-  );
-  await connect_SQL.query(
-    "ALTER TABLE company_insurance_documents  ADD KWOTA_DOKUMENT  DECIMAL(12,2) NULL AFTER OW"
-  );
-
-  await connect_SQL.query(
-    "CREATE TABLE company_pay_guard (  id_pay_guard INT UNSIGNED AUTO_INCREMENT,  value VARCHAR(255) NULL,  PROCENTY_ROK JSON  NULL,  WOLNE_USTAWOWE JSON NULL,  PRIMARY KEY (id_pay_guard),  UNIQUE KEY uq_id_pay_guard (id_pay_guard)) ENGINE=InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci"
-  );
-};
-
-const changedocumentsTable = async () => {
-  try {
-    await connect_SQL.query(
-      "ALTER TABLE company_documents  ADD KONTRAHENT_ID INT NULL AFTER KONTRAHENT"
-    );
-  } catch (error) {
-    console.error(error);
-  }
+  // await connect_SQL.query(
+  //   "ALTER TABLE company_documents_actions CHANGE COLUMN UWAGI_ASYSTENT KANAL_KOMUNIKACJI JSON"
+  // );
+  // await connect_SQL.query(
+  //   "ALTER TABLE company_insurance_documents  ADD KWOTA_DOKUMENT  DECIMAL(12,2) NULL AFTER OW"
+  // );
+  // await connect_SQL.query(
+  //   "CREATE TABLE company_pay_guard (  id_pay_guard INT UNSIGNED AUTO_INCREMENT,  value VARCHAR(255) NULL,  PROCENTY_ROK JSON  NULL,  WOLNE_USTAWOWE JSON NULL,  PRIMARY KEY (id_pay_guard),  UNIQUE KEY uq_id_pay_guard (id_pay_guard)) ENGINE=InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci"
+  // );
 };
 
 const createKontrahentTable = async () => {
@@ -139,7 +128,7 @@ const updateKontrahentIDKRT = async () => {
         `SELECT id_document, NUMER_FV FROM company_documents 
          WHERE FIRMA = 'KRT' 
          AND DATA_FV > '2024-01-01' 
-         AND KONTRAHENT_ID IS NULL 
+         AND FAKT_BANK_KONTO IS NULL 
          AND id_document > ? 
          ORDER BY id_document ASC 
          LIMIT ?`,
@@ -158,7 +147,7 @@ const updateKontrahentIDKRT = async () => {
         // 1. Pobieramy dane z MSSQL
         // Używamy parametrów, aby uniknąć problemów z zapytaniem
         const matches = await msSqlQuery(
-          `SELECT NUMER, KONTRAHENT_ID FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] 
+          `SELECT NUMER, FAKT_BANK_KONTO FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] 
            WHERE NUMER IN (${numerFVArray.map((n) => `'${n}'`).join(",")})`
         );
 
@@ -176,8 +165,8 @@ const updateKontrahentIDKRT = async () => {
             .filter((row) => row.KONTRAHENT_ID !== null)
             .map((row) =>
               connect_SQL.query(
-                "UPDATE company_documents SET KONTRAHENT_ID = ? WHERE NUMER_FV = ? AND FIRMA = 'KRT'",
-                [row.KONTRAHENT_ID, row.NUMER]
+                "UPDATE company_documents SET FAKT_BANK_KONTO = ? WHERE NUMER_FV = ? AND FIRMA = 'KRT'",
+                [row.FAKT_BANK_KONTO, row.NUMER]
               )
             );
 
@@ -1729,30 +1718,316 @@ const updateTableContractorKEM = async () => {
     console.error(`Błąd krytyczny w updateTableContractor${type}:`, error);
   }
 };
+//
+//
+//
+//
+//
 
-const testDate = () => {
-  const date = getLastMonthDate();
-  console.log(date);
+/// do dodania nr konta
+const changedocumentsTable = async () => {
+  try {
+    await connect_SQL.query(
+      "ALTER TABLE company_contractor MODIFY SPOLKA VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_polish_ci NULL"
+    );
+
+    await connect_SQL.query(
+      "ALTER TABLE company_documents  ADD FAKT_BANK_KONTO VARCHAR(40) NULL AFTER KONTRAHENT_ID"
+    );
+
+    await connect_SQL.query(
+      "ALTER TABLE company_contractor   ADD A_PRZEDROSTEK VARCHAR(10) NULL AFTER A_NRLOKALU,  ADD AK_PRZEDROSTEK VARCHAR(10) NULL AFTER AK_NRLOKALU"
+    );
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const update_ULICA_KEM = async () => {
+  try {
+    const BATCH_SIZE = 1000;
+    let lastProcessedId = 0;
+
+    while (true) {
+      console.log(
+        `Pobieram paczkę dokumentów powyżej ID: ${lastProcessedId}...`
+      );
+
+      // 1. Poprawione nawiasy w WHERE i nazwa id_kontrahent
+      const [documents] = await connect_SQL.query(
+        `SELECT KONTRAHENT_ID FROM company_contractor 
+         WHERE SPOLKA = 'KEM' 
+         AND (AK_PRZEDROSTEK IS NULL OR A_PRZEDROSTEK IS NULL)
+         AND KONTRAHENT_ID > ? 
+         ORDER BY KONTRAHENT_ID ASC 
+         LIMIT ?`,
+        [lastProcessedId, BATCH_SIZE]
+      );
+
+      if (documents.length === 0) {
+        console.log("Koniec danych.");
+        break;
+      }
+
+      // 2. Poprawione przypisanie ID do pętli (z id_kontrahent)
+      lastProcessedId = documents[documents.length - 1].KONTRAHENT_ID;
+      const numerIDArray = documents.map((doc) => doc.KONTRAHENT_ID);
+
+      try {
+        // 3. Pobieramy dane z MSSQL - upewnij się, że te kolumny istnieją w FAKTDOC
+        const matches = await msSqlQuery(
+          `SELECT KONTRAHENT_ID, A_PRZEDROSTEK, AK_PRZEDROSTEK 
+           FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[KONTRAHENT] 
+           WHERE KONTRAHENT_ID IN (${numerIDArray.map((n) => `'${n}'`).join(",")})`
+        );
+
+        if (matches.length > 0) {
+          console.log(`Znaleziono ${matches.length} dopasowań. Aktualizuję...`);
+
+          const updatePromises = matches
+            .filter(
+              (row) => row.A_PRZEDROSTEK !== null || row.AK_PRZEDROSTEK !== null
+            )
+            .map((row) =>
+              connect_SQL.query(
+                // Sprawdź czy w MySQL kolumna to id_kontrahent czy KONTRAHENT_ID
+                "UPDATE company_contractor SET A_PRZEDROSTEK = ?, AK_PRZEDROSTEK = ? WHERE KONTRAHENT_ID = ? AND SPOLKA = 'KEM'",
+                [row.A_PRZEDROSTEK, row.AK_PRZEDROSTEK, row.KONTRAHENT_ID]
+              )
+            );
+
+          await Promise.all(updatePromises);
+        }
+      } catch (err) {
+        console.error(`Błąd w trakcie przetwarzania paczki:`, err);
+      }
+    }
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
+const update_ULICA_KRT = async () => {
+  try {
+    const BATCH_SIZE = 1000;
+    let lastProcessedId = 0;
+
+    while (true) {
+      console.log(
+        `Pobieram paczkę dokumentów powyżej ID: ${lastProcessedId}...`
+      );
+
+      // 1. Poprawione nawiasy w WHERE i nazwa id_kontrahent
+      const [documents] = await connect_SQL.query(
+        `SELECT KONTRAHENT_ID FROM company_contractor 
+         WHERE SPOLKA = 'KRT' 
+         AND (AK_PRZEDROSTEK IS NULL OR A_PRZEDROSTEK IS NULL)
+         AND KONTRAHENT_ID > ? 
+         ORDER BY KONTRAHENT_ID ASC 
+         LIMIT ?`,
+        [lastProcessedId, BATCH_SIZE]
+      );
+
+      if (documents.length === 0) {
+        console.log("Koniec danych.");
+        break;
+      }
+
+      // 2. Poprawione przypisanie ID do pętli (z id_kontrahent)
+      lastProcessedId = documents[documents.length - 1].KONTRAHENT_ID;
+      const numerIDArray = documents.map((doc) => doc.KONTRAHENT_ID);
+
+      try {
+        // 3. Pobieramy dane z MSSQL - upewnij się, że te kolumny istnieją w FAKTDOC
+        const matches = await msSqlQuery(
+          `SELECT KONTRAHENT_ID, A_PRZEDROSTEK, AK_PRZEDROSTEK 
+           FROM [AS3_KROTOSKI_PRACA].[dbo].[KONTRAHENT] 
+           WHERE KONTRAHENT_ID IN (${numerIDArray.map((n) => `'${n}'`).join(",")})`
+        );
+
+        if (matches.length > 0) {
+          console.log(`Znaleziono ${matches.length} dopasowań. Aktualizuję...`);
+
+          const updatePromises = matches
+            .filter(
+              (row) => row.A_PRZEDROSTEK !== null || row.AK_PRZEDROSTEK !== null
+            )
+            .map((row) =>
+              connect_SQL.query(
+                // Sprawdź czy w MySQL kolumna to id_kontrahent czy KONTRAHENT_ID
+                "UPDATE company_contractor SET A_PRZEDROSTEK = ?, AK_PRZEDROSTEK = ? WHERE KONTRAHENT_ID = ? AND SPOLKA = 'KRT'",
+                [row.A_PRZEDROSTEK, row.AK_PRZEDROSTEK, row.KONTRAHENT_ID]
+              )
+            );
+
+          await Promise.all(updatePromises);
+        }
+      } catch (err) {
+        console.error(`Błąd w trakcie przetwarzania paczki:`, err);
+      }
+    }
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
+const update_FAKT_BANK_KONTO_KRT = async () => {
+  try {
+    const BATCH_SIZE = 1000; // Możesz zwiększyć do 1000-2000
+    let lastProcessedId = 0;
+
+    // Pętla będzie działać dopóki są dane
+    while (true) {
+      console.log(
+        `Pobieram paczkę dokumentów powyżej ID: ${lastProcessedId}...`
+      );
+
+      const [documents] = await connect_SQL.query(
+        `SELECT id_document, NUMER_FV FROM company_documents 
+         WHERE FIRMA = 'KRT' 
+         AND DATA_FV > '2024-01-01' 
+         AND FAKT_BANK_KONTO IS NULL 
+         AND id_document > ? 
+         ORDER BY id_document ASC 
+         LIMIT ?`,
+        [lastProcessedId, BATCH_SIZE]
+      );
+
+      if (documents.length === 0) {
+        console.log("Koniec danych.");
+        break;
+      }
+
+      lastProcessedId = documents[documents.length - 1].id_document;
+      const numerFVArray = documents.map((doc) => doc.NUMER_FV);
+
+      try {
+        // 1. Pobieramy dane z MSSQL
+        // Używamy parametrów, aby uniknąć problemów z zapytaniem
+        const matches = await msSqlQuery(
+          `SELECT NUMER, FAKT_BANK_KONTO FROM [AS3_KROTOSKI_PRACA].[dbo].[FAKTDOC] 
+           WHERE NUMER IN (${numerFVArray.map((n) => `'${n}'`).join(",")})`
+        );
+
+        for (const doc of matches) {
+          if (doc.NUMER === "FV/UBL/30/26/A/D38") {
+            console.log("test");
+            console.log(doc);
+          }
+        }
+        if (matches.length > 0) {
+          console.log(
+            `Znaleziono ${matches.length} dopasowań. Aktualizuję grupowo...`
+          );
+
+          // 2. OPTYMALIZACJA: Zamiast pętli z UPDATE, budujemy jedno zapytanie CASE
+          // lub wykonujemy aktualizacje równolegle (Promise.all)
+
+          // Opcja A: Równoległe Promise.all (Szybsze niż pętla for-await)
+          // Limitujemy konkurencję, żeby nie "zabić" puli połączeń
+          const updatePromises = matches
+            .filter((row) => row.FAKT_BANK_KONTO !== null)
+            .map((row) =>
+              connect_SQL.query(
+                "UPDATE company_documents SET FAKT_BANK_KONTO = ? WHERE NUMER_FV = ? AND FIRMA = 'KRT'",
+                [row.FAKT_BANK_KONTO, row.NUMER]
+              )
+            );
+
+          await Promise.all(updatePromises);
+        }
+      } catch (err) {
+        console.error(`Błąd w trakcie przetwarzania paczki:`, err);
+      }
+    }
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
+const update_FAKT_BANK_KONTO_KEM = async () => {
+  try {
+    const BATCH_SIZE = 1000; // Możesz zwiększyć do 1000-2000
+    let lastProcessedId = 0;
+
+    // Pętla będzie działać dopóki są dane
+    while (true) {
+      console.log(
+        `Pobieram paczkę dokumentów powyżej ID: ${lastProcessedId}...`
+      );
+
+      const [documents] = await connect_SQL.query(
+        `SELECT id_document, NUMER_FV FROM company_documents 
+         WHERE FIRMA = 'KEM' 
+         AND DATA_FV > '2024-01-01' 
+         AND FAKT_BANK_KONTO IS NULL 
+         AND id_document > ? 
+         ORDER BY id_document ASC 
+         LIMIT ?`,
+        [lastProcessedId, BATCH_SIZE]
+      );
+
+      if (documents.length === 0) {
+        console.log("Koniec danych.");
+        break;
+      }
+
+      lastProcessedId = documents[documents.length - 1].id_document;
+      const numerFVArray = documents.map((doc) => doc.NUMER_FV);
+
+      try {
+        // 1. Pobieramy dane z MSSQL
+        // Używamy parametrów, aby uniknąć problemów z zapytaniem
+        const matches = await msSqlQuery(
+          `SELECT NUMER, FAKT_BANK_KONTO FROM [AS3_PRACA_KROTOSKI_ELECTROMOBILITY].[dbo].[FAKTDOC] 
+           WHERE NUMER IN (${numerFVArray.map((n) => `'${n}'`).join(",")})`
+        );
+
+        if (matches.length > 0) {
+          console.log(
+            `Znaleziono ${matches.length} dopasowań. Aktualizuję grupowo...`
+          );
+
+          // 2. OPTYMALIZACJA: Zamiast pętli z UPDATE, budujemy jedno zapytanie CASE
+          // lub wykonujemy aktualizacje równolegle (Promise.all)
+
+          // Opcja A: Równoległe Promise.all (Szybsze niż pętla for-await)
+          // Limitujemy konkurencję, żeby nie "zabić" puli połączeń
+          const updatePromises = matches
+            .filter((row) => row.FAKT_BANK_KONTO !== null)
+            .map((row) =>
+              connect_SQL.query(
+                "UPDATE company_documents SET FAKT_BANK_KONTO = ? WHERE NUMER_FV = ? AND FIRMA = 'KEM'",
+                [row.FAKT_BANK_KONTO, row.NUMER]
+              )
+            );
+
+          await Promise.all(updatePromises);
+        }
+      } catch (err) {
+        console.error(`Błąd w trakcie przetwarzania paczki:`, err);
+      }
+    }
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
 };
 
 const repair = async () => {
   try {
     // await changedocumentsTable();
     // console.log("changedocumentsTable");
-    // await createKontrahentTable();
-    // console.log("createKontrahentTable");
-    // await updateKontrahentIDKRT();
-    // console.log("updateKontrahentIDKRT");
-    // await updateKontrahentIDKEM();
-    // console.log("updateKontrahentIDKEM");
-    // await updateTableContractorKRT();
-    // console.log("updateTableContractorKRT");
-    // await updateTableContractorKEM();
-    // console.log("updateTableContractorKEM");
+    // await update_FAKT_BANK_KONTO_KRT();
+    // console.log("update_FAKT_BANK_KONTO_KRT");
+    // await update_FAKT_BANK_KONTO_KEM();
+    // console.log("update_FAKT_BANK_KONTO_KEM");
+    // await update_ULICA_KRT();
+    // console.log("update_ULICA_KRT");
+    // await update_ULICA_KEM();
+    // console.log("update_ULICA_KEM");
     //
     //
     //
-    testDate();
     // await addDocumentToDatabase("KRT");
   } catch (error) {
     console.error(error);

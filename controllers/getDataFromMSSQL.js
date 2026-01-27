@@ -220,7 +220,7 @@ const addDocumentToDatabase = async (type) => {
       for (const doc of addDep) {
         // 1. Zapis dokumentu (Faktury)
         await connect_SQL.query(
-          "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DATA_FV, TERMIN, KONTRAHENT, KONTRAHENT_ID, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT IGNORE INTO company_documents (NUMER_FV, BRUTTO, NETTO, DZIAL, DATA_FV, TERMIN, KONTRAHENT, KONTRAHENT_ID, FAKT_BANK_KONTO, DORADCA, NR_REJESTRACYJNY, NR_SZKODY, UWAGI_Z_FAKTURY, TYP_PLATNOSCI, NIP, VIN, NR_AUTORYZACJI, KOREKTA, FIRMA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
           [
             doc.NUMER,
             doc.WARTOSC_BRUTTO,
@@ -230,6 +230,7 @@ const addDocumentToDatabase = async (type) => {
             doc.DATA_ZAPLATA,
             doc.KONTR_NAZWA,
             doc.KONTRAHENT_ID,
+            doc.FAKT_BANK_KONTO,
             doc.PRZYGOTOWAL || "Brak danych",
             doc.REJESTRACJA,
             doc.NR_SZKODY || null,
@@ -314,8 +315,8 @@ const addDocumentToDatabase = async (type) => {
         A_KOD, A_KRAJ, A_MIASTO, A_NRDOMU, A_NRLOKALU, A_ULICA_EXT, CUSTOMER_ID_CKK,
         EMAIL, IS_FIRMA, KOD_KONTR_LISTA, KONTR_NIP, KONTRAHENT_ID,
         NAZWA_KONTRAHENTA_SLOWNIK, PESEL, PLATNOSCPOTEM_DNI,
-        PRZYPISANA_FORMA_PLATNOSCI, REGON, SPOLKA, TELEFON
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        PRZYPISANA_FORMA_PLATNOSCI, REGON, SPOLKA, TELEFON, A_PRZEDROSTEK, AK_PRZEDROSTEK
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         NAZWA_KONTRAHENTA_SLOWNIK = VALUES(NAZWA_KONTRAHENTA_SLOWNIK),
         EMAIL = VALUES(EMAIL),
@@ -351,6 +352,8 @@ const addDocumentToDatabase = async (type) => {
             doc.REGON || null,
             type,
             JSON.stringify(finalPhones),
+            doc.A_PRZEDROSTEK || null,
+            doc.AK_PRZEDROSTEK || null,
           ]
         );
       }
