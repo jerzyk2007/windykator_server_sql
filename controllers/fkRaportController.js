@@ -699,12 +699,11 @@ const gerReportDate = async (company) => {
         SELECT TITLE, DATE
         FROM company_fk_updates_date
         WHERE COMPANY = ?
-        AND TITLE IN ('generate', 'accountancy')`,
+        AND TITLE IN ('raport', 'accountancy')`,
       [company]
     );
     const reportInfo = {
-      reportDate:
-        reportDate.find((row) => row.TITLE === "generate")?.DATE || " ",
+      reportDate: reportDate.find((row) => row.TITLE === "raport")?.DATE || " ",
       agingDate:
         reportDate.find((row) => row.TITLE === "accountancy")?.DATE || " ",
       reportName: "Draft 201 203_należności",
@@ -1535,10 +1534,9 @@ const changeMark = async (req, res) => {
 
 const addDecisionDate = async (req, res) => {
   const { NUMER_FV, FIRMA, data } = req.body;
-
   try {
     const [raportDate] = await connect_SQL.query(
-      `SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'generate' AND COMPANY = ?`,
+      `SELECT DATE FROM company_fk_updates_date WHERE TITLE = 'raport' AND COMPANY = ?`,
       [FIRMA]
     );
     if (!raportDate[0].DATE) {

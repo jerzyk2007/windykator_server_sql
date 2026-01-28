@@ -30,6 +30,102 @@ const test = async () => {
   // );
 };
 
+// const generateHistoryDocuments = async (company) => {
+//   try {
+//     const [raportDate] = await connect_SQL.query(
+//       `SELECT DATE FROM  company_fk_updates_date WHERE title = 'raport' AND COMPANY = ?`,
+//       [company]
+//     );
+//     const [markDocumentsz] = await connect_SQL.query(
+//       `SELECT NUMER_FV, COMPANY FROM company_mark_documents WHERE RAPORT_FK = 1 AND COMPANY = ?`,
+//       [company]
+//     );
+
+//     const markDocuments = [{ NUMER_FV: "FV/UBL/105/25/D/D68", COMPANY: "KRT" }];
+
+//     // for (const doc of markDocuments) {
+//     //   if (doc.NUMER_FV === "FV/UBL/105/25/D/D68") {
+//     //     console.log(doc);
+//     //   }
+//     // }
+
+//     for (item of markDocuments) {
+//       // sprawdzam czy dokument ma wpisy histori w tabeli management_decision_FK
+//       const [getDoc] = await connect_SQL.query(
+//         `SELECT * FROM company_management_date_description_FK WHERE NUMER_FV = ? AND WYKORZYSTANO_RAPORT_FK = ? AND COMPANY = ?`,
+//         [item.NUMER_FV, raportDate[0].DATE, company]
+//       );
+//       console.log(getDoc);
+//       //szukam czy jest wpis histori w tabeli history_fk_documents
+//       const [getDocHist] = await connect_SQL.query(
+//         `SELECT HISTORY_DOC FROM company_history_management WHERE NUMER_FV = ? AND COMPANY = ?`,
+//         [item.NUMER_FV, company]
+//       );
+//       // console.log(getDocHist[0].HISTORY_DOC);
+//       // tworzę string z danych obiektu
+//       const formatHistoryItem = ({ date, note, username }) =>
+//         [date, note, username].filter(Boolean).join(" - ");
+
+//       //jesli nie ma historycznych wpisów tworzę nowy
+//       if (!getDocHist.length) {
+//         const newHistory = {
+//           info: `1 raport utworzono ${raportDate[0].DATE}`,
+//           historyDate: [],
+//           historyText: [],
+//         };
+
+//         // Przechodzimy przez każdy obiekt w getDoc i dodajemy wartości do odpowiednich tablic
+//         getDoc.forEach((doc) => {
+//           if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+//             newHistory.historyDate.push(
+//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+//             );
+//           }
+
+//           if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+//             newHistory.historyText.push(
+//               ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+//             );
+//           }
+//         });
+
+//         // await connect_SQL.query(
+//         //   `INSERT INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)`,
+//         //   [item.NUMER_FV, JSON.stringify([newHistory]), company]
+//         // );
+//       } else {
+//         const newHistory = {
+//           info: `${getDocHist[0].HISTORY_DOC.length + 1} raport utworzono ${
+//             raportDate[0].DATE
+//           }`,
+//           historyDate: [],
+//           historyText: [],
+//         };
+//         getDoc.forEach((doc) => {
+//           if (Array.isArray(doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA)) {
+//             newHistory.historyDate.push(
+//               ...doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.map(formatHistoryItem)
+//             );
+//           }
+
+//           if (Array.isArray(doc.INFORMACJA_ZARZAD)) {
+//             newHistory.historyText.push(
+//               ...doc.INFORMACJA_ZARZAD.map(formatHistoryItem)
+//             );
+//           }
+//         });
+//         const prepareArray = [...getDocHist[0].HISTORY_DOC, newHistory];
+//         // await connect_SQL.query(
+//         //   `UPDATE company_history_management SET HISTORY_DOC = ? WHERE NUMER_FV = ? AND COMPANY = ?`,
+//         //   [JSON.stringify(prepareArray), item.NUMER_FV, company]
+//         // );
+//       }
+//     }
+//   } catch (error) {
+//     console.error(error);
+//   }
+// };
+
 const createKontrahentTable = async () => {
   try {
     await connect_SQL.query(
@@ -2013,9 +2109,420 @@ const update_FAKT_BANK_KONTO_KEM = async () => {
   }
 };
 
+const changeDateReport = async () => {
+  try {
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/M/2477/25/P/D97' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UBL/1247/25/A/D38' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UBL/463/25/A/D78' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/WS/15/25/A/D38' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/3695/25/V/D66' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/3744/25/V/D66' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/3744/25/V/D66' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/3675/25/V/D66' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/1721/25/S/D66' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/3803/25/V/D66' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/3949/25/V/D66' AND WYKORZYSTANO_RAPORT_FK = '2026-01-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "UPDATE company_management_date_description_FK SET WYKORZYSTANO_RAPORT_FK = '2026-01-13'WHERE WYKORZYSTANO_RAPORT_FK = '2026-01-14' AND COMPANY = 'KRT'"
+    );
+
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/828/25/D/D66' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/1537/25/S/D66' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/779/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/596/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/732/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/176/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/179/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/178/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/177/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/175/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/1534/25/S/D66' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/1538/25/S/D66' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/UP/1540/25/S/D66' AND WYKORZYSTANO_RAPORT_FK = '2025-12-15' AND COMPANY = 'KRT'"
+    );
+
+    await connect_SQL.query(
+      "UPDATE company_management_date_description_FK SET WYKORZYSTANO_RAPORT_FK = '2025-12-15' WHERE WYKORZYSTANO_RAPORT_FK = '2025-12-16' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "UPDATE company_management_date_description_FK SET WYKORZYSTANO_RAPORT_FK = '2026-01-13' WHERE WYKORZYSTANO_RAPORT_FK = '2026-01-14' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "UPDATE company_management_date_description_FK SET WYKORZYSTANO_RAPORT_FK = '2026-01-27' WHERE WYKORZYSTANO_RAPORT_FK = '2026-01-28' AND COMPANY = 'KRT'"
+    );
+
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/133/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/134/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/135/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/132/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/727/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/738/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/740/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/739/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/681/25/S/D172' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/853/25/A/D72' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/847/25/A/D72' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/I/F/138/25/A/D72' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/857/25/A/D72' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/859/25/A/D72' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "DELETE FROM company_management_date_description_FK WHERE NUMER_FV = 'FV/AN/F/165/25/C/D192' AND WYKORZYSTANO_RAPORT_FK = '2025-11-13' AND COMPANY = 'KRT'"
+    );
+    await connect_SQL.query(
+      "UPDATE company_management_date_description_FK SET WYKORZYSTANO_RAPORT_FK = '2025-11-13' WHERE WYKORZYSTANO_RAPORT_FK = '2025-11-14' AND COMPANY = 'KRT'"
+    );
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
+const repairDecisionHistory = async (company) => {
+  try {
+    const [allHistory] = await connect_SQL.query(
+      "SELECT * FROM company_history_management WHERE COMPANY = ? ",
+      [company]
+    );
+
+    const [docHistory] = await connect_SQL.query(
+      "SELECT * FROM company_management_date_description_fk WHERE COMPANY = ? ",
+      [company]
+    );
+
+    // const newData = allHistory.map((doc) => {
+    //   // 1. Sprawdzamy czy HISTORY_DOC istnieje, jeśli nie - używamy pustej tablicy
+    //   const history = doc.HISTORY_DOC || [];
+
+    //   // 2. Wyciągamy daty z pola 'info'
+    //   const dates = history
+    //     .map((h) => (h.info ? h.info.match(/\d{4}-\d{2}-\d{2}/) : null))
+    //     .filter((match) => match !== null) // usuwamy wpisy, gdzie nie znaleziono daty
+    //     .map((match) => match[0]); // pobieramy sam tekst daty
+
+    //   // 3. Zwracamy obiekt w pożądanym formacie
+    //   return {
+    //     numer_fv: doc.NUMER_FV,
+    //     dates: dates,
+    //     count: dates.length, // pokaże 0, 1 lub więcej
+    //   };
+    // });
+
+    // for (doc of allHistory) {
+    //   if (doc.NUMER_FV === "FV/I/18/25/X/D79") {
+    //     console.log(doc);
+    //   }
+    // }
+
+    // for (doc of docHistory) {
+    //   if (doc.NUMER_FV === "FV/I/18/25/X/D79") {
+    //     console.log(doc);
+    //   }
+    // }
+
+    // const newData = [
+    //   {
+    //     numer_fv: "FV/UBL/1032/25/A/D8",
+    //     dates: ["2025-12-15", "2026-01-13"],
+    //     count: 5,
+    //   },
+    // ];
+
+    // 1. Mapa 1:1 dla allHistory (po staremu - bierzemy ostatni pasujący lub jedyny obiekt)
+    // const allHistoryMap = new Map(
+    //   allHistory.map((item) => [item.NUMER_FV, item])
+    // );
+
+    // // 2. Mapa 1:N dla docHistory (grupujemy wiele obiektów w tablicę)
+    // const docHistoryMap = new Map();
+    // for (const item of docHistory) {
+    //   const key = item.NUMER_FV;
+    //   if (!docHistoryMap.has(key)) {
+    //     docHistoryMap.set(key, []);
+    //   }
+    //   docHistoryMap.get(key).push(item);
+    // }
+
+    // // 3. Przetwarzanie i wyświetlanie danych
+    // for (const doc of newData) {
+    //   // Pobieramy pojedynczy obiekt z allHistory (może być undefined)
+    //   const fullHistoryObj = allHistoryMap.get(doc.numer_fv);
+
+    //   // Pobieramy tablicę obiektów z docHistory (zawsze zwracamy tablicę, choćby pustą)
+    //   const fullDocArray = docHistoryMap.get(doc.numer_fv) || [];
+
+    //   const completeData = {
+    //     ...doc,
+    //     historyDetails: fullHistoryObj, // Pojedynczy obiekt JSON
+    //     documentDetails: fullDocArray, // Tablica obiektów JSON
+    //   };
+
+    //   console.log(`FV: ${doc.numer_fv}`);
+    //   console.log(`History:`, completeData.historyDetails);
+    //   console.log(
+    //     `Documents (znaleziono: ${completeData.documentDetails.length}):`,
+    //     completeData.documentDetails
+    //   );
+    //   console.log("---------------------------");
+    // }
+
+    const xxxprocessHistory = (allHistory, docHistory) => {
+      allHistory.forEach((historyObj) => {
+        // 1. Szukamy obiektów w docHistory o tym samym NUMER_FV i COMPANY
+        const matchingDocs = docHistory.filter(
+          (doc) =>
+            doc.NUMER_FV === historyObj.NUMER_FV &&
+            doc.COMPANY === historyObj.COMPANY
+        );
+
+        if (matchingDocs.length === 0) return;
+
+        // 2. Przetwarzamy każdy element w HISTORY_DOC
+        historyObj.HISTORY_DOC.forEach((historyDocItem) => {
+          // Wyciągamy datę z info (format YYYY-MM-DD)
+          const dateMatch = historyDocItem.info.match(/\d{4}-\d{2}-\d{2}/);
+          if (!dateMatch) return;
+          const extractedDate = dateMatch[0];
+
+          // 3. Szukamy w dopasowanych dokumentach daty w WYKORZYSTANO_RAPORT_FK
+          matchingDocs.forEach((doc) => {
+            if (doc.WYKORZYSTANO_RAPORT_FK === extractedDate) {
+              // Funkcja pomocnicza do formatowania stringa: date - username - note
+              const formatEntry = (entry) => {
+                if (!entry) return null;
+                const parts = [];
+                if (entry.date) parts.push(entry.date);
+                if (entry.username) parts.push(entry.username);
+                if (entry.note) parts.push(entry.note);
+                return parts.join(" - ");
+              };
+
+              // Pobieramy ostatni element z HISTORIA_ZMIANY_DATY_ROZLICZENIA
+              if (
+                doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA &&
+                doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length > 0
+              ) {
+                const lastDateChange =
+                  doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA[
+                    doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length - 1
+                  ];
+                const formattedDate = formatEntry(lastDateChange);
+                if (formattedDate) {
+                  historyDocItem.historyDate.push(formattedDate);
+                }
+              }
+
+              // Pobieramy ostatni element z INFORMACJA_ZARZAD
+              if (doc.INFORMACJA_ZARZAD && doc.INFORMACJA_ZARZAD.length > 0) {
+                const lastInfo =
+                  doc.INFORMACJA_ZARZAD[doc.INFORMACJA_ZARZAD.length - 1];
+                const formattedText = formatEntry(lastInfo);
+                if (formattedText) {
+                  historyDocItem.historyText.push(formattedText);
+                }
+              }
+            }
+          });
+        });
+      });
+
+      return allHistory;
+    };
+
+    const processHistory = (allHistory, docHistory) => {
+      allHistory.forEach((historyObj) => {
+        // 1. Szukamy wszystkich pasujących dokumentów w docHistory (FV + Firma)
+        const matchingDocs = docHistory.filter(
+          (doc) =>
+            doc.NUMER_FV === historyObj.NUMER_FV &&
+            doc.COMPANY === historyObj.COMPANY
+        );
+
+        if (matchingDocs.length === 0) return;
+
+        // 2. Przetwarzamy każdy element w HISTORY_DOC
+        historyObj.HISTORY_DOC.forEach((historyDocItem) => {
+          const dateMatch = historyDocItem.info.match(/\d{4}-\d{2}-\d{2}/);
+          if (!dateMatch) return;
+          const extractedDate = dateMatch[0];
+
+          // Szukamy dokumentów, które pasują do daty konkretnego raportu
+          const docsWithSpecificDate = matchingDocs.filter(
+            (doc) => doc.WYKORZYSTANO_RAPORT_FK === extractedDate
+          );
+
+          // JEŚLI ZNALEZIONO DOPASOWANIE - czyścimy i wstawiamy unikalne dane
+          if (docsWithSpecificDate.length > 0) {
+            // Używamy Set, aby zbierać unikalne stringi
+            const uniqueDatesSet = new Set();
+            const uniqueTextsSet = new Set();
+
+            const formatEntry = (entry) => {
+              if (!entry) return null;
+              const parts = [];
+              if (entry.date) parts.push(entry.date.trim());
+              if (entry.username) parts.push(entry.username.trim());
+              if (entry.note) parts.push(entry.note.trim());
+              return parts.join(" - ");
+            };
+
+            docsWithSpecificDate.forEach((doc) => {
+              // Ostatnia historia zmiany daty
+              if (doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA?.length > 0) {
+                const lastDate =
+                  doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA[
+                    doc.HISTORIA_ZMIANY_DATY_ROZLICZENIA.length - 1
+                  ];
+                const formatted = formatEntry(lastDate);
+                if (formatted) uniqueDatesSet.add(formatted);
+              }
+
+              // Ostatnia informacja zarządu
+              if (doc.INFORMACJA_ZARZAD?.length > 0) {
+                const lastInfo =
+                  doc.INFORMACJA_ZARZAD[doc.INFORMACJA_ZARZAD.length - 1];
+                const formatted = formatEntry(lastInfo);
+                if (formatted) uniqueTextsSet.add(formatted);
+              }
+            });
+
+            // KLUCZOWY MOMENT: Czyścimy i nadpisujemy tablice nowymi, unikalnymi danymi
+            historyDocItem.historyDate = Array.from(uniqueDatesSet);
+            historyDocItem.historyText = Array.from(uniqueTextsSet);
+          }
+          // Jeśli nie znaleziono dopasowania daty, historyDocItem pozostaje bez zmian
+        });
+      });
+
+      return allHistory;
+    };
+
+    const result = processHistory(allHistory, docHistory);
+
+    await connect_SQL.query(`TRUNCATE TABLE company_history_management`);
+    for (const doc of result) {
+      await connect_SQL.query(
+        "INSERT IGNORE INTO company_history_management (NUMER_FV, HISTORY_DOC, COMPANY) VALUES (?, ?, ?)",
+        [doc.NUMER_FV, JSON.stringify(doc.HISTORY_DOC), doc.COMPANY]
+      );
+    }
+    // console.log(result);
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
+const distinctDate = async (company) => {
+  try {
+    const [allHistory] = await connect_SQL.query(
+      "SELECT * FROM company_history_management WHERE COMPANY = ? ",
+      [company]
+    );
+    const allUniqueDates = new Set();
+    for (const doc of allHistory) {
+      // Sprawdzamy czy HISTORY_DOC istnieje i jest tablicą
+      if (Array.isArray(doc.HISTORY_DOC)) {
+        for (const item of doc.HISTORY_DOC) {
+          if (item.info) {
+            // Regex szukający daty na końcu stringa ($ oznacza koniec linii)
+            const match = item.info.match(/\d{4}-\d{2}-\d{2}$/);
+            if (match) {
+              allUniqueDates.add(match[0]); // Set sam zadba o unikalność
+            }
+          }
+        }
+      }
+    }
+    // Zamieniamy Set z powrotem na tablicę i sortujemy chronologicznie
+    const sortedDates = Array.from(allUniqueDates).sort();
+    console.log("Wszystkie unikalne daty:");
+    console.log(sortedDates);
+  } catch (error) {
+    console.error("Błąd główny funkcji:", error);
+  }
+};
+
 const repair = async () => {
   try {
-    // await changedocumentsTable();
+    // await changeDateReport();
+    // console.log("changeDateReport");
+    // await repairDecisionHistory("KRT");
+    // console.log("repairDecisionHistory");
+    // await distinctDate("KRT");
+    //
     // console.log("changedocumentsTable");
     // await update_FAKT_BANK_KONTO_KRT();
     // console.log("update_FAKT_BANK_KONTO_KRT");
@@ -2029,6 +2536,7 @@ const repair = async () => {
     //
     //
     // await addDocumentToDatabase("KRT");
+    // await changedocumentsTable();
   } catch (error) {
     console.error(error);
   }
